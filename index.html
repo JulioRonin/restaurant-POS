@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Culinex Intelligent POS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Manrope', 'Inter', 'sans-serif'],
+            },
+            colors: {
+              primary: '#5D5FEF', // Deep Periwinkle Blue from reference
+              secondary: '#A5A6F6',
+              accent: '#EA7C69',
+              bg: {
+                main: '#F3F4F6',
+                panel: '#FFFFFF',
+              },
+              pastel: {
+                peach: '#FFEBE5',
+                peachText: '#8A4A38',
+                blue: '#E3F2FD',
+                blueText: '#2B4A6F',
+                pink: '#FCE4EC',
+                pinkText: '#883956',
+                lavender: '#F3E5F5',
+                lavenderText: '#6A1B9A',
+                yellow: '#FFF8E1',
+                yellowText: '#8D6E08',
+                mint: '#E0F2F1',
+                mintText: '#00695C'
+              }
+            },
+            boxShadow: {
+              'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
+              'card': '0 2px 10px rgba(0,0,0,0.03)'
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #D1D5DB;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #9CA3AF;
+      }
+      body {
+        overflow: hidden; /* App-like feel */
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.4",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/",
+    "recharts": "https://esm.sh/recharts@^3.7.0",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-[#F3F4F6] text-gray-800 transition-colors duration-300">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

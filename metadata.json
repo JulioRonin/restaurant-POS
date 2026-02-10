@@ -1,0 +1,8 @@
+{
+  "name": "Culinex Intelligent POS",
+  "description": "Next-generation restaurant management platform unifying POS, Inventory, and AI-driven analytics.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
