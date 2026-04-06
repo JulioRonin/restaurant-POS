@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSettings, BusinessSettings } from '../contexts/SettingsContext';
+import { useUser } from '../contexts/UserContext';
+import { Ticket } from '../components/Ticket';
+import { OrderStatus } from '../types';
+import { printerService } from '../services/PrinterService';
+import { bluetoothTerminalService } from '../services/BluetoothTerminalService';
 
 export const SettingsScreen: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'general' | 'hardware' | 'users' | 'notifications'>('general');
+    const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'hardware' | 'users' | 'notifications'>('general');
     const [virtualMode, setVirtualMode] = useState<boolean>(false);
     const [hardwareStatus, setHardwareStatus] = useState({
         printer: 'disconnected',
@@ -19,11 +25,121 @@ export const SettingsScreen: React.FC = () => {
         error: ''
     });
 
-    const toggleHardwareConnection = (device: keyof typeof hardwareStatus) => {
-        setHardwareStatus(prev => ({
+    const { settings, updateSettings } = useSettings();
+    const { users, addUser, updateUser, deleteUser, currentUser } = useUser();
+    const [localSettings, setLocalSettings] = useState<BusinessSettings>(settings);
+    const [testOrderToPrint, setTestOrderToPrint] = useState<any>(null);
+    const [showsSavedMessage, setShowsSavedMessage] = useState(false);
+
+    // User Management State
+    const [showUserModal, setShowUserModal] = useState(false);
+    const [editingUser, setEditingUser] = useState<any>(null);
+    const [newUserForm, setNewUserForm] = useState({
+        name: '',
+        role: 'Waiter',
+        status: 'ON_SHIFT',
+        pin: '1111',
+        image: 'https://i.pravatar.cc/150?u=' + Math.random()
+    });
+
+    // Sync local state when global settings change (e.g., first load)
+    useEffect(() => {
+        setLocalSettings(settings);
+    }, [settings]);
+
+    const handlePrintTest = async () => {
+        const testOrder = {
+            id: 'TEST-123',
+            items: [
+                { name: 'PRODUCTO DE PRUEBA 1', quantity: 1, price: 100 },
+                { name: 'PRODUCTO DE PRUEBA 2', quantity: 2, price: 50 },
+            ],
+            total: 200,
+            timestamp: new Date(),
+            tableId: 'PRUEBA',
+            waiterName: 'SISTEMA'
+        };
+
+        if (localSettings.isDirectPrintingEnabled) {
+            const success = await printerService.printOrder(testOrder, localSettings);
+            if (success) return;
+        }
+
+        setTestOrderToPrint(testOrder);
+        setTimeout(() => {
+            window.print();
+            setTestOrderToPrint(null);
+        }, 100);
+    };
+
+    const handleSave = () => {
+        updateSettings(localSettings);
+        setShowsSavedMessage(true);
+        setTimeout(() => setShowsSavedMessage(false), 3000);
+    };
+
+    const handleConnectUSB = async () => {
+        const device = await printerService.requestPrinter();
+        if (device) {
+            const success = await printerService.connect(device);
+            if (success) {
+                setLocalSettings(prev => ({
+                    ...prev,
+                    connectedDeviceName: device.productName || 'Unknown Printer',
+                    isDirectPrintingEnabled: true
+                }));
+                // We don't call updateSettings here yet, user has to Save
+                setHardwareStatus(prev => ({ ...prev, printer: 'connected' }));
+            }
+        }
+    };
+
+    const handleDisconnectUSB = async () => {
+        await printerService.disconnect();
+        setLocalSettings(prev => ({
             ...prev,
-            [device]: prev[device] === 'connected' ? 'disconnected' : 'connecting'
+            connectedDeviceName: 'None',
+            isDirectPrintingEnabled: false
         }));
+        setHardwareStatus(prev => ({ ...prev, printer: 'disconnected' }));
+    };
+
+    const handleConnectTerminal = async () => {
+        const device = await bluetoothTerminalService.requestTerminal();
+        if (device) {
+            setHardwareStatus(prev => ({ ...prev, terminal: 'connecting' }));
+            const success = await bluetoothTerminalService.connect(device);
+            if (success) {
+                setLocalSettings(prev => ({
+                    ...prev,
+                    connectedTerminalName: device.name || 'Bluetooth Terminal',
+                    isTerminalEnabled: true
+                }));
+                setHardwareStatus(prev => ({ ...prev, terminal: 'connected' }));
+            } else {
+                setHardwareStatus(prev => ({ ...prev, terminal: 'disconnected' }));
+            }
+        }
+    };
+
+    const handleDisconnectTerminal = () => {
+        setLocalSettings(prev => ({
+            ...prev,
+            connectedTerminalName: 'None',
+            isTerminalEnabled: false
+        }));
+        setHardwareStatus(prev => ({ ...prev, terminal: 'disconnected' }));
+    };
+
+    const toggleHardwareConnection = (device: keyof typeof hardwareStatus) => {
+        if (device === 'terminal') {
+            if (hardwareStatus.terminal === 'connected') {
+                handleDisconnectTerminal();
+            } else {
+                handleConnectTerminal();
+            }
+            return;
+        }
 
         // Simulate connection delay
         if (hardwareStatus[device] !== 'connected') {
@@ -62,14 +178,22 @@ export const SettingsScreen: React.FC = () => {
 
     const tabs = [
         { id: 'general', label: 'General', icon: 'store' },
+        { id: 'appearance', label: 'Appearance', icon: 'palette' },
         { id: 'hardware', label: 'Hardware & Devices', icon: 'devices' },
-        { id: 'users', label: 'Users & Roles', icon: 'manage_accounts' },
+        { id: 'users', label: 'Users & Roles', icon: 'manage_accounts', adminOnly: true },
         { id: 'notifications', label: 'Notifications', icon: 'notifications' },
     ];
 
+    const filteredTabs = tabs.filter(tab => !tab.adminOnly || (currentUser?.role === 'Admin' || currentUser?.role === 'Manager' || currentUser?.role === 'Owner' || currentUser?.role === 'Gerente' || currentUser?.role === 'Chef Principal'));
+
     return (
         <div className="flex-1 bg-[#F3F4F6] text-gray-800 p-8 overflow-y-auto h-full relative">
-            <div className="max-w-5xl mx-auto">
+            {/* Hidden Ticket for Test Printing */}
+            <div className="hidden print:block absolute inset-0 z-[9999] bg-white">
+                {testOrderToPrint && <Ticket order={testOrderToPrint} settings={localSettings} isTest={true} />}
+            </div>
+
+            <div className="max-w-5xl mx-auto print:hidden">
                 {/* Header */}
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
@@ -79,7 +203,7 @@ export const SettingsScreen: React.FC = () => {
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Sidebar Navigation */}
                     <div className="w-full lg:w-64 flex flex-col gap-2">
-                        {tabs.map(tab => (
+                        {filteredTabs.map(tab => (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
@@ -103,33 +227,133 @@ export const SettingsScreen: React.FC = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label className="block text-sm font-bold text-gray-700 mb-2">Restaurant Name</label>
-                                        <input type="text" defaultValue="Culinex Demo Restaurant" className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
+                                        <input type="text" value={localSettings.name} onChange={e => setLocalSettings(prev => ({ ...prev, name: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-2">Branch / Location</label>
-                                        <input type="text" defaultValue="Downtown Main" className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Legal Name</label>
+                                        <input type="text" value={localSettings.legalName} onChange={e => setLocalSettings(prev => ({ ...prev, legalName: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-2">Currency</label>
-                                        <select className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
-                                            <option>MXN ($)</option>
-                                            <option>USD ($)</option>
-                                            <option>EUR (€)</option>
-                                        </select>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">RFC</label>
+                                        <input type="text" value={localSettings.rfc} onChange={e => setLocalSettings(prev => ({ ...prev, rfc: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-2">Language</label>
-                                        <select className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
-                                            <option>Español (MX)</option>
-                                            <option>English (US)</option>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Address</label>
+                                        <input type="text" value={localSettings.address} onChange={e => setLocalSettings(prev => ({ ...prev, address: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Phone</label>
+                                        <input type="text" value={localSettings.phone} onChange={e => setLocalSettings(prev => ({ ...prev, phone: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Printer Paper Width</label>
+                                        <select 
+                                            value={localSettings.printerWidth} 
+                                            onChange={e => setLocalSettings(prev => ({ ...prev, printerWidth: e.target.value as any }))}
+                                            className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                                        >
+                                            <option value="80mm">Standard (80mm)</option>
+                                            <option value="58mm">Small (58mm)</option>
                                         </select>
                                     </div>
                                 </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Ticket Footer Message</label>
+                                    <textarea value={localSettings.footerMessage} onChange={e => setLocalSettings(prev => ({ ...prev, footerMessage: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all h-24" />
+                                </div>
 
-                                <div className="pt-6 border-t border-gray-100 flex justify-end">
-                                    <button className="bg-primary text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:bg-blue-600 transition-colors">
+                                <div className="bg-blue-50 border border-blue-100 p-6 rounded-2xl flex items-center justify-between group hover:bg-blue-100/50 transition-all">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                            <span className="material-icons-round">restaurant</span>
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900">Modo Orden Impresa (Cocina)</h3>
+                                            <p className="text-xs text-gray-500">Generar automáticamente un ticket para cocina al enviar una orden</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setLocalSettings(prev => ({ ...prev, isKitchenPrintingEnabled: !prev.isKitchenPrintingEnabled }))}
+                                        className={`w-14 h-7 rounded-full relative transition-all duration-300 ${localSettings.isKitchenPrintingEnabled ? 'bg-primary shadow-lg shadow-primary/30' : 'bg-gray-300'}`}
+                                    >
+                                        <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-sm transition-all duration-300 ${localSettings.isKitchenPrintingEnabled ? 'left-8' : 'left-1'}`}></div>
+                                    </button>
+                                </div>
+
+                                <div className="pt-6 border-t border-gray-100 flex items-center justify-end gap-4">
+                                    {showsSavedMessage && (
+                                        <div className="flex items-center gap-1 text-green-600 font-bold animate-in fade-in slide-in-from-right-2">
+                                            <span className="material-icons-round text-sm">check_circle</span>
+                                            ¡Configuración guardada!
+                                        </div>
+                                    )}
+                                    <button 
+                                        onClick={handleSave}
+                                        className="bg-primary text-white font-bold px-6 py-3 rounded-xl shadow-lg hover:bg-blue-600 transition-colors"
+                                    >
                                         Save Changes
                                     </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'appearance' && (
+                            <div className="space-y-8 animate-fadeIn">
+                                <h2 className="text-2xl font-bold text-gray-900 mb-6 font-black uppercase tracking-tight">Personalización Visual</h2>
+
+                                {/* Logo Section */}
+                                <div className="space-y-4">
+                                    <label className="block text-sm font-black text-gray-500 uppercase tracking-widest">Logo del Restaurante</label>
+                                    <div className="flex items-center gap-6 p-6 bg-gray-50 rounded-3xl border border-gray-100">
+                                        <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center shadow-soft overflow-hidden border border-gray-100 group relative">
+                                            {localSettings.logoUrl ? (
+                                                <img src={localSettings.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="material-icons-round text-gray-300 text-4xl">restaurant</span>
+                                            )}
+                                        </div>
+                                        <div className="flex-1">
+                                            <input 
+                                                type="text" 
+                                                placeholder="https://tu-logo.com/imagen.png" 
+                                                value={localSettings.logoUrl || ''} 
+                                                onChange={e => setLocalSettings(prev => ({ ...prev, logoUrl: e.target.value }))}
+                                                className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all mb-2"
+                                            />
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Pega la URL de tu logotipo para mostrarlo en la pantalla de inicio.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Themes Section */}
+                                <div className="space-y-4">
+                                    <label className="block text-sm font-black text-gray-500 uppercase tracking-widest">Atmósfera y Temas</label>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        {[
+                                            { id: 'indigo', name: 'Indigo Classic', color: '#5D5FEF', desc: 'Standard & Professional' },
+                                            { id: 'emerald', name: 'Emerald Grill', color: '#10B981', desc: 'Healthy & Organic' },
+                                            { id: 'ruby', name: 'Ruby Steakhouse', color: '#EF4444', desc: 'Steak & Passion' },
+                                            { id: 'amber', name: 'Amber Bakery', color: '#F59E0B', desc: 'Warm & Cozy' },
+                                            { id: 'midnight', name: 'Midnight Lounge', color: '#334155', desc: 'Elegant & Modern' }
+                                        ].map(theme => (
+                                            <button
+                                                key={theme.id}
+                                                onClick={() => setLocalSettings(prev => ({ ...prev, themeId: theme.id as any }))}
+                                                className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-start gap-2 group ${localSettings.themeId === theme.id ? 'border-primary bg-primary/5 shadow-lg' : 'border-gray-100 bg-white hover:border-gray-300 shadow-sm'}`}
+                                            >
+                                                <div className="w-10 h-10 rounded-xl shadow-inner group-hover:scale-110 transition-transform" style={{ backgroundColor: theme.color }}></div>
+                                                <div className="text-left">
+                                                    <p className="font-black text-gray-900 text-sm leading-tight">{theme.name}</p>
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{theme.id}</p>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="pt-6 border-t border-gray-100 flex items-center justify-end gap-4">
+                                    {showsSavedMessage && <div className="text-green-600 font-bold text-sm">¡Configuración guardada!</div>}
+                                    <button onClick={handleSave} className="bg-primary text-white font-black px-8 py-3 rounded-xl shadow-lg hover:bg-blue-600 transition-all">Guardar Apariencia</button>
                                 </div>
                             </div>
                         )}
@@ -193,7 +417,8 @@ export const SettingsScreen: React.FC = () => {
                                                     </div>
                                                     <div>
                                                         <h3 className="font-bold text-gray-900 text-lg">Payment Terminal</h3>
-                                                        <p className="text-xs text-gray-500">Stripe Terminal / Verifone P400</p>
+                                                        <p className="text-xs text-blue-600 font-bold">{localSettings.connectedTerminalName}</p>
+                                                        <p className="text-xs text-gray-500">Bluetooth Connection</p>
                                                     </div>
                                                 </div>
                                                 <div className={`px-3 py-1.5 rounded-lg text-xs font-bold ${hardwareStatus.terminal === 'connected' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-500'
@@ -232,17 +457,50 @@ export const SettingsScreen: React.FC = () => {
                                             </div>
                                             <div>
                                                 <h3 className="font-bold text-gray-900">Thermal Printer</h3>
-                                                <p className="text-xs text-gray-500">EPSON TM-T88V (USB)</p>
+                                                <p className="text-xs text-blue-600 font-bold">{settings.connectedDeviceName}</p>
+                                                <p className="text-[10px] text-gray-400">USB Direct Communication</p>
                                             </div>
-                                            <button
-                                                onClick={() => toggleHardwareConnection('printer')}
-                                                className={`mt-auto py-2 rounded-xl font-bold text-sm transition-colors ${hardwareStatus.printer === 'connected'
-                                                        ? 'bg-red-50 text-red-500 hover:bg-red-100'
-                                                        : 'bg-primary text-white hover:bg-blue-600'
-                                                    }`}
-                                            >
-                                                {hardwareStatus.printer === 'connected' ? 'Disconnect' : 'Connect'}
-                                            </button>
+                                            
+                                                {localSettings.connectedDeviceName !== 'None' && (
+                                                    <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-100">
+                                                        <div className="flex-1">
+                                                            <p className="text-[10px] font-bold text-blue-800 uppercase">Direct Printing</p>
+                                                            <p className="text-[9px] text-blue-600 leading-tight">Skip browser print dialog</p>
+                                                        </div>
+                                                        <button 
+                                                            onClick={() => setLocalSettings(prev => ({ ...prev, isDirectPrintingEnabled: !prev.isDirectPrintingEnabled }))}
+                                                            className={`w-10 h-5 rounded-full relative transition-all ${localSettings.isDirectPrintingEnabled ? 'bg-blue-500' : 'bg-gray-300'}`}
+                                                        >
+                                                            <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${localSettings.isDirectPrintingEnabled ? 'left-5' : 'left-1'}`}></div>
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                            <div className="mt-auto flex flex-col gap-2">
+                                                <button
+                                                    onClick={localSettings.connectedDeviceName === 'None' ? handleConnectUSB : handleDisconnectUSB}
+                                                    className={`py-2 rounded-xl font-bold text-sm transition-colors ${localSettings.connectedDeviceName !== 'None'
+                                                            ? 'bg-red-50 text-red-500 hover:bg-red-100'
+                                                            : 'bg-primary text-white hover:bg-blue-600'
+                                                        }`}
+                                                >
+                                                    {localSettings.connectedDeviceName !== 'None' ? 'Disconnect' : 'Connect USB Printer'}
+                                                </button>
+                                                
+                                                {localSettings.connectedDeviceName === 'None' && (
+                                                    <div className="bg-yellow-50 border border-yellow-100 p-2 rounded-lg">
+                                                        <p className="text-[9px] text-yellow-800 leading-tight">
+                                                            <strong>Note:</strong> Windows users may need to replace the driver with <strong>WinUSB</strong> via Zadig for direct printing.
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {localSettings.connectedDeviceName !== 'None' && (
+                                                    <button onClick={handlePrintTest} className="py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2">
+                                                        <span className="material-icons-round text-sm">print</span> Print Test Ticket
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* Scanner Card */}
@@ -309,43 +567,120 @@ export const SettingsScreen: React.FC = () => {
                         {activeTab === 'users' && (
                             <div className="space-y-6 animate-fadeIn">
                                 <div className="flex justify-between items-center mb-6">
-                                    <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
-                                    <button className="bg-primary text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-2">
-                                        <span className="material-icons-round text-lg">person_add</span>
-                                        Invite User
+                                    <h2 className="text-2xl font-bold text-gray-900 font-black uppercase tracking-tight">Gestión de Personal</h2>
+                                    <button 
+                                        onClick={() => { setEditingUser(null); setNewUserForm({ name: '', role: 'Waiter', area: 'Service', status: 'ON_SHIFT', pin: '', image: 'https://i.pravatar.cc/150?u=' + Math.random() }); setShowUserModal(true); }}
+                                        className="bg-primary text-white font-black px-6 py-3 rounded-xl text-sm flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+                                    >
+                                        <span className="material-icons-round">person_add</span>
+                                        Nuevo Usuario
                                     </button>
                                 </div>
 
-                                <div className="space-y-4">
-                                    {[
-                                        { name: 'Julio (You)', role: 'Owner', email: 'julio@culinex.app', status: 'Active' },
-                                        { name: 'Maria Gonzalez', role: 'Manager', email: 'maria@culinex.app', status: 'Active' },
-                                        { name: 'Carlos Ruiz', role: 'Chef', email: 'carlos@kitchen.com', status: 'Inactive' },
-                                    ].map((user, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                                    {user.name[0]}
+                                <div className="grid grid-cols-1 gap-4">
+                                    {users.map((user) => (
+                                        <div key={user.id} className="flex items-center justify-between p-5 bg-white border border-gray-100 rounded-3xl hover:shadow-lg transition-all group">
+                                            <div className="flex items-center gap-5">
+                                                <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-soft border-2 border-white group-hover:scale-105 transition-transform">
+                                                    <img src={user.image} alt="" className="w-full h-full object-cover" />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-bold text-gray-900">{user.name}</h3>
-                                                    <p className="text-xs text-gray-500">{user.email}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="font-black text-gray-900">{user.name}</h3>
+                                                        <span className="text-[10px] font-black px-2 py-0.5 bg-gray-100 text-gray-400 rounded-md uppercase tracking-wider">{user.area}</span>
+                                                    </div>
+                                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{user.role}</p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-4">
-                                                <span className={`text-xs font-bold px-3 py-1 rounded-full ${user.status === 'Active' ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-500'}`}>
-                                                    {user.status}
-                                                </span>
-                                                <select defaultValue={user.role} className="bg-white border border-gray-200 rounded-lg text-sm px-2 py-1 outline-none">
-                                                    <option>Owner</option>
-                                                    <option>Manager</option>
-                                                    <option>Chef</option>
-                                                    <option>Waiter</option>
-                                                </select>
+                                            <div className="flex items-center gap-6">
+                                                <div className="text-right flex flex-col items-end">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status</p>
+                                                    <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${user.status === 'ON_SHIFT' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                                                        {user.status}
+                                                    </span>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button 
+                                                        onClick={() => { setEditingUser(user); setNewUserForm(user as any); setShowUserModal(true); }}
+                                                        className="w-10 h-10 rounded-xl bg-gray-50 text-gray-400 hover:bg-primary hover:text-white transition-all flex items-center justify-center"
+                                                    >
+                                                        <span className="material-icons-round text-lg">edit</span>
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => deleteUser(user.id)}
+                                                        className="w-10 h-10 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-500 hover:text-white transition-all flex items-center justify-center"
+                                                    >
+                                                        <span className="material-icons-round text-lg">delete</span>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
+
+                                {/* User Modal */}
+                                {showUserModal && (
+                                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+                                        <div className="bg-white rounded-[32px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                                            <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                                                <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">{editingUser ? 'Editar Usuario' : 'Crear Usuario'}</h3>
+                                                <button onClick={() => setShowUserModal(false)} className="text-gray-400 hover:text-gray-600 font-bold uppercase text-xs tracking-widest">Cerrar</button>
+                                            </div>
+                                            <div className="p-8 space-y-5">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="col-span-2">
+                                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Nombre Completo</label>
+                                                        <input type="text" value={newUserForm.name} onChange={e => setNewUserForm({ ...newUserForm, name: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Rol</label>
+                                                        <select value={newUserForm.role} onChange={e => setNewUserForm({ ...newUserForm, role: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold">
+                                                            <option>Admin</option>
+                                                            <option>Cajero</option>
+                                                            <option>Mesero</option>
+                                                            <option>Chef</option>
+                                                            <option>Barra</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">PIN Acceso (4 dígitos)</label>
+                                                        <input type="text" maxLength={4} value={newUserForm.pin} onChange={e => setNewUserForm({ ...newUserForm, pin: e.target.value.replace(/\D/g, '') })} placeholder="1234" className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono font-black" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Área</label>
+                                                        <select value={newUserForm.area} onChange={e => setNewUserForm({ ...newUserForm, area: e.target.value as any })} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold">
+                                                            <option value="Management">Gerencia</option>
+                                                            <option value="Service">Servicio</option>
+                                                            <option value="Kitchen">Cocina</option>
+                                                            <option value="Bar">Barra</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Status</label>
+                                                        <select value={newUserForm.status} onChange={e => setNewUserForm({ ...newUserForm, status: e.target.value as any })} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold">
+                                                            <option value="ON_SHIFT">Activo</option>
+                                                            <option value="OFF_SHIFT">Inactivo</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <button 
+                                                    onClick={() => {
+                                                        if (editingUser) {
+                                                            updateUser(editingUser.id, newUserForm);
+                                                        } else {
+                                                            addUser(newUserForm as any);
+                                                        }
+                                                        setShowUserModal(false);
+                                                    }}
+                                                    className="w-full bg-primary text-white font-black py-4 rounded-2xl shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all text-lg"
+                                                >
+                                                    {editingUser ? 'Guardar Cambios' : 'Crear Usuario'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>

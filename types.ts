@@ -20,11 +20,21 @@ export interface MenuItem {
   category: string;
   image: string;
   inventoryLevel: number; // 0-4 scale as per blueprint
+  description?: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  gramaje?: string;
 }
 
 export interface OrderItem extends MenuItem {
   quantity: number;
   notes?: string;
+}
+
+export enum OrderSource {
+  DINE_IN = 'DINE_IN',
+  UBER_EATS = 'UBER_EATS',
+  RAPPI = 'RAPPI',
+  PICKUP = 'PICKUP'
 }
 
 export interface Order {
@@ -35,6 +45,35 @@ export interface Order {
   timestamp: Date;
   total: number;
   waiterName?: string;
+  paymentStatus?: PaymentStatus;
+  paymentMethod?: PaymentMethod;
+  source?: OrderSource; // New field
+  tip?: number;
+  splitType?: 'EQUAL' | 'CUSTOM' | 'NONE';
+  invoiceDetails?: InvoiceDetails;
+  receivedAmount?: number;
+  changeAmount?: number;
+  paidSplits?: number;
+}
+
+export enum PaymentStatus {
+  PENDING = 'PENDING',
+  PAID = 'PAID',
+  PARTIAL = 'PARTIAL'
+}
+
+export enum PaymentMethod {
+  CASH = 'CASH',
+  CARD = 'CARD',
+  TRANSFER = 'TRANSFER',
+  MIXED = 'MIXED'
+}
+
+export interface InvoiceDetails {
+  rfc: string;
+  legalName: string;
+  email: string;
+  useCFDI: string;
 }
 
 export interface Table {
@@ -65,6 +104,8 @@ export interface Employee {
   rating: number; // 0-5
   hoursWorked: number;
   schedule: { day: string; start: string; end: string }[]; // New field
+  pin: string; // 4-digit PIN for login
+  phone?: string;
 }
 
 export interface InventoryItem {
@@ -98,4 +139,37 @@ export interface SupplierOrder {
   status: SupplyOrderStatus;
   items: CartItem[];
   totalCost: number;
+}
+
+export type ExpenseCategory = 'Insumos' | 'Mantenimiento' | 'Nomina' | 'Servicios' | 'Otros';
+
+export interface Expense {
+  id: string;
+  description: string;
+  amount: number;
+  category: ExpenseCategory;
+  date: string;
+  user: string;
+}
+
+export enum SubscriptionStatus {
+  ACTIVE = 'ACTIVE',
+  WARNING = 'WARNING',
+  EXPIRED = 'EXPIRED'
+}
+
+export interface PaymentRecord {
+  id: string;
+  date: string;
+  amount: number;
+  method: string;
+  transactionId: string;
+}
+
+export interface WaitlistEntry {
+  id: string;
+  customerName: string;
+  partySize: number;
+  timestamp: string;
+  status: 'WAITING' | 'ASSIGNED' | 'CANCELLED';
 }

@@ -1,0 +1,280 @@
+import ReceiptPrinterEncoder from 'esc-pos-encoder';
+
+class PrinterService {
+  private device: any = null;
+  private serverUrl = 'http://localhost:3001'; // Fallback / meta
+
+  async requestPrinter(): Promise<any | null> {
+    try {
+      this.device = await (navigator as any).usb.requestDevice({
+        filters: []
+      });
+      return this.device;
+    } catch (err) {
+      console.error('USB Selection failed:', err);
+      return null;
+    }
+  }
+
+  async connect(device: any): Promise<boolean> {
+    try {
+      this.device = device;
+      await this.device.open();
+      if (this.device.configuration === null) {
+        await this.device.selectConfiguration(1);
+      }
+      await this.device.claimInterface(0);
+      return true;
+    } catch (err) {
+      console.error('Printer connection failed:', err);
+      return false;
+    }
+  }
+
+  async printOrder(order: any, settings: any): Promise<boolean> {
+    if (!this.device) {
+       console.warn('No direct printer connected. Use window.print()');
+       return false;
+    }
+
+    try {
+      const encoder = new ReceiptPrinterEncoder();
+      const is58mm = settings.printerWidth === '58mm';
+      const lineChars = is58mm ? 26 : 42;
+
+      // Helper for Manual Centering
+      const center = (text: string) => {
+        const str = text.trim().slice(0, lineChars);
+        const pad = Math.max(0, Math.floor((lineChars - str.length) / 2));
+        return ' '.repeat(pad) + str;
+      };
+
+      // Helper for Wrapped Centering
+      const wrapCenter = (text: string) => {
+        const words = (text || '').split(' ');
+        const lines: string[] = [];
+        let currentLine = '';
+
+        words.forEach(word => {
+          if ((currentLine + word).length <= lineChars) {
+            currentLine += (currentLine ? ' ' : '') + word;
+          } else {
+            if (currentLine) lines.push(center(currentLine));
+            currentLine = word;
+          }
+        });
+        if (currentLine) lines.push(center(currentLine));
+        return lines;
+      };
+
+      let result = encoder.initialize()
+        .align('left')
+        .size('normal');
+
+      // Centered Header with manual padding
+      wrapCenter(settings.name.toUpperCase()).forEach(l => result = result.text(l).newline());
+      wrapCenter(settings.legalName).forEach(l => result = result.text(l).newline());
+      wrapCenter(settings.rfc).forEach(l => result = result.text(l).newline());
+      wrapCenter(settings.address).forEach(l => result = result.text(l).newline());
+      wrapCenter(settings.phone).forEach(l => result = result.text(l).newline());
+
+      result = result
+        .text('-'.repeat(lineChars))
+        .newline()
+        .align('left')
+        .text(`ORDEN: #${order.id.slice(-6).toUpperCase()}`)
+        .newline()
+        .text(`FECHA: ${new Date(order.timestamp).toLocaleDateString()}`)
+        .newline()
+        .text(`HORA: ${new Date(order.timestamp).toLocaleTimeString()}`)
+        .newline();
+
+      if (order.tableId) result.text(`MESA: ${order.tableId}`).newline();
+      if (order.waiterName) result.text(`MESERO: ${order.waiterName}`).newline();
+
+      result = result.text('-'.repeat(lineChars)).newline();
+      
+      // Column Header
+      if (is58mm) {
+        // 26 chars: 3 (CAN) + 1 + 13 (PRODUCTO) + 1 + 8 (TOTAL)
+        result.text('CAN PRODUCTO         TOTAL').newline();
+      } else {
+        result.text('CANT  PRODUCTO                    TOTAL').newline();
+      }
+
+      order.items.forEach((item: any) => {
+        if (is58mm) {
+          // 26 chars: 3 (qty) + 1 + 13 (name) + 1 + 8 (total) = 26
+          const qty = item.quantity.toString().padEnd(3);
+          const name = item.name.toUpperCase().slice(0, 13).padEnd(14);
+          const price = (item.price * item.quantity).toFixed(2).padStart(8);
+          result.text(`${qty}${name}${price}`).newline();
+        } else {
+          // 80mm: 5 (qty) + 2 + 25 (name) + 2 + 8 (total) = 42
+          const qty = item.quantity.toString().padEnd(5);
+          const name = item.name.toUpperCase().slice(0, 25).padEnd(27);
+          const price = (item.price * item.quantity).toFixed(2).padStart(10);
+          result.text(`${qty}${name}${price}`).newline();
+        }
+      });
+
+      result = result.text('-'.repeat(lineChars)).newline();
+
+      if (order.receivedAmount !== undefined && order.receivedAmount > 0) {
+        const recLabel = 'RECIBIDO:'.padEnd(15);
+        const recVal = `$${order.receivedAmount.toFixed(2)}`.padStart(is58mm ? 15 : 27);
+        result.text(`${recLabel}${recVal}`).newline();
+        
+        const changeLabel = 'CAMBIO:'.padEnd(15);
+        const changeVal = `$${(order.changeAmount || 0).toFixed(2)}`.padStart(is58mm ? 15 : 27);
+        result.text(`${changeLabel}${changeVal}`).newline();
+      }
+
+      const totalLabel = 'TOTAL:'.padEnd(8);
+      const totalVal = `$${order.total.toFixed(2)}`.padStart(is58mm ? 18 : 32);
+      result = result
+        .size('normal')
+        .text(`${totalLabel}${totalVal}`)
+        .newline()
+        .newline();
+
+      // Footer Message
+      wrapCenter(`PAGO: ${order.paymentMethod || 'EFECTIVO'}`).forEach(l => result = result.text(l).newline());
+      result = result.text('-'.repeat(lineChars)).newline();
+      wrapCenter(settings.footerMessage).forEach(l => result = result.text(l).newline());
+      wrapCenter('Culinex POS').forEach(l => result = result.text(l).newline());
+      wrapCenter('Ronin Studio').forEach(l => result = result.text(l).newline());
+
+      result = result
+        .newline()
+        .cut()
+        .encode();
+
+      await this.device.transferOut(this.getEndpointNum(), result);
+      return true;
+    } catch (err) {
+      console.error('Direct printing failed:', err);
+      return false;
+    }
+  }
+
+  async printKitchenTicket(order: any, settings: any): Promise<boolean> {
+    if (!this.device) {
+       console.warn('No direct printer connected for kitchen ticket.');
+       return false;
+    }
+
+    try {
+      const encoder = new ReceiptPrinterEncoder();
+      const is58mm = settings.printerWidth === '58mm';
+      const lineChars = is58mm ? 26 : 42;
+
+      const center = (text: string) => {
+        const str = (text || '').trim().slice(0, lineChars);
+        const pad = Math.max(0, Math.floor((lineChars - str.length) / 2));
+        return ' '.repeat(pad) + str;
+      };
+
+      const wrapCenter = (text: string) => {
+        const words = (text || '').split(' ');
+        const lines: string[] = [];
+        let currentLine = '';
+
+        words.forEach(word => {
+          if ((currentLine + word).length <= lineChars) {
+            currentLine += (currentLine ? ' ' : '') + word;
+          } else {
+            if (currentLine) lines.push(center(currentLine));
+            currentLine = word;
+          }
+        });
+        if (currentLine) lines.push(center(currentLine));
+        return lines;
+      };
+
+      let result = encoder.initialize()
+        .align('left')
+        .size('double')
+        .text(center(order.tableId.toUpperCase()))
+        .newline()
+        .size('normal')
+        .text(center(`ORDEN: #${order.id}`))
+        .newline()
+        .text(center(`${new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} | ${order.waiterName || 'MESERO'}`))
+        .newline()
+        .text('='.repeat(lineChars))
+        .newline();
+
+      order.items.forEach((item: any) => {
+        // Quantity + Name (Large)
+        // For 58mm (26 chars), double size only fits 13 chars. 
+        // We'll use normal size if the name is long, or just slice to 13.
+        const nameText = item.name.toUpperCase();
+        
+        result = result
+          .size('double')
+          .text(`${item.quantity}x `)
+          .text(nameText.slice(0, Math.min(nameText.length, lineChars / 2 - 4)))
+          .newline()
+          .size('normal');
+          
+        // If name was truncated, print the rest in normal size
+        if (nameText.length > (lineChars / 2 - 4)) {
+           result = result.text(`   ${nameText.slice(lineChars / 2 - 4)}`).newline();
+        }
+
+        // Notes (Emphasized) - Ensure it's not undefined or empty
+        if (item.notes && item.notes.trim() !== '') {
+          result = result
+            .newline()
+            .text('  >>> NOTA: ')
+            .newline();
+          
+          // Wrap the note manually to ensure visibility
+          const noteLines = wrapCenter(item.notes.toUpperCase());
+          noteLines.forEach(l => result = result.text(l).newline());
+          
+          result = result.newline();
+        }
+        
+        result = result.text('-'.repeat(lineChars)).newline();
+      });
+
+      result = result
+        .newline()
+        .text(center('--- FIN DE COMANDA ---'))
+        .newline()
+        .text(center('Culinex POS'))
+        .newline()
+        .text(center('Ronin Studio'))
+        .newline()
+        .newline()
+        .cut()
+        .encode();
+
+      await this.device.transferOut(this.getEndpointNum(), result);
+      return true;
+    } catch (err) {
+      console.error('Kitchen printing failed:', err);
+      return false;
+    }
+  }
+
+  private getEndpointNum(): number {
+    // Standard endpoint for most printers is 1 or 2
+    // We ideally should search for the Bulk Out endpoint
+    if (!this.device) return 1;
+    const iface = this.device.configurations[0].interfaces[0];
+    const endpoint = iface.alternates[0].endpoints.find(e => e.direction === 'out');
+    return endpoint ? endpoint.endpointNumber : 1;
+  }
+
+  async disconnect() {
+    if (this.device) {
+      await this.device.close();
+      this.device = null;
+    }
+  }
+}
+
+export const printerService = new PrinterService();

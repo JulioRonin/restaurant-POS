@@ -8,14 +8,16 @@ export const MENU_ITEMS: MenuItem[] = [
   { id: '4', name: 'Aguachiles Camarón Chico', price: 170.00, category: 'Aguachiles', image: '/images/aguachile.png', inventoryLevel: 4 },
 
   // Ceviches
-  { id: '5', name: 'Ceviche Mixto Grande', price: 220.00, category: 'Ceviches', image: '/images/ceviche.png', inventoryLevel: 2 },
+  { id: '5', name: 'Ceviche Mixto Grande', price: 220.00, category: 'Ceviches', image: '/images/ceviche.png', inventoryLevel: 4 },
   { id: '6', name: 'Ceviche Mixto Chico', price: 160.00, category: 'Ceviches', image: '/images/ceviche.png', inventoryLevel: 4 },
 
-  // Tosti-Snacks
-  { id: '7', name: 'Tosti Ceviche Verde', price: 160.00, category: 'Snacks', image: '/images/ceviche.png', inventoryLevel: 3 },
+  // Snacks (Tostis & More)
+  { id: '7', name: 'Tosti Ceviche Verde', price: 160.00, category: 'Snacks', image: '/images/ceviche.png', inventoryLevel: 4 },
   { id: '8', name: 'Tosti Ceviche Morado', price: 160.00, category: 'Snacks', image: '/images/ceviche.png', inventoryLevel: 4 },
-  { id: '9', name: 'Tosti Aguachiles Verde', price: 160.00, category: 'Snacks', image: '/images/aguachile.png', inventoryLevel: 1 },
+  { id: '9', name: 'Tosti Aguachiles Verde', price: 160.00, category: 'Snacks', image: '/images/aguachile.png', inventoryLevel: 4 },
   { id: '10', name: 'Tosti Aguachiles Morado', price: 160.00, category: 'Snacks', image: '/images/aguachile.png', inventoryLevel: 4 },
+  { id: '24', name: 'Maruchan preparada', price: 120.00, category: 'Snacks', image: 'https://picsum.photos/id/24/200', inventoryLevel: 4 },
+  { id: '25', name: 'Tostitos Solos', price: 30.00, category: 'Snacks', image: 'https://picsum.photos/id/25/200', inventoryLevel: 4 },
 
   // Cocteles
   { id: '11', name: 'Coctel de Camarón Grande', price: 220.00, category: 'Cocteles', image: 'https://picsum.photos/id/11/200', inventoryLevel: 4 },
@@ -25,10 +27,10 @@ export const MENU_ITEMS: MenuItem[] = [
   { id: '13', name: 'Tostada Ceviche Camarón', price: 70.00, category: 'Tostadas', image: '/images/tostada.png', inventoryLevel: 4 },
   { id: '14', name: 'Tostada Ceviche Pescado', price: 60.00, category: 'Tostadas', image: '/images/tostada.png', inventoryLevel: 2 },
   { id: '15', name: 'Tostada Mixta', price: 70.00, category: 'Tostadas', image: '/images/tostada.png', inventoryLevel: 4 },
-  { id: '16', name: 'Tostada Alucin', price: 130.00, category: 'Tostadas', image: '/images/tostada.png', inventoryLevel: 0 }, // Out of stock example
+  { id: '16', name: 'Tostada Alucin', price: 130.00, category: 'Tostadas', image: '/images/tostada.png', inventoryLevel: 4 },
 
   // Caldos
-  { id: '17', name: 'Levantamuertos Especial Gde', price: 150.00, category: 'Caldos', image: 'https://picsum.photos/id/17/200', inventoryLevel: 4 },
+  { id: '17', name: 'Levantamuertos Especial Grande', price: 150.00, category: 'Caldos', image: 'https://picsum.photos/id/17/200', inventoryLevel: 4 },
 
   // Bebidas
   { id: '18', name: 'Balazo Camaron', price: 30.00, category: 'Bebidas', image: 'https://picsum.photos/id/18/200', inventoryLevel: 4 },
@@ -36,17 +38,7 @@ export const MENU_ITEMS: MenuItem[] = [
   { id: '20', name: 'Clamato Especial Grande', price: 130.00, category: 'Bebidas', image: 'https://picsum.photos/id/20/200', inventoryLevel: 4 },
   { id: '21', name: 'Clamato Normal Chico', price: 50.00, category: 'Bebidas', image: 'https://picsum.photos/id/21/200', inventoryLevel: 4 },
   { id: '22', name: 'Clamato Normal Grande', price: 80.00, category: 'Bebidas', image: 'https://picsum.photos/id/22/200', inventoryLevel: 4 },
-  { id: '23', name: 'Copa Alucin', price: 220.00, category: 'Bebidas', image: 'https://picsum.photos/id/23/200', inventoryLevel: 1 },
-
-  // More Snacks
-  { id: '24', name: 'Maruchan preparada', price: 120.00, category: 'Snacks', image: 'https://picsum.photos/id/24/200', inventoryLevel: 3 },
-
-  // Bodeguita Specials
-  { id: '25', name: 'Bodeguita Aguachiles', price: 200.00, category: 'Aguachiles', image: '/images/aguachile.png', inventoryLevel: 4 },
-  { id: '26', name: 'Bodeguita Tosticeviche', price: 200.00, category: 'Snacks', image: '/images/ceviche.png', inventoryLevel: 4 },
-  { id: '27', name: 'Bodeguita TostiAguachile', price: 200.00, category: 'Snacks', image: '/images/aguachile.png', inventoryLevel: 4 },
-  { id: '28', name: 'Bodeguita Maruchan Preparada', price: 200.00, category: 'Snacks', image: 'https://picsum.photos/seed/bodeguita4/200', inventoryLevel: 4 },
-  { id: '29', name: 'Bodeguita Balazo de ostion', price: 25.00, category: 'Bebidas', image: 'https://picsum.photos/seed/bodeguita5/200', inventoryLevel: 4 },
+  { id: '23', name: 'Copa Alucin', price: 220.00, category: 'Bebidas', image: 'https://picsum.photos/id/23/200', inventoryLevel: 4 },
 ];
 
 export const TABLES: Table[] = [

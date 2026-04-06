@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { MOCK_STAFF } from '../constants';
+import { useUser } from '../contexts/UserContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface LockScreenProps {
     onUnlock: (userId: string) => void;
 }
 
 export const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
+    const { users, login } = useUser();
+    const { settings } = useSettings();
     const [selectedUser, setSelectedUser] = useState<string | null>(null);
     const [pin, setPin] = useState('');
     const [error, setError] = useState(false);
@@ -29,21 +32,22 @@ export const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
 
     useEffect(() => {
         if (pin.length === 4) {
-            // Validate PIN (Mock validation: Allow any 4 digits)
             if (selectedUser) {
-                setTimeout(() => {
-                    onUnlock(selectedUser);
-                }, 300);
-            } else {
-                // Should not happen if UI is correct, but safe guard
-                setError(true);
-                setTimeout(() => {
-                    setPin('');
-                    setError(false);
-                }, 500);
+                const success = login(selectedUser, pin);
+                if (success) {
+                    setTimeout(() => {
+                        onUnlock(selectedUser);
+                    }, 300);
+                } else {
+                    setError(true);
+                    setTimeout(() => {
+                        setPin('');
+                        setError(false);
+                    }, 1000);
+                }
             }
         }
-    }, [pin, selectedUser, onUnlock]);
+    }, [pin, selectedUser, login, onUnlock]);
 
 
     // Keypad numbers
@@ -59,16 +63,22 @@ export const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
 
                 {/* Header */}
                 <div className="mb-8 text-center">
-                    <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-2xl shadow-primary/50 mx-auto mb-6 transform hover:rotate-12 transition-transform duration-500">
-                        <span className="material-icons-round text-3xl">restaurant</span>
-                    </div>
-                    <h1 className="text-4xl font-bold tracking-tight mb-2">Culinex OS</h1>
-                    <p className="text-gray-400">Select your profile to login</p>
+                    {settings.logoUrl ? (
+                        <div className="w-24 h-24 mb-6 mx-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-white/10 group">
+                            <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                        </div>
+                    ) : (
+                        <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-2xl shadow-primary/50 mx-auto mb-6 transform hover:rotate-12 transition-transform duration-500">
+                            <span className="material-icons-round text-3xl">restaurant</span>
+                        </div>
+                    )}
+                    <h1 className="text-4xl font-black tracking-tight mb-2 uppercase">{settings.name || 'Culinex OS'}</h1>
+                    <p className="text-gray-400 font-medium font-sans">Select your profile to login</p>
                 </div>
 
                 {/* User Selection Carousel */}
-                <div className="w-full flex justify-center gap-6 mb-8 overflow-x-auto pb-4 px-4 scrollbar-hide">
-                    {MOCK_STAFF.map(user => (
+                <div className="w-full flex justify-center gap-8 mb-12 overflow-x-auto pb-4 px-4 scrollbar-hide">
+                    {users.map(user => (
                         <button
                             key={user.id}
                             onClick={() => { setSelectedUser(user.id); setPin(''); setError(false); }}

@@ -1,26 +1,37 @@
 import React, { useState, useMemo } from 'react';
-import { MENU_ITEMS as INITIAL_MENU_ITEMS, CATEGORIES, TABLES } from '../constants';
+import { CATEGORIES, TABLES } from '../constants';
 import { MenuItem, OrderItem, Order, OrderStatus, Table } from '../types';
 import { useOrders } from '../contexts/OrderContext';
 import { useUser } from '../contexts/UserContext';
+import { useSettings } from '../contexts/SettingsContext';
+import { useMenu } from '../contexts/MenuContext';
+import { KitchenTicket } from '../components/KitchenTicket';
+import { printerService } from '../services/PrinterService';
 
 export const POSScreen: React.FC = () => {
   const { currentUser } = useUser();
   const { addOrder } = useOrders();
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(INITIAL_MENU_ITEMS);
+  const { settings } = useSettings();
+  const { menuItems, addItem } = useMenu();
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState('A la carte');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [kitchenOrderToPrint, setKitchenOrderToPrint] = useState<Order | null>(null);
   const [selectedTable, setSelectedTable] = useState<Table | null>(TABLES.find(t => t.id === 'T5') || TABLES[0]);
   const [showTableModal, setShowTableModal] = useState(false);
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
   const [newItem, setNewItem] = useState({ name: '', price: '', category: 'Snacks' });
 
+  // Filter only ACTIVE items for POS
+  const activeMenuItems = useMemo(() => {
+    return menuItems.filter(item => item.status === 'ACTIVE');
+  }, [menuItems]);
+
   const filteredItems = useMemo(() => {
-    return menuItems.filter(item => {
+    return activeMenuItems.filter(item => {
       const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
       const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
 
@@ -34,7 +45,7 @@ export const POSScreen: React.FC = () => {
 
       return matchesCategory && matchesSearch && matchesMenu;
     });
-  }, [activeCategory, searchQuery, menuItems, activeMenu]);
+  }, [activeCategory, searchQuery, activeMenuItems, activeMenu]);
 
   const addToCart = (item: MenuItem) => {
     if (item.inventoryLevel === 0) return;
@@ -44,7 +55,7 @@ export const POSScreen: React.FC = () => {
       if (existing) {
         return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...prev, { ...item, quantity: 1 }];
+      return [...prev, { ...item, quantity: 1, notes: '' }];
     });
   };
 
@@ -87,7 +98,7 @@ export const POSScreen: React.FC = () => {
 
     const newOrder: Order = {
       id: Math.floor(Math.random() * 10000).toString().padStart(4, '0'),
-      tableId: selectedTable ? selectedTable.name : 'Barra',
+      tableId: selectedTable ? selectedTable.id : 'BARRA',
       items: [...cart],
       status: OrderStatus.PENDING,
       timestamp: new Date(),
@@ -96,6 +107,21 @@ export const POSScreen: React.FC = () => {
     };
 
     addOrder(newOrder);
+    
+    // Auto Kitchen Printing
+    if (settings.isKitchenPrintingEnabled) {
+      if (settings.isDirectPrintingEnabled) {
+        printerService.printKitchenTicket(newOrder, settings);
+      } else {
+        // Fallback to Browser Print
+        setKitchenOrderToPrint(newOrder);
+        setTimeout(() => {
+          window.print();
+          setKitchenOrderToPrint(null);
+        }, 100);
+      }
+    }
+
     setCart([]);
     setShowSuccessModal(true);
     setTimeout(() => setShowSuccessModal(false), 2000);
@@ -123,27 +149,41 @@ export const POSScreen: React.FC = () => {
     e.preventDefault();
     if (!newItem.name || !newItem.price) return;
 
-    const newItemData: MenuItem = {
-      id: Date.now().toString(),
+    addItem({
       name: newItem.name,
       price: parseFloat(newItem.price),
       category: newItem.category,
       image: `https://picsum.photos/seed/${Date.now()}/200`,
-      inventoryLevel: 4
-    };
+      inventoryLevel: 4,
+      status: 'ACTIVE'
+    });
 
-    setMenuItems(prev => [...prev, newItemData]);
     setNewItem({ name: '', price: '', category: 'Snacks' });
     setShowAddMenuModal(false);
   };
 
   return (
     <div className="flex h-full w-full bg-[#F3F4F6] text-gray-800 overflow-hidden relative">
+      {/* Hidden Kitchen Ticket for Test Printing */}
+      <div className="hidden print:block absolute inset-0 z-[9999] bg-white">
+          {kitchenOrderToPrint && <KitchenTicket order={kitchenOrderToPrint} settings={settings} />}
+      </div>
 
       {/* "Menus" Sidebar Column */}
-      <div className="w-56 flex flex-col p-6 bg-[#F3F4F6] border-r border-gray-200/50">
-        <h2 className="text-xl font-bold mb-6 font-sans">Mariscos App</h2>
-        <div className="mb-4 flex justify-between items-center">
+      <div className="w-64 flex flex-col p-4 bg-white border-r border-gray-200 shadow-sm relative z-20 no-print">
+        <div className="mb-8 px-2">
+          <div className="bg-gradient-to-br from-primary to-primary-700 text-white p-4 rounded-2xl shadow-lg shadow-primary/20 transform transition-transform hover:scale-[1.02]">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="material-icons-round text-white/80">restaurant_menu</span>
+              <span className="text-[10px] uppercase tracking-widest font-bold text-white/60">Restaurante</span>
+            </div>
+            <h2 className="text-xl font-black leading-tight">
+              {settings.name}
+            </h2>
+          </div>
+        </div>
+
+        <div className="mb-4 flex justify-between items-center px-2">
           <span className="font-bold text-lg">Menús</span>
           <button
             onClick={() => setShowAddMenuModal(true)}
@@ -179,11 +219,12 @@ export const POSScreen: React.FC = () => {
         </div>
 
         <div className="mt-auto">
-          <p className="text-xs text-gray-400 font-bold mb-2">Vita POS</p>
+          <p className="text-xs text-gray-400 font-bold mb-2">Developed by Ronin Studio</p>
           <div className="flex gap-2 text-[10px] text-gray-400">
-            <span>Ayuda</span>
-            <span>Soporte</span>
-            <span>Legal</span>
+            <a href="https://www.instagram.com/roninstudioprojects/" target="_blank" rel="noopener noreferrer" className="hover:text-pink-600 transition-colors flex items-center gap-1">
+              <span className="material-icons-round text-sm">photo_camera</span>
+              @roninstudioprojects
+            </a>
           </div>
         </div>
       </div>
@@ -311,17 +352,12 @@ export const POSScreen: React.FC = () => {
                       <span className="font-bold text-gray-400 w-4 pt-1">{item.quantity}</span>
                       <div>
                         <h4 className="font-bold text-gray-900 text-sm">{item.name}</h4>
-                        {/* Mock Options */}
-                        <div className="flex gap-4 mt-1">
-                          <div className="text-[10px] text-gray-500">
-                            <span className="block font-bold">Extra</span>
-                            <span>Salsa</span>
+                        {/* Display Actual Note */}
+                        {item.notes && (
+                          <div className="mt-1 bg-yellow-50 text-[10px] text-yellow-800 p-1 rounded font-bold border border-yellow-100">
+                             {item.notes.toUpperCase()}
                           </div>
-                          <div className="text-[10px] text-gray-500">
-                            <span className="block font-bold">Sin</span>
-                            <span>Cebolla</span>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                     <span className="font-bold text-gray-900 text-sm">${(item.price * item.quantity).toFixed(2)}</span>
@@ -393,24 +429,53 @@ export const POSScreen: React.FC = () => {
           <div className="bg-white p-6 rounded-2xl shadow-2xl w-80 transform scale-100 animate-in zoom-in-95 duration-200">
             <div className="flex flex-col items-center text-center">
               <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-4">
-                <span className="material-icons-round text-3xl text-red-500">delete</span>
+                <span className="material-icons-round text-3xl text-red-500">lock</span>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-gray-900">¿Eliminar Producto?</h3>
-              <p className="text-gray-500 text-sm mb-6">
-                ¿Estás seguro que deseas eliminar este producto de la orden?
+              <h3 className="text-xl font-bold mb-2 text-gray-900">Manager Access</h3>
+              <p className="text-gray-500 text-sm mb-4">
+                Enter PIN to authorize cancellation (0000)
               </p>
+
+              <div className="w-full mb-6">
+                <input
+                  type="password"
+                  maxLength={4}
+                  className="w-full text-center text-3xl font-bold tracking-[1em] py-3 rounded-xl border border-gray-200 focus:border-red-500 outline-none transition-all"
+                  placeholder="••••"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    if (e.key === 'Enter') {
+                      if (target.value === '0000') {
+                        confirmDelete();
+                      } else {
+                        // Simple shake or visual error could be added here
+                        target.value = '';
+                        target.classList.add('border-red-500', 'bg-red-50');
+                        setTimeout(() => target.classList.remove('border-red-500', 'bg-red-50'), 500);
+                      }
+                    }
+                  }}
+                  onChange={(e) => {
+                    // Auto-submit if 4 digits
+                    if (e.target.value.length === 4) {
+                      if (e.target.value === '0000') {
+                        confirmDelete();
+                      } else {
+                        e.target.value = '';
+                        // Optional: Add toast or error state
+                      }
+                    }
+                  }}
+                />
+              </div>
+
               <div className="flex gap-3 w-full">
                 <button
                   onClick={() => setItemToDelete(null)}
-                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors font-semibold text-sm"
+                  className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors font-bold"
                 >
-                  Cancelar
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30 transition-colors font-semibold text-sm"
-                >
-                  Eliminar
+                  Cancel
                 </button>
               </div>
             </div>

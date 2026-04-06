@@ -1,13 +1,21 @@
 import React, { useState, useMemo } from 'react';
-import { DASHBOARD_KPIS, CATEGORIES } from '../constants'; // Import CATEGORIES
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
-
-// Check if CATEGORIES is actually exported from constants.ts, if not, fallback or ensure it is. 
-// Based on previous file read, it IS exported.
+import { DASHBOARD_KPIS, CATEGORIES } from '../constants';
+import { useExpenses } from '../contexts/ExpenseContext';
+import { useOrders } from '../contexts/OrderContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
+import { useSettings } from '../contexts/SettingsContext';
+import { FinancialReportModal } from '../components/FinancialReportModal';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Cell } from 'recharts';
 
 type TimeRange = 'Weekly' | 'Monthly' | 'SpecificDay' | 'SpecificMonth';
 
-// Mock Data Generators with more specificity
+// ... (keep existing helper functions like getRevenueData if they are outside component) 
+// Re-including getRevenueData for completeness if replacing whole file, but I will target specific lines to avoid massive rewrite if possible. 
+// However, the `replace_file_content` below targets the whole component for safety as I need to inject the hook and new section.
+
+// Since I cannot see the helper function in the diff block easily without re-reading, I will assume it's there. 
+// Actually, I'll try to just edit the component part.
+
 const getRevenueData = (range: TimeRange, category: string, date: string) => {
     // Simple seeded random to make "consistent" data for a view
     const seed = date.length + category.length + range.length;
@@ -44,9 +52,14 @@ const getRevenueData = (range: TimeRange, category: string, date: string) => {
 };
 
 export const DashboardScreen: React.FC = () => {
+    const { expenses } = useExpenses();
+    const { orders } = useOrders();
+    const { daysRemaining, isExpired } = useSubscription();
+    const { settings } = useSettings();
     const [timeRange, setTimeRange] = useState<TimeRange>('Weekly');
     const [selectedCategory, setSelectedCategory] = useState<string>('All');
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]); // YYYY-MM-DD
+    const [isReportOpen, setIsReportOpen] = useState(false);
 
     const filteredData = useMemo(() => getRevenueData(timeRange, selectedCategory, selectedDate), [timeRange, selectedCategory, selectedDate]);
 
@@ -54,11 +67,79 @@ export const DashboardScreen: React.FC = () => {
     const handleTimeRangeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const val = e.target.value as TimeRange;
         setTimeRange(val);
-        // Reset date defaults if needed, but current date is fine
     };
 
+    // Calculate Real-Time Stats from Expenses
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const MOCK_DAILY_REVENUE = 15000;
+    const netCashFlow = MOCK_DAILY_REVENUE - totalExpenses;
+
+    // --- Waiter Performance Logic ---
+    const waiterStats = useMemo(() => {
+        const stats: Record<string, number> = {};
+        orders.forEach(order => {
+            // Consider only completed/paid orders or all? Let's take all non-cancelled for now to show activity
+            if (order.status !== 'CANCELLED' && order.waiterName) {
+                const name = order.waiterName;
+                stats[name] = (stats[name] || 0) + order.total;
+            }
+        });
+
+        return Object.entries(stats)
+            .map(([name, total]) => ({ name, total }))
+            .sort((a, b) => b.total - a.total);
+    }, [orders]);
+
+    const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'];
+
+    const DYNAMIC_KPIS = [
+        ...DASHBOARD_KPIS,
+        {
+            label: 'Total Expenses (Caja Chica)',
+            value: `$${totalExpenses.toFixed(2)}`,
+            trend: 0,
+            trendUp: false,
+            icon: 'money_off' // Material icon
+        },
+        {
+            label: 'Net Cash Flow (Est.)',
+            value: `$${netCashFlow.toFixed(2)}`,
+            trend: 0,
+            trendUp: true,
+            icon: 'account_balance_wallet'
+        }
+    ];
+
     return (
-        <div className="flex-1 bg-[#F3F4F6] text-gray-800 p-8 overflow-y-auto">
+        <div className={`flex-1 bg-[#F3F4F6] text-gray-800 p-8 overflow-y-auto h-full ${isReportOpen ? 'no-print' : ''}`}>
+            {/* Expiration Warning Banner */}
+            {daysRemaining <= 3 && !isExpired && (
+                <div className="mb-8 bg-gradient-to-r from-orange-500 to-orange-600 p-5 rounded-3xl shadow-xl border border-orange-400 animate-in slide-in-from-top duration-500">
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                        <div className="flex items-center gap-4 text-white">
+                            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center animate-pulse shadow-inner">
+                                <span className="material-icons-round text-2xl">notification_important</span>
+                            </div>
+                            <div>
+                                <p className="font-black uppercase text-[10px] tracking-widest opacity-90 leading-none mb-1.5 flex items-center gap-1">
+                                    <span className="w-1 h-1 bg-white rounded-full"></span>
+                                    Aviso de Facturación
+                                </p>
+                                <p className="font-bold text-base leading-tight">
+                                    Tu suscripción vence en {daysRemaining} {daysRemaining === 1 ? 'día' : 'días'}. Te invitamos a pagar antes de su vencimiento para seguir utilizando el servicio de la plataforma Culinex POS.
+                                </p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => window.location.hash = '#/billing'}
+                            className="px-8 py-3.5 bg-white text-orange-600 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-orange-50 transition-all hover:scale-[1.05] active:scale-95 shadow-2xl shadow-orange-900/40"
+                        >
+                            Renovar Membresía
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
                 <div>
                     <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -106,19 +187,39 @@ export const DashboardScreen: React.FC = () => {
                             className="bg-white border border-gray-200 px-4 py-2 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none shadow-sm"
                         />
                     )}
+
+                    {/* Export Report Button */}
+                    <button
+                        onClick={() => setIsReportOpen(true)}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-black rounded-xl shadow-lg shadow-primary/30 hover:bg-primary-dark transition-all active:scale-95 text-sm"
+                    >
+                        <span className="material-icons-round text-lg">description</span>
+                        Exportar Reporte
+                    </button>
                 </div>
             </div>
 
+            {/* Financial Report Modal */}
+            <FinancialReportModal 
+                isOpen={isReportOpen}
+                onClose={() => setIsReportOpen(false)}
+                orders={orders}
+                expenses={expenses}
+                periodLabel={timeRange === 'SpecificDay' ? selectedDate : timeRange === 'SpecificMonth' ? selectedDate.substring(0, 7) : timeRange}
+                categoryLabel={selectedCategory}
+                restaurantName={settings.name}
+            />
+
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {DASHBOARD_KPIS.map((kpi, index) => (
+                {DYNAMIC_KPIS.map((kpi, index) => (
                     <div key={index} className="bg-white p-6 rounded-2xl shadow-soft flex flex-col relative overflow-hidden group hover:shadow-lg transition-all border border-transparent hover:border-primary/20">
                         <div className="flex items-center gap-4 mb-4 z-10">
-                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${kpi.label.includes('Expenses') ? 'bg-red-100 text-red-500' : 'bg-primary/10 text-primary'}`}>
                                 <span className="material-icons-round">{kpi.icon}</span>
                             </div>
                             <span className={`text-xs font-bold px-2 py-1 rounded-full ${kpi.trendUp ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'}`}>
-                                {kpi.trendUp ? '+' : '-'}{kpi.trend}%
+                                {kpi.trendUp ? '+' : ''}{kpi.trend}%
                             </span>
                         </div>
                         <h3 className="text-3xl font-bold mb-1 z-10 text-gray-900">{kpi.value}</h3>
@@ -133,7 +234,7 @@ export const DashboardScreen: React.FC = () => {
             </div>
 
             {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 {/* Main Revenue Chart */}
                 <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-soft">
                     <div className="flex justify-between items-center mb-6">
@@ -193,8 +294,36 @@ export const DashboardScreen: React.FC = () => {
                 </div>
             </div>
 
+            {/* New Waiter Performance Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div className="bg-white p-6 rounded-2xl shadow-soft">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-xl font-bold text-gray-900">Desempeño de Meseros</h3>
+                        <span className="text-xs text-gray-400">Ventas Totales</span>
+                    </div>
+                    <div className="h-64 w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={waiterStats} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                                <XAxis type="number" stroke="#9ca3af" fontSize={12} tickFormatter={(val) => `$${val}`} />
+                                <YAxis dataKey="name" type="category" stroke="#4b5563" fontSize={12} width={100} />
+                                <Tooltip
+                                    formatter={(value: number) => [`$${value.toFixed(2)}`, 'Ventas']}
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                                />
+                                <Bar dataKey="total" radius={[0, 4, 4, 0]} barSize={20}>
+                                    {waiterStats.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
+
             {/* Recent Inventory Transactions */}
-            <div className="mt-8 bg-white p-6 rounded-2xl shadow-soft">
+            <div className="bg-white p-6 rounded-2xl shadow-soft mb-8">
                 <h3 className="text-xl font-bold mb-4 text-gray-900">Inventory Alerts (FIFO Triggered)</h3>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">

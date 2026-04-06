@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useOrders } from '../contexts/OrderContext';
-import { Order, OrderStatus } from '../types';
+import { Order, OrderStatus, OrderSource } from '../types';
 
 // Simple beep sound as base64 to avoid external dependencies
-const BEEP_SOUND = 'data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'; // Shortened placeholder, will use a real simple beep if possible, or just a console log if sound fails, but logic is key.
-// Actually, let's use a real short beep base64.
-const REAL_BEEP = 'data:audio/mp3;base64,SUQzBAAAAAABAFhUWFhU/////wAAAAAAAAAAAAAAAAAAAAAA//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq'; // This is just a placeholder. I will use a standard browser API or a simple clean implementation.
+// Shortened placeholder for demo purposes
+const BEEP_SOUND = 'data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU';
 
 // Better approach: Web Audio API oscillator for a beep
 const playBeep = () => {
@@ -67,15 +66,33 @@ interface TicketProps {
 }
 
 const Ticket: React.FC<TicketProps> = ({ order, onComplete }) => {
-    // Determine visual state based on time elapsed logic handled inside Timer, 
-    // but the card itself can just be standard color.
-    // We can also check initial time for card border.
     const startTime = new Date(order.timestamp).getTime();
     const isLateInitial = (Date.now() - startTime) > 15 * 60 * 1000;
 
+    // Source Badge Logic
+    const getSourceConfig = (source?: OrderSource) => {
+        switch (source) {
+            case OrderSource.UBER_EATS: return { color: 'bg-green-500', icon: 'directions_bike', label: 'Uber Eats' };
+            case OrderSource.RAPPI: return { color: 'bg-orange-500', icon: 'delivery_dining', label: 'Rappi' };
+            case OrderSource.PICKUP: return { color: 'bg-blue-500', icon: 'local_mall', label: 'Pickup' };
+            default: return { color: 'bg-gray-100 text-gray-500', icon: 'restaurant', label: 'Dine-In' }; // Dine-in default
+        }
+    };
+
+    const sourceConfig = getSourceConfig(order.source || OrderSource.DINE_IN);
+    const isApp = order.source && order.source !== OrderSource.DINE_IN;
+
     return (
-        <div className={`bg-white rounded-xl overflow-hidden border-l-4 shadow-soft min-w-[300px] flex flex-col animate-in slide-in-from-right duration-500 ${isLateInitial ? 'border-red-500' : 'border-green-500'}`}>
-            <div className="p-4 flex justify-between items-center bg-gray-50 border-b border-gray-100">
+        <div className={`bg-white rounded-xl overflow-hidden border-l-4 shadow-soft min-w-[300px] flex flex-col animate-in slide-in-from-right duration-500 ${isLateInitial ? 'border-red-500' : 'border-green-500'} relative`}>
+            {/* Source Badge */}
+            {isApp && (
+                <div className={`absolute top-0 right-0 px-3 py-1 rounded-bl-xl text-white text-xs font-bold flex items-center gap-1 ${sourceConfig.color}`}>
+                    <span className="material-icons-round text-xs">{sourceConfig.icon}</span>
+                    {sourceConfig.label}
+                </div>
+            )}
+
+            <div className="p-4 flex justify-between items-center bg-gray-50 border-b border-gray-100 pt-6">
                 <div>
                     <h3 className="font-bold text-xl text-gray-900">{order.tableId}</h3>
                     <span className="text-xs text-gray-500">#{order.id}</span>
@@ -114,16 +131,24 @@ const Ticket: React.FC<TicketProps> = ({ order, onComplete }) => {
 };
 
 export const KitchenScreen: React.FC = () => {
-    const { orders, updateOrderStatus } = useOrders();
+    const { orders, updateOrderStatus, addOrder } = useOrders();
     const [prevOrderCount, setPrevOrderCount] = useState(0);
+    const [isSplitView, setIsSplitView] = useState(false); // New state for split view
+    const [showNewOrderAlert, setShowNewOrderAlert] = useState(false);
 
     const pendingOrders = orders.filter(o => o.status !== OrderStatus.COMPLETED && o.status !== OrderStatus.SERVED);
     const completedCount = orders.filter(o => o.status === OrderStatus.COMPLETED).length;
+
+    // Filter Logic
+    const dineInOrders = pendingOrders.filter(o => !o.source || o.source === OrderSource.DINE_IN);
+    const appOrders = pendingOrders.filter(o => o.source && o.source !== OrderSource.DINE_IN);
 
     // Sound Alarm Effect
     useEffect(() => {
         if (pendingOrders.length > prevOrderCount && prevOrderCount !== 0) {
             playBeep();
+            setShowNewOrderAlert(true);
+            setTimeout(() => setShowNewOrderAlert(false), 5000);
         }
         setPrevOrderCount(pendingOrders.length);
     }, [pendingOrders.length, prevOrderCount]);
@@ -134,12 +159,40 @@ export const KitchenScreen: React.FC = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Sort by oldest first
-    const sortedOrders = [...pendingOrders].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    const sortOrders = (list: Order[]) => [...list].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    const sortedDineIn = sortOrders(dineInOrders);
+    const sortedApps = sortOrders(appOrders);
+    const sortedAll = sortOrders(pendingOrders);
 
     return (
-        <div className="flex-1 bg-[#1F2937] text-gray-100 p-6 overflow-hidden flex flex-col h-full">
-            <header className="flex justify-between items-center mb-6 bg-[#374151] p-4 rounded-2xl shadow-lg border border-gray-700">
+        <div className="flex-1 bg-[#1F2937] text-gray-100 p-6 overflow-hidden flex flex-col h-full relative">
+            {/* New Order Animation Overlay */}
+            {showNewOrderAlert && (
+                <div className="absolute inset-0 z-50 pointer-events-none flex items-center justify-center overflow-hidden">
+                    <div className="bg-green-500/20 absolute inset-0 animate-pulse"></div>
+                    <div className="animate-slide-motorcycle absolute right-0 flex flex-col items-center">
+                        <span className="material-icons-round text-9xl text-green-400 drop-shadow-[0_0_15px_rgba(74,222,128,0.8)]">two_wheeler</span>
+                        <div className="bg-green-500 text-white font-black text-2xl px-6 py-2 rounded-full shadow-lg transform -skew-x-12 border-4 border-white">
+                            NEW ORDER!
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes slide-motorcycle {
+                    0% { transform: translateX(-120vw) scale(0.5) rotate(5deg); opacity: 0; }
+                    20% { transform: translateX(-50vw) scale(1.2) rotate(-5deg); opacity: 1; }
+                    40% { transform: translateX(-40vw) scale(1) rotate(5deg); }
+                    100% { transform: translateX(20vw) scale(1); opacity: 0; }
+                }
+                .animate-slide-motorcycle {
+                    animation: slide-motorcycle 4s ease-in-out forwards;
+                }
+            `}</style>
+
+            <header className="flex justify-between items-center mb-6 bg-[#374151] p-4 rounded-2xl shadow-lg border border-gray-700 z-10 relative">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/30">
                         <span className="material-icons-round text-3xl">restaurant</span>
@@ -149,38 +202,129 @@ export const KitchenScreen: React.FC = () => {
                         <p className="text-gray-400 text-sm">Cola de Pedidos en Tiempo Real</p>
                     </div>
                 </div>
-                <div className="flex gap-4">
-                    <div className="bg-[#1F2937] px-6 py-3 rounded-xl border border-gray-700 text-center">
-                        <span className="block text-xs text-gray-400 font-bold uppercase tracking-wider">Completados</span>
-                        <span className="font-bold text-2xl text-green-500">{completedCount}</span>
+
+                {/* Control Center */}
+                <div className="flex gap-4 items-center">
+                    {/* Demo Button */}
+                    <button
+                        onClick={() => {
+                            const apps = [OrderSource.UBER_EATS, OrderSource.RAPPI, OrderSource.PICKUP];
+                            const randomSource = apps[Math.floor(Math.random() * apps.length)];
+                            const randomID = Math.floor(Math.random() * 1000) + 9000;
+
+                            const newOrder: Order = {
+                                id: randomID.toString(),
+                                tableId: `${randomSource === OrderSource.PICKUP ? 'Pickup' : randomSource === OrderSource.UBER_EATS ? 'Uber' : 'Rappi'} #${Math.floor(Math.random() * 100)}`,
+                                items: [
+                                    { id: '1', name: 'Aguachiles Mixto', price: 220, category: 'Aguachiles', image: '', inventoryLevel: 10, quantity: 1 }
+                                ],
+                                status: OrderStatus.PENDING,
+                                timestamp: new Date(),
+                                total: 220,
+                                source: randomSource,
+                                waiterName: 'App System'
+                            };
+                            addOrder(newOrder);
+                        }}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg shadow-purple-500/30 transition-all active:scale-95 flex items-center gap-2"
+                    >
+                        <span className="material-icons-round text-sm">bolt</span>
+                        DEMO ORDER
+                    </button>
+
+                    {/* Toggle Split View */}
+                    <div className="bg-[#1F2937] p-1 rounded-xl border border-gray-700 flex">
+                        <button
+                            onClick={() => setIsSplitView(false)}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${!isSplitView ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            <span className="material-icons-round text-sm">view_agenda</span>
+                            Unified
+                        </button>
+                        <button
+                            onClick={() => setIsSplitView(true)}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${isSplitView ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                        >
+                            <span className="material-icons-round text-sm">vertical_split</span>
+                            Split View
+                        </button>
                     </div>
-                    <div className="bg-[#1F2937] px-6 py-3 rounded-xl border border-gray-700 text-center">
+
+                    <div className="h-8 w-[1px] bg-gray-600 mx-2"></div>
+
+                    <div className="bg-[#1F2937] px-6 py-2 rounded-xl border border-gray-700 text-center">
+                        <span className="block text-xs text-gray-400 font-bold uppercase tracking-wider">Completados</span>
+                        <span className="font-bold text-xl text-green-500">{completedCount}</span>
+                    </div>
+                    <div className="bg-[#1F2937] px-6 py-2 rounded-xl border border-gray-700 text-center">
                         <span className="block text-xs text-gray-400 font-bold uppercase tracking-wider">Pendientes</span>
-                        <span className="font-bold text-2xl text-primary animate-pulse">{pendingOrders.length}</span>
+                        <span className="font-bold text-xl text-primary animate-pulse">{pendingOrders.length}</span>
                     </div>
                 </div>
             </header>
 
-            <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4 scrollbar-hide">
-                <div className="flex gap-6 h-full min-w-max px-2">
-                    {sortedOrders.length === 0 ? (
-                        <div className="w-[calc(100vw-3rem)] flex flex-col items-center justify-center text-gray-500 border-2 border-dashed border-gray-700 rounded-3xl bg-[#374151]/30">
-                            <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center mb-6">
-                                <span className="material-icons-round text-6xl text-gray-500">check</span>
+            {/* Main Content Area */}
+            <div className="flex-1 overflow-hidden relative">
+                {isSplitView ? (
+                    <div className="flex h-full gap-6">
+                        {/* Dine-In Column */}
+                        <div className="flex-1 flex flex-col bg-[#374151]/30 rounded-2xl border border-gray-700/50 overflow-hidden">
+                            <div className="p-4 bg-gray-700/50 border-b border-gray-600 flex justify-between items-center">
+                                <h3 className="font-bold text-lg text-white flex items-center gap-2">
+                                    <span className="material-icons-round">restaurant</span> Dine-In
+                                </h3>
+                                <span className="bg-gray-600 text-white text-xs px-2 py-1 rounded-full">{sortedDineIn.length}</span>
                             </div>
-                            <h2 className="text-2xl font-bold text-gray-300">Todo en orden</h2>
-                            <p className="font-medium mt-2">No hay ordenes pendientes por preparar.</p>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                {sortedDineIn.length === 0 ? (
+                                    <div className="text-center text-gray-500 mt-20">No Dine-In orders</div>
+                                ) : (
+                                    sortedDineIn.map(order => <Ticket key={order.id} order={order} onComplete={(id) => updateOrderStatus(id, OrderStatus.COMPLETED)} />)
+                                )}
+                            </div>
                         </div>
-                    ) : (
-                        sortedOrders.map(order => (
-                            <Ticket
-                                key={order.id}
-                                order={order}
-                                onComplete={(id) => updateOrderStatus(id, OrderStatus.COMPLETED)}
-                            />
-                        ))
-                    )}
-                </div>
+
+                        {/* Apps Column */}
+                        <div className="flex-1 flex flex-col bg-[#374151]/30 rounded-2xl border border-gray-700/50 overflow-hidden">
+                            <div className="p-4 bg-gray-700/50 border-b border-gray-600 flex justify-between items-center">
+                                <h3 className="font-bold text-lg text-white flex items-center gap-2">
+                                    <span className="material-icons-round">delivery_dining</span> Apps & Delivery
+                                </h3>
+                                <span className="bg-orange-500/20 text-orange-400 text-xs px-2 py-1 rounded-full">{sortedApps.length}</span>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                {sortedApps.length === 0 ? (
+                                    <div className="text-center text-gray-500 mt-20">No App orders</div>
+                                ) : (
+                                    sortedApps.map(order => <Ticket key={order.id} order={order} onComplete={(id) => updateOrderStatus(id, OrderStatus.COMPLETED)} />)
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    // Unified Horizontal Scroll View (Original)
+                    <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4 scrollbar-hide h-full">
+                        <div className="flex gap-6 h-full min-w-max px-2">
+                            {sortedAll.length === 0 ? (
+                                <div className="w-[calc(100vw-3rem)] flex flex-col items-center justify-center text-gray-500 border-2 border-dashed border-gray-700 rounded-3xl bg-[#374151]/30 h-full">
+                                    <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center mb-6">
+                                        <span className="material-icons-round text-6xl text-gray-500">check</span>
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-gray-300">Todo en orden</h2>
+                                    <p className="font-medium mt-2">No hay ordenes pendientes por preparar.</p>
+                                </div>
+                            ) : (
+                                sortedAll.map(order => (
+                                    <Ticket
+                                        key={order.id}
+                                        order={order}
+                                        onComplete={(id) => updateOrderStatus(id, OrderStatus.COMPLETED)}
+                                    />
+                                ))
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

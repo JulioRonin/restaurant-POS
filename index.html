@@ -15,8 +15,20 @@
               sans: ['Manrope', 'Inter', 'sans-serif'],
             },
             colors: {
-              primary: '#5D5FEF', // Deep Periwinkle Blue from reference
-              secondary: '#A5A6F6',
+              primary: {
+                DEFAULT: 'var(--primary-color, #5D5FEF)',
+                50: 'var(--primary-50, #EEF2FF)',
+                100: 'var(--primary-100, #E0E7FF)',
+                200: 'var(--primary-200, #C7D2FE)',
+                300: 'var(--primary-300, #A5B4FC)',
+                400: 'var(--primary-400, #818CF8)',
+                500: 'var(--primary-500, #5D5FEF)',
+                600: 'var(--primary-600, #4F46E5)',
+                700: 'var(--primary-700, #4338CA)',
+                800: 'var(--primary-800, #3730A3)',
+                900: 'var(--primary-900, #312E81)',
+              },
+              secondary: 'var(--secondary-color, #A5A6F6)',
               accent: '#EA7C69',
               bg: {
                 main: '#F3F4F6',
@@ -46,6 +58,11 @@
       }
     </script>
     <style>
+      :root {
+        --primary-color: #5D5FEF;
+        --secondary-color: #A5A6F6;
+        --primary-rgb: 93, 95, 239;
+      }
       /* Custom Scrollbar */
       ::-webkit-scrollbar {
         width: 6px;
