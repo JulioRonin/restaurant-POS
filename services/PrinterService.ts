@@ -158,6 +158,134 @@ class PrinterService {
     }
   }
 
+  async openCashDrawer(): Promise<boolean> {
+    if (!this.device) {
+       console.warn('No direct printer connected to open drawer.');
+       return false;
+    }
+
+    try {
+      const encoder = new ReceiptPrinterEncoder();
+      const result = encoder.initialize()
+        .pulse(0, 100, 200)
+        .pulse(1, 100, 200)
+        .encode();
+
+      await this.device.transferOut(this.getEndpointNum(), result);
+      return true;
+    } catch (err) {
+      console.error('Failed to open cash drawer:', err);
+      return false;
+    }
+  }
+
+  async printCashCut(data: any, settings: any): Promise<boolean> {
+    if (!this.device) {
+       console.warn('No direct printer connected for cash cut.');
+       return false;
+    }
+
+    try {
+      const encoder = new ReceiptPrinterEncoder();
+      const is58mm = settings.printerWidth === '58mm';
+      const lineChars = is58mm ? 26 : 42;
+
+      const center = (text: string) => {
+        const str = (text || '').trim().slice(0, lineChars);
+        const pad = Math.max(0, Math.floor((lineChars - str.length) / 2));
+        return ' '.repeat(pad) + str;
+      };
+
+      const wrapCenter = (text: string) => {
+        const words = (text || '').split(' ');
+        const lines: string[] = [];
+        let currentLine = '';
+
+        words.forEach(word => {
+          if ((currentLine + word).length <= lineChars) {
+            currentLine += (currentLine ? ' ' : '') + word;
+          } else {
+            if (currentLine) lines.push(center(currentLine));
+            currentLine = word;
+          }
+        });
+        if (currentLine) lines.push(center(currentLine));
+        return lines;
+      };
+
+      let result = encoder.initialize()
+        .align('center')
+        .size('normal');
+
+      // Header
+      wrapCenter(settings.name.toUpperCase()).forEach(l => result = result.text(l).newline());
+      result = result.text(center('CORTE DE CAJA')).newline()
+        .text(center(new Date().toLocaleString()))
+        .newline()
+        .text('='.repeat(lineChars))
+        .newline()
+        .align('left');
+
+      // Metrics Summary
+      const lblRev = 'INGRESOS:'.padEnd(12);
+      const valRev = `$${data.metrics.totalRevenue.toFixed(2)}`.padStart(is58mm ? 14 : 30);
+      result = result.text(`${lblRev}${valRev}`).newline();
+
+      const lblExp = 'GASTOS:'.padEnd(12);
+      const valExp = `-$${data.totalExpenses.toFixed(2)}`.padStart(is58mm ? 14 : 30);
+      result = result.text(`${lblExp}${valExp}`).newline();
+
+      const lblNet = 'NETO:'.padEnd(12);
+      const valNet = `$${(data.metrics.totalRevenue - data.totalExpenses).toFixed(2)}`.padStart(is58mm ? 14 : 30);
+      result = result.size('normal').text(`${lblNet}${valNet}`).newline()
+        .text('-'.repeat(lineChars))
+        .newline();
+
+      // Detailed Orders
+      result = result.text(center('DETALLE DE VENTAS')).newline();
+      if (is58mm) {
+        // 26 chars: 6 (ID) + 1 + 10 (MESA) + 1 + 8 (MONTO)
+        result.text('ID     MESA/REF      MONTO').newline();
+      } else {
+        // 42 chars: 8 (ID) + 2 + 22 (MESA) + 2 + 8 (MONTO)
+        result.text('ID       MESA/REF                   MONTO').newline();
+      }
+
+      data.orders.forEach((order: any) => {
+        const id = `#${order.id.slice(-4)}`.padEnd(is58mm ? 6 : 8);
+        const table = (order.tableId || 'VENTA').toUpperCase().slice(0, is58mm ? 10 : 22).padEnd(is58mm ? 11 : 24);
+        const amt = `$${order.total.toFixed(2)}`.padStart(is58mm ? 8 : 10);
+        result = result.text(`${id}${table}${amt}`).newline();
+      });
+
+      result = result.text('-'.repeat(lineChars)).newline();
+      const lblSuma = 'SUMA TOTAL:'.padEnd(12);
+      const valSuma = `$${data.metrics.totalRevenue.toFixed(2)}`.padStart(is58mm ? 14 : 30);
+      result = result.text(`${lblSuma}${valSuma}`).newline()
+        .text('='.repeat(lineChars))
+        .newline();
+
+      // Footer
+      result = result
+        .newline()
+        .text(center('--- CIERRE DE TURNO ---'))
+        .newline()
+        .text(center('Culinex POS'))
+        .newline()
+        .text(center('Ronin Studio'))
+        .newline()
+        .newline()
+        .cut()
+        .encode();
+
+      await this.device.transferOut(this.getEndpointNum(), result);
+      return true;
+    } catch (err) {
+      console.error('Cash cut printing failed:', err);
+      return false;
+    }
+  }
+
   async printKitchenTicket(order: any, settings: any): Promise<boolean> {
     if (!this.device) {
        console.warn('No direct printer connected for kitchen ticket.');

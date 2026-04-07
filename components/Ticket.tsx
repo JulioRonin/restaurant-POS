@@ -15,6 +15,9 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
   const fontSize = is58mm ? 'text-[8px]' : 'text-sm';
   const padding = is58mm ? 'p-0' : 'p-4';
   
+  const taxIVA = 0;
+  const subtotal = (order.total - (order.tip || 0));
+
   return (
     <div className={`bg-white text-black ${padding} font-mono ${fontSize} leading-tight ${widthClass} mx-auto print:mx-auto print:w-[48mm]`}>
       {/* Header */}
@@ -73,8 +76,13 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
       <div className="border-t border-black pt-2 mb-4">
         <div className="flex justify-between">
           <span>SUBTOTAL:</span>
-          <span>${(order.total - (order.tip || 0)).toFixed(2)}</span>
+          <span>${subtotal.toFixed(2)}</span>
         </div>
+        {/* IVA deshabilitado por solicitud de usuario */}
+        {/* <div className="flex justify-between">
+          <span>IVA (16%):</span>
+          <span>${taxIVA.toFixed(2)}</span>
+        </div> */}
         {order.tip && (
           <div className="flex justify-between">
             <span>PROPINA:</span>
@@ -85,6 +93,7 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
           <span>TOTAL:</span>
           <span>${order.total.toFixed(2)}</span>
         </div>
+        {/* <p className="text-[8px] text-center mt-1 opacity-60">PRECIOS INCLUYEN IVA</p> */}
 
         {order.receivedAmount !== undefined && order.receivedAmount > 0 && (
           <>

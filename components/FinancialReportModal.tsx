@@ -24,8 +24,8 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
 
     const totalSales = orders.reduce((sum, o) => sum + o.total, 0);
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-    const taxIVA = totalSales * 0.16; // Standard MX Tax
-    const subtotal = totalSales - taxIVA;
+    const taxIVA = 0; // Impuestos omitidos por solicitud
+    const subtotal = totalSales;
     const netFlow = totalSales - totalExpenses;
     const averageTicket = orders.length > 0 ? totalSales / orders.length : 0;
 
@@ -143,8 +143,8 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
                                     <tr className="border-b border-gray-100">
                                         <td className="py-5 px-6 font-bold text-gray-900">Ventas Totales</td>
                                         <td className="py-5 px-6 text-right font-bold">${totalSales.toLocaleString()}</td>
-                                        <td className="py-5 px-6 text-right font-medium text-gray-400">${taxIVA.toLocaleString()}</td>
-                                        <td className="py-5 px-6 text-right font-black text-primary">${subtotal.toLocaleString()}</td>
+                                        <td className="py-5 px-6 text-right font-medium text-amber-500">Delivery: ${orders.filter(o => o.source === 'UBER_EATS' || o.source === 'RAPPI').reduce((sum, o) => sum + (o.total || 0), 0).toLocaleString()}</td>
+                                        <td className="py-5 px-6 text-right font-black text-primary">${totalSales.toLocaleString()}</td>
                                     </tr>
                                     <tr className="border-b border-gray-100">
                                         <td className="py-5 px-6 font-bold text-gray-900">Gastos (Caja Chica)</td>

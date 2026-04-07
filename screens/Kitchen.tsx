@@ -136,7 +136,7 @@ export const KitchenScreen: React.FC = () => {
     const [isSplitView, setIsSplitView] = useState(false); // New state for split view
     const [showNewOrderAlert, setShowNewOrderAlert] = useState(false);
 
-    const pendingOrders = orders.filter(o => o.status !== OrderStatus.COMPLETED && o.status !== OrderStatus.SERVED);
+    const pendingOrders = orders.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.COOKING);
     const completedCount = orders.filter(o => o.status === OrderStatus.COMPLETED).length;
 
     // Filter Logic
@@ -216,7 +216,7 @@ export const KitchenScreen: React.FC = () => {
                                 id: randomID.toString(),
                                 tableId: `${randomSource === OrderSource.PICKUP ? 'Pickup' : randomSource === OrderSource.UBER_EATS ? 'Uber' : 'Rappi'} #${Math.floor(Math.random() * 100)}`,
                                 items: [
-                                    { id: '1', name: 'Aguachiles Mixto', price: 220, category: 'Aguachiles', image: '', inventoryLevel: 10, quantity: 1 }
+                                    { id: '1', name: 'Aguachiles Mixto', price: 220, category: 'Aguachiles', image: '', inventoryLevel: 10, quantity: 1, status: 'ACTIVE' }
                                 ],
                                 status: OrderStatus.PENDING,
                                 timestamp: new Date(),
@@ -279,7 +279,7 @@ export const KitchenScreen: React.FC = () => {
                                 {sortedDineIn.length === 0 ? (
                                     <div className="text-center text-gray-500 mt-20">No Dine-In orders</div>
                                 ) : (
-                                    sortedDineIn.map(order => <Ticket key={order.id} order={order} onComplete={(id) => updateOrderStatus(id, OrderStatus.COMPLETED)} />)
+                                    sortedDineIn.map(order => <Ticket key={order.id} order={order} onComplete={(id) => updateOrderStatus(id, OrderStatus.READY)} />)
                                 )}
                             </div>
                         </div>
@@ -296,7 +296,7 @@ export const KitchenScreen: React.FC = () => {
                                 {sortedApps.length === 0 ? (
                                     <div className="text-center text-gray-500 mt-20">No App orders</div>
                                 ) : (
-                                    sortedApps.map(order => <Ticket key={order.id} order={order} onComplete={(id) => updateOrderStatus(id, OrderStatus.COMPLETED)} />)
+                                    sortedApps.map(order => <Ticket key={order.id} order={order} onComplete={(id) => updateOrderStatus(id, OrderStatus.READY)} />)
                                 )}
                             </div>
                         </div>
@@ -318,7 +318,7 @@ export const KitchenScreen: React.FC = () => {
                                     <Ticket
                                         key={order.id}
                                         order={order}
-                                        onComplete={(id) => updateOrderStatus(id, OrderStatus.COMPLETED)}
+                                        onComplete={(id) => updateOrderStatus(id, OrderStatus.READY)}
                                     />
                                 ))
                             )}

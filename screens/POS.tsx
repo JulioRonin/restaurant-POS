@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { CATEGORIES, TABLES } from '../constants';
-import { MenuItem, OrderItem, Order, OrderStatus, Table } from '../types';
+import { MenuItem, OrderItem, Order, OrderStatus, Table, OrderSource } from '../types';
 import { useOrders } from '../contexts/OrderContext';
 import { useUser } from '../contexts/UserContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -93,16 +93,21 @@ export const POSScreen: React.FC = () => {
     if (cart.length === 0) return;
 
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const tax = total * 0.16;
-    const finalTotal = total + tax;
+    const finalTotal = total;
+
+    // Detect Source based on activeMenu
+    let source = OrderSource.DINE_IN;
+    if (activeMenu === 'Rappi/Uber') source = OrderSource.RAPPI; // Defaulting to RAPPI for delivery menu
+    if (activeMenu === 'Para Llevar') source = OrderSource.PICKUP;
 
     const newOrder: Order = {
       id: Math.floor(Math.random() * 10000).toString().padStart(4, '0'),
-      tableId: selectedTable ? selectedTable.id : 'BARRA',
+      tableId: selectedTable ? selectedTable.id : (source === OrderSource.RAPPI ? 'DELIVERY' : 'BARRA'),
       items: [...cart],
       status: OrderStatus.PENDING,
       timestamp: new Date(),
       total: finalTotal,
+      source: source,
       waiterName: 'Maria G.'
     };
 
@@ -128,9 +133,9 @@ export const POSScreen: React.FC = () => {
   };
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const tax = total * 0.16; // 16% IVA standard in MX
+  const tax = 0; // Precios ya incluyen IVA
   const subtotal = total;
-  const finalTotal = subtotal + tax;
+  const finalTotal = total;
 
   const getCategoryColor = (cat: string) => {
     switch (cat) {
@@ -399,18 +404,11 @@ export const POSScreen: React.FC = () => {
           </div>
 
           <div className="space-y-2 mb-6">
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>IVA 16%</span>
-              <span>${tax.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>Subtotal</span>
-              <span>${subtotal.toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-lg font-bold text-gray-900 border-t border-gray-200 pt-2">
+            <div className="flex justify-between text-lg font-bold text-gray-900 pt-2">
               <span>Total</span>
               <span>${finalTotal.toFixed(2)}</span>
             </div>
+            {/* Ocultado por solicitud de usuario: <p className="text-[10px] text-gray-400 text-right">IVA Incluido</p> */}
           </div>
 
           <button

@@ -6,6 +6,8 @@ import { Order, PaymentMethod, PaymentStatus, InvoiceDetails, ExpenseCategory, O
 import { useSettings } from '../contexts/SettingsContext';
 import { useUser } from '../contexts/UserContext';
 import { Ticket } from '../components/Ticket';
+import { CashCutTicket } from '../components/CashCutTicket';
+import { FinancialReportModal } from '../components/FinancialReportModal';
 import { printerService } from '../services/PrinterService';
 import { bluetoothTerminalService } from '../services/BluetoothTerminalService';
 
@@ -43,6 +45,14 @@ export const CashierScreen: React.FC = () => {
     const [isProcessingTerminal, setIsProcessingTerminal] = useState(false);
     const [terminalStep, setTerminalStep] = useState('');
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [showFinancialReport, setShowFinancialReport] = useState(false);
+    const [cashCutToPrint, setCashCutToPrint] = useState<{
+        orders: Order[],
+        metrics: any,
+        expenses: any[],
+        totalExpenses: number
+    } | null>(null);
 
     const handlePrintTicket = async (order: Order) => {
         // Enrich order with table info and current user if missing
@@ -62,6 +72,27 @@ export const CashierScreen: React.FC = () => {
         setTimeout(() => {
             window.print();
             setOrderToPrint(null);
+        }, 100);
+    };
+
+    const handlePrintCashCut = async () => {
+        const data = {
+            orders: completedOrders,
+            metrics: salesMetrics,
+            expenses: expenses,
+            totalExpenses: totalExpenses
+        };
+
+        if (settings.isDirectPrintingEnabled) {
+            const success = await printerService.printCashCut(data, settings);
+            if (success) return;
+        }
+
+        // Fallback for Manual Print Dialog
+        setCashCutToPrint(data);
+        setTimeout(() => {
+            window.print();
+            setCashCutToPrint(null);
         }, 100);
     };
 
@@ -99,6 +130,11 @@ export const CashierScreen: React.FC = () => {
 
         updateOrderStatus(selectedOrder.id, updatedOrder.status, updatedOrder);
         
+        // Open Cash Drawer if it's a cash or mixed payment
+        if ((paymentMethod === PaymentMethod.CASH || paymentMethod === PaymentMethod.MIXED) && settings.isDirectPrintingEnabled) {
+            await printerService.openCashDrawer();
+        }
+
         // Generate TICKET for this split
         const splitOrderTicket = { ...updatedOrder, total: splitAmount }; 
         await handlePrintTicket(splitOrderTicket as Order);
@@ -140,18 +176,28 @@ export const CashierScreen: React.FC = () => {
     };
 
     const STARTING_BALANCE = 5000;
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-    const currentBalance = STARTING_BALANCE - totalExpenses;
+    const currentBalance = STARTING_BALANCE - (expenses.reduce((sum, e) => sum + e.amount, 0));
 
     // --- History / Cash Cut Logic ---
-    const completedOrders = useMemo(() => orders.filter(o => o.status === 'COMPLETED'), [orders]);
+    const filteredByDateOrders = useMemo(() => {
+        return orders.filter(o => new Date(o.timestamp).toISOString().split('T')[0] === selectedDate);
+    }, [orders, selectedDate]);
+
+    const filteredByDateExpenses = useMemo(() => {
+        return expenses.filter(e => e.date === selectedDate);
+    }, [expenses, selectedDate]);
+
+    const completedOrdersCount = useMemo(() => filteredByDateOrders.filter(o => o.status === 'COMPLETED'), [filteredByDateOrders]);
 
     const salesMetrics = useMemo(() => {
-        const _sales = completedOrders;
+        const _sales = filteredByDateOrders.filter(o => o.status === 'COMPLETED');
         const totalRevenue = _sales.reduce((sum, o) => sum + (o.total || 0), 0);
         const cashSales = _sales.filter(o => o.paymentMethod === PaymentMethod.CASH).reduce((sum, o) => sum + (o.total || 0), 0);
         const cardSales = _sales.filter(o => o.paymentMethod === PaymentMethod.CARD).reduce((sum, o) => sum + (o.total || 0), 0);
         const mixedSales = _sales.filter(o => o.paymentMethod === PaymentMethod.MIXED).reduce((sum, o) => sum + (o.total || 0), 0);
+        
+        // Delivery Sales Calculation
+        const deliverySales = _sales.filter(o => o.source === OrderSource.UBER_EATS || o.source === OrderSource.RAPPI).reduce((sum, o) => sum + (o.total || 0), 0);
 
         const categoryBreakdown: Record<string, number> = {};
         _sales.forEach(order => {
@@ -162,13 +208,17 @@ export const CashierScreen: React.FC = () => {
             });
         });
 
-        return { totalRevenue, cashSales, cardSales, mixedSales, categoryBreakdown };
-    }, [completedOrders]);
+        return { totalRevenue, cashSales, cardSales, mixedSales, deliverySales, categoryBreakdown };
+    }, [filteredByDateOrders]);
+
+    const completedOrders = filteredByDateOrders.filter(o => o.status === 'COMPLETED');
+    const totalExpenses = filteredByDateExpenses.reduce((sum, e) => sum + e.amount, 0);
 
     const filteredHistory = useMemo(() => {
-        if (historyCategoryFilter === 'All') return completedOrders;
-        return completedOrders.filter(o => o.items.some(i => i.category === historyCategoryFilter));
-    }, [completedOrders, historyCategoryFilter]);
+        const _base = filteredByDateOrders.filter(o => o.status === 'COMPLETED');
+        if (historyCategoryFilter === 'All') return _base;
+        return _base.filter(o => o.items.some(i => i.category === historyCategoryFilter));
+    }, [filteredByDateOrders, historyCategoryFilter]);
 
     const availableCategories = useMemo(() => {
         const cats = new Set<string>();
@@ -181,6 +231,15 @@ export const CashierScreen: React.FC = () => {
             {/* Ticket to print (hidden onscreen) */}
             <div className="hidden print:block absolute inset-0 z-[9999] bg-white">
                 {orderToPrint && <Ticket order={orderToPrint} settings={settings} />}
+                {cashCutToPrint && (
+                    <CashCutTicket 
+                        orders={cashCutToPrint.orders}
+                        metrics={cashCutToPrint.metrics}
+                        expenses={cashCutToPrint.expenses}
+                        totalExpenses={cashCutToPrint.totalExpenses}
+                        settings={settings}
+                    />
+                )}
             </div>
 
             <div className="flex flex-1 h-full print:hidden relative">
@@ -320,21 +379,15 @@ export const CashierScreen: React.FC = () => {
                                             </div>
                                         ))}
                                         <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-200 text-right">
-                                            <div className="flex justify-between text-gray-600 mb-1"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-                                            <div className="flex justify-between text-gray-600 mb-1">
-                                                <span>Tip</span>
-                                                <div className="flex gap-2">
-                                                    {[0, 10, 15, 20].map(pct => (
-                                                        <button key={pct} onClick={() => setTipAmount(subtotal * (pct / 100))} className={`px-2 py-1 rounded text-xs border ${Math.abs(tipAmount - subtotal * (pct / 100)) < 0.1 ? 'bg-primary text-white' : 'bg-white text-gray-600 border-gray-200'}`}>{pct}%</button>
-                                                    ))}
-                                                </div>
-                                            </div>
                                             <div className="flex justify-between text-2xl font-bold text-gray-900 mt-2"><span>Total</span><span>${total.toFixed(2)}</span></div>
+                                            <div className="flex justify-end gap-2 mt-2">
+                                                {[0, 10, 15, 20].map(pct => (
+                                                    <button key={pct} onClick={() => setTipAmount(subtotal * (pct / 100))} className={`px-2 py-1 rounded text-[10px] font-bold border ${Math.abs(tipAmount - subtotal * (pct / 100)) < 0.1 ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200 hover:border-primary/50'}`}>{pct}%</button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* Payment Method section removed from main view as requested - now handled in modal */}
-                                    
                                     <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
                                         <h2 className="text-lg font-bold mb-4 flex justify-between items-center"><span>Split Check</span>{splitCount > 1 && <span className="text-primary text-sm bg-primary/10 px-2 py-1 rounded-full">{splitCount} People</span>}</h2>
                                         <div className="flex items-center gap-4">
@@ -422,13 +475,25 @@ export const CashierScreen: React.FC = () => {
                                 }
                             `}</style>
                             <div className="flex justify-between items-center mb-6 no-print">
-                                <h2 className="text-2xl font-bold text-gray-800">Corte de Caja (Cash Cut)</h2>
+                                <div className="flex flex-col">
+                                    <h2 className="text-2xl font-bold text-gray-800">Corte de Caja (Cash Cut)</h2>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-xs text-gray-400 font-bold uppercase">FECHA SELECCIONADA:</span>
+                                        <input 
+                                            type="date" 
+                                            value={selectedDate} 
+                                            onChange={(e) => setSelectedDate(e.target.value)}
+                                            className="text-xs font-black text-primary bg-primary/5 border-none rounded px-2 py-0.5 focus:ring-0 cursor-pointer"
+                                        />
+                                    </div>
+                                </div>
                                 <div className="flex gap-3">
-                                    <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 font-bold transition-all shadow-sm"><span className="material-icons-round">print</span>Imprimir Corte</button>
+                                    <button onClick={() => setShowFinancialReport(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 border border-blue-100 rounded-lg hover:bg-blue-100 font-bold transition-all shadow-sm"><span className="material-icons-round">file_download</span>Descargar Reporte</button>
+                                    <button onClick={handlePrintCashCut} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 font-bold transition-all shadow-sm"><span className="material-icons-round">print</span>Imprimir Ticket</button>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-4 gap-6 mb-8 print:grid-cols-2">
+                            <div className="grid grid-cols-5 gap-6 mb-8 print:grid-cols-3">
                                 <div className="bg-white p-6 rounded-2xl shadow-soft border border-gray-100">
                                     <h3 className="text-gray-400 text-[10px] font-black uppercase mb-1 tracking-widest">Total Revenue</h3>
                                     <div className="text-3xl font-black text-gray-900">${salesMetrics.totalRevenue.toFixed(2)}</div>
@@ -440,6 +505,10 @@ export const CashierScreen: React.FC = () => {
                                 <div className="bg-white p-6 rounded-2xl shadow-soft border border-gray-100">
                                     <h3 className="text-gray-400 text-[10px] font-black uppercase mb-1 tracking-widest">Card (Tarjeta)</h3>
                                     <div className="text-3xl font-black text-blue-600">${salesMetrics.cardSales.toFixed(2)}</div>
+                                </div>
+                                <div className="bg-white p-6 rounded-2xl shadow-soft border border-gray-100">
+                                    <h3 className="text-gray-400 text-[10px] font-black uppercase mb-1 tracking-widest">Delivery Apps</h3>
+                                    <div className="text-3xl font-black text-amber-500">${salesMetrics.deliverySales.toFixed(2)}</div>
                                 </div>
                                 <div className="bg-white p-6 rounded-2xl shadow-soft border border-gray-100">
                                     <h3 className="text-gray-400 text-[10px] font-black uppercase mb-1 tracking-widest">Total Expenses</h3>
@@ -489,6 +558,14 @@ export const CashierScreen: React.FC = () => {
                 isProcessingTerminal={isProcessingTerminal}
                 terminalStep={terminalStep}
             />
+
+            {showFinancialReport && (
+                <FinancialReportModal 
+                    onClose={() => setShowFinancialReport(false)}
+                    orders={completedOrders}
+                    expenses={filteredByDateExpenses}
+                />
+            )}
         </div>
     );
 };
