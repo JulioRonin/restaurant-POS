@@ -289,27 +289,31 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
         </div>
       )}
 
-      <div className="mb-4 w-full px-2 space-y-2">
+      {/* Switch User / Lock Button (Visible to everyone) */}
+      <div className="w-full px-2 mb-2">
         <button
           onClick={onLock}
-          className={`flex items-center ${isExpanded ? 'px-4 gap-4 w-full' : 'justify-center w-10 mx-auto'} h-10 rounded-xl hover:bg-amber-50 text-gray-400 hover:text-amber-600 transition-colors group`}
-          title="Bloquear Estación"
+          className={`flex items-center ${isExpanded ? 'px-4 gap-4 w-full' : 'justify-center w-10 mx-auto'} h-12 rounded-2xl bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 transition-all group border border-amber-500/20`}
+          title="Cambiar de Usuario (Bloquear)"
         >
-          <span className="material-icons-round text-xl">lock_open</span>
-          {isExpanded && <span className="font-semibold text-sm whitespace-nowrap">Bloquear Acceso</span>}
+          <span className="material-icons-round text-xl">lock</span>
+          {isExpanded && <span className="font-black text-xs uppercase tracking-widest">Cambiar Usuario</span>}
         </button>
+      </div>
 
-        {authProfile?.role === 'admin' && (
+      {/* Admin SignOut (Only for SaaS Admin) */}
+      {authProfile?.role === 'admin' && (
+        <div className="w-full px-2 mb-4">
           <button
             onClick={signOut}
             className={`flex items-center ${isExpanded ? 'px-4 gap-4 w-full' : 'justify-center w-10 mx-auto'} h-10 rounded-xl hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors group`}
-            title="Cerrar Sesión"
+            title="Cerrar Sesión (Admin)"
           >
             <span className="material-icons-round text-xl">logout</span>
-            {isExpanded && <span className="font-semibold text-sm whitespace-nowrap">Cerrar Sesión</span>}
+            {isExpanded && <span className="font-bold text-xs uppercase tracking-tight">Cerrar Sesión</span>}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
     </aside>
   );
