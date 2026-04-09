@@ -83,7 +83,7 @@ export const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ chi
                 >
                   {isProcessing ? (
                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ) : 'YA REALICÉ MI PAGO'}
+                  ) : 'VERIFICAR PAGO EN LA NUBE'}
                 </button>
             </div>
 
