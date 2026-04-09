@@ -253,7 +253,12 @@ export const InventoryScreen: React.FC = () => {
                                     return (
                                         <tr key={item.id} className="hover:bg-gray-50 transition-colors group">
                                             <td className="py-4 px-6">
-                                                <div className="flex flex-col cursor-pointer" onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }}>
+                                                <div className="flex flex-col cursor-pointer" onClick={() => { 
+                                                    setEditingItem(item); 
+                                                    setPublishToMenu(item.publicInMenu || false);
+                                                    setMenuPrice(item.price || 0);
+                                                    setIsEditModalOpen(true); 
+                                                }}>
                                                     <span className="font-bold text-gray-900 hover:text-primary transition-colors">{item.name}</span>
                                                     <span className="text-xs text-gray-500">{item.category}</span>
                                                 </div>
@@ -429,17 +434,6 @@ export const InventoryScreen: React.FC = () => {
                             </button>
                         </div>
 
-                        {/* Pre-fill state when editingItem changes */}
-                        {editingItem && !publishToMenu && editingItem.publicInMenu && (
-                            <div className="hidden">
-                                {setTimeout(() => {
-                                    if (!publishToMenu) {
-                                        setPublishToMenu(true);
-                                        setMenuPrice(editingItem.price || 0);
-                                    }
-                                }, 0)}
-                            </div>
-                        )}
 
                         <form onSubmit={(e) => {
                             e.preventDefault();
@@ -505,19 +499,19 @@ export const InventoryScreen: React.FC = () => {
                                 
                                 <div className="pt-2 border-t border-yellow-200/50">
                                     <label className="flex items-center gap-3 cursor-pointer group">
-                                        <div className={`w-10 h-6 rounded-full transition-all relative ${publishToMenu || editingItem?.publicInMenu ? 'bg-primary' : 'bg-gray-300'}`}>
-                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${publishToMenu || editingItem?.publicInMenu ? 'left-5' : 'left-1'}`}></div>
+                                        <div className={`w-10 h-6 rounded-full transition-all relative ${publishToMenu ? 'bg-primary' : 'bg-gray-300'}`}>
+                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${publishToMenu ? 'left-5' : 'left-1'}`}></div>
                                         </div>
                                         <input 
                                             type="checkbox" 
                                             className="hidden" 
-                                            checked={publishToMenu || editingItem?.publicInMenu} 
+                                            checked={publishToMenu} 
                                             onChange={(e) => setPublishToMenu(e.target.checked)} 
                                         />
                                         <span className="text-xs font-black text-gray-700 uppercase tracking-widest">Publicar en Menú</span>
                                     </label>
 
-                                    {(publishToMenu || editingItem?.publicInMenu) && (
+                                    {publishToMenu && (
                                         <div className="mt-4 animate-in slide-in-from-top-2">
                                             <label className="block text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1">Venta al Público (Precio)</label>
                                             <div className="relative">
@@ -525,7 +519,7 @@ export const InventoryScreen: React.FC = () => {
                                                 <input 
                                                     type="number" 
                                                     step="0.01"
-                                                    value={menuPrice || (editingItem?.linkedProductId ? menuItems.find(m => m.id === editingItem.linkedProductId)?.price : 0)} 
+                                                    value={menuPrice} 
                                                     onChange={(e) => setMenuPrice(Number(e.target.value))}
                                                     className="w-full bg-white border-2 border-primary/20 rounded-xl pl-8 pr-4 py-2 outline-none focus:border-primary font-black text-primary" 
                                                     required={publishToMenu}

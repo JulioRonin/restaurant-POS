@@ -25,7 +25,7 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const fullItem: any = {
             ...item,
             publicInMenu: true,
-            quantity: 0,
+            quantity: 10,
             unit: 'Pza',
             costPerUnit: (item as any).price / 1.3,
             maxStock: 100,
@@ -87,7 +87,7 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     gramaje: gramaje || '',
                     status: (statusStr?.toUpperCase() === 'INACTIVO') ? 'INACTIVE' : 'ACTIVE',
                     image: `https://picsum.photos/seed/${encodeURIComponent(name)}/200`,
-                    inventoryLevel: 0
+                    inventoryLevel: 10
                 });
                 count++;
             } catch (err: any) {

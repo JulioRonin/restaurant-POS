@@ -17,4 +17,4 @@ export const MOCK_STAFF: Employee[] = [];
 
 export const MOCK_INVENTORY: InventoryItem[] = [];
 
-export const INVENTORY_CATEGORIES = ['All'];
+export const INVENTORY_CATEGORIES = ['All', 'Abarrotes', 'Bebidas', 'Lácteos', 'Carnes', 'Frutas y Verduras', 'Limpieza', 'Perecederos', 'Otros'];

@@ -42,7 +42,9 @@ export const POSScreen: React.FC = () => {
   }, [activeCategory, searchQuery, activeMenuItems, activeMenu]);
 
   const addToCart = (item: MenuItem) => {
-    if (item.inventoryLevel === 0) return;
+    // Check both potential field names for stock
+    const stock = (item as any).quantity ?? item.inventoryLevel ?? 99;
+    if (stock === 0) return;
 
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
@@ -259,7 +261,7 @@ export const POSScreen: React.FC = () => {
             {filteredItems.map(item => (
               <div
                 key={item.id}
-                className={`bg-white rounded-2xl shadow-card flex flex-col relative group transition-all hover:shadow-xl border border-transparent hover:border-primary/20 cursor-pointer overflow-hidden ${item.inventoryLevel === 0 ? 'opacity-60 grayscale' : ''}`}
+                className={`bg-white rounded-2xl shadow-card flex flex-col relative group transition-all hover:shadow-xl border border-transparent hover:border-primary/20 cursor-pointer overflow-hidden ${((item as any).quantity ?? item.inventoryLevel) === 0 ? 'opacity-60 grayscale' : ''}`}
                 onClick={() => addToCart(item)}
               >
                 {/* Product Image */}
@@ -287,8 +289,8 @@ export const POSScreen: React.FC = () => {
                   <div className="mt-3 pt-3 border-t border-gray-50 flex justify-between items-center text-[10px] text-gray-400">
                     <span className="uppercase tracking-wider font-semibold">Stock</span>
                     <div className="flex items-center gap-1.5">
-                      <div className={`w-1.5 h-1.5 rounded-full ${item.inventoryLevel > 1 ? 'bg-green-500' : item.inventoryLevel === 1 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
-                      <span className="font-medium">{Math.floor(Math.random() * 20) + 1}</span>
+                      <div className={`w-1.5 h-1.5 rounded-full ${((item as any).quantity ?? item.inventoryLevel ?? 10) > 1 ? 'bg-green-500' : ((item as any).quantity ?? item.inventoryLevel) === 1 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                      <span className="font-medium">{(item as any).quantity ?? item.inventoryLevel ?? 0}</span>
                     </div>
                   </div>
                 </div>
