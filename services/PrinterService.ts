@@ -73,23 +73,50 @@ class PrinterService {
   }
 
   async autoConnect(deviceName: string): Promise<boolean> {
-    if (this.device) return true;
+    if (this.isConnected()) return true;
     if (!deviceName || deviceName === 'None') return false;
 
     try {
-      if (!('usb' in navigator)) return false;
-      const devices = await (navigator as any).usb.getDevices();
-      const target = devices.find((d: any) => d.productName === deviceName);
-      
-      if (target) {
-        console.log('[PrinterService] Auto-connecting to:', deviceName);
-        return await this.connect(target);
+      // 1. Try Bluetooth Silent Connect (Modern Browsers / PWA)
+      if ('bluetooth' in navigator) {
+        try {
+          const btDevices = await (navigator as any).bluetooth.getDevices();
+          const targetBt = btDevices.find((d: any) => d.name === deviceName);
+          if (targetBt) {
+            console.log('[PrinterService] Silent Bluetooth connect to:', deviceName);
+            return await this.connect(targetBt);
+          }
+        } catch (e) {
+          console.warn('[PrinterService] BT getDevices failed (unsupported or no permissions)');
+        }
       }
+
+      // 2. Try USB Silent Connect
+      if ('usb' in navigator) {
+        const usbDevices = await (navigator as any).usb.getDevices();
+        const targetUsb = usbDevices.find((d: any) => 
+          d.productName === deviceName || d.manufacturerName?.includes(deviceName)
+        );
+        
+        if (targetUsb) {
+          console.log('[PrinterService] Silent USB connect to:', deviceName);
+          return await this.connect(targetUsb);
+        }
+      }
+
       return false;
     } catch (err) {
       console.warn('[PrinterService] Auto-connect failed:', err);
       return false;
     }
+  }
+
+  isConnected(): boolean {
+    if (!this.device) return false;
+    if (this.btCharacteristic) {
+      return this.device.gatt?.connected || false;
+    }
+    return this.device.opened || false;
   }
 
   async printOrder(order: any, settings: any): Promise<boolean> {

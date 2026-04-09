@@ -124,15 +124,26 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     };
   }, [authProfile?.businessId]);
 
-  // Handle Hardware Auto-reconnection
+  // Handle Hardware Auto-reconnection & Retention
   useEffect(() => {
     if (!authProfile?.businessId) return;
     
-    // Auto-connect printer if name is stored
-    if (settings.connectedDeviceName && settings.connectedDeviceName !== 'None') {
-      console.log(`[SettingsContext] Attempting auto-connect for: ${settings.connectedDeviceName}`);
-      printerService.autoConnect(settings.connectedDeviceName);
+    // Initial attempt
+    const deviceName = settings.connectedDeviceName;
+    if (deviceName && deviceName !== 'None' && !printerService.isConnected()) {
+      console.log(`[SettingsContext] Attempting auto-connect for: ${deviceName}`);
+      printerService.autoConnect(deviceName);
     }
+
+    // Keep-alive/Reconnect interval (every 30s check)
+    const interval = setInterval(() => {
+      if (deviceName && deviceName !== 'None' && !printerService.isConnected()) {
+        console.log(`[SettingsContext] Reconnecting lost printer: ${deviceName}`);
+        printerService.autoConnect(deviceName);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [settings.connectedDeviceName, authProfile?.businessId]);
 
   // Sync with business info from UserContext when profile refreshes

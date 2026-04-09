@@ -8,6 +8,37 @@ import { NetworkStatus } from './NetworkStatus';
 import { canAccess } from '../services/rbac';
 import { onSyncStatusChange, getSyncStatus } from '../services/SyncService';
 import { authService } from '../services/auth';
+import { printerService } from '../services/PrinterService';
+
+const PrinterStatus = () => {
+  const { settings } = useSettings();
+  const [connected, setConnected] = React.useState(printerService.isConnected());
+  
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+        setConnected(printerService.isConnected());
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleReconnect = () => {
+     if (settings.connectedDeviceName && settings.connectedDeviceName !== 'None') {
+        printerService.autoConnect(settings.connectedDeviceName);
+     }
+  };
+
+  if (!settings.connectedDeviceName || settings.connectedDeviceName === 'None') return null;
+
+  return (
+    <button 
+      onClick={handleReconnect}
+      className={`material-icons-round text-lg transition-all active:scale-95 ${connected ? 'text-emerald-500' : 'text-red-500 animate-pulse'}`}
+      title={connected ? 'Impresora Conectada' : 'Impresora Desconectada (Clic para reconectar)'}
+    >
+      print
+    </button>
+  );
+};
 
 const NavItem = ({ to, icon, label, isExpanded, activeIcon }: { to: string; icon: string; label: string; isExpanded: boolean; activeIcon?: string }) => (
   <NavLink
@@ -81,6 +112,10 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
       </button>
 
       <div className={`mb-4 p-2 flex flex-col items-center ${isExpanded ? 'px-6 w-full' : 'justify-center'}`}>
+          <div className="flex items-center gap-1.5 mb-2">
+            <PrinterStatus />
+            <SyncBadge />
+          </div>
         <div className="flex items-center gap-3 w-full group/header relative">
           <div className="w-10 h-10 min-w-[40px] bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 overflow-hidden border border-white/20">
             {settings.logoUrl ? (
