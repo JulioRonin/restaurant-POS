@@ -663,9 +663,13 @@ export const CashierScreen: React.FC = () => {
 
             {showFinancialReport && (
                 <FinancialReportModal 
+                    isOpen={showFinancialReport}
                     onClose={() => setShowFinancialReport(false)}
                     orders={completedOrders}
                     expenses={filteredByDateExpenses}
+                    periodLabel={selectedDate}
+                    categoryLabel={historyCategoryFilter}
+                    restaurantName={settings.name}
                 />
             )}
         </div>

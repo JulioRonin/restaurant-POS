@@ -5,24 +5,27 @@ import {
 } from './db';
 
 // ─── Configuration ────────────────────────────────────────────
-// These will be configured when Supabase credentials are available
-let SUPABASE_URL = '';
-let SUPABASE_ANON_KEY = '';
-let supabaseClient: any = null;
+import { getSupabase } from './auth';
 
 export function configureSyncService(url: string, anonKey: string) {
-  SUPABASE_URL = url;
-  SUPABASE_ANON_KEY = anonKey;
-  // Dynamic import to avoid loading supabase when not configured
-  import('@supabase/supabase-js').then(({ createClient }) => {
-    supabaseClient = createClient(url, anonKey);
-    console.log('[SyncService] Supabase client configured');
-  });
+  // We no longer create a separate client here.
+  // SyncService will always use the authenticated client from auth.ts
+  // to ensure its requests respect RLS and the current user's session.
+  console.log('[SyncService] Supabase client linked to auth service');
 }
 
 export function isSupabaseConfigured(): boolean {
-  return supabaseClient !== null;
+  return getSupabase() !== null;
 }
+
+const supabaseClient = {
+  get from() {
+    const client = getSupabase();
+    if (!client) throw new Error("Supabase client not initialized in SyncService");
+    return client.from.bind(client);
+  }
+};
+
 
 // ─── Table Mapping ────────────────────────────────────────────
 // Maps local IndexedDB store names to Supabase table names

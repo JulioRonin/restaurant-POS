@@ -33,15 +33,24 @@ body {
 
 /* Print Styles */
 @media print {
-  /* Hide app shell but KEEP print-container visible */
-  #root > *:not(.print-container) {
+  /* Common hide class */
+  .no-print, .print\:hidden {
     display: none !important;
   }
 
-  .print-container {
-    position: relative !important;
-    display: block !important;
+  /* Reset layout for print */
+  #root, main, .flex, .h-screen {
+    overflow: visible !important;
     height: auto !important;
+    display: block !important;
+  }
+
+  .print-container {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 
   /* Reset background for printing */

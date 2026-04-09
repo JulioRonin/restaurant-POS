@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useSubscription } from '../contexts/SubscriptionContext';
 
 export const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { status, extendSubscription } = useSubscription();
+  const { status, refreshFeatures } = useSubscription();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleRealPayment = () => {
@@ -14,11 +14,15 @@ export const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ chi
   const handleVerifyPayment = async () => {
     setIsProcessing(true);
     try {
-        const success = await extendSubscription(30);
-        if (success) {
-            alert("¡Suscripción Verificada! Bienvenido de nuevo. ✅");
-            // No reload needed, context update will hide the guard
-        }
+        await refreshFeatures();
+        
+        // El estado se actualizará de forma asíncrona por el contexto y se ocultará automáticamente este modal si pago fue detectado.
+        // Simularemos una pequeña espera y mostraremos alerta si aún no es reactivado por el context
+        setTimeout(() => {
+             // Validar forzando recarga o solo alertando. Si la BD tiene el pago, la prop 'status' cambiará y este componente dejará de renderizarse.
+             alert("Hemos consultado el servidor. Si tu pago ya fue procesado, esta pantalla se cerrará automáticamente en breve.");
+        }, 800);
+        
     } catch (err: any) {
         alert(`DETALLES DEL ERROR:\n${err.message || 'Error desconocido'}`);
     } finally {

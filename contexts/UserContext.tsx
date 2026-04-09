@@ -125,7 +125,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // Trigger an initial sync to pull new onboarding data (like Admin employee)
         if (authProfile?.businessId && navigator.onLine) {
-            triggerSync();
+            triggerSync(authProfile.businessId);
         }
 
         return () => {
@@ -323,7 +323,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
 
         // 4. Force trigger sync for new context
-        setTimeout(() => triggerSync(), 500);
+        setTimeout(() => triggerSync(businessId), 500);
     };
 
     // 4. Staff Switching (PIN)
