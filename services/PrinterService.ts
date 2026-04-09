@@ -76,39 +76,41 @@ class PrinterService {
     if (this.isConnected()) return true;
     if (!deviceName || deviceName === 'None') return false;
 
-    try {
-      // 1. Try Bluetooth Silent Connect (Modern Browsers / PWA)
-      if ('bluetooth' in navigator) {
+    // Retry loop for robustness (browsers/printers can be flaky after a refresh)
+    for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          const btDevices = await (navigator as any).bluetooth.getDevices();
-          const targetBt = btDevices.find((d: any) => d.name === deviceName);
-          if (targetBt) {
-            console.log('[PrinterService] Silent Bluetooth connect to:', deviceName);
-            return await this.connect(targetBt);
-          }
-        } catch (e) {
-          console.warn('[PrinterService] BT getDevices failed (unsupported or no permissions)');
-        }
-      }
+            console.log(`[PrinterService] Auto-connect attempt ${attempt} for: ${deviceName}`);
+            
+            // 1. Try Bluetooth Silent Connect
+            if ('bluetooth' in navigator) {
+                const btDevices = await (navigator as any).bluetooth.getDevices();
+                const targetBt = btDevices.find((d: any) => d.name === deviceName);
+                if (targetBt) {
+                    const success = await this.connect(targetBt);
+                    if (success) return true;
+                }
+            }
 
-      // 2. Try USB Silent Connect
-      if ('usb' in navigator) {
-        const usbDevices = await (navigator as any).usb.getDevices();
-        const targetUsb = usbDevices.find((d: any) => 
-          d.productName === deviceName || d.manufacturerName?.includes(deviceName)
-        );
-        
-        if (targetUsb) {
-          console.log('[PrinterService] Silent USB connect to:', deviceName);
-          return await this.connect(targetUsb);
-        }
-      }
+            // 2. Try USB Silent Connect
+            if ('usb' in navigator) {
+                const usbDevices = await (navigator as any).usb.getDevices();
+                const targetUsb = usbDevices.find((d: any) => 
+                    d.productName === deviceName || d.manufacturerName?.includes(deviceName)
+                );
+                if (targetUsb) {
+                    const success = await this.connect(targetUsb);
+                    if (success) return true;
+                }
+            }
 
-      return false;
-    } catch (err) {
-      console.warn('[PrinterService] Auto-connect failed:', err);
-      return false;
+            // Wait a bit before next attempt
+            if (attempt === 1) await new Promise(r => setTimeout(r, 1000));
+        } catch (err) {
+            console.warn(`[PrinterService] Attempt ${attempt} failed:`, err);
+        }
     }
+
+    return false;
   }
 
   isConnected(): boolean {

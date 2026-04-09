@@ -254,63 +254,52 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
         )}
       </nav>
 
-      {/* Network & Sync Status */}
-      {isExpanded ? (
-        <div className="w-full px-6 mb-2">
-            <NetworkStatus />
+      {/* Network & Sync Status - Clean Line Version */}
+      <div className="w-full px-6 mb-4">
+        <div className="flex items-center justify-between py-2 border-t border-gray-100">
+           <div className="flex items-center gap-2">
+              <div className={`w-1.5 h-1.5 rounded-full ${navigator.onLine ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'}`}></div>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{navigator.onLine ? 'Cloud Sync' : 'Offline'}</span>
+           </div>
+           {navigator.onLine && <SyncBadge />}
         </div>
-      ) : (
-        <div className="mb-2 w-full flex flex-col items-center gap-2">
-          {/* Internet Status */}
-          <div 
-            className={`w-3 h-3 rounded-full border-2 border-white shadow-sm ${navigator.onLine ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} 
-            title={navigator.onLine ? 'Conectado a Internet' : 'Sin Internet'}
-          ></div>
-          
-          {/* Sync status: Only show if online */}
-          {navigator.onLine && <SyncBadge />}
-        </div>
-      )}
+      </div>
 
-      {/* Active Employee Profile */}
-      {activeEmployee && (
-        <div className={`mb-4 w-full px-2 ${isExpanded ? 'px-4' : ''}`}>
-          <div className={`flex items-center gap-3 p-2 rounded-2xl bg-gray-50 border border-gray-100 ${isExpanded ? '' : 'justify-center cursor-help'}`} title={!isExpanded ? `${activeEmployee.name} (${activeEmployee.role})` : ''}>
-            <div className="w-8 h-8 rounded-xl overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
-              <img src={activeEmployee.image} alt={activeEmployee.name} className="w-full h-full object-cover" />
+      {/* Profile & Switch - Compact Version */}
+      <div className="w-full px-4 mb-2">
+        <div className="flex items-center justify-between gap-2 p-1.5 rounded-xl hover:bg-gray-50 transition-colors">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <div className="w-7 h-7 rounded-lg overflow-hidden border border-white shadow-sm flex-shrink-0">
+              <img src={activeEmployee?.image} alt={activeEmployee?.name} className="w-full h-full object-cover" />
             </div>
             {isExpanded && (
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] font-black uppercase text-gray-900 truncate tracking-tight">{activeEmployee.name}</p>
-                <p className="text-[8px] font-bold uppercase text-primary tracking-widest">{activeEmployee.role}</p>
+              <div className="min-w-0">
+                <p className="text-[9px] font-black uppercase text-gray-900 truncate leading-none">{activeEmployee?.name}</p>
+                <p className="text-[7px] font-bold uppercase text-primary tracking-widest mt-0.5">{activeEmployee?.role}</p>
               </div>
             )}
           </div>
+          
+          <button
+            onClick={onLock}
+            className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 transition-colors flex items-center justify-center"
+            title="Cambiar Usuario"
+          >
+            <span className="material-icons-round text-base">lock</span>
+          </button>
         </div>
-      )}
-
-      {/* Switch User / Lock Button (Visible to everyone) */}
-      <div className="w-full px-2 mb-2">
-        <button
-          onClick={onLock}
-          className={`flex items-center ${isExpanded ? 'px-4 gap-4 w-full' : 'justify-center w-10 mx-auto'} h-12 rounded-2xl bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 transition-all group border border-amber-500/20`}
-          title="Cambiar de Usuario (Bloquear)"
-        >
-          <span className="material-icons-round text-xl">lock</span>
-          {isExpanded && <span className="font-black text-xs uppercase tracking-widest">Cambiar Usuario</span>}
-        </button>
       </div>
 
-      {/* Admin SignOut (Only for SaaS Admin) */}
+      {/* SaaS Admin SignOut - Discrete at very bottom */}
       {authProfile?.role === 'admin' && (
-        <div className="w-full px-2 mb-4">
+        <div className="w-full px-4 mb-2">
           <button
             onClick={signOut}
-            className={`flex items-center ${isExpanded ? 'px-4 gap-4 w-full' : 'justify-center w-10 mx-auto'} h-10 rounded-xl hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors group`}
-            title="Cerrar Sesión (Admin)"
+            className="flex items-center gap-3 w-full p-2 text-gray-300 hover:text-red-500 transition-colors"
+            title="SaaS Logout"
           >
-            <span className="material-icons-round text-xl">logout</span>
-            {isExpanded && <span className="font-bold text-xs uppercase tracking-tight">Cerrar Sesión</span>}
+            <span className="material-icons-round text-lg">logout</span>
+            {isExpanded && <span className="text-[9px] font-black uppercase tracking-widest">Cerrar Sesión Admin</span>}
           </button>
         </div>
       )}
