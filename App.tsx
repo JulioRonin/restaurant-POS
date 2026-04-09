@@ -159,17 +159,15 @@ const App: React.FC = () => {
         <SubscriptionProvider>
           <ExpenseProvider>
             <SettingsProvider>
-              <MenuProvider>
-                      <MenuProvider>
-                        <InventoryProvider>
-                          <TableProvider>
-                            <HashRouter>
-                              <AppContent />
-                            </HashRouter>
-                          </TableProvider>
-                        </InventoryProvider>
-                      </MenuProvider>
-              </MenuProvider>
+              <InventoryProvider>
+                <MenuProvider>
+                  <TableProvider>
+                    <HashRouter>
+                      <AppContent />
+                    </HashRouter>
+                  </TableProvider>
+                </MenuProvider>
+              </InventoryProvider>
             </SettingsProvider>
           </ExpenseProvider>
         </SubscriptionProvider>
