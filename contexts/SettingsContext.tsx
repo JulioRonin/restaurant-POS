@@ -124,27 +124,48 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     };
   }, [authProfile?.businessId]);
 
-  // Handle Hardware Auto-reconnection & Retention
+  // Handle Hardware Auto-reconnection & Retention across Refreshes
   useEffect(() => {
     if (!authProfile?.businessId) return;
     
-    // Initial attempt
     const deviceName = settings.connectedDeviceName;
-    if (deviceName && deviceName !== 'None' && !printerService.isConnected()) {
-      console.log(`[SettingsContext] Attempting auto-connect for: ${deviceName}`);
-      printerService.autoConnect(deviceName);
-    }
+    if (!deviceName || deviceName === 'None') return;
 
-    // Keep-alive/Reconnect interval (every 30s check)
+    const attemptRecovery = async () => {
+      if (!printerService.isConnected()) {
+        console.log(`[SettingsContext] Wake-up attempt for: ${deviceName}`);
+        await printerService.autoConnect(deviceName);
+      }
+    };
+
+    // 1. Initial attempt (might fail due to browser security gesture requirement)
+    attemptRecovery();
+
+    // 2. Gesture Listener (The "Secret Sauce"): 
+    // Browser requires a click to allow GATT connection on a fresh page.
+    const wakeOnGesture = () => {
+        if (!printerService.isConnected()) {
+            attemptRecovery();
+        }
+        // Remove after success or keep for robustness
+        // window.removeEventListener('pointerdown', wakeOnGesture);
+    };
+
+    window.addEventListener('pointerdown', wakeOnGesture);
+
+    // 3. Keep-alive/Reconnect interval (every 30s check)
     const interval = setInterval(() => {
-      if (deviceName && deviceName !== 'None' && !printerService.isConnected()) {
-        console.log(`[SettingsContext] Reconnecting lost printer: ${deviceName}`);
-        printerService.autoConnect(deviceName);
+      if (!printerService.isConnected()) {
+        console.log(`[SettingsContext] Heartbeat recovery: ${deviceName}`);
+        attemptRecovery();
       }
     }, 30000);
 
-    return () => clearInterval(interval);
-  }, [settings.connectedDeviceName, authProfile?.businessId]);
+    return () => {
+        clearInterval(interval);
+        window.removeEventListener('pointerdown', wakeOnGesture);
+    };
+  }, [authProfile?.businessId, settings.connectedDeviceName]);
 
   // Sync with business info from UserContext when profile refreshes
   useEffect(() => {
