@@ -242,7 +242,7 @@ export const MenuScreen: React.FC = () => {
             {/* Add/Edit Modal */}
             {isAddModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-3xl shadow-2xl w-[600px] overflow-hidden transform scale-100 animate-in zoom-in-95 duration-200 border border-gray-100">
+                    <div className="bg-white rounded-3xl shadow-2xl w-[600px] max-h-[90vh] overflow-y-auto transform scale-100 animate-in zoom-in-95 duration-200 border border-gray-100 custom-scrollbar">
                         <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-primary/5">
                             <div>
                                 <h2 className="text-2xl font-black text-gray-900 tracking-tight">{editingItem ? 'Editar Platillo' : 'Nuevo Platillo'}</h2>
