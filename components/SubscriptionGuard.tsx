@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { useUser } from '../contexts/UserContext';
 
 export const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { status, refreshFeatures } = useSubscription();
+  const { authProfile } = useUser();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleRealPayment = () => {
     setIsProcessing(true);
-    // Redirección al Enlace de Pago Seguro de Stripe
-    window.location.href = "https://buy.stripe.com/test_3cIcMY0uodDXb4P3S6ffy00";
+    // Redirección al Enlace de Pago Seguro de Stripe, pasando el businessId al webhook
+    const cleanId = authProfile?.businessId || '';
+    window.location.href = `https://buy.stripe.com/test_3cIcMY0uodDXb4P3S6ffy00?client_reference_id=${encodeURIComponent(cleanId)}`;
   };
 
   const handleVerifyPayment = async () => {
