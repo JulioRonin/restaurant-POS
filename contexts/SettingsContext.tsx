@@ -153,6 +153,32 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     window.addEventListener('pointerdown', wakeOnGesture);
 
+    // 3. Heartbeat & WakeLock System (Extreme Persistence)
+    let heartbeatInterval: NodeJS.Timeout;
+    let wakeLockSentinel: any;
+
+    const startPersistence = async () => {
+        // Keep the connection alive
+        heartbeatInterval = setInterval(() => {
+            if (printerService.isConnected()) {
+               printerService.heartbeat();
+            }
+        }, 15000);
+
+        // Prevent tablet from sleeping
+        wakeLockSentinel = await printerService.requestWakeLock();
+    };
+
+    startPersistence();
+
+    // 4. Reconnect on Visibility (Back to tab)
+    const onVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+            attemptRecovery();
+        }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
     // 3. Keep-alive/Reconnect interval (every 30s check)
     const interval = setInterval(() => {
       if (!printerService.isConnected()) {
@@ -163,7 +189,10 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     return () => {
         clearInterval(interval);
+        clearInterval(heartbeatInterval);
+        if (wakeLockSentinel) wakeLockSentinel.release();
         window.removeEventListener('pointerdown', wakeOnGesture);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [authProfile?.businessId, settings.connectedDeviceName]);
 

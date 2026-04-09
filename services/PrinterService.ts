@@ -113,6 +113,34 @@ class PrinterService {
     return false;
   }
 
+  async heartbeat(): Promise<boolean> {
+    if (!this.isConnected()) return false;
+    try {
+        if (this.btCharacteristic) {
+            // Send Real-time printer status command (DLE EOT 1)
+            // This is a benign command that keeps the connection alive
+            await this.btCharacteristic.writeValue(new Uint8Array([0x10, 0x04, 0x01]));
+            return true;
+        }
+        return true;
+    } catch (e) {
+        console.warn('[PrinterService] Heartbeat failed:', e);
+        return false;
+    }
+  }
+
+  async requestWakeLock(): Promise<any> {
+    if ('wakeLock' in navigator) {
+        try {
+            const sentinel = await (navigator as any).wakeLock.request('screen');
+            return sentinel;
+        } catch (err: any) {
+            console.warn(`[PrinterService] WakeLock failed: ${err.message}`);
+        }
+    }
+    return null;
+  }
+
   isConnected(): boolean {
     if (!this.device) return false;
     if (this.btCharacteristic) {
