@@ -16,6 +16,11 @@ export const KitchenTicket: React.FC<KitchenTicketProps> = ({ order, settings })
     <div className={`bg-white text-black p-0 font-mono ${fontSize} leading-tight ${widthClass} mx-auto print:mx-auto print:w-[48mm]`}>
       {/* Kitchen Header */}
       <div className="flex flex-col items-center text-center mb-4 border-b-2 border-black pb-2">
+        {order.source && order.source !== 'DINE_IN' && (
+          <div className="bg-black text-white px-4 py-1 mb-2 w-full text-center">
+             <span className="text-xl font-black">*** {order.source.replace('_', ' ')} ***</span>
+          </div>
+        )}
         <h1 className="text-3xl font-black">{order.tableId}</h1>
         <p className="text-sm font-bold uppercase">ORDEN: #{order.id}</p>
         <div className="flex justify-center gap-2 items-center w-full mt-1 px-1 font-bold text-[11px]">

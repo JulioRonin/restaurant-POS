@@ -5,7 +5,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export const StaffScreen: React.FC = () => {
-    const { users, addUser, updateUser, currentUser } = useUser();
+    const { employees, addEmployee, updateEmployee, authProfile, isAuthenticating, activeEmployee, isSuperAdmin } = useUser();
     const [selectedArea, setSelectedArea] = useState<string>('All');
     const [viewMode, setViewMode] = useState<'grid' | 'schedule'>('grid');
     const [activeModal, setActiveModal] = useState<'none' | 'add' | 'profile' | 'schedule'>('none');
@@ -14,6 +14,8 @@ export const StaffScreen: React.FC = () => {
     const [editingEmployee, setEditingEmployee] = useState<Partial<Employee>>({});
     const printRef = useRef<HTMLDivElement>(null);
 
+    const ADMIN_AVATAR = "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200&h=200";
+
     // Temporary state for editing schedule
     const [editingSchedule, setEditingSchedule] = useState<{ day: string, start: string, end: string }[]>([]);
 
@@ -21,11 +23,11 @@ export const StaffScreen: React.FC = () => {
 
     const filteredStaff = useMemo(() => {
         return selectedArea === 'All'
-            ? users
-            : users.filter(employee => employee.area === selectedArea);
-    }, [selectedArea, users]);
+            ? employees
+            : employees.filter(employee => employee.area === selectedArea);
+    }, [selectedArea, employees]);
 
-    const onShiftCount = users.filter(s => s.status === 'ON_SHIFT').length;
+    const onShiftCount = employees.filter(s => s.status === 'ON_SHIFT').length;
 
     const handleProfileClick = (employee: Employee) => {
         setSelectedEmployee(employee);
@@ -36,13 +38,15 @@ export const StaffScreen: React.FC = () => {
 
     const handleSaveEmployee = () => {
         if (!editingEmployee.id) return;
-        updateUser(editingEmployee.id, editingEmployee);
+        updateEmployee(editingEmployee.id, editingEmployee);
         setIsEditing(false);
         setActiveModal('none');
     };
 
     const handleAddEmployee = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!authProfile) return;
+
         const formData = new FormData(e.target as HTMLFormElement);
         const name = formData.get('name') as string;
         const role = formData.get('role') as string;
@@ -50,12 +54,14 @@ export const StaffScreen: React.FC = () => {
 
         const newEmp: Employee = {
             id: Math.random().toString(36).substr(2, 9),
+            businessId: authProfile.businessId,
+            locationId: authProfile.locationId,
             name,
             role,
             area,
             status: 'OFF_SHIFT',
             pin: '1111', // Default PIN for new recruits
-            image: `https://i.pravatar.cc/150?u=${Math.random()}`,
+            image: `https://ui-avatars.com/api/?name=${name}&background=6366f1&color=fff`,
             rating: 5.0,
             hoursWorked: 0,
             schedule: [
@@ -67,7 +73,7 @@ export const StaffScreen: React.FC = () => {
             ]
         };
 
-        addUser(newEmp);
+        addEmployee(newEmp);
         setActiveModal('none');
     };
 
@@ -80,7 +86,7 @@ export const StaffScreen: React.FC = () => {
     const handleSaveSchedule = () => {
         if (!selectedEmployee) return;
 
-        updateUser(selectedEmployee.id, { schedule: editingSchedule });
+        updateEmployee(selectedEmployee.id, { schedule: editingSchedule });
         setActiveModal('none');
     };
 
@@ -121,54 +127,65 @@ export const StaffScreen: React.FC = () => {
         alert(`Un correo ha sido enviado a todo el equipo con los horarios actualizados.`);
     };
 
+    if (isAuthenticating) {
+        return (
+            <div className="h-full flex items-center justify-center bg-[#F3F4F6]">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">Cargando Personal...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="h-full bg-[#F3F4F6] text-gray-800 p-8 overflow-y-auto relative">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Staff Management</h1>
-                    <p className="text-gray-500 text-sm">Shift Roster, Performance & Content</p>
+                    <h1 className="text-3xl font-bold text-gray-900">Gestión de Personal</h1>
+                    <p className="text-gray-500 text-sm">Horarios, Desempeño y Roles</p>
                 </div>
 
                 <div className="flex gap-4 items-center flex-wrap">
                     <button onClick={handleDownload} className="bg-white text-gray-600 px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm border border-gray-200 hover:bg-gray-50 font-bold transition-all hover:text-primary">
                         <span className="material-icons-round text-lg">picture_as_pdf</span>
-                        Download PDF
+                        Calendario PDF
                     </button>
-                    <button onClick={handleEmail} className="bg-white text-gray-600 px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-sm border border-gray-200 hover:bg-gray-50 font-bold transition-all hover:text-primary">
-                        <span className="material-icons-round text-lg">email</span>
-                    </button>
-
+                    
                     <div className="bg-white p-1 rounded-xl flex shadow-sm border border-gray-100">
                         <button onClick={() => setViewMode('grid')} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'grid' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600'}`}>
                             <span className="material-icons-round text-base">grid_view</span>
-                            Grid
+                            Cuadrícula
                         </button>
                         <button onClick={() => setViewMode('schedule')} className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'schedule' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600'}`}>
                             <span className="material-icons-round text-base">calendar_view_week</span>
-                            Schedule
+                            Horarios
                         </button>
                     </div>
 
-                    <button onClick={() => setActiveModal('add')} className="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-lg shadow-primary/30 transition-all font-bold">
-                        <span className="material-icons-round text-lg">person_add</span>
-                        Add Employee
-                    </button>
+                    {(activeEmployee?.role?.toLowerCase() === 'admin' || isSuperAdmin) && (
+                        <button onClick={() => setActiveModal('add')} className="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-lg shadow-primary/30 transition-all font-bold">
+                            <span className="material-icons-round text-lg">person_add</span>
+                            Nuevo Empleado
+                        </button>
+                    )}
                 </div>
             </div>
 
+            {/* Stats */}
             <div className="flex flex-col xl:flex-row gap-6 mb-8">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
                     <div className="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-soft">
                         <div className="p-3 bg-primary/10 rounded-xl text-primary"><span className="material-icons-round text-xl">groups</span></div>
-                        <div><h3 className="text-xl font-bold text-gray-900">{users.length}</h3><p className="text-xs text-gray-500">Total Staff</p></div>
+                        <div><h3 className="text-xl font-bold text-gray-900">{employees.length}</h3><p className="text-xs text-gray-500">Total Staff</p></div>
                     </div>
                     <div className="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-soft">
                         <div className="p-3 bg-green-100 rounded-xl text-green-600"><span className="material-icons-round text-xl">verified_user</span></div>
-                        <div><h3 className="text-xl font-bold text-gray-900">{onShiftCount}</h3><p className="text-xs text-gray-500">On Shift</p></div>
+                        <div><h3 className="text-xl font-bold text-gray-900">{onShiftCount}</h3><p className="text-xs text-gray-500">En Turno</p></div>
                     </div>
                     <div className="bg-white p-4 rounded-2xl flex items-center gap-4 shadow-soft">
                         <div className="p-3 bg-yellow-100 rounded-xl text-yellow-600"><span className="material-icons-round text-xl">star</span></div>
-                        <div><h3 className="text-xl font-bold text-gray-900">4.8</h3><p className="text-xs text-gray-500">Avg Rating</p></div>
+                        <div><h3 className="text-xl font-bold text-gray-900">4.8</h3><p className="text-xs text-gray-500">Rating Promedio</p></div>
                     </div>
                 </div>
 
@@ -181,14 +198,40 @@ export const StaffScreen: React.FC = () => {
                 </div>
             </div>
 
-            {viewMode === 'grid' ? (
+            {filteredStaff.length === 0 ? (
+                <div className="bg-white rounded-3xl p-20 flex flex-col items-center justify-center text-center shadow-soft border-2 border-dashed border-gray-200">
+                    <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+                        <span className="material-icons-round text-5xl text-gray-300">people_outline</span>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">No se encontró personal</h2>
+                    <p className="text-gray-500 max-w-sm mb-8">Si acabas de registrarte, estamos preparando tu perfil. Asegúrate de estar conectado a internet.</p>
+                    <div className="flex gap-4">
+                        <button 
+                            onClick={() => window.location.reload()} 
+                            className="bg-primary text-white px-8 py-3 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/30 hover:scale-105 transition-transform"
+                        >
+                            Sincronizar Ahora
+                        </button>
+                        <button 
+                            onClick={() => setActiveModal('add')}
+                            className="bg-white border border-gray-200 text-gray-600 px-8 py-3 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-50 transition-colors"
+                        >
+                            Agregar Manualmente
+                        </button>
+                    </div>
+                </div>
+            ) : viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredStaff.map(employee => (
                         <div key={employee.id} className="bg-white rounded-2xl p-6 shadow-card hover:shadow-lg relative group transition-all duration-300 border border-transparent hover:border-primary/10">
                             <div className="flex flex-col items-center">
                                 <div className="relative mb-4">
                                     <div className={`w-24 h-24 rounded-full p-1 border-2 ${employee.status === 'ON_SHIFT' ? 'border-green-500' : employee.status === 'BREAK' ? 'border-yellow-500' : 'border-gray-200'}`}>
-                                        <img src={employee.image} alt={employee.name} className="w-full h-full rounded-full object-cover" />
+                                        <img 
+                                            src={(employee.role === 'Admin' || employee.role === 'admin') ? ADMIN_AVATAR : (employee.image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200&h=200')} 
+                                            alt={employee.name} 
+                                            className="w-full h-full rounded-full object-cover" 
+                                        />
                                     </div>
                                     <span className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-2 border-white ${employee.status === 'ON_SHIFT' ? 'bg-green-500' : employee.status === 'BREAK' ? 'bg-yellow-500' : 'bg-gray-400'}`}></span>
                                 </div>
@@ -196,21 +239,25 @@ export const StaffScreen: React.FC = () => {
                                 <p className="text-primary text-sm font-bold mb-1">{employee.role}</p>
                                 <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md mb-4">{employee.area}</span>
                                 <div className="w-full flex justify-between items-center text-sm text-gray-500 mb-6 bg-gray-50 p-2 rounded-xl">
-                                    <div className="flex flex-col items-center flex-1 border-r border-gray-200"><span className="font-bold text-gray-900">{employee.hoursWorked}h</span><span className="text-[10px]">Hours</span></div>
+                                    <div className="flex flex-col items-center flex-1 border-r border-gray-200"><span className="font-bold text-gray-900">{employee.hoursWorked}h</span><span className="text-[10px]">Horas</span></div>
                                     <div className="flex flex-col items-center flex-1"><span className="font-bold text-gray-900 flex items-center gap-1">{employee.rating} <span className="material-icons-round text-yellow-500 text-xs">star</span></span><span className="text-[10px]">Rating</span></div>
                                 </div>
                                 <div className="flex gap-2 w-full">
-                                    <button onClick={() => handleProfileClick(employee)} className="flex-1 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-xs font-bold text-gray-600 transition-colors">Profile</button>
-                                    <button onClick={() => handleScheduleClick(employee)} className="flex-1 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-xs font-bold text-gray-600 transition-colors">Schedule</button>
+                                    <button onClick={() => handleProfileClick(employee)} className="flex-1 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-xs font-bold text-gray-600 transition-colors">Perfil</button>
+                                    {(activeEmployee?.role?.toLowerCase() === 'admin' || isSuperAdmin) && (
+                                        <button onClick={() => handleScheduleClick(employee)} className="flex-1 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-xs font-bold text-gray-600 transition-colors">Horario</button>
+                                    )}
                                 </div>
                             </div>
                             <div className={`absolute top-4 right-4 text-[10px] font-bold px-2 py-1 rounded-full ${employee.status === 'ON_SHIFT' ? 'bg-green-100 text-green-600' : employee.status === 'BREAK' ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-400'}`}>{employee.status.replace('_', ' ')}</div>
                         </div>
                     ))}
-                    <button onClick={() => setActiveModal('add')} className="bg-gray-50 rounded-2xl p-6 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-4 hover:bg-white hover:border-primary transition-all group cursor-pointer text-gray-400 hover:text-primary min-h-[300px]">
-                        <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors"><span className="material-icons-round text-3xl">add</span></div>
-                        <span className="font-bold">Recruit New Staff</span>
-                    </button>
+                    {(activeEmployee?.role?.toLowerCase() === 'admin' || isSuperAdmin) && (
+                        <button onClick={() => setActiveModal('add')} className="bg-gray-50 rounded-2xl p-6 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-4 hover:bg-white hover:border-primary transition-all group cursor-pointer text-gray-400 hover:text-primary min-h-[300px]">
+                            <div className="w-16 h-16 rounded-full bg-white shadow-sm flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-colors"><span className="material-icons-round text-3xl">add</span></div>
+                            <span className="font-bold">Reclutar Personal</span>
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
@@ -218,9 +265,9 @@ export const StaffScreen: React.FC = () => {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 text-sm">
-                                    <th className="py-4 px-6 font-bold">Employee</th>
-                                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => <th key={day} className="py-4 px-2 text-center">{day}</th>)}
-                                    <th className="py-4 px-6 text-right">Total Hours</th>
+                                    <th className="py-4 px-6 font-bold">Empleado</th>
+                                    {['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'].map(day => <th key={day} className="py-4 px-2 text-center">{day}</th>)}
+                                    <th className="py-4 px-6 text-right">Total Horas</th>
                                 </tr>
                             </thead>
                             <tbody className="text-sm">
@@ -228,7 +275,11 @@ export const StaffScreen: React.FC = () => {
                                     <tr key={employee.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-3">
-                                                <img src={employee.image} alt={employee.name} className="w-10 h-10 rounded-full object-cover" />
+                                                <img 
+                                                    src={(employee.role === 'Admin' || employee.role === 'admin') ? ADMIN_AVATAR : (employee.image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200&h=200')} 
+                                                    alt={employee.name} 
+                                                    className="w-10 h-10 rounded-full object-cover" 
+                                                />
                                                 <div><p className="font-bold text-gray-900">{employee.name}</p><p className="text-xs text-gray-500">{employee.role}</p></div>
                                             </div>
                                         </td>

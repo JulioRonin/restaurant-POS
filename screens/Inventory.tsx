@@ -1,20 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { MOCK_INVENTORY, INVENTORY_CATEGORIES } from '../constants';
+import { INVENTORY_CATEGORIES } from '../constants';
 import { InventoryItem, CartItem, SupplierOrder, SupplyOrderStatus } from '../types';
 import jsPDF from 'jspdf';
-import { v4 as uuidv4 } from 'uuid'; // We might need to mock this if uuid isn't installed, but I'll use a simple random ID for now.
-
-const generateId = () => Math.random().toString(36).substr(2, 9);
+import { useInventory } from '../contexts/InventoryContext';
+import { useMenu } from '../contexts/MenuContext';
 
 export const InventoryScreen: React.FC = () => {
-    // --- State ---
-    const [inventory, setInventory] = useState<InventoryItem[]>(MOCK_INVENTORY.map(i => ({ ...i, minStock: i.maxStock * 0.2 }))); // Initialize with mock data + default minStock
+    const { inventory, orders, loading, addInventoryItem, updateInventoryItem, deleteInventoryItem, createSupplierOrder, updateSupplierOrder } = useInventory();
+    const { addItem, updateItem, menuItems } = useMenu();
     const [activeCategory, setActiveCategory] = useState('All');
     const [activeTab, setActiveTab] = useState<'stock' | 'orders'>('stock');
 
     // Cart & Ordering
     const [cart, setCart] = useState<CartItem[]>([]);
-    const [orders, setOrders] = useState<SupplierOrder[]>([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
 
     // Editing
@@ -26,6 +24,9 @@ export const InventoryScreen: React.FC = () => {
     const [restockItem, setRestockItem] = useState<InventoryItem | null>(null);
     const [restockQty, setRestockQty] = useState<number>(0);
 
+    const [publishToMenu, setPublishToMenu] = useState(false);
+    const [menuPrice, setMenuPrice] = useState<number>(0);
+
     // --- Computed ---
     const filteredInventory = useMemo(() => {
         if (activeCategory === 'All') return inventory;
@@ -35,22 +36,30 @@ export const InventoryScreen: React.FC = () => {
     const cartTotal = cart.reduce((acc, item) => acc + (item.costPerUnit * item.orderQuantity), 0);
 
     // --- Actions: Inventory ---
-    const handleSaveItem = (item: InventoryItem) => {
+    const handleSaveItem = async (item: Partial<InventoryItem>) => {
+        const fullItem = {
+            ...item,
+            publicInMenu: publishToMenu,
+            price: menuPrice,
+            lastRestock: editingItem?.lastRestock || new Date().toISOString()
+        };
+
         if (editingItem) {
-            // Update existing
-            setInventory(prev => prev.map(i => i.id === item.id ? item : i));
+            await updateInventoryItem(editingItem.id, fullItem);
         } else {
-            // Add new
-            setInventory(prev => [...prev, { ...item, id: generateId(), lastRestock: new Date().toISOString().split('T')[0] }]);
+            await addInventoryItem(fullItem as Omit<InventoryItem, 'id'>);
         }
+
         setIsEditModalOpen(false);
         setIsAddItemModalOpen(false);
         setEditingItem(null);
+        setPublishToMenu(false);
+        setMenuPrice(0);
     };
 
-    const handleDeleteItem = (id: string) => {
-        if (confirm('Are you sure you want to delete this item?')) {
-            setInventory(prev => prev.filter(i => i.id !== id));
+    const handleDeleteItem = async (id: string) => {
+        if (window.confirm('¿Estás seguro de que deseas eliminar este artículo?')) {
+            await deleteInventoryItem(id);
         }
     };
 
@@ -78,48 +87,37 @@ export const InventoryScreen: React.FC = () => {
         }
     };
 
-    const handleCreateOrder = () => {
+    const handleCreateOrder = async () => {
         if (cart.length === 0) return;
-
-        const newOrder: SupplierOrder = {
-            id: generateId(),
-            supplier: 'Mixed Suppliers', // Creating one mixed order for simplicity, or could split by supplier
+        await createSupplierOrder({
+            supplier: 'Varios Proveedores',
             date: new Date().toISOString(),
             status: SupplyOrderStatus.PENDING,
             items: [...cart],
             totalCost: cartTotal
-        };
-
-        setOrders(prev => [newOrder, ...prev]);
+        });
         setCart([]);
         setIsCartOpen(false);
         setActiveTab('orders');
-        alert('Order placed successfully!');
     };
 
     // --- Actions: Orders ---
-    const updateOrderStatus = (orderId: string, status: SupplyOrderStatus) => {
+    const handleUpdateStatus = async (orderId: string, status: SupplyOrderStatus) => {
         if (status === SupplyOrderStatus.RECEIVED) {
-            // Update inventory levels
             const order = orders.find(o => o.id === orderId);
             if (order) {
-                setInventory(prevInv => {
-                    const newInv = [...prevInv];
-                    order.items.forEach(orderItem => {
-                        const itemIndex = newInv.findIndex(i => i.id === orderItem.id);
-                        if (itemIndex > -1) {
-                            newInv[itemIndex] = {
-                                ...newInv[itemIndex],
-                                quantity: newInv[itemIndex].quantity + orderItem.orderQuantity,
-                                lastRestock: new Date().toISOString().split('T')[0]
-                            };
-                        }
-                    });
-                    return newInv;
-                });
+                for (const orderItem of order.items) {
+                    const invItem = inventory.find(i => i.id === orderItem.id);
+                    if (invItem) {
+                        await updateInventoryItem(invItem.id, {
+                            quantity: invItem.quantity + orderItem.orderQuantity,
+                            lastRestock: new Date().toISOString()
+                        });
+                    }
+                }
             }
         }
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+        await updateSupplierOrder(orderId, { status });
     };
 
     const handleExportOrder = (order: SupplierOrder) => {
@@ -354,7 +352,7 @@ export const InventoryScreen: React.FC = () => {
                                     <div className="flex gap-2 w-full mt-auto">
                                         {order.status === 'PENDING' && (
                                             <button
-                                                onClick={() => updateOrderStatus(order.id, SupplyOrderStatus.ORDERED)}
+                                                onClick={() => handleUpdateStatus(order.id, SupplyOrderStatus.ORDERED)}
                                                 className="flex-1 bg-primary text-white py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:bg-blue-600"
                                             >
                                                 Mark Ordered
@@ -362,7 +360,7 @@ export const InventoryScreen: React.FC = () => {
                                         )}
                                         {order.status === 'ORDERED' && (
                                             <button
-                                                onClick={() => updateOrderStatus(order.id, SupplyOrderStatus.RECEIVED)}
+                                                onClick={() => handleUpdateStatus(order.id, SupplyOrderStatus.RECEIVED)}
                                                 className="flex-1 bg-green-500 text-white py-2 rounded-xl text-sm font-bold shadow-lg shadow-green-500/20 hover:bg-green-600"
                                             >
                                                 Receive Stock
@@ -420,10 +418,28 @@ export const InventoryScreen: React.FC = () => {
                     <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-2xl font-bold">{editingItem ? 'Edit Item' : 'New Item'}</h2>
-                            <button onClick={() => { setIsEditModalOpen(false); setIsAddItemModalOpen(false); }} className="text-gray-400 hover:text-gray-600">
+                            <button onClick={() => { 
+                                setIsEditModalOpen(false); 
+                                setIsAddItemModalOpen(false); 
+                                setEditingItem(null);
+                                setPublishToMenu(false);
+                                setMenuPrice(0);
+                            }} className="text-gray-400 hover:text-gray-600">
                                 <span className="material-icons-round">close</span>
                             </button>
                         </div>
+
+                        {/* Pre-fill state when editingItem changes */}
+                        {editingItem && !publishToMenu && editingItem.publicInMenu && (
+                            <div className="hidden">
+                                {setTimeout(() => {
+                                    if (!publishToMenu) {
+                                        setPublishToMenu(true);
+                                        setMenuPrice(editingItem.price || 0);
+                                    }
+                                }, 0)}
+                            </div>
+                        )}
 
                         <form onSubmit={(e) => {
                             e.preventDefault();
@@ -475,14 +491,48 @@ export const InventoryScreen: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4 bg-yellow-50 p-4 rounded-xl border border-yellow-100">
-                                <div>
-                                    <label className="block text-xs font-bold text-yellow-700 uppercase mb-1">Min (Low)</label>
-                                    <input name="minStock" type="number" defaultValue={editingItem?.minStock || 10} required className="w-full bg-white border border-yellow-200 rounded-xl px-4 py-2 outline-none focus:border-yellow-500 text-yellow-800 font-bold" />
+                            <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 space-y-4">
+                                <div className="grid grid-cols-2 gap-4 ">
+                                    <div>
+                                        <label className="block text-xs font-bold text-yellow-700 uppercase mb-1">Min (Low)</label>
+                                        <input name="minStock" type="number" defaultValue={editingItem?.minStock || 10} required className="w-full bg-white border border-yellow-200 rounded-xl px-4 py-2 outline-none focus:border-yellow-500 text-yellow-800 font-bold" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-yellow-700 uppercase mb-1">Max (Full)</label>
+                                        <input name="maxStock" type="number" defaultValue={editingItem?.maxStock || 100} required className="w-full bg-white border border-yellow-200 rounded-xl px-4 py-2 outline-none focus:border-yellow-500 text-yellow-800 font-bold" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-yellow-700 uppercase mb-1">Max (Full)</label>
-                                    <input name="maxStock" type="number" defaultValue={editingItem?.maxStock || 100} required className="w-full bg-white border border-yellow-200 rounded-xl px-4 py-2 outline-none focus:border-yellow-500 text-yellow-800 font-bold" />
+                                
+                                <div className="pt-2 border-t border-yellow-200/50">
+                                    <label className="flex items-center gap-3 cursor-pointer group">
+                                        <div className={`w-10 h-6 rounded-full transition-all relative ${publishToMenu || editingItem?.publicInMenu ? 'bg-primary' : 'bg-gray-300'}`}>
+                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${publishToMenu || editingItem?.publicInMenu ? 'left-5' : 'left-1'}`}></div>
+                                        </div>
+                                        <input 
+                                            type="checkbox" 
+                                            className="hidden" 
+                                            checked={publishToMenu || editingItem?.publicInMenu} 
+                                            onChange={(e) => setPublishToMenu(e.target.checked)} 
+                                        />
+                                        <span className="text-xs font-black text-gray-700 uppercase tracking-widest">Publicar en Menú</span>
+                                    </label>
+
+                                    {(publishToMenu || editingItem?.publicInMenu) && (
+                                        <div className="mt-4 animate-in slide-in-from-top-2">
+                                            <label className="block text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1">Venta al Público (Precio)</label>
+                                            <div className="relative">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400">$</span>
+                                                <input 
+                                                    type="number" 
+                                                    step="0.01"
+                                                    value={menuPrice || (editingItem?.linkedProductId ? menuItems.find(m => m.id === editingItem.linkedProductId)?.price : 0)} 
+                                                    onChange={(e) => setMenuPrice(Number(e.target.value))}
+                                                    className="w-full bg-white border-2 border-primary/20 rounded-xl pl-8 pr-4 py-2 outline-none focus:border-primary font-black text-primary" 
+                                                    required={publishToMenu}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

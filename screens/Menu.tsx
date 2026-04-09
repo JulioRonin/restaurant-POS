@@ -14,6 +14,15 @@ export const MenuScreen: React.FC = () => {
     const [importResult, setImportResult] = useState<{ count: number; errors: string[] } | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+
+    // Dynamic Categories from existing items + initial ones
+    const dynamicCategories = useMemo(() => {
+        const existing = Array.from(new Set(menuItems.map(item => item.category)));
+        const base = ['Entradas', 'Plato Fuerte', 'Bebidas', 'Postres', 'Extras', 'Tacos', 'Tortas'];
+        return Array.from(new Set(['All', ...base, ...existing]));
+    }, [menuItems]);
 
     const filteredItems = useMemo(() => {
         return menuItems.filter(item => {
@@ -65,6 +74,7 @@ export const MenuScreen: React.FC = () => {
         }
         setIsAddModalOpen(false);
         setEditingItem(null);
+        setIsAddingNewCategory(false);
     };
 
     return (
@@ -111,8 +121,8 @@ export const MenuScreen: React.FC = () => {
                                 className="w-full bg-transparent border-none outline-none font-medium py-2"
                             />
                         </div>
-                        <div className="flex gap-2 overflow-x-auto p-1 no-scrollbar">
-                            {['All', ...CATEGORIES.filter(c => c !== 'All'), 'Extras', 'Tacos', 'Tortas'].map(cat => (
+                        <div className="flex gap-2 overflow-x-auto p-1 no-scrollbar max-w-full">
+                            {dynamicCategories.map(cat => (
                                 <button
                                     key={cat}
                                     onClick={() => setActiveCategory(cat)}
@@ -273,11 +283,42 @@ export const MenuScreen: React.FC = () => {
                             </div>
                             <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Categoría</label>
-                                <select name="category" defaultValue={editingItem?.category || 'General'} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl outline-none font-bold text-gray-800 transition-all appearance-none cursor-pointer">
-                                    {['Aguachiles', 'Ceviches', 'Cocteles', 'Tostadas', 'Bebidas', 'Snacks', 'Caldos', 'Tacos', 'Tortas', 'Extras'].map(cat => (
-                                        <option key={cat} value={cat}>{cat}</option>
-                                    ))}
-                                </select>
+                                <div className="flex gap-2">
+                                    {!isAddingNewCategory ? (
+                                        <>
+                                            <select name="category" defaultValue={editingItem?.category || 'General'} className="flex-1 px-5 py-4 bg-gray-50 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl outline-none font-bold text-gray-800 transition-all appearance-none cursor-pointer">
+                                                {dynamicCategories.filter(c => c !== 'All').map(cat => (
+                                                    <option key={cat} value={cat}>{cat}</option>
+                                                ))}
+                                            </select>
+                                            <button 
+                                                type="button"
+                                                onClick={() => setIsAddingNewCategory(true)}
+                                                className="w-14 bg-gray-50 hover:bg-white border-2 border-transparent hover:border-primary rounded-2xl flex items-center justify-center text-primary transition-all"
+                                                title="Nueva Categoría"
+                                            >
+                                                <span className="material-icons-round">add_circle</span>
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <input 
+                                                autoFocus
+                                                name="category"
+                                                className="flex-1 px-5 py-4 bg-blue-50 border-2 border-primary focus:bg-white rounded-2xl outline-none font-bold text-gray-800 transition-all"
+                                                placeholder="Nombre de categoría..."
+                                            />
+                                            <button 
+                                                type="button"
+                                                onClick={() => setIsAddingNewCategory(false)}
+                                                className="w-14 bg-gray-50 hover:bg-red-50 border-2 border-transparent hover:border-red-200 rounded-2xl flex items-center justify-center text-red-500 transition-all"
+                                                title="Cancelar"
+                                            >
+                                                <span className="material-icons-round">close</span>
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Precio (MXN)</label>

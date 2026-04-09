@@ -1,68 +1,98 @@
 import React, { useState } from 'react';
 import { useSubscription } from '../contexts/SubscriptionContext';
-import { SubscriptionStatus } from '../types';
 
 export const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isExpired, daysRemaining, status, paySubscription } = useSubscription();
+  const { status, extendSubscription } = useSubscription();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleRenew = async () => {
+  const handleRealPayment = () => {
     setIsProcessing(true);
-    await paySubscription();
-    setIsProcessing(false);
+    // Redirección al Enlace de Pago Seguro de Stripe
+    window.location.href = "https://buy.stripe.com/test_3cIcMY0uodDXb4P3S6ffy00";
   };
 
-  if (isExpired) {
-    return (
-      <div className="fixed inset-0 z-[9999] bg-slate-900 flex items-center justify-center p-6 overflow-hidden">
-        {/* Background Aura */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/20 rounded-full blur-[120px] opacity-50 animate-pulse"></div>
-        
-        <div className="relative bg-white/10 backdrop-blur-3xl border border-white/20 rounded-[40px] p-12 max-w-lg w-full text-center shadow-2xl animate-in zoom-in-95 duration-500">
-          <div className="w-24 h-24 bg-red-500/20 border border-red-500/50 rounded-full flex items-center justify-center mx-auto mb-8 animate-bounce">
-            <span className="material-icons-round text-5xl text-red-500">lock</span>
-          </div>
-          
-          <h1 className="text-4xl font-black text-white mb-4 tracking-tight">Suscripción Vencida</h1>
-          <p className="text-slate-300 text-lg mb-10 leading-relaxed font-medium">
-            Tu licencia de <span className="text-primary font-bold">Culinex POS</span> ha expirado. Por favor, realiza tu pago mensual de **$965.00 MXN** para continuar operando tu negocio.
-          </p>
+  const handleVerifyPayment = async () => {
+    setIsProcessing(true);
+    try {
+        const success = await extendSubscription(30);
+        if (success) {
+            alert("¡Suscripción Verificada! Bienvenido de nuevo. ✅");
+            // No reload needed, context update will hide the guard
+        }
+    } catch (err: any) {
+        alert(`DETALLES DEL ERROR:\n${err.message || 'Error desconocido'}`);
+    } finally {
+        setIsProcessing(false);
+    }
+  };
 
-          <div className="bg-slate-800/50 rounded-2xl p-6 mb-10 border border-white/5">
-             <div className="flex justify-between items-center text-sm mb-2">
-                <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Costo Mensual</span>
-                <span className="text-white font-black text-xl">$965.00 MXN</span>
-             </div>
-             <div className="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                <div className="bg-red-500 h-full w-full animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
-             </div>
+  if (status === 'ACTIVE') return <>{children}</>;
+
+  const isExpired = status === 'EXPIRED';
+  const isEquipmentDebt = status === 'DEBT_BLOCKED';
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950 overflow-hidden">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className={`absolute top-[-20%] left-[-10%] w-[60%] h-[60%] ${isEquipmentDebt ? 'bg-amber-600/20' : 'bg-red-600/20'} rounded-full blur-[150px] animate-pulse`}></div>
+        <div className={`absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] ${isEquipmentDebt ? 'bg-amber-600/10' : 'bg-red-600/10'} rounded-full blur-[150px]`}></div>
+      </div>
+
+      <div className="relative w-full max-w-lg mx-auto p-4 animate-fadeIn">
+        <div className="bg-slate-900 border border-white/10 rounded-[48px] shadow-2xl p-10 backdrop-blur-xl flex flex-col items-center text-center">
+          <div className={`w-24 h-24 ${isEquipmentDebt ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500'} rounded-full flex items-center justify-center mb-8 border border-white/10 shadow-inner`}>
+            <span className="material-icons-round text-5xl">{isEquipmentDebt ? 'credit_card_off' : 'lock'}</span>
           </div>
 
-          <button
-            onClick={handleRenew}
-            disabled={isProcessing}
-            className={`w-full py-5 bg-primary hover:bg-blue-600 text-white rounded-2xl font-black text-xl shadow-2xl shadow-primary/30 transition-all active:scale-95 flex items-center justify-center gap-3 ${isProcessing ? 'opacity-80' : ''}`}
-          >
-            {isProcessing ? (
-              <>
-                <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-                Procesando Pago...
-              </>
-            ) : (
-              <>
-                <span className="material-icons-round">payments</span>
-                PAGAR Y RENOVAR AHORA
-              </>
-            )}
-          </button>
-          
-          <p className="mt-8 text-slate-500 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-             <span className="material-icons-round text-sm">verified_user</span> Transacción Segura by Ronin Studio
-          </p>
+          <div>
+            <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter">
+                {isExpired ? 'Suscripción Vencida' : 'Adeudo de Equipo'}
+            </h2>
+            <p className={`${isExpired ? 'text-red-200' : 'text-amber-200'} mb-8 font-bold uppercase text-[10px] tracking-[0.2em] opacity-70 leading-relaxed`}>
+                {isExpired 
+                    ? "Tu licencia de Culinex POS ha expirado. \n Regulariza tu pago mensual para continuar operando."
+                    : "Detectamos un atraso en el pago de tu hardware. \n Regulariza tu saldo para desbloquear la estación."
+                }
+            </p>
+
+            <div className="space-y-4 w-full">
+                <button 
+                  onClick={handleRealPayment}
+                  disabled={isProcessing}
+                  className={`w-full ${isExpired ? 'bg-white text-red-600' : 'bg-amber-500 text-black'} font-black py-5 rounded-[24px] flex items-center justify-center gap-3 shadow-xl hover:scale-[1.02] active:scale-95 transition-all text-lg group`}
+                >
+                  {isProcessing ? (
+                     <div className={`w-6 h-6 border-4 ${isExpired ? 'border-red-200 border-t-red-600' : 'border-amber-800/30 border-t-black'} rounded-full animate-spin`}></div>
+                  ) : (
+                    <>
+                      <span className="material-icons-round transition-transform group-hover:rotate-12">payments</span>
+                      {isExpired ? 'PAGAR SUSCRIPCIÓN (STRIPE)' : 'LIQUIDAR ADEUDO (STRIPE)'}
+                    </>
+                  )}
+                </button>
+
+                <button 
+                  onClick={handleVerifyPayment}
+                  disabled={isProcessing}
+                  className="w-full bg-white/10 text-white font-black py-5 rounded-[24px] hover:bg-white/20 transition-all border-2 border-white/20 shadow-xl flex items-center justify-center gap-3 active:scale-95"
+                >
+                  {isProcessing ? (
+                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : 'YA REALICÉ MI PAGO'}
+                </button>
+            </div>
+
+            {/* Technical Diagnostic Info */}
+            <div className="mt-8 pt-6 border-t border-white/10 text-center">
+              <p className="text-[10px] text-white/30 font-mono tracking-tighter uppercase mb-1">Diagnóstico del Sistema</p>
+              <code className="text-[9px] text-white/40 bg-black/20 px-2 py-1 rounded">
+                Status: {status} | User: {(String(window.localStorage.getItem('culinex_auth_profile'))?.includes('businessId') ? 'Perfil OK' : 'Sin Perfil')}
+              </code>
+            </div>
+          </div>
         </div>
       </div>
-    );
-  }
-
-  return <>{children}</>;
+    </div>
+  );
 };

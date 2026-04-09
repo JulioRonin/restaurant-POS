@@ -2,7 +2,25 @@ import ReceiptPrinterEncoder from 'esc-pos-encoder';
 
 class PrinterService {
   private device: any = null;
+  private btCharacteristic: any = null;
   private serverUrl = 'http://localhost:3001'; // Fallback / meta
+
+  private async sendData(data: Uint8Array): Promise<void> {
+    if (!this.device) throw new Error('No device connected');
+    
+    if (this.btCharacteristic) {
+      // Bluetooth Chunking (Fix for MTU limits)
+      const CHUNK_SIZE = 512;
+      for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+        const chunk = data.slice(i, i + CHUNK_SIZE);
+        await this.btCharacteristic.writeValue(chunk);
+        // Small delay to prevent overflow on some printers
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+    } else {
+      await this.device.transferOut(this.getEndpointNum(), data);
+    }
+  }
 
   async requestPrinter(): Promise<any | null> {
     try {
@@ -19,14 +37,57 @@ class PrinterService {
   async connect(device: any): Promise<boolean> {
     try {
       this.device = device;
-      await this.device.open();
-      if (this.device.configuration === null) {
-        await this.device.selectConfiguration(1);
+      if (this.device.gatt) {
+        // Bluetooth Device
+        const server = await this.device.gatt.connect();
+        const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb'); // Generic printer UUID
+        const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb'); // Generic write UUID
+        this.btCharacteristic = characteristic;
+        return true;
+      } else {
+        // USB Device
+        await this.device.open();
+        if (this.device.configuration === null) {
+          await this.device.selectConfiguration(1);
+        }
+        await this.device.claimInterface(0);
+        return true;
       }
-      await this.device.claimInterface(0);
-      return true;
     } catch (err) {
       console.error('Printer connection failed:', err);
+      return false;
+    }
+  }
+
+  async requestBluetoothPrinter(): Promise<any | null> {
+    try {
+      const device = await (navigator as any).bluetooth.requestDevice({
+        filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }],
+        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+      });
+      return device;
+    } catch (err) {
+      console.error('Bluetooth Selection failed:', err);
+      return null;
+    }
+  }
+
+  async autoConnect(deviceName: string): Promise<boolean> {
+    if (this.device) return true;
+    if (!deviceName || deviceName === 'None') return false;
+
+    try {
+      if (!('usb' in navigator)) return false;
+      const devices = await (navigator as any).usb.getDevices();
+      const target = devices.find((d: any) => d.productName === deviceName);
+      
+      if (target) {
+        console.log('[PrinterService] Auto-connecting to:', deviceName);
+        return await this.connect(target);
+      }
+      return false;
+    } catch (err) {
+      console.warn('[PrinterService] Auto-connect failed:', err);
       return false;
     }
   }
@@ -150,7 +211,7 @@ class PrinterService {
         .cut()
         .encode();
 
-      await this.device.transferOut(this.getEndpointNum(), result);
+      await this.sendData(result);
       return true;
     } catch (err) {
       console.error('Direct printing failed:', err);
@@ -166,12 +227,17 @@ class PrinterService {
 
     try {
       const encoder = new ReceiptPrinterEncoder();
+      
       const result = encoder.initialize()
-        .pulse(0, 100, 200)
-        .pulse(1, 100, 200)
+        .raw([0x1b, 0x3d, 0x01]) // ESC = 1: Select peripheral
+        .pulse(0, 25, 250)      // Pin 2 - Single Pulse
         .encode();
 
-      await this.device.transferOut(this.getEndpointNum(), result);
+      await this.sendData(result);
+      
+      // Delay to allow physical movement before printer buffer clears
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
       return true;
     } catch (err) {
       console.error('Failed to open cash drawer:', err);
@@ -278,7 +344,7 @@ class PrinterService {
         .cut()
         .encode();
 
-      await this.device.transferOut(this.getEndpointNum(), result);
+      await this.sendData(result);
       return true;
     } catch (err) {
       console.error('Cash cut printing failed:', err);
@@ -380,7 +446,7 @@ class PrinterService {
         .cut()
         .encode();
 
-      await this.device.transferOut(this.getEndpointNum(), result);
+      await this.sendData(result);
       return true;
     } catch (err) {
       console.error('Kitchen printing failed:', err);
@@ -390,11 +456,14 @@ class PrinterService {
 
   private getEndpointNum(): number {
     // Standard endpoint for most printers is 1 or 2
-    // We ideally should search for the Bulk Out endpoint
-    if (!this.device) return 1;
-    const iface = this.device.configurations[0].interfaces[0];
-    const endpoint = iface.alternates[0].endpoints.find(e => e.direction === 'out');
-    return endpoint ? endpoint.endpointNumber : 1;
+    if (!this.device || this.btCharacteristic) return 1;
+    try {
+      const iface = this.device.configurations[0].interfaces[0];
+      const endpoint = iface.alternates[0].endpoints.find((e: any) => e.direction === 'out');
+      return endpoint ? endpoint.endpointNumber : 1;
+    } catch (e) {
+      return 1;
+    }
   }
 
   async disconnect() {

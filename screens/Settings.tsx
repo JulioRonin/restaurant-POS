@@ -7,13 +7,14 @@ import { printerService } from '../services/PrinterService';
 import { bluetoothTerminalService } from '../services/BluetoothTerminalService';
 
 export const SettingsScreen: React.FC = () => {
+    const { settings, updateSettings } = useSettings();
     const [activeTab, setActiveTab] = useState<'general' | 'appearance' | 'hardware' | 'users' | 'notifications'>('general');
     const [virtualMode, setVirtualMode] = useState<boolean>(false);
     const [hardwareStatus, setHardwareStatus] = useState({
-        printer: 'disconnected',
+        printer: settings.connectedDeviceName && settings.connectedDeviceName !== 'None' ? 'connected' : 'disconnected',
         scanner: 'disconnected',
-        drawer: 'disconnected',
-        terminal: 'disconnected'
+        drawer: settings.isCashDrawerEnabled ? 'connected' : 'disconnected',
+        terminal: settings.connectedTerminalName && settings.connectedTerminalName !== 'None' ? 'connected' : 'disconnected'
     });
 
     // Wizard State
@@ -22,11 +23,10 @@ export const SettingsScreen: React.FC = () => {
     const [wizardConfig, setWizardConfig] = useState({
         pairingCode: '',
         isConnecting: false,
-        error: ''
+        error: null as string | null
     });
 
-    const { settings, updateSettings } = useSettings();
-    const { users, addUser, updateUser, deleteUser, currentUser } = useUser();
+    const { employees: users, addEmployee: addUser, updateEmployee: updateUser, deleteEmployee: deleteUser, authProfile: currentUser } = useUser();
     const [localSettings, setLocalSettings] = useState<BusinessSettings>(settings);
     const [testOrderToPrint, setTestOrderToPrint] = useState<any>(null);
     const [showsSavedMessage, setShowsSavedMessage] = useState(false);
@@ -36,8 +36,9 @@ export const SettingsScreen: React.FC = () => {
     const [editingUser, setEditingUser] = useState<any>(null);
     const [newUserForm, setNewUserForm] = useState({
         name: '',
-        role: 'Waiter',
-        status: 'ON_SHIFT',
+        role: 'Mesero',
+        area: 'Service' as any,
+        status: 'ON_SHIFT' as any,
         pin: '1111',
         image: 'https://i.pravatar.cc/150?u=' + Math.random()
     });
@@ -182,9 +183,15 @@ export const SettingsScreen: React.FC = () => {
         { id: 'hardware', label: 'Hardware & Devices', icon: 'devices' },
         { id: 'users', label: 'Users & Roles', icon: 'manage_accounts', adminOnly: true },
         { id: 'notifications', label: 'Notifications', icon: 'notifications' },
+        { id: 'diagnostics', label: 'Diagnostico Pro', icon: 'health_and_safety', adminOnly: true },
     ];
 
-    const filteredTabs = tabs.filter(tab => !tab.adminOnly || (currentUser?.role === 'Admin' || currentUser?.role === 'Manager' || currentUser?.role === 'Owner' || currentUser?.role === 'Gerente' || currentUser?.role === 'Chef Principal'));
+    const filteredTabs = tabs.filter(tab => {
+        if (!tab.adminOnly) return true;
+        const role = currentUser?.role?.toLowerCase();
+        // Solo el dueño (admin) puede gestionar usuarios y roles
+        return role === 'admin' || role === 'owner';
+    });
 
     return (
         <div className="flex-1 bg-[#F3F4F6] text-gray-800 p-8 overflow-y-auto h-full relative">
@@ -260,6 +267,39 @@ export const SettingsScreen: React.FC = () => {
                                 <div>
                                     <label className="block text-sm font-bold text-gray-700 mb-2">Ticket Footer Message</label>
                                     <textarea value={localSettings.footerMessage} onChange={e => setLocalSettings(prev => ({ ...prev, footerMessage: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all h-24" />
+                                </div>
+
+                                {/* Bank Information Section */}
+                                <div className="pt-6 border-t border-gray-100">
+                                    <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                        <span className="material-icons-round text-primary">account_balance</span>
+                                        Información Bancaria (Transferencias)
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">Nombre del Banco</label>
+                                            <input type="text" value={localSettings.bankName || ''} onChange={e => setLocalSettings(prev => ({ ...prev, bankName: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Ej. BBVA, Santander..." />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">Nombre del Beneficiario</label>
+                                            <input type="text" value={localSettings.bankBeneficiary || ''} onChange={e => setLocalSettings(prev => ({ ...prev, bankBeneficiary: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Nombre completo" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">Número de Cuenta / Tarjeta</label>
+                                            <input type="text" value={localSettings.bankAccount || ''} onChange={e => setLocalSettings(prev => ({ ...prev, bankAccount: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="0000 0000 0000 0000" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">CLABE Interbancaria</label>
+                                            <input type="text" value={localSettings.bankCLABE || ''} onChange={e => setLocalSettings(prev => ({ ...prev, bankCLABE: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="18 dígitos" />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">WhatsApp para Comprobantes</label>
+                                            <div className="relative">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">+52</span>
+                                                <input type="text" value={localSettings.bankWhatsapp || ''} onChange={e => setLocalSettings(prev => ({ ...prev, bankWhatsapp: e.target.value }))} className="w-full border border-gray-200 rounded-xl pl-12 pr-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="10 dígitos" />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="bg-blue-50 border border-blue-100 p-6 rounded-2xl flex items-center justify-between group hover:bg-blue-100/50 transition-all">
@@ -477,15 +517,42 @@ export const SettingsScreen: React.FC = () => {
                                                 )}
 
                                             <div className="mt-auto flex flex-col gap-2">
-                                                <button
-                                                    onClick={localSettings.connectedDeviceName === 'None' ? handleConnectUSB : handleDisconnectUSB}
-                                                    className={`py-2 rounded-xl font-bold text-sm transition-colors ${localSettings.connectedDeviceName !== 'None'
-                                                            ? 'bg-red-50 text-red-500 hover:bg-red-100'
-                                                            : 'bg-primary text-white hover:bg-blue-600'
-                                                        }`}
-                                                >
-                                                    {localSettings.connectedDeviceName !== 'None' ? 'Disconnect' : 'Connect USB Printer'}
-                                                </button>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={localSettings.connectedDeviceName === 'None' ? handleConnectUSB : handleDisconnectUSB}
+                                                        className={`flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-1 ${localSettings.connectedDeviceName !== 'None'
+                                                                ? 'bg-red-50 text-red-500 border border-red-200'
+                                                                : 'bg-primary text-white shadow-lg shadow-blue-900/20'
+                                                            }`}
+                                                    >
+                                                        <span className="material-icons-round text-sm">usb</span>
+                                                        {localSettings.connectedDeviceName !== 'None' ? 'DESCONECTAR' : 'CONECTAR USB'}
+                                                    </button>
+
+                                                    {localSettings.connectedDeviceName === 'None' && (
+                                                        <button
+                                                            onClick={async () => {
+                                                                const device = await printerService.requestBluetoothPrinter();
+                                                                if (device) {
+                                                                    const ok = await printerService.connect(device);
+                                                                    if (ok) {
+                                                                       const name = device.name || 'BT-Printer';
+                                                                       setLocalSettings(prev => ({ 
+                                                                           ...prev, 
+                                                                           connectedDeviceName: name,
+                                                                           isDirectPrintingEnabled: true 
+                                                                       }));
+                                                                       alert(`✅ Impresora Bluetooth "${name}" Conectada`);
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className="flex-1 py-3 bg-slate-900 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-1"
+                                                        >
+                                                            <span className="material-icons-round text-sm text-blue-400">bluetooth</span>
+                                                            CONECTAR BT
+                                                        </button>
+                                                    )}
+                                                </div>
                                                 
                                                 {localSettings.connectedDeviceName === 'None' && (
                                                     <div className="bg-yellow-50 border border-yellow-100 p-2 rounded-lg">
@@ -535,9 +602,9 @@ export const SettingsScreen: React.FC = () => {
                                                 <div className="p-3 bg-gray-100 rounded-xl text-gray-600">
                                                     <span className="material-icons-round text-2xl">point_of_sale</span>
                                                 </div>
-                                                <div className={`px-2 py-1 rounded-lg text-xs font-bold ${hardwareStatus.drawer === 'connected' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                                                <div className={`px-2 py-1 rounded-lg text-xs font-bold ${localSettings.isCashDrawerEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                                                     }`}>
-                                                    {hardwareStatus.drawer === 'connecting' ? 'Connecting...' : hardwareStatus.drawer === 'connected' ? 'Connected' : 'Disconnected'}
+                                                    {localSettings.isCashDrawerEnabled ? 'Enabled' : 'Disabled'}
                                                 </div>
                                             </div>
                                             <div>
@@ -545,13 +612,13 @@ export const SettingsScreen: React.FC = () => {
                                                 <p className="text-xs text-gray-500">APG Cash Drawer (RJ11)</p>
                                             </div>
                                             <button
-                                                onClick={() => toggleHardwareConnection('drawer')}
-                                                className={`mt-auto py-2 rounded-xl font-bold text-sm transition-colors ${hardwareStatus.drawer === 'connected'
+                                                onClick={() => setLocalSettings(prev => ({ ...prev, isCashDrawerEnabled: !prev.isCashDrawerEnabled }))}
+                                                className={`mt-auto py-2 rounded-xl font-bold text-sm transition-colors ${localSettings.isCashDrawerEnabled
                                                         ? 'bg-red-50 text-red-500 hover:bg-red-100'
                                                         : 'bg-primary text-white hover:bg-blue-600'
                                                     }`}
                                             >
-                                                {hardwareStatus.drawer === 'connected' ? 'Disconnect' : 'Connect'}
+                                                {localSettings.isCashDrawerEnabled ? 'Disable' : 'Enable & Connect'}
                                             </button>
                                         </div>
                                     </div>
@@ -564,12 +631,104 @@ export const SettingsScreen: React.FC = () => {
                             </div>
                         )}
 
+                        {activeTab === 'diagnostics' && (
+                            <div className="space-y-8 animate-fadeIn">
+                                <div className="mb-6">
+                                    <h2 className="text-2xl font-bold text-gray-900 font-black uppercase tracking-tight">Diagnóstico de Salud POS</h2>
+                                    <p className="text-sm text-gray-500 font-bold uppercase tracking-widest mt-1">Valida la conexión y el estado físico de tus periféricos</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {/* Test Printer */}
+                                    <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-soft hover:shadow-lg transition-all group">
+                                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                            <span className="material-icons-round text-2xl">print</span>
+                                        </div>
+                                        <h3 className="font-black text-gray-900 mb-2 uppercase text-xs tracking-widest">Prueba de Impresión</h3>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase mb-4 leading-relaxed">Imprime un ticket de cortesía para validar alineación y corte.</p>
+                                        <button 
+                                            onClick={handlePrintTest}
+                                            className="w-full py-3 bg-blue-600 text-white font-black rounded-xl text-[10px] uppercase tracking-[0.15em] shadow-lg shadow-blue-200 active:scale-95 transition-all"
+                                        >
+                                            Mandar Ticket de Prueba
+                                        </button>
+                                    </div>
+
+                                    {/* Test Cash Drawer */}
+                                    <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-soft hover:shadow-lg transition-all group">
+                                        <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                            <span className="material-icons-round text-2xl">point_of_sale</span>
+                                        </div>
+                                        <h3 className="font-black text-gray-900 mb-2 uppercase text-xs tracking-widest">Apertura de Cajón</h3>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase mb-4 leading-relaxed">Envía pulsos electrónicos a ambos pines para validar apertura física.</p>
+                                        <button 
+                                            onClick={async () => {
+                                                const success = await printerService.openCashDrawer();
+                                                if (!success) alert("La impresora debe estar conectada para abrir el cajón vía cable RJ11.");
+                                            }}
+                                            className="w-full py-3 bg-amber-600 text-white font-black rounded-xl text-[10px] uppercase tracking-[0.15em] shadow-lg shadow-amber-200 active:scale-95 transition-all"
+                                        >
+                                            Abrir Cajón Ahora
+                                        </button>
+                                    </div>
+
+                                    {/* Test Scanner */}
+                                    <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-soft hover:shadow-lg transition-all group">
+                                        <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                            <span className="material-icons-round text-2xl">qr_code_scanner</span>
+                                        </div>
+                                        <h3 className="font-black text-gray-900 mb-2 uppercase text-xs tracking-widest">Monitor de Scanner</h3>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase mb-4 leading-relaxed">Escanea cualquier código de barras para probar la entrada HID/BT.</p>
+                                        <div className="relative">
+                                            <input 
+                                                type="text" 
+                                                placeholder="ESCANEA AQUÍ..." 
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[10px] font-black uppercase outline-none focus:border-emerald-500 transition-all text-center"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const target = e.target as HTMLInputElement;
+                                                        if (target.value) {
+                                                            alert(`SCAN EXITOSO: ${target.value}`);
+                                                            target.value = '';
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 p-8 bg-slate-900 rounded-[32px] text-white relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 p-8 opacity-10">
+                                        <span className="material-icons-round text-[120px]">verified</span>
+                                    </div>
+                                    <div className="relative z-10">
+                                        <h3 className="text-xl font-black uppercase tracking-tight mb-4">Certificación de Estación</h3>
+                                        <p className="text-slate-400 text-sm leading-relaxed mb-6 max-w-lg">
+                                            Si las tres pruebas anteriores son exitosas, el equipo está listo para operar. 
+                                            Recuerda que la persistencia de datos (con o sin internet) está asegurada por el motor de sincronización de Culinex.
+                                        </p>
+                                        <div className="flex gap-4">
+                                            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/10">
+                                                <span className="material-icons-round text-emerald-400 text-sm">security</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Cifrado Local</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/10">
+                                                <span className="material-icons-round text-blue-400 text-sm">cloud_sync</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Auto-Backup</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {activeTab === 'users' && (
                             <div className="space-y-6 animate-fadeIn">
                                 <div className="flex justify-between items-center mb-6">
                                     <h2 className="text-2xl font-bold text-gray-900 font-black uppercase tracking-tight">Gestión de Personal</h2>
                                     <button 
-                                        onClick={() => { setEditingUser(null); setNewUserForm({ name: '', role: 'Waiter', area: 'Service', status: 'ON_SHIFT', pin: '', image: 'https://i.pravatar.cc/150?u=' + Math.random() }); setShowUserModal(true); }}
+                                        onClick={() => { setEditingUser(null); setNewUserForm({ name: '', role: 'Mesero', area: 'Service', status: 'ON_SHIFT' as any, pin: '', image: 'https://i.pravatar.cc/150?u=' + Math.random() }); setShowUserModal(true); }}
                                         className="bg-primary text-white font-black px-6 py-3 rounded-xl text-sm flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-105 transition-all"
                                     >
                                         <span className="material-icons-round">person_add</span>
@@ -636,10 +795,15 @@ export const SettingsScreen: React.FC = () => {
                                                         <label className="block text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-2">Rol</label>
                                                         <select value={newUserForm.role} onChange={e => setNewUserForm({ ...newUserForm, role: e.target.value })} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold">
                                                             <option>Admin</option>
+                                                            <option>Gerente</option>
                                                             <option>Cajero</option>
                                                             <option>Mesero</option>
-                                                            <option>Chef</option>
+                                                            <option>Mesera</option>
+                                                            <option>Chef Principal</option>
+                                                            <option>Cocinero</option>
                                                             <option>Barra</option>
+                                                            <option>Ayudante</option>
+                                                            <option>Limpieza</option>
                                                         </select>
                                                     </div>
                                                     <div>

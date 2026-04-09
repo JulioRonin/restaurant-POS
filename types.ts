@@ -3,6 +3,7 @@ export enum OrderStatus {
   COOKING = 'COOKING',
   READY = 'READY',
   SERVED = 'SERVED',
+  BILL_REQUESTED = 'BILL_REQUESTED',
   COMPLETED = 'COMPLETED'
 }
 
@@ -23,6 +24,7 @@ export interface MenuItem {
   description?: string;
   status: 'ACTIVE' | 'INACTIVE';
   gramaje?: string;
+  businessId: string;
 }
 
 export interface OrderItem extends MenuItem {
@@ -34,7 +36,10 @@ export enum OrderSource {
   DINE_IN = 'DINE_IN',
   UBER_EATS = 'UBER_EATS',
   RAPPI = 'RAPPI',
-  PICKUP = 'PICKUP'
+  DIDI = 'DIDI',
+  TO_GO = 'TO_GO',
+  PICKUP = 'PICKUP',
+  DRIVE_THRU = 'DRIVE_THRU'
 }
 
 export interface Order {
@@ -104,8 +109,10 @@ export interface Employee {
   rating: number; // 0-5
   hoursWorked: number;
   schedule: { day: string; start: string; end: string }[]; // New field
-  pin: string; // 4-digit PIN for login
+  pin: string | null; // 4-digit PIN for login (null = First Time Setup)
   phone?: string;
+  businessId: string;
+  locationId?: string;
 }
 
 export interface InventoryItem {
@@ -119,6 +126,9 @@ export interface InventoryItem {
   minStock: number; // New field for reorder point
   supplier: string;
   lastRestock: string;
+  publicInMenu?: boolean;
+  price?: number; // Retail price when showing in menu
+  linkedProductId?: string;
 }
 
 export interface CartItem extends InventoryItem {

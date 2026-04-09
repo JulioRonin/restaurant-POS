@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { useExpenses } from '../contexts/ExpenseContext';
-import { TABLES } from '../constants';
+import { useTables } from '../contexts/TableContext';
 import { Order, PaymentMethod, PaymentStatus, InvoiceDetails, ExpenseCategory, OrderStatus, OrderSource } from '../types';
 import { useSettings } from '../contexts/SettingsContext';
 import { useUser } from '../contexts/UserContext';
@@ -15,6 +15,7 @@ export const CashierScreen: React.FC = () => {
     // Contexts
     const { orders, updateOrderStatus } = useOrders();
     const { expenses, addExpense, deleteExpense } = useExpenses();
+    const { tables: TABLES } = useTables();
 
     // View State
     const [activeTab, setActiveTab] = useState<'tables' | 'expenses' | 'history' | 'delivery'>('tables');
@@ -53,6 +54,7 @@ export const CashierScreen: React.FC = () => {
         expenses: any[],
         totalExpenses: number
     } | null>(null);
+    const [dismissedBillRequests, setDismissedBillRequests] = useState<string[]>([]);
 
     const handlePrintTicket = async (order: Order) => {
         // Enrich order with table info and current user if missing
@@ -72,7 +74,7 @@ export const CashierScreen: React.FC = () => {
         setTimeout(() => {
             window.print();
             setOrderToPrint(null);
-        }, 100);
+        }, 350);
     };
 
     const handlePrintCashCut = async () => {
@@ -130,8 +132,8 @@ export const CashierScreen: React.FC = () => {
 
         updateOrderStatus(selectedOrder.id, updatedOrder.status, updatedOrder);
         
-        // Open Cash Drawer if it's a cash or mixed payment
-        if ((paymentMethod === PaymentMethod.CASH || paymentMethod === PaymentMethod.MIXED) && settings.isDirectPrintingEnabled) {
+        // Open Cash Drawer if it's a cash or mixed payment AND enabled in settings
+        if ((paymentMethod === PaymentMethod.CASH || paymentMethod === PaymentMethod.MIXED) && settings.isCashDrawerEnabled) {
             await printerService.openCashDrawer();
         }
 
@@ -155,7 +157,10 @@ export const CashierScreen: React.FC = () => {
 
     // --- POS Logic ---
     const activeOrders = useMemo(() => orders.filter(o => o.status !== 'COMPLETED'), [orders]);
-    const selectedOrder = useMemo(() => orders.find(o => (o.tableId === selectedTableId || (selectedTableId === 'BARRA' && o.tableId === 'Barra')) && o.status !== 'COMPLETED'), [orders, selectedTableId]);
+    const selectedOrder = useMemo(() => orders.find(o => 
+        (o.id === selectedTableId || o.tableId === selectedTableId || (selectedTableId === 'BARRA' && o.tableId === 'Barra')) && 
+        o.status !== 'COMPLETED'
+    ), [orders, selectedTableId]);
 
     const subtotal = selectedOrder?.total || 0;
     const total = subtotal + tipAmount;
@@ -243,6 +248,60 @@ export const CashierScreen: React.FC = () => {
             </div>
 
             <div className="flex flex-1 h-full print:hidden relative">
+                {/* Bill Request Alerts */}
+                {(() => {
+                    const activeRequests = orders.filter(o => o.status === OrderStatus.BILL_REQUESTED && !dismissedBillRequests.includes(o.id));
+                    if (activeRequests.length === 0) return null;
+
+                    const handleBannerClick = () => {
+                        const ids = activeRequests.map(o => o.id);
+                        setDismissedBillRequests(prev => [...new Set([...prev, ...ids])]);
+                        setActiveTab('tables');
+                        
+                        // Select the first one automatically
+                        if (activeRequests[0].tableId) {
+                            setSelectedTableId(activeRequests[0].tableId);
+                        }
+                    };
+
+                    return (
+                        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[500] animate-in slide-in-from-top-4 duration-500 w-full max-w-xl px-4">
+                            <div 
+                                onClick={handleBannerClick}
+                                className="bg-amber-500 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center justify-between border-4 border-white cursor-pointer hover:bg-amber-600 transition-all group scale-100 hover:scale-[1.02] active:scale-95"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span className="material-icons-round text-3xl animate-bounce">notifications_active</span>
+                                    <div>
+                                        <p className="font-black text-xs uppercase tracking-widest leading-none">Solicitudes de Cuenta</p>
+                                        <p className="font-bold text-sm opacity-90">
+                                            {activeRequests.map(o => {
+                                                const sourceName = o.source && o.source !== OrderSource.DINE_IN ? o.source : 'Mesa';
+                                                return `${sourceName} ${o.tableId}`;
+                                            }).join(', ')}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black group-hover:bg-white/40 transition-colors">
+                                        {activeRequests.length} MESAS
+                                    </span>
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Don't trigger the select-table logic
+                                            const ids = activeRequests.map(o => o.id);
+                                            setDismissedBillRequests(prev => [...new Set([...prev, ...ids])]);
+                                        }}
+                                        className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/40 transition-colors"
+                                    >
+                                        <span className="material-icons-round text-sm">close</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })()}
+
                 {/* Global Notification Toast */}
                 {successMessage && (
                     <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[500] animate-in slide-in-from-top-4 duration-500">
@@ -275,13 +334,27 @@ export const CashierScreen: React.FC = () => {
                             <>
                                 {TABLES.map(table => {
                                     const order = orders.find(o => o.tableId === table.id && o.status !== 'COMPLETED');
-                                    const statusColor = order ? 'bg-orange-100 border-orange-200' : 'bg-gray-50 border-gray-100 opacity-60';
+                                    const isBillRequested = order?.status === OrderStatus.BILL_REQUESTED;
+                                    
+                                    // Highlight logic: if it requested a bill, keep it glowing until dismissed or paid
+                                    const isHighlighted = isBillRequested && !dismissedBillRequests.includes(order?.id || '');
+
+                                    const statusColor = isHighlighted ? 'bg-amber-50 border-amber-500 ring-4 ring-amber-500/20 shadow-lg shadow-amber-200/50' : 
+                                                      isBillRequested ? 'bg-orange-50 border-orange-200' :
+                                                      order ? 'bg-orange-100 border-orange-200' : 
+                                                      'bg-gray-50 border-gray-100 opacity-60';
+                                    
                                     return (
                                         <div
                                             key={table.id}
                                             onClick={() => order && setSelectedTableId(table.id)}
-                                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${statusColor} ${selectedTableId === table.id ? 'ring-2 ring-primary border-primary' : ''}`}
+                                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all relative overflow-hidden ${statusColor} ${selectedTableId === table.id ? 'ring-2 ring-primary border-primary' : ''} ${isHighlighted ? 'animate-pulse' : ''}`}
                                         >
+                                            {isBillRequested && (
+                                                <div className={`absolute top-0 right-0 ${isHighlighted ? 'bg-amber-500' : 'bg-orange-500'} text-white px-2 py-0.5 rounded-bl-lg text-[8px] font-black`}>
+                                                    CUENTA
+                                                </div>
+                                            )}
                                             <div className="flex justify-between items-center mb-2">
                                                 <div className="flex flex-col">
                                                     <span className="font-bold text-lg">{table.name}</span>
@@ -314,6 +387,34 @@ export const CashierScreen: React.FC = () => {
                                     </div>
                                 )}
                             </>
+                        ) : activeTab === 'delivery' ? (
+                            <div className="space-y-3">
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Órdenes de Aplicaciones / Delivery</h3>
+                                {orders.filter(o => o.source && o.source !== OrderSource.DINE_IN && o.status !== 'COMPLETED').map(order => (
+                                    <div
+                                        key={order.id}
+                                        onClick={() => setSelectedTableId(order.id)}
+                                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                                            order.source === OrderSource.RAPPI ? 'bg-pink-50 border-pink-100' :
+                                            order.source === OrderSource.DIDI ? 'bg-orange-50 border-orange-100' :
+                                            order.source === OrderSource.UBER_EATS ? 'bg-green-50 border-green-100' :
+                                            'bg-blue-50 border-blue-100'
+                                        } ${selectedTableId === order.id ? 'ring-2 ring-primary border-primary' : ''}`}
+                                    >
+                                        <div className="flex justify-between items-center mb-1">
+                                            <div className="flex flex-col">
+                                                <span className="font-black text-gray-800 uppercase text-xs tracking-wider">{order.source}</span>
+                                                <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Orden: {order.tableId}</span>
+                                            </div>
+                                            <span className="bg-white/60 px-2 py-1 rounded-full font-black text-xs shadow-sm">${order.total.toFixed(2)}</span>
+                                        </div>
+                                        <div className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-2">{order.items.length} Platillos • ID: {order.id.slice(-6)}</div>
+                                    </div>
+                                ))}
+                                {orders.filter(o => o.source && o.source !== OrderSource.DINE_IN && o.status !== 'COMPLETED').length === 0 && (
+                                    <div className="py-10 text-center text-gray-400 italic text-sm">No hay pedidos de delivery activos</div>
+                                )}
+                            </div>
                         ) : activeTab === 'expenses' ? (
                             <>
                                 <div className="mb-4">
@@ -557,6 +658,7 @@ export const CashierScreen: React.FC = () => {
                 onConfirm={handleProcessPayment}
                 isProcessingTerminal={isProcessingTerminal}
                 terminalStep={terminalStep}
+                settings={settings}
             />
 
             {showFinancialReport && (
@@ -581,7 +683,8 @@ const PaymentModal: React.FC<{
     onConfirm: () => void;
     isProcessingTerminal: boolean;
     terminalStep: string;
-}> = ({ isOpen, onClose, total, paymentMethod, setPaymentMethod, cashReceived, setCashReceived, onConfirm, isProcessingTerminal, terminalStep }) => {
+    settings: any;
+}> = ({ isOpen, onClose, total, paymentMethod, setPaymentMethod, cashReceived, setCashReceived, onConfirm, isProcessingTerminal, terminalStep, settings }) => {
     if (!isOpen) return null;
     const change = Math.max(0, (parseFloat(cashReceived) || 0) - total);
     return (
@@ -647,6 +750,61 @@ const PaymentModal: React.FC<{
                             <div className="p-5 bg-green-50 border-2 border-green-100 rounded-2xl flex justify-between items-center group">
                                 <div><p className="text-green-600 text-[10px] font-black uppercase tracking-wider">Cambio a Entregar</p><h3 className="text-3xl font-black text-green-700">${change.toFixed(2)}</h3></div>
                                 <div className="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center group-hover:scale-110 transition-transform"><span className="material-icons-round">account_balance_wallet</span></div>
+                            </div>
+                        </div>
+                    )}
+
+                    {paymentMethod === PaymentMethod.TRANSFER && (
+                        <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                            <div className="p-6 bg-blue-50 border-2 border-blue-100 rounded-2xl relative overflow-hidden">
+                                <div className="absolute -right-2 -top-2 opacity-10">
+                                    <span className="material-icons-round text-6xl text-blue-600">account_balance</span>
+                                </div>
+                                
+                                <div className="space-y-4 relative z-10">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Banco</p>
+                                            <p className="font-bold text-gray-900">{settings.bankName || 'No configurado'}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Beneficiario</p>
+                                            <p className="font-bold text-gray-900">{settings.bankBeneficiary || 'No configurado'}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-3 border-t border-blue-100">
+                                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Tarjeta / Cuenta / CLABE</p>
+                                        <div className="flex items-center justify-between">
+                                            <p className="text-lg font-black text-blue-700 tracking-wider">
+                                                {settings.bankCLABE || settings.bankAccount || '--- --- ---'}
+                                            </p>
+                                            <button 
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(settings.bankCLABE || settings.bankAccount || '');
+                                                    alert('Copiado al portapapeles');
+                                                }}
+                                                className="p-2 bg-white rounded-lg shadow-sm border border-blue-100 text-blue-600 hover:bg-blue-100 transition-colors"
+                                            >
+                                                <span className="material-icons-round text-sm">content_copy</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {settings.bankWhatsapp && (
+                                        <div className="pt-3 border-t border-blue-100">
+                                            <a 
+                                                href={`https://wa.me/52${settings.bankWhatsapp}?text=Hola, envío mi comprobante de pago por $${total.toFixed(2)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="w-full py-3 bg-[#25D366] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-100 hover:scale-[1.02] active:scale-95 transition-all text-sm"
+                                            >
+                                                <span className="material-icons-round">whatsapp</span>
+                                                Enviar Comprobante
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     )}

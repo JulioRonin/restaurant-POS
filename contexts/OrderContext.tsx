@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useUser } from './UserContext';
 import { Order, OrderStatus, OrderSource } from '../types';
+import { getAll, put, deleteRecord } from '../services/db';
+import { trackChange } from '../services/SyncService';
 
 interface OrderContextType {
   orders: Order[];
@@ -18,56 +21,75 @@ export const useOrders = () => {
 };
 
 export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Initial Data with Persistence
-  const [orders, setOrders] = useState<Order[]>(() => {
-    const saved = localStorage.getItem('active_orders');
+  const { authProfile } = useUser();
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  // Initial data from localStorage for instant load, then replace with IndexedDB
+  useEffect(() => {
+    if (!authProfile?.businessId) return;
+
+    const key = `culinex_orders_${authProfile.businessId}`;
+    const saved = localStorage.getItem(key);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return parsed.map((o: any) => ({ ...o, timestamp: new Date(o.timestamp) }));
+        setOrders(parsed.map((o: any) => ({ ...o, timestamp: new Date(o.timestamp) })));
       } catch (e) {
         console.error('Error loading orders:', e);
       }
+    } else {
+      setOrders([]);
     }
-    // Default Mock Data
-    return [
-      {
-        id: '2034',
-        tableId: 'T5',
-        items: [
-          { id: '1', name: 'Aguachiles Mixto Grande', price: 220, category: 'Aguachiles', image: '', inventoryLevel: 4, quantity: 2 },
-          { id: '7', name: 'Tosti Ceviche Verde', price: 160, category: 'Snacks', image: '', inventoryLevel: 3, quantity: 1 }
-        ],
-        status: OrderStatus.COOKING,
-        timestamp: new Date(Date.now() - 1000 * 60 * 12),
-        total: 600,
-        waiterName: 'Maria G.'
-      },
-      {
-        id: '2035',
-        tableId: 'T2',
-        items: [
-          { id: '11', name: 'Coctel de Camarón Grande', price: 220, category: 'Cocteles', image: '', inventoryLevel: 4, quantity: 1 }
-        ],
-        status: OrderStatus.PENDING,
-        timestamp: new Date(Date.now() - 1000 * 60 * 5),
-        total: 220,
-        waiterName: 'Carlos R.'
-      }
-      // Reduced mock data for brevity in code but keeping the structure
-    ];
-  });
 
+    getAll('orders').then(idbOrders => {
+      // Filter orders by business if IndexedDB contains multiple (though it shouldn't if we use business-aware sync)
+      // For now, let's just use what's there but the localStorage fix is primary
+      if (idbOrders.length > 0) {
+        setOrders(idbOrders.map((o: any) => ({
+          ...o,
+          timestamp: new Date(o.timestamp),
+        })));
+      }
+    }).catch(console.error);
+  }, [authProfile?.businessId]);
+
+  // Persist to both localStorage (fast) and IndexedDB (durable)
   useEffect(() => {
-    localStorage.setItem('active_orders', JSON.stringify(orders));
-  }, [orders]);
+    if (!authProfile?.businessId) return;
+    
+    const key = `culinex_orders_${authProfile.businessId}`;
+    localStorage.setItem(key, JSON.stringify(orders));
+    
+    // Async write to IndexedDB
+    const now = new Date().toISOString();
+    for (const order of orders) {
+      put('orders', {
+        ...order,
+        timestamp: order.timestamp instanceof Date ? order.timestamp.toISOString() : order.timestamp,
+        synced: false,
+        updated_at: now,
+      } as any).catch(console.error);
+    }
+  }, [orders, authProfile?.businessId]);
 
   const addOrder = (order: Order) => {
-    setOrders((prev) => [...prev, order]);
+    // Ensure order has a unique ID if not provided
+    const finalOrder = {
+      ...order,
+      id: order.id || `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+    };
+    
+    setOrders((prev) => [...prev, finalOrder]);
+    
+    // Track for sync
+    trackChange('orders', 'INSERT', finalOrder.id, finalOrder).catch(console.error);
   };
 
   const updateOrderStatus = (orderId: string, status: OrderStatus, updatedOrder?: Order) => {
     setOrders((prev) => prev.map(o => o.id === orderId ? (updatedOrder ? { ...updatedOrder, status } : { ...o, status }) : o));
+    
+    // Track for sync
+    trackChange('orders', 'UPDATE', orderId, updatedOrder || { status }).catch(console.error);
   };
 
   return (

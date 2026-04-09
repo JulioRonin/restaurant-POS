@@ -19,14 +19,34 @@ import { ExpenseProvider } from './contexts/ExpenseContext';
 import { BillingScreen } from './screens/Billing';
 import { MenuScreen } from './screens/Menu';
 import { MenuProvider } from './contexts/MenuContext';
+import { InventoryProvider } from './contexts/InventoryContext';
 import { MOCK_STAFF } from './constants';
 
+import { AuthScreen } from './components/AuthScreen';
+import { RemoteOrderScreen } from './screens/RemoteOrder';
+import SuperAdminScreen from './screens/SuperAdmin';
+import OnboardingScreen from './screens/Onboarding';
+import { BarScreen } from './screens/Bar';
+import { MyTablesScreen } from './screens/MyTables';
+import { SettingsProvider } from './contexts/SettingsContext';
+import { SyncProvider } from './contexts/SyncContext';
+import { TableProvider } from './contexts/TableContext';
+import { canAccess, getDefaultRoute } from './services/rbac';
+
+const RoleGuard: React.FC<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
+  const { activeEmployee } = useUser();
+  if (!canAccess(activeEmployee?.role, path)) {
+    return <Navigate to={getDefaultRoute(activeEmployee?.role)} replace />;
+  }
+  return <>{children}</>;
+};
+
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { logout } = useUser();
+  const { clearActiveEmployee } = useUser();
   return (
     <div className="flex h-screen w-screen bg-[#F3F4F6] font-sans overflow-hidden">
       <div className="no-print">
-        <Sidebar onLock={logout} />
+        <Sidebar onLock={clearActiveEmployee} />
       </div>
       <main className="flex-1 h-full overflow-hidden relative">
         {children}
@@ -36,7 +56,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const AppContent: React.FC = () => {
-  const { isAuthenticated } = useUser();
+  const { authProfile, isAuthenticating, activeEmployee, isSuperAdmin } = useUser();
   const { settings } = useSettings();
 
   // Theme Application Logic
@@ -47,59 +67,114 @@ const AppContent: React.FC = () => {
       ruby: { primary: '#EF4444', secondary: '#FECACA', rgb: '239, 68, 68' },
       amber: { primary: '#F59E0B', secondary: '#FDE68A', rgb: '245, 158, 11' },
       midnight: { primary: '#334155', secondary: '#94A3B8', rgb: '51, 65, 85' }
-    };
+    } as const;
 
-    const activeTheme = themes[settings.themeId || 'indigo'];
+    const activeTheme = themes[settings.themeId as keyof typeof themes || 'indigo'];
     document.documentElement.style.setProperty('--primary-color', activeTheme.primary);
     document.documentElement.style.setProperty('--secondary-color', activeTheme.secondary);
     document.documentElement.style.setProperty('--primary-rgb', activeTheme.rgb);
   }, [settings.themeId]);
 
-  if (!isAuthenticated) {
-    return <LockScreen onUnlock={() => {}} />;
+  if (isAuthenticating) {
+    return (
+      <div className="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center text-white">
+        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50 animate-pulse">Culinex Initializing</p>
+      </div>
+    );
   }
 
+  // 1. Not logged into the system (SaaS account)
+  if (!authProfile) {
+    return <AuthScreen />;
+  }
+
+  // 2. System logged in, but terminal is locked (no staff selected)
+  if (!activeEmployee && !isSuperAdmin) {
+    if (!authProfile.onboardingCompleted) {
+       return <OnboardingScreen />;
+    }
+    return <LockScreen />;
+  }
+
+  // 3. Fully logged in and unlocked
   return (
     <OrderProvider>
-      <HashRouter>
+      {isSuperAdmin ? (
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Navigate to="/super-admin" replace />} />
+            <Route path="/super-admin" element={<SuperAdminScreen />} />
+            <Route path="/dashboard" element={<DashboardScreen />} />
+            <Route path="/pos" element={<POSScreen />} />
+            <Route path="/hostess" element={<HostessScreen />} />
+            <Route path="/kitchen" element={<KitchenScreen />} />
+            <Route path="/staff" element={<StaffScreen />} />
+            <Route path="/inventory" element={<InventoryScreen />} />
+            <Route path="/cashier" element={<CashierScreen />} />
+            <Route path="/billing" element={<BillingScreen />} />
+            <Route path="/menu" element={<MenuScreen />} />
+            <Route path="/settings" element={<SettingsScreen />} />
+            <Route path="/remote-order" element={<RemoteOrderScreen />} />
+            <Route path="/bar" element={<BarScreen />} />
+            <Route path="/my-tables" element={<MyTablesScreen />} />
+            <Route path="/onboarding" element={<OnboardingScreen />} />
+            <Route path="*" element={<Navigate to="/super-admin" replace />} />
+          </Routes>
+        </Layout>
+      ) : (
         <SubscriptionGuard>
           <Layout>
             <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<DashboardScreen />} />
-              <Route path="/pos" element={<POSScreen />} />
-              <Route path="/hostess" element={<HostessScreen />} />
-              <Route path="/kitchen" element={<KitchenScreen />} />
-              <Route path="/staff" element={<StaffScreen />} />
-              <Route path="/inventory" element={<InventoryScreen />} />
-              <Route path="/cashier" element={<CashierScreen />} />
-              <Route path="/billing" element={<BillingScreen />} />
-              <Route path="/menu" element={<MenuScreen />} />
-              <Route path="/settings" element={<SettingsScreen />} />
+              <Route path="/" element={<Navigate to={getDefaultRoute(activeEmployee?.role)} replace />} />
+              
+              <Route path="/dashboard" element={<RoleGuard path="/dashboard"><DashboardScreen /></RoleGuard>} />
+              <Route path="/pos" element={<RoleGuard path="/pos"><POSScreen /></RoleGuard>} />
+              <Route path="/hostess" element={<RoleGuard path="/hostess"><HostessScreen /></RoleGuard>} />
+              <Route path="/kitchen" element={<RoleGuard path="/kitchen"><KitchenScreen /></RoleGuard>} />
+              <Route path="/staff" element={<RoleGuard path="/staff"><StaffScreen /></RoleGuard>} />
+              <Route path="/inventory" element={<RoleGuard path="/inventory"><InventoryScreen /></RoleGuard>} />
+              <Route path="/cashier" element={<RoleGuard path="/cashier"><CashierScreen /></RoleGuard>} />
+              <Route path="/billing" element={<RoleGuard path="/billing"><BillingScreen /></RoleGuard>} />
+              <Route path="/menu" element={<RoleGuard path="/menu"><MenuScreen /></RoleGuard>} />
+              <Route path="/settings" element={<RoleGuard path="/settings"><SettingsScreen /></RoleGuard>} />
+              <Route path="/remote-order" element={<RoleGuard path="/remote-order"><RemoteOrderScreen /></RoleGuard>} />
+              <Route path="/bar" element={<RoleGuard path="/bar"><BarScreen /></RoleGuard>} />
+              <Route path="/my-tables" element={<RoleGuard path="/my-tables"><MyTablesScreen /></RoleGuard>} />
+              
+              <Route path="/onboarding" element={<OnboardingScreen />} />
               <Route path="*" element={<div className="flex items-center justify-center h-full text-gray-500">404 - Module Not Found</div>} />
             </Routes>
           </Layout>
         </SubscriptionGuard>
-      </HashRouter>
+      )}
     </OrderProvider>
   );
 };
 
-import { SettingsProvider } from './contexts/SettingsContext';
-
 const App: React.FC = () => {
   return (
-    <UserProvider>
-      <SubscriptionProvider>
-        <ExpenseProvider>
-          <SettingsProvider>
-            <MenuProvider>
-              <AppContent />
-            </MenuProvider>
-          </SettingsProvider>
-        </ExpenseProvider>
-      </SubscriptionProvider>
-    </UserProvider>
+    <SyncProvider>
+      <UserProvider>
+        <SubscriptionProvider>
+          <ExpenseProvider>
+            <SettingsProvider>
+              <MenuProvider>
+                      <MenuProvider>
+                        <InventoryProvider>
+                          <TableProvider>
+                            <HashRouter>
+                              <AppContent />
+                            </HashRouter>
+                          </TableProvider>
+                        </InventoryProvider>
+                      </MenuProvider>
+              </MenuProvider>
+            </SettingsProvider>
+          </ExpenseProvider>
+        </SubscriptionProvider>
+      </UserProvider>
+    </SyncProvider>
   );
 };
 

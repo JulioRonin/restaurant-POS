@@ -1,16 +1,18 @@
 import React, { useState, useMemo } from 'react';
-import { CATEGORIES, TABLES } from '../constants';
+import { CATEGORIES } from '../constants';
 import { MenuItem, OrderItem, Order, OrderStatus, Table, OrderSource } from '../types';
 import { useOrders } from '../contexts/OrderContext';
 import { useUser } from '../contexts/UserContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { useMenu } from '../contexts/MenuContext';
+import { useTables } from '../contexts/TableContext';
 import { KitchenTicket } from '../components/KitchenTicket';
 import { printerService } from '../services/PrinterService';
 
 export const POSScreen: React.FC = () => {
-  const { currentUser } = useUser();
+  const { activeEmployee } = useUser();
   const { addOrder } = useOrders();
+  const { tables: TABLES } = useTables();
   const { settings } = useSettings();
   const { menuItems, addItem } = useMenu();
   const [activeCategory, setActiveCategory] = useState('All');
@@ -18,9 +20,10 @@ export const POSScreen: React.FC = () => {
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState('A la carte');
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [kitchenOrderToPrint, setKitchenOrderToPrint] = useState<Order | null>(null);
-  const [selectedTable, setSelectedTable] = useState<Table | null>(TABLES.find(t => t.id === 'T5') || TABLES[0]);
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+  const [selectedSource, setSelectedSource] = useState<OrderSource>(OrderSource.DINE_IN);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showTableModal, setShowTableModal] = useState(false);
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
   const [newItem, setNewItem] = useState({ name: '', price: '', category: 'Snacks' });
@@ -34,16 +37,7 @@ export const POSScreen: React.FC = () => {
     return activeMenuItems.filter(item => {
       const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
       const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-
-      // Menu Filtering Logic
-      let matchesMenu = true;
-      if (activeMenu === 'Bodeguita') {
-        matchesMenu = item.name.toLowerCase().includes('bodeguita');
-      } else if (activeMenu === 'General') {
-        matchesMenu = !item.name.toLowerCase().includes('bodeguita');
-      }
-
-      return matchesCategory && matchesSearch && matchesMenu;
+      return matchesCategory && matchesSearch;
     });
   }, [activeCategory, searchQuery, activeMenuItems, activeMenu]);
 
@@ -95,21 +89,18 @@ export const POSScreen: React.FC = () => {
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const finalTotal = total;
 
-    // Detect Source based on activeMenu
-    let source = OrderSource.DINE_IN;
-    if (activeMenu === 'Rappi/Uber') source = OrderSource.RAPPI; // Defaulting to RAPPI for delivery menu
-    if (activeMenu === 'Para Llevar') source = OrderSource.PICKUP;
+    const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
     const newOrder: Order = {
-      id: Math.floor(Math.random() * 10000).toString().padStart(4, '0'),
-      tableId: selectedTable ? selectedTable.id : (source === OrderSource.RAPPI ? 'DELIVERY' : 'BARRA'),
-      items: [...cart],
-      status: OrderStatus.PENDING,
-      timestamp: new Date(),
-      total: finalTotal,
-      source: source,
-      waiterName: 'Maria G.'
-    };
+        id: orderId,
+        tableId: selectedTable?.id || 'COUNTER',
+        items: [...cart],
+        status: OrderStatus.COOKING,
+        timestamp: new Date(),
+        total: finalTotal,
+        waiterName: activeEmployee?.name || 'Sistema',
+        source: selectedSource
+      };
 
     addOrder(newOrder);
     
@@ -120,10 +111,11 @@ export const POSScreen: React.FC = () => {
       } else {
         // Fallback to Browser Print
         setKitchenOrderToPrint(newOrder);
+        // Using a slightly longer delay and requestAnimationFrame pattern for better reliability
         setTimeout(() => {
           window.print();
           setKitchenOrderToPrint(null);
-        }, 100);
+        }, 300);
       }
     }
 
@@ -174,88 +166,72 @@ export const POSScreen: React.FC = () => {
           {kitchenOrderToPrint && <KitchenTicket order={kitchenOrderToPrint} settings={settings} />}
       </div>
 
-      {/* "Menus" Sidebar Column */}
-      <div className="w-64 flex flex-col p-4 bg-white border-r border-gray-200 shadow-sm relative z-20 no-print">
-        <div className="mb-8 px-2">
-          <div className="bg-gradient-to-br from-primary to-primary-700 text-white p-4 rounded-2xl shadow-lg shadow-primary/20 transform transition-transform hover:scale-[1.02]">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="material-icons-round text-white/80">restaurant_menu</span>
-              <span className="text-[10px] uppercase tracking-widest font-bold text-white/60">Restaurante</span>
-            </div>
-            <h2 className="text-xl font-black leading-tight">
-              {settings.name}
-            </h2>
-          </div>
-        </div>
-
-        <div className="mb-4 flex justify-between items-center px-2">
-          <span className="font-bold text-lg">Menús</span>
-          <button
-            onClick={() => setShowAddMenuModal(true)}
-            className="text-gray-400 hover:text-primary"
-          >
-            <span className="material-icons-round">add</span>
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          {['General', 'Bodeguita', 'Bebidas', 'Para Llevar', 'Rappi/Uber'].map(menu => (
-            <button
-              key={menu}
-              onClick={() => setActiveMenu(menu)}
-              className={`p-4 rounded-xl text-left transition-all relative overflow-hidden group ${activeMenu === menu ? 'bg-white shadow-soft' : 'hover:bg-white/50'
-                }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold ${activeMenu === menu ? 'bg-primary/10 text-primary' : 'bg-gray-200 text-gray-500 group-hover:bg-white'
-                  }`}>
-                  {menu.charAt(0)}
-                </div>
-                <div className="flex flex-col">
-                  <span className={`font-bold text-sm ${activeMenu === menu ? 'text-gray-900' : 'text-gray-500'}`}>{menu}</span>
-                  <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                    <span className={`w-1.5 h-1.5 rounded-full ${activeMenu === menu ? 'bg-green-500' : 'bg-gray-300'}`}></span>
-                    {activeMenu === menu ? 'Online' : 'Offline'}
-                  </span>
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-auto">
-          <p className="text-xs text-gray-400 font-bold mb-2">Developed by Ronin Studio</p>
-          <div className="flex gap-2 text-[10px] text-gray-400">
-            <a href="https://www.instagram.com/roninstudioprojects/" target="_blank" rel="noopener noreferrer" className="hover:text-pink-600 transition-colors flex items-center gap-1">
-              <span className="material-icons-round text-sm">photo_camera</span>
-              @roninstudioprojects
-            </a>
-          </div>
-        </div>
-      </div>
-
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col p-6 overflow-hidden bg-[#F3F4F6]">
 
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-
-          <div>
-            <h1 className="text-2xl font-bold">{activeMenu}</h1>
-            <p className="text-gray-400 text-sm">Platillos Disponibles</p>
+        {/* New Consolidated POS Header */}
+        <div className="flex gap-6 mb-8 items-stretch">
+          
+          {/* Blue Brand Block (Now in Header) */}
+          <div className="w-72 bg-gradient-to-br from-primary to-primary-700 text-white p-5 rounded-[2rem] shadow-xl shadow-primary/20 flex flex-col justify-between shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="material-icons-round text-white/60 text-lg">restaurant</span>
+              <span className="text-[10px] uppercase tracking-[0.2em] font-black text-white/50">{settings.name ? 'RESTAURANTE' : ''}</span>
+            </div>
+            <h2 className="text-2xl font-black leading-tight mt-2 italic">
+              {settings.name || 'Culinex POS'}
+            </h2>
+            <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-white/60">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+              SISTEMA ACTIVO
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            {currentUser && (
-              <div className="bg-white rounded-full px-2 py-1 flex items-center shadow-md border border-gray-100">
-                <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden mr-2">
-                  <img src={currentUser.image} alt={currentUser.name} className="w-full h-full object-cover" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-gray-900 block">{currentUser.name}</span>
-                  <span className="text-[10px] text-gray-500 block uppercase tracking-wider">{currentUser.role}</span>
-                </div>
+
+          <div className="flex-1 bg-white rounded-[2rem] shadow-soft border border-gray-100 p-6 flex flex-col justify-between">
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2">
+                {['A la carte', 'Bebidas', 'Para Llevar', 'Rappi/Uber'].map(menu => (
+                  <button
+                    key={menu}
+                    onClick={() => setActiveMenu(menu)}
+                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeMenu === menu ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    {menu}
+                  </button>
+                ))}
               </div>
-            )}
+              
+              {activeEmployee && (
+                <div className="flex items-center gap-3 pr-2">
+                   <div className="text-right">
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block leading-none">Cajero / Mesero</span>
+                    <span className="text-sm font-black text-gray-900">{activeEmployee.name}</span>
+                  </div>
+                  <div className="w-10 h-10 rounded-2xl bg-gray-100 overflow-hidden border-2 border-white shadow-sm shrink-0">
+                    <img src={activeEmployee.image} alt={activeEmployee.name} className="w-full h-full object-cover" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-4 items-center mt-4">
+              <div className="flex-1 relative group">
+                <span className="material-icons-round absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-primary">search</span>
+                <input 
+                  type="text" 
+                  placeholder="Buscar platillo por nombre..." 
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-transparent focus:border-primary focus:bg-white rounded-2xl outline-none text-sm font-medium transition-all"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <button 
+                onClick={() => setShowAddMenuModal(true)}
+                className="w-12 h-12 rounded-2xl bg-gray-50 text-gray-400 hover:bg-primary hover:text-white transition-all flex items-center justify-center border border-gray-100"
+              >
+                <span className="material-icons-round">add</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -333,7 +309,7 @@ export const POSScreen: React.FC = () => {
               <h2 className="text-xl font-bold text-gray-900">{selectedTable ? selectedTable.name : 'Seleccionar Mesa'}</h2>
               <span className="material-icons-round text-gray-400 text-sm">expand_more</span>
             </div>
-            <span className="text-sm text-gray-400">Maria G.</span>
+            <span className="text-sm text-gray-400">{activeEmployee?.name || 'Seleccionar Mesero'}</span>
           </div>
           <div className="flex gap-2">
             <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-400"><span className="material-icons-round">qr_code</span></button>
@@ -394,12 +370,32 @@ export const POSScreen: React.FC = () => {
 
         {/* Footer */}
         <div className="p-6 bg-gray-50 border-t border-gray-100">
-          <div className="flex gap-2 mb-4">
-            <button className="flex-1 py-2 rounded-lg border border-primary text-primary text-xs font-bold flex items-center justify-center gap-1 hover:bg-primary/5">
-              <span className="material-icons-round text-sm">local_offer</span> Descuento
+          
+          {/* Delivery & Source Selectors */}
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <button 
+              onClick={() => setSelectedSource(OrderSource.TO_GO)}
+              className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1 transition-all border-2 ${selectedSource === OrderSource.TO_GO ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' : 'bg-white border-gray-100 text-gray-400 hover:border-primary/30'}`}
+            >
+              <span className="material-icons-round text-sm">shopping_bag</span> Para Llevar
             </button>
-            <button className="flex-1 py-2 rounded-lg border border-primary text-primary text-xs font-bold flex items-center justify-center gap-1 hover:bg-primary/5">
-              <span className="material-icons-round text-sm">grid_view</span> Propina
+            <button 
+              onClick={() => setSelectedSource(OrderSource.RAPPI)}
+              className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1 transition-all border-2 ${selectedSource === OrderSource.RAPPI ? 'bg-[#FF3C5C] border-[#FF3C5C] text-white shadow-lg shadow-[#FF3C5C]/20' : 'bg-white border-gray-100 text-gray-400 hover:border-[#FF3C5C]/30'}`}
+            >
+              <span className="material-icons-round text-sm">delivery_dining</span> Rappi
+            </button>
+            <button 
+              onClick={() => setSelectedSource(OrderSource.DIDI)}
+              className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1 transition-all border-2 ${selectedSource === OrderSource.DIDI ? 'bg-[#FF7D00] border-[#FF7D00] text-white shadow-lg shadow-[#FF7D00]/20' : 'bg-white border-gray-100 text-gray-400 hover:border-[#FF7D00]/30'}`}
+            >
+              <span className="material-icons-round text-sm">electric_moped</span> Didi
+            </button>
+            <button 
+              onClick={() => setSelectedSource(OrderSource.UBER_EATS)}
+              className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1 transition-all border-2 ${selectedSource === OrderSource.UBER_EATS ? 'bg-[#06C167] border-[#06C167] text-white shadow-lg shadow-[#06C167]/20' : 'bg-white border-gray-100 text-gray-400 hover:border-[#06C167]/30'}`}
+            >
+              <span className="material-icons-round text-sm">restaurant</span> Uber Eats
             </button>
           </div>
 

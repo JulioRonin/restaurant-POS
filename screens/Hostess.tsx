@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { TABLES, MOCK_STAFF } from '../constants';
 import { Table, TableStatus, WaitlistEntry } from '../types';
+import { useTables } from '../contexts/TableContext';
 
 export const HostessScreen: React.FC = () => {
     // Table State
-    const [activeTables, setActiveTables] = useState<Table[]>(TABLES);
+    const { tables: activeTables, addTable, updateTableStatus, deleteTable, updateTable } = useTables();
     const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'floor' | 'list'>('floor');
 
@@ -25,6 +26,8 @@ export const HostessScreen: React.FC = () => {
     const [customerName, setCustomerName] = useState('');
     const [partySize, setPartySize] = useState(2);
     const [isAddTableModalOpen, setIsAddTableModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
     const [newTableName, setNewTableName] = useState('');
     const [newTableSeats, setNewTableSeats] = useState(4);
 
@@ -63,18 +66,45 @@ export const HostessScreen: React.FC = () => {
                 }
             }
 
-            const newTable: Table = {
-                id: `T${Date.now()}`,
+            const newTable: Omit<Table, 'id'> = {
                 name: newTableName,
                 seats: newTableSeats,
                 status: TableStatus.AVAILABLE,
                 x: newX,
                 y: newY
             };
-            setActiveTables(prev => [...prev, newTable]);
+            addTable(newTable);
             setIsAddTableModalOpen(false);
             setNewTableName('');
             setNewTableSeats(4);
+        }
+    };
+
+    const handleUpdateTable = () => {
+        if (selectedTableId && newTableName) {
+            updateTable(selectedTableId, {
+                name: newTableName,
+                seats: newTableSeats
+            });
+            setIsEditModalOpen(false);
+            setNewTableName('');
+            setNewTableSeats(4);
+        }
+    };
+
+    const handleOpenEditModal = () => {
+        if (selectedTable) {
+            setNewTableName(selectedTable.name);
+            setNewTableSeats(selectedTable.seats);
+            setIsEditModalOpen(true);
+        }
+    };
+
+    const handleDeleteTableAction = () => {
+        if (selectedTableId) {
+            deleteTable(selectedTableId);
+            setIsDeleteConfirmOpen(false);
+            setSelectedTableId(null);
         }
     };
 
@@ -120,7 +150,7 @@ export const HostessScreen: React.FC = () => {
 
             if (name) {
                 // Update Table Status
-                setActiveTables(prev => prev.map(t => t.id === tId ? { ...t, status: TableStatus.OCCUPIED } : t));
+                updateTableStatus(tId, TableStatus.OCCUPIED);
 
                 // Create Session
                 setCustomerSessions(prev => ({
@@ -153,7 +183,7 @@ export const HostessScreen: React.FC = () => {
 
     const handleClearTable = () => {
         if (selectedTableId) {
-            setActiveTables(prev => prev.map(t => t.id === selectedTableId ? { ...t, status: TableStatus.DIRTY } : t));
+            updateTableStatus(selectedTableId, TableStatus.DIRTY);
 
             // Optional: Keep session history? For now, just clear active session view or keep it until "Cleaned"
             // Let's remove the session when clearing
@@ -170,14 +200,14 @@ export const HostessScreen: React.FC = () => {
 
     const handleMakeAvailable = () => {
         if (selectedTableId) {
-            setActiveTables(prev => prev.map(t => t.id === selectedTableId ? { ...t, status: TableStatus.AVAILABLE } : t));
+            updateTableStatus(selectedTableId, TableStatus.AVAILABLE);
         }
     };
 
     const handleReserveTable = () => {
         if (selectedTableId && customerName) {
             // Update Table Status
-            setActiveTables(prev => prev.map(t => t.id === selectedTableId ? { ...t, status: TableStatus.RESERVED } : t));
+            updateTableStatus(selectedTableId, TableStatus.RESERVED);
 
             // Create Reservation
             setReservations(prev => ({
@@ -323,9 +353,9 @@ export const HostessScreen: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="flex-1 min-h-[600px] border-2 border-dashed border-gray-300 rounded-3xl relative bg-white shadow-soft overflow-hidden">
+                    <div className="flex-1 min-h-[600px] border-2 border-dashed border-gray-300 rounded-3xl relative bg-white shadow-soft overflow-auto custom-scrollbar">
                         {viewMode === 'floor' ? (
-                            <div className="relative w-full h-full p-8" onDragOver={(e) => e.preventDefault()}>
+                            <div className="relative w-full h-full p-8 min-w-[800px] min-h-[800px]" onDragOver={(e) => e.preventDefault()}>
                                 {activeTables.map(table => {
                                     const waiterId = waiterAssignments[table.id];
                                     const waiter = waiterId ? MOCK_STAFF.find(s => s.id === waiterId) : null;
@@ -622,6 +652,23 @@ export const HostessScreen: React.FC = () => {
 
                         {/* Actions */}
                         <div className="border-t border-gray-100 pt-6 space-y-3">
+                            <div className="flex gap-2 mb-2">
+                                <button 
+                                    onClick={handleOpenEditModal}
+                                    className="flex-1 py-3 bg-blue-50 text-blue-600 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors"
+                                >
+                                    <span className="material-icons-round text-sm">edit</span>
+                                    Editar
+                                </button>
+                                <button 
+                                    onClick={() => setIsDeleteConfirmOpen(true)}
+                                    className="flex-1 py-3 bg-red-50 text-red-500 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+                                >
+                                    <span className="material-icons-round text-sm">delete</span>
+                                    Borrar
+                                </button>
+                            </div>
+
                             {selectedTable.status === TableStatus.OCCUPIED && (
                                 <button onClick={handleClearTable} className="w-full py-3 bg-white border border-gray-200 hover:bg-red-50 hover:border-red-200 hover:text-red-600 rounded-xl font-bold transition-all flex items-center justify-center gap-2">
                                     <span className="material-icons-round">cleaning_services</span>
@@ -693,6 +740,88 @@ export const HostessScreen: React.FC = () => {
                                     Add Table
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Table Modal */}
+            {isEditModalOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in">
+                    <div className="bg-white rounded-2xl p-6 w-96 shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">Edit Table</h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Table Name</label>
+                                <input
+                                    type="text"
+                                    value={newTableName}
+                                    onChange={(e) => setNewTableName(e.target.value)}
+                                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-primary transition-all font-bold"
+                                    autoFocus
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Seats</label>
+                                <div className="flex items-center gap-4">
+                                    <button
+                                        onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))}
+                                        className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-600 transition-all"
+                                    >
+                                        -
+                                    </button>
+                                    <span className="font-bold text-2xl w-8 text-center">{newTableSeats}</span>
+                                    <button
+                                        onClick={() => setNewTableSeats(newTableSeats + 1)}
+                                        className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-600 transition-all"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="flex gap-3 mt-6">
+                                <button
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleUpdateTable}
+                                    disabled={!newTableName}
+                                    className="flex-1 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold shadow-lg shadow-primary/30 disabled:opacity-50 disabled:shadow-none transition-all"
+                                >
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {isDeleteConfirmOpen && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] animate-in fade-in backdrop-blur-sm">
+                    <div className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl scale-100 animate-in zoom-in-95 duration-200 text-center">
+                        <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <span className="material-icons-round text-5xl">warning</span>
+                        </div>
+                        <h2 className="text-2xl font-black text-gray-900 mb-2 uppercase tracking-tight">¿Borrar Mesa?</h2>
+                        <p className="text-gray-500 mb-8 font-medium">Esta acción eliminará la mesa <b>{selectedTable?.name}</b> permanentemente del sistema.</p>
+                        
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={handleDeleteTableAction}
+                                className="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-black text-sm shadow-lg shadow-red-100 transition-all active:scale-95"
+                            >
+                                SÍ, ELIMINAR MESA
+                            </button>
+                            <button
+                                onClick={() => setIsDeleteConfirmOpen(false)}
+                                className="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-xl font-bold text-sm transition-all"
+                            >
+                                CANCELAR
+                            </button>
                         </div>
                     </div>
                 </div>
