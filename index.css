@@ -33,17 +33,15 @@ body {
 
 /* Print Styles */
 @media print {
-  /* Hide everything except the report during printing */
-  body > *:not(.print-container) {
+  /* Hide app shell but KEEP print-container visible */
+  #root > *:not(.print-container) {
     display: none !important;
   }
 
-  #root {
-    display: none !important;
-  }
-
-  .no-print {
-    display: none !important;
+  .print-container {
+    position: relative !important;
+    display: block !important;
+    height: auto !important;
   }
 
   /* Reset background for printing */

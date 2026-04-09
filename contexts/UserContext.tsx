@@ -255,11 +255,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const pendingCount = await getSyncQueueCount();
         
         if (pendingCount > 0 && navigator.onLine) {
-            console.log(`[UserContext] Logout requested but ${pendingCount} changes pending. Waiting for sync...`);
-            // We could show a global loader here if we had one in context
-            const synced = await waitForTotalSync(7000); // Wait up to 7 seconds
+            const synced = await waitForTotalSync(10000); // 10s wait
             if (!synced) {
-                const proceed = window.confirm(`Hay ${pendingCount} cambios que aún no se guardan en la nube por falta de conexión o lentitud. Si sales ahora, se PERDERÁN. ¿Cerrar sesión de todos modos?`);
+                const proceed = window.confirm(`¡Atención! Hay ${pendingCount} cambios (menú, mesas, ventas) que aún no se terminan de subir a la nube. Si sales ahora se PERDERÁN. ¿Deseas esperar 10 segundos más o salir de todos modos?`);
                 if (!proceed) return;
             }
         }

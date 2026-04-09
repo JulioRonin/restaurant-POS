@@ -69,10 +69,13 @@ export const DashboardScreen: React.FC = () => {
         setTimeRange(val);
     };
 
-    // Calculate Real-Time Stats from Expenses
+    // Calculate Real-Time Stats from Revenue
+    const totalSales = useMemo(() => {
+        return orders.reduce((sum, o) => (o.status === 'COMPLETED' || o.status === 'PAID') ? sum + o.total : sum, 0);
+    }, [orders]);
+
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-    const MOCK_DAILY_REVENUE = 15000;
-    const netCashFlow = MOCK_DAILY_REVENUE - totalExpenses;
+    const netCashFlow = totalSales - totalExpenses;
 
     // --- Waiter Performance Logic ---
     const waiterStats = useMemo(() => {
