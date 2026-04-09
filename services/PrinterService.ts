@@ -61,9 +61,15 @@ class PrinterService {
 
   async requestBluetoothPrinter(): Promise<any | null> {
     try {
+      // Broaden search to support more thermal printers
       const device = await (navigator as any).bluetooth.requestDevice({
-        filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }],
-        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+        acceptAllDevices: true,
+        optionalServices: [
+            '000018f0-0000-1000-8000-00805f9b34fb', // Common Thermal Printer
+            '49535343-fe7d-4ae5-8fa9-9fafd205e455', // Integrated System Solution Corp
+            '000018f1-0000-1000-8000-00805f9b34fb', // Alternative PRINTER_SERVICE_UUID
+            'e7810400-410a-45c0-9315-dd95a1d74331'  // Some other Chinese printers
+        ]
       });
       return device;
     } catch (err) {

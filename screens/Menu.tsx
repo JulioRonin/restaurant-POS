@@ -14,6 +14,7 @@ export const MenuScreen: React.FC = () => {
     const [importResult, setImportResult] = useState<{ count: number; errors: string[] } | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const importFileRef = useRef<HTMLInputElement>(null);
     const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState('');
 
@@ -44,12 +45,24 @@ export const MenuScreen: React.FC = () => {
         }
     };
 
-    const handleImport = () => {
-        const result = importCSV(csvInput);
+    const handleImport = async () => {
+        const result = await importCSV(csvInput);
         setImportResult({ count: result.count, errors: result.errors });
         if (result.success) {
             setCsvInput('');
             setTimeout(() => setIsImportModalOpen(false), 2000);
+        }
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const text = event.target?.result as string;
+                setCsvInput(text);
+            };
+            reader.readAsText(file);
         }
     };
 
@@ -360,6 +373,25 @@ export const MenuScreen: React.FC = () => {
                             <button onClick={() => { setIsImportModalOpen(false); setImportResult(null); }} className="w-10 h-10 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600">
                                 <span className="material-icons-round text-lg">close</span>
                             </button>
+                        </div>
+                        <div className="px-8 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Opción 1: Pegar Texto CSV</p>
+                            <div className="flex gap-2">
+                                <input 
+                                    type="file" 
+                                    ref={importFileRef} 
+                                    onChange={handleFileUpload} 
+                                    className="hidden" 
+                                    accept=".csv,.txt" 
+                                />
+                                <button 
+                                    onClick={() => importFileRef.current?.click()}
+                                    className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 transition-all flex items-center gap-2"
+                                >
+                                    <span className="material-icons-round text-sm">upload_file</span>
+                                    Subir Archivo .CSV
+                                </button>
+                            </div>
                         </div>
                         <div className="p-8">
                             {!importResult ? (

@@ -34,6 +34,7 @@ const TABLE_MAP: Record<string, string> = {
   expenses: 'expenses',
   supplier_orders: 'supplier_orders',
   settings: 'business_settings',
+  tables: 'tables',
 };
 
 // ─── Sync Callbacks ───────────────────────────────────────────

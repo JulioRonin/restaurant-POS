@@ -8,7 +8,7 @@ interface MenuContextType {
     updateItem: (id: string, updates: Partial<MenuItem>) => Promise<void>;
     deleteItem: (id: string) => Promise<void>;
     toggleStatus: (id: string) => Promise<void>;
-    importCSV: (csvText: string) => { success: boolean; count: number; errors: string[] };
+    importCSV: (csvText: string) => Promise<{ success: boolean; count: number; errors: string[] }>;
 }
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
@@ -53,8 +53,49 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     };
 
-    const importCSV = (csvText: string) => {
-        return { success: false, count: 0, errors: ['CSV import currently being updated for inventory unification'] };
+    const importCSV = async (csvText: string) => {
+        const lines = csvText.split('\n');
+        let count = 0;
+        const errors: string[] = [];
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            const parts = line.split(',').map(p => p.trim());
+            
+            // Expected Format: Nombre, Categoría, Precio, Descripción, Gramaje, Estatus
+            if (parts.length < 3) {
+                errors.push(`Línea ${i + 1}: Formato inválido (mínimo Nombre, Categoría, Precio)`);
+                continue;
+            }
+
+            try {
+                const [name, category, priceStr, description, gramaje, statusStr] = parts;
+                const price = parseFloat(priceStr);
+
+                if (isNaN(price)) {
+                    errors.push(`Línea ${i + 1}: Precio inválido: ${priceStr}`);
+                    continue;
+                }
+
+                await addItem({
+                    name,
+                    category,
+                    price,
+                    description: description || '',
+                    gramaje: gramaje || '',
+                    status: (statusStr?.toUpperCase() === 'INACTIVO') ? 'INACTIVE' : 'ACTIVE',
+                    image: `https://picsum.photos/seed/${encodeURIComponent(name)}/200`,
+                    inventoryLevel: 0
+                });
+                count++;
+            } catch (err: any) {
+                errors.push(`Línea ${i + 1}: ${err.message || 'Error desconocido'}`);
+            }
+        }
+
+        return { success: errors.length === 0, count, errors };
     };
 
     return (

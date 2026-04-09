@@ -257,7 +257,7 @@ export async function getDB(): Promise<IDBPDatabase<CulinexDB>> {
 
 // ─── Generic CRUD Helpers ─────────────────────────────────────
 
-type StoreName = 'products' | 'orders' | 'employees' | 'inventory' | 'expenses' | 'supplier_orders';
+type StoreName = 'products' | 'orders' | 'employees' | 'inventory' | 'expenses' | 'supplier_orders' | 'tables';
 
 export async function getAll<T extends StoreName>(store: T): Promise<CulinexDB[T]['value'][]> {
   const db = await getDB();
