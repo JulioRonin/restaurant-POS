@@ -27,16 +27,26 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             try {
                 // --- EMERGENCY RECOVERY ---
                 // If menu is empty, try to recover from inventory (legacy system)
-                const { repairAndRecoverMenuData } = await import('../services/SyncService');
-                const recoveredCount = await repairAndRecoverMenuData();
-                if (recoveredCount > 0) {
-                    console.log(`[MenuContext] Recovered ${recoveredCount} items from legacy storage.`);
+                if (authProfile?.businessId) {
+                    const { repairAndRecoverMenuData } = await import('../services/SyncService');
+                    const recoveredCount = await repairAndRecoverMenuData(authProfile.businessId);
+                    if (recoveredCount > 0) {
+                        console.log(`[MenuContext] Recovered ${recoveredCount} items from legacy storage.`);
+                    }
                 }
                 // --- END RECOVERY ---
 
                 const data = await getAll('products');
-                // Filter by businessId locally if needed, though IndexedDB is cleared on business switch
-                setMenuItems(data as MenuItem[]);
+                // CRITICAL: Filter by businessId to prevent cross-tenant leakage
+                if (!authProfile?.businessId) {
+                    setMenuItems([]);
+                    return;
+                }
+
+                const filtered = (data as any[]).filter(p => 
+                    (p.business_id === authProfile.businessId || p.businessId === authProfile.businessId)
+                );
+                setMenuItems(filtered as MenuItem[]);
             } catch (err) {
                 console.error('[MenuContext] Error loading menu:', err);
             }

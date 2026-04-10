@@ -41,11 +41,21 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setOrders([]);
     }
 
+    if (!authProfile?.businessId) {
+      setOrders([]);
+      return;
+    }
+
     getAll('orders').then(idbOrders => {
       // Filter orders by business if IndexedDB contains multiple (though it shouldn't if we use business-aware sync)
       // For now, let's just use what's there but the localStorage fix is primary
       if (idbOrders.length > 0) {
-        setOrders(idbOrders.map((o: any) => ({
+        // CRITICAL SECURITY: Filter by businessId to prevent cross-tenant leakage
+        const myOrders = (idbOrders as any[]).filter(o => 
+          (o.business_id === authProfile.businessId || o.businessId === authProfile.businessId)
+        );
+
+        setOrders(myOrders.map((o: any) => ({
           ...o,
           timestamp: new Date(o.timestamp),
         })));

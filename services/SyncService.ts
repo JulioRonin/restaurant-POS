@@ -327,10 +327,15 @@ async function pushLocalChanges(): Promise<void> {
  * REPAIR TOOL: Recovers menu items that were previously stored in the inventory table
  * and clones them to the new professional products table.
  */
-export async function repairAndRecoverMenuData(): Promise<number> {
-  const { getAll, put, getById } = await import('./db');
-  console.log('[SyncService] Running Menu Recovery Tool...');
+export async function repairAndRecoverMenuData(targetBusinessId: string): Promise<number> {
+  const { getAll, put } = await import('./db');
+  console.log(`[SyncService] Running Menu Recovery Tool for business: ${targetBusinessId}`);
   
+  if (!targetBusinessId) {
+    console.error('[SyncService] Recovery aborted: No business ID provided.');
+    return 0;
+  }
+
   try {
     const invData = await getAll('inventory');
     const existingProducts = await getAll('products');
@@ -338,9 +343,12 @@ export async function repairAndRecoverMenuData(): Promise<number> {
     
     let recoveredCount = 0;
     
-    // Any inventory item that has a 'price' or was used in an order
-    // (In the old system, prices were often added to inventory items to make them menu items)
-    for (const item of invData as any[]) {
+    // Filter inventory items to ONLY those belonging to this business to prevent leaks
+    const myInvData = (invData as any[]).filter(item => 
+      (item.business_id === targetBusinessId || item.businessId === targetBusinessId)
+    );
+    
+    for (const item of myInvData) {
       if (existingIds.has(item.id)) continue;
 
       // Heuristic: if it has a category like 'Bebidas', 'Platillos', etc., it's likely a menu item

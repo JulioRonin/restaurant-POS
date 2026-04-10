@@ -32,6 +32,13 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
 
     try {
+      if (!authProfile?.businessId) {
+        setInventory([]);
+        setOrders([]);
+        setLoading(false);
+        return;
+      }
+
       const [invData, orderData, menuData] = await Promise.all([
         getAll('inventory'),
         getAll('supplier_orders'),
@@ -42,16 +49,18 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
       const filteredOrders = (orderData as any[]).filter(o => (o.businessId || o.business_id) === authProfile.businessId);
       
       // Combine with Menu Items so they appear in Inventory too
-      const menuInvItems = (menuData as any[]).map(m => ({
-        ...m,
-        id: m.id,
-        name: m.name,
-        category: m.category || 'Menu',
-        quantity: m.inventoryLevel || 0,
-        unit: 'Pza',
-        costPerUnit: (m.price || 0) / 1.3,
-        isFromMenu: true
-      }));
+      const menuInvItems = (menuData as any[])
+        .filter(m => (m.businessId || m.business_id) === authProfile.businessId)
+        .map(m => ({
+          ...m,
+          id: m.id,
+          name: m.name,
+          category: m.category || 'Menu',
+          quantity: m.inventoryLevel || 0,
+          unit: 'Pza',
+          costPerUnit: (m.price || 0) / 1.3,
+          isFromMenu: true
+        }));
 
       setInventory([...(filteredInv as InventoryItem[]), ...menuInvItems]);
       setOrders(filteredOrders as SupplierOrder[]);
