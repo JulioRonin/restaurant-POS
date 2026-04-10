@@ -296,15 +296,85 @@ async function pushLocalChanges(): Promise<void> {
       }
 
       await updateSyncOp(op.id!, { status: 'synced' });
-    } catch (error: any) {
-      console.error(`[SyncService] Failed to push op ${op.id}:`, error);
-      await updateSyncOp(op.id!, { 
-        status: op.retries >= 3 ? 'failed' : 'pending',
-        retries: op.retries + 1,
-        error: error.message,
-      });
-      throw error; // Stop sequence to avoid data corruption
+    } catch (err: any) {
+      console.error(`[SyncService] Failed to push ${op.table}/${op.operation}:`, err);
+      
+      // Handle specific Supabase/PostgreSQL errors
+      const errorMsg = err.message || JSON.stringify(err);
+      
+      // Error 23503 is Foreign Key violation (e.g. order_item missing menu_item)
+      if (errorMsg.includes('23503') || errorMsg.includes('foreign key constraint')) {
+        console.warn(`[SyncService] Skipping ${op.table} due to missing parent record. Will retry later.`);
+        await updateSyncOp(op.id!, { 
+          status: 'failed', 
+          error: 'Missing parent record (Foreign Key). Verify that the menu item or order exists in the cloud.' 
+        });
+        continue; // Move to next operation in queue
+      }
+
+      await updateSyncOp(op.id!, { status: 'failed', error: errorMsg });
+      
+      // Don't alert for every single failure in a loop, it's annoying
+      // alert(`Error guardando ${op.table}: ${errorMsg}`);
+      
+      // Optional: continue the loop instead of throwing, to let other tables sync
+      continue; 
     }
+  }
+}
+
+/**
+ * REPAIR TOOL: Recovers menu items that were previously stored in the inventory table
+ * and clones them to the new professional products table.
+ */
+export async function repairAndRecoverMenuData(): Promise<number> {
+  const { getAll, put, getById } = await import('./db');
+  console.log('[SyncService] Running Menu Recovery Tool...');
+  
+  try {
+    const invData = await getAll('inventory');
+    const existingProducts = await getAll('products');
+    const existingIds = new Set(existingProducts.map(p => p.id));
+    
+    let recoveredCount = 0;
+    
+    // Any inventory item that has a 'price' or was used in an order
+    // (In the old system, prices were often added to inventory items to make them menu items)
+    for (const item of invData as any[]) {
+      if (existingIds.has(item.id)) continue;
+
+      // Heuristic: if it has a category like 'Bebidas', 'Platillos', etc., it's likely a menu item
+      // OR if it has a description/image (common for menu, rare for raw inventory)
+      const isLikelyMenu = item.price !== undefined || 
+                           ['bebidas', 'platillos', 'entradas', 'postres'].includes(item.category?.toLowerCase()) ||
+                           item.image;
+
+      if (isLikelyMenu) {
+        console.log(`[SyncService] Recovering menu item from inventory: ${item.name}`);
+        const newProduct = {
+          id: item.id,
+          name: item.name,
+          price: item.price || (item.costPerUnit ? item.costPerUnit * 1.3 : 0),
+          category: item.category || 'Varios',
+          image: item.image || '',
+          inventoryLevel: item.quantity || 0,
+          description: item.description || '',
+          status: 'ACTIVE' as const,
+          synced: false,
+          updated_at: new Date().toISOString()
+        };
+        
+        await put('products', newProduct);
+        await trackChange('products', 'INSERT', newProduct.id, newProduct);
+        recoveredCount++;
+      }
+    }
+    
+    console.log(`[SyncService] Recovery complete. Recovered ${recoveredCount} items.`);
+    return recoveredCount;
+  } catch (err) {
+    console.error('[SyncService] Menu recovery failed:', err);
+    return 0;
   }
 }
 

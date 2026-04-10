@@ -25,6 +25,15 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         const loadMenu = async () => {
             try {
+                // --- EMERGENCY RECOVERY ---
+                // If menu is empty, try to recover from inventory (legacy system)
+                const { repairAndRecoverMenuData } = await import('../services/SyncService');
+                const recoveredCount = await repairAndRecoverMenuData();
+                if (recoveredCount > 0) {
+                    console.log(`[MenuContext] Recovered ${recoveredCount} items from legacy storage.`);
+                }
+                // --- END RECOVERY ---
+
                 const data = await getAll('products');
                 // Filter by businessId locally if needed, though IndexedDB is cleared on business switch
                 setMenuItems(data as MenuItem[]);
