@@ -93,9 +93,12 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       for (const item of order.items) {
         const orderItemId = item.id || crypto.randomUUID();
         const orderItemRecord = {
-          ...item,
           id: orderItemId,
           orderId: orderId,
+          menuItemId: (item as any).menuItemId || item.id,
+          quantity: item.quantity,
+          priceAtTime: item.price,
+          notes: item.notes || '',
           businessId: authProfile?.businessId || '',
           locationId: authProfile?.locationId || '',
           synced: false,
