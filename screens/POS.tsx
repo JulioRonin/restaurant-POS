@@ -42,10 +42,6 @@ export const POSScreen: React.FC = () => {
   }, [activeCategory, searchQuery, activeMenuItems, activeMenu]);
 
   const addToCart = (item: MenuItem) => {
-    // Check both potential field names for stock
-    const stock = (item as any).quantity ?? item.inventoryLevel ?? 99;
-    if (stock === 0) return;
-
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id);
       if (existing) {
@@ -268,7 +264,7 @@ export const POSScreen: React.FC = () => {
             {filteredItems.map(item => (
               <div
                 key={item.id}
-                className={`bg-white rounded-2xl shadow-card flex flex-col relative group transition-all hover:shadow-xl border border-transparent hover:border-primary/20 cursor-pointer overflow-hidden ${((item as any).quantity ?? item.inventoryLevel) === 0 ? 'opacity-60 grayscale' : ''}`}
+                className="bg-white rounded-2xl shadow-card flex flex-col relative group transition-all hover:shadow-xl border border-transparent hover:border-primary/20 cursor-pointer overflow-hidden"
                 onClick={() => addToCart(item)}
               >
                 {/* Product Image */}
