@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useUser } from './UserContext';
 import { Order, OrderStatus, OrderSource } from '../types';
 import { getAll, put, deleteRecord } from '../services/db';
-import { trackChange } from '../services/SyncService';
+import { trackChange, triggerSync } from '../services/SyncService';
 
 interface OrderContextType {
   orders: Order[];
