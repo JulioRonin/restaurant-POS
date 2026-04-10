@@ -359,7 +359,14 @@ function transformForSupabase(payload: any): any {
   // Convert camelCase to snake_case for Supabase
   const transformed: any = {};
   for (const [key, value] of Object.entries(payload)) {
-    if (key === 'synced' || key === 'updated_at' || key === 'timestamp') continue; // Skip local-only fields
+    // List of fields that should NEVER be sent to Supabase (local-only or UI-only)
+    const blacklistedKeys = [
+      'synced', 'updated_at', 'timestamp', 'items', 'table', 
+      'waiter', 'changeAmount', 'receivedAmount', 'paidSplits', 
+      'splitType', 'inventoryLevel', 'publicInMenu', 'isFromMenu'
+    ];
+    
+    if (blacklistedKeys.includes(key)) continue; 
     
     const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
     transformed[snakeKey] = value;
