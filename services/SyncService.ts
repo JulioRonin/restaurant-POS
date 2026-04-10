@@ -181,6 +181,7 @@ async function pushLocalChanges(): Promise<void> {
       await updateSyncOp(op.id!, { status: 'syncing' });
 
       const supabaseTable = TABLE_MAP[op.table] || op.table;
+      let result;
 
       switch (op.operation) {
         case 'INSERT': {
