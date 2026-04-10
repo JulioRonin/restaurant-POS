@@ -106,26 +106,31 @@ export const POSScreen: React.FC = () => {
         locationId: authProfile?.locationId
       };
 
-    addOrder(newOrder);
-    
-    // Auto Kitchen Printing
-    if (settings.isKitchenPrintingEnabled) {
-      if (settings.isDirectPrintingEnabled) {
-        printerService.printKitchenTicket(newOrder, settings);
-      } else {
-        // Fallback to Browser Print
-        setKitchenOrderToPrint(newOrder);
-        // Using a slightly longer delay and requestAnimationFrame pattern for better reliability
-        setTimeout(() => {
-          window.print();
-          setKitchenOrderToPrint(null);
-        }, 300);
-      }
-    }
+    try {
+        console.log('[POS] Sending order:', newOrder);
+        addOrder(newOrder);
+        
+        // Auto Kitchen Printing
+        if (settings.isKitchenPrintingEnabled) {
+          if (settings.isDirectPrintingEnabled) {
+            printerService.printKitchenTicket(newOrder, settings);
+          } else {
+            // Fallback to Browser Print
+            setKitchenOrderToPrint(newOrder);
+            setTimeout(() => {
+              window.print();
+              setKitchenOrderToPrint(null);
+            }, 300);
+          }
+        }
 
-    setCart([]);
-    setShowSuccessModal(true);
-    setTimeout(() => setShowSuccessModal(false), 2000);
+        setCart([]);
+        setShowSuccessModal(true);
+        setTimeout(() => setShowSuccessModal(false), 2000);
+    } catch (err) {
+        console.error('[POS] Error sending order:', err);
+        alert('Error al enviar la orden. Revisa la consola para más detalles.');
+    }
   };
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
