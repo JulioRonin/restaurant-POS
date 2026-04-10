@@ -77,23 +77,12 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
   }, [loadOrders]);
 
-  // Persist to both localStorage (fast) and IndexedDB (durable)
+  // Persist to localStorage (fast)
   useEffect(() => {
     if (!authProfile?.businessId) return;
     
     const key = `culinex_orders_${authProfile.businessId}`;
     localStorage.setItem(key, JSON.stringify(orders));
-    
-    // Async write to IndexedDB
-    const now = new Date().toISOString();
-    for (const order of orders) {
-      put('orders', {
-        ...order,
-        timestamp: order.timestamp instanceof Date ? order.timestamp.toISOString() : order.timestamp,
-        synced: false,
-        updated_at: now,
-      } as any).catch(console.error);
-    }
   }, [orders, authProfile?.businessId]);
 
   const addOrder = async (order: Order) => {
