@@ -94,7 +94,7 @@ export const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ chi
             <div className="mt-8 pt-6 border-t border-white/10 text-center">
               <p className="text-[10px] text-white/30 font-mono tracking-tighter uppercase mb-1">Diagnóstico del Sistema</p>
               <code className="text-[9px] text-white/40 bg-black/20 px-2 py-1 rounded">
-                Status: {status} | User: {(String(window.localStorage.getItem('culinex_auth_profile'))?.includes('businessId') ? 'Perfil OK' : 'Sin Perfil')}
+                Status: {status} | User: {authProfile?.businessId ? `ID:${authProfile.businessId.slice(0, 8)}...` : 'Sin Perfil'}
               </code>
             </div>
           </div>
