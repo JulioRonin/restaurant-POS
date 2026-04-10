@@ -219,12 +219,15 @@ async function pushLocalChanges(): Promise<void> {
           }
 
           let finalPayload: any;
-          if (op.table === 'settings') {
+          if (op.table === 'settings' || op.table === 'business_settings') {
              // For settings, we store everything as a single JSON blob in the 'value' column
-             // where the key is 'config'
+             // ensure we have business_id
+             const bizId = payload.business_id || payload.businessId || (supabaseClient as any)?.auth?.session?.user?.user_metadata?.business_id;
+             
              finalPayload = {
                 key: 'config',
                 value: payload,
+                business_id: bizId,
                 updated_at: new Date().toISOString()
              };
           } else {
