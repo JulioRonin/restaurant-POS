@@ -95,6 +95,10 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         }
 
+        // Force a sync after bulk import
+        const { triggerSync } = require('../services/SyncService');
+        triggerSync().catch(console.error);
+
         return { success: errors.length === 0, count, errors };
     };
 

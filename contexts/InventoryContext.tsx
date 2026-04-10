@@ -64,16 +64,21 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
   }, [authProfile?.businessId, authProfile?.locationId]);
 
   const addInventoryItem = async (item: Omit<InventoryItem, 'id'>) => {
-    if (!authProfile?.businessId) return;
+    const bizId = authProfile?.businessId;
+    if (!bizId) {
+        console.warn('[InventoryContext] Adding item without businessId. It will be synced once profile is ready.');
+    }
+    
     const id = crypto.randomUUID();
     const newItem = { 
       ...item, 
       id, 
-      businessId: authProfile.businessId, 
-      locationId: authProfile.locationId,
+      businessId: bizId || 'pending', 
+      locationId: authProfile?.locationId,
       synced: false, 
       updated_at: new Date().toISOString() 
     };
+    
     await put('inventory', newItem as any);
     await trackChange('inventory', 'INSERT', id, newItem);
     setInventory(prev => [...prev, newItem as InventoryItem]);
