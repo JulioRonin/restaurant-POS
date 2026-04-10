@@ -10,7 +10,7 @@ import { KitchenTicket } from '../components/KitchenTicket';
 import { printerService } from '../services/PrinterService';
 
 export const POSScreen: React.FC = () => {
-  const { activeEmployee } = useUser();
+  const { activeEmployee, authProfile } = useUser();
   const { addOrder } = useOrders();
   const { tables: TABLES } = useTables();
   const { settings } = useSettings();
