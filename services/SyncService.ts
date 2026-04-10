@@ -360,6 +360,7 @@ export async function repairAndRecoverMenuData(): Promise<number> {
           inventoryLevel: item.quantity || 0,
           description: item.description || '',
           status: 'ACTIVE' as const,
+          business_id: item.business_id || item.businessId,
           synced: false,
           updated_at: new Date().toISOString()
         };
