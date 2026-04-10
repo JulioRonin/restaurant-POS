@@ -76,7 +76,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // Ensure order has a unique ID if not provided
     const finalOrder = {
       ...order,
-      id: order.id || `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+      id: order.id || crypto.randomUUID()
     };
     
     setOrders((prev) => [...prev, finalOrder]);

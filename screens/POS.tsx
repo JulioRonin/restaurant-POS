@@ -91,7 +91,7 @@ export const POSScreen: React.FC = () => {
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const finalTotal = total;
 
-    const orderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const orderId = crypto.randomUUID();
 
     const newOrder: Order = {
         id: orderId,
@@ -101,7 +101,9 @@ export const POSScreen: React.FC = () => {
         timestamp: new Date(),
         total: finalTotal,
         waiterName: activeEmployee?.name || 'Sistema',
-        source: selectedSource
+        source: selectedSource,
+        businessId: authProfile?.businessId,
+        locationId: authProfile?.locationId
       };
 
     addOrder(newOrder);

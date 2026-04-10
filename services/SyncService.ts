@@ -136,14 +136,18 @@ export async function triggerSync(businessId?: string): Promise<void> {
     return;
   }
 
+  console.log('[SyncService] Sync Triggered for Business:', businessId);
   emitStatus({ isSyncing: true, syncError: null });
 
   try {
-    // Phase 1: PUSH local changes to server
+    const supabase = getSupabase();
+    const currentBizId = businessId || (supabase as any)?.auth?.session?.user?.user_metadata?.business_id;
+
+    console.log('[SyncService] Starting PUSH phase...');
     await pushLocalChanges();
 
-    // Phase 2: PULL latest from server (Filtered by business if provided)
-    await pullServerChanges(businessId);
+    console.log('[SyncService] Starting PULL phase for:', currentBizId);
+    await pullServerChanges(currentBizId);
 
     // Phase 3: Cleanup synced operations
     await clearSyncedOps();
@@ -170,6 +174,7 @@ export async function triggerSync(businessId?: string): Promise<void> {
 
 async function pushLocalChanges(): Promise<void> {
   const pending = await getPendingSyncOps();
+  console.log(`[SyncService] PENDING OPERATIONS: ${pending.length}`);
   
   for (const op of pending) {
     try {
@@ -188,31 +193,41 @@ async function pushLocalChanges(): Promise<void> {
 
           if (existing) {
             // Record already exists on server — update instead
-            await supabaseClient
+            result = await supabaseClient
               .from(supabaseTable)
               .update(transformForSupabase(op.payload))
               .eq('id', op.record_id);
           } else {
-            await supabaseClient
+            result = await supabaseClient
               .from(supabaseTable)
               .insert(transformForSupabase(op.payload));
           }
           break;
         }
         case 'UPDATE': {
-          await supabaseClient
+          result = await supabaseClient
             .from(supabaseTable)
             .update(transformForSupabase(op.payload))
             .eq('id', op.record_id);
           break;
         }
         case 'DELETE': {
-          await supabaseClient
+          result = await supabaseClient
             .from(supabaseTable)
             .delete()
             .eq('id', op.record_id);
           break;
         }
+      }
+
+      if (result?.error) {
+        console.error(`[SyncService] PUSH ERROR for ${op.table}:`, result.error);
+        if (!['expenses', 'business_settings', 'supplier_orders'].includes(op.table)) {
+            alert(`Error guardando ${op.table}: ${result.error.message}`);
+        }
+        throw result.error;
+      } else {
+        console.log(`[SyncService] PUSH SUCCESS for ${op.table} (${op.record_id})`);
       }
 
       await updateSyncOp(op.id!, { status: 'synced' });
@@ -223,6 +238,7 @@ async function pushLocalChanges(): Promise<void> {
         retries: op.retries + 1,
         error: error.message,
       });
+      throw error; // Stop sequence to avoid data corruption
     }
   }
 }
@@ -243,7 +259,11 @@ async function pullServerChanges(businessId?: string): Promise<void> {
         console.warn(`[SyncService] No businessId provided for PULL on ${supabaseTable}. This might leak data if RLS is not tight.`);
       }
 
-      const { data, error } = await query.order('updated_at', { ascending: false });
+      const orderBy = (supabaseTable === 'expenses' || supabaseTable === 'supplier_orders') 
+        ? 'created_at' 
+        : 'updated_at';
+
+      const { data, error } = await query.order(orderBy, { ascending: false });
 
       if (error) {
         console.error(`[SyncService] Pull error for ${supabaseTable}:`, error);

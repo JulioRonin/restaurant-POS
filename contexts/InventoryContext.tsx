@@ -51,16 +51,29 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
 
   useEffect(() => {
     loadData();
-    const unsubscribe = onSyncComplete(loadData);
+    
+    // Auto-refresh when sync finishes
+    const unsubscribe = onSyncComplete(() => {
+      console.log('[InventoryContext] Sync complete - Refreshing inventory');
+      loadData();
+    });
+
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
     };
-  }, [authProfile?.businessId]);
+  }, [authProfile?.businessId, authProfile?.locationId]);
 
   const addInventoryItem = async (item: Omit<InventoryItem, 'id'>) => {
     if (!authProfile?.businessId) return;
     const id = crypto.randomUUID();
-    const newItem = { ...item, id, businessId: authProfile.businessId, synced: false, updated_at: new Date().toISOString() };
+    const newItem = { 
+      ...item, 
+      id, 
+      businessId: authProfile.businessId, 
+      locationId: authProfile.locationId,
+      synced: false, 
+      updated_at: new Date().toISOString() 
+    };
     await put('inventory', newItem as any);
     await trackChange('inventory', 'INSERT', id, newItem);
     setInventory(prev => [...prev, newItem as InventoryItem]);

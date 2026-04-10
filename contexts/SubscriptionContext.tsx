@@ -206,32 +206,66 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const payEquipment = async (amount: number, planName: string) => {
-    return new Promise<boolean>((resolve) => {
-      setTimeout(() => {
-        const newRecord: PaymentRecord = {
-          id: `EQU-${Date.now()}`,
-          date: new Date().toISOString(),
+    if (!authProfile?.businessId) return false;
+    
+    const supabase = getSupabase();
+    if (!supabase) return false;
+
+    try {
+      // 1. Record payment in DB
+      const { error: paymentError } = await supabase
+        .from('subscription_payments')
+        .insert({
+          business_id: authProfile.businessId,
           amount: amount,
-          method: 'Tarjeta de Crédito',
-          transactionId: `EQU-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
-        };
+          method: 'stripe',
+          status: 'PAID',
+          payment_type: 'EQUIPMENT',
+          period_start: new Date().toISOString(),
+          period_end: new Date().toISOString()
+        });
 
-        const updatedHistory = [newRecord, ...paymentHistory];
-        
-        const newAmountPaid = posStatus.amountPaid + amount;
-        const newPosStatus: PosStatus = {
-          plan: (posStatus.plan || planName) as any,
-          totalAmount: 5000,
-          amountPaid: newAmountPaid,
-          isFullyPaid: newAmountPaid >= 5000
-        };
+      if (paymentError) throw paymentError;
 
-        setPosStatus(newPosStatus);
-        setPaymentHistory(updatedHistory);
-        saveData(expiryDate || new Date(), updatedHistory, newPosStatus);
-        resolve(true);
-      }, 2000);
-    });
+      // 2. Update business equipment balance
+      const newAmountPaid = posStatus.amountPaid + amount;
+      const { error: updateError } = await supabase
+        .from('businesses')
+        .update({ 
+          equipment_balance: newAmountPaid 
+        })
+        .eq('id', authProfile.businessId);
+
+      if (updateError) throw updateError;
+
+      // 3. Update local state
+      const newRecord: PaymentRecord = {
+        id: `EQU-${Date.now()}`,
+        date: new Date().toISOString(),
+        amount: amount,
+        method: 'Stripe Checkout',
+        transactionId: `EQU-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+        type: 'EQUIPMENT'
+      };
+
+      const updatedHistory = [newRecord, ...paymentHistory];
+      const newPosStatus: PosStatus = {
+        plan: (posStatus.plan || planName) as any,
+        totalAmount: posStatus.totalAmount,
+        amountPaid: newAmountPaid,
+        isFullyPaid: newAmountPaid >= posStatus.totalAmount
+      };
+
+      setPosStatus(newPosStatus);
+      setPaymentHistory(updatedHistory);
+      saveData(expiryDate || new Date(), updatedHistory, newPosStatus);
+      
+      await fetchSubscriptionData();
+      return true;
+    } catch (err) {
+      console.error('[SubscriptionContext] Error paying equipment:', err);
+      return false;
+    }
   };
 
   const now = new Date();
@@ -240,10 +274,10 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
   
   const isExpired = daysRemaining <= 0;
   
-  // New SaaS Hardening Logic
+  // New SaaS Hardening Logic: Block if debt exceeds 2500 (threshold) or plan is active but unpaid
   const isDebtBlocked = posStatus.plan !== null && 
                        !posStatus.isFullyPaid && 
-                       posStatus.totalAmount - posStatus.amountPaid > 2000; // Example threshhold
+                       (posStatus.totalAmount - posStatus.amountPaid > 2500); 
 
   const saasStatus = isExpired 
     ? 'SUSPENDED' 
@@ -253,11 +287,13 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
         ? 'WARNING' 
         : 'ACTIVE';
 
-  const status = isExpired || isDebtBlocked
+  const status = isExpired 
     ? SubscriptionStatus.EXPIRED 
-    : daysRemaining <= 3 
-      ? SubscriptionStatus.WARNING 
-      : SubscriptionStatus.ACTIVE;
+    : isDebtBlocked
+      ? SubscriptionStatus.DEBT_BLOCKED
+      : daysRemaining <= 3 
+        ? SubscriptionStatus.WARNING 
+        : SubscriptionStatus.ACTIVE;
 
   const extendSubscription = async (days: number) => {
     console.log('[SubscriptionContext] Starting manual extension for Business:', authProfile?.businessId);
@@ -287,6 +323,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
           amount: 850,
           method: 'stripe',
           status: 'PAID',
+          payment_type: 'SUBSCRIPTION',
           period_start: baseDate.toISOString(),
           period_end: newExpiry.toISOString()
         });

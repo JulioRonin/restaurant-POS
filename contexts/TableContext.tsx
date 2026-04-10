@@ -62,8 +62,15 @@ export const TableProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const addTable = async (table: Omit<Table, 'id'>) => {
     if (!authProfile?.businessId) return;
     
-    const id = `T${Date.now()}`;
-    const newTable = { ...table, id, businessId: authProfile.businessId, synced: false, updated_at: new Date().toISOString() };
+    const id = crypto.randomUUID();
+    const newTable = { 
+      ...table, 
+      id, 
+      businessId: authProfile.businessId, 
+      locationId: authProfile.locationId,
+      synced: false, 
+      updated_at: new Date().toISOString() 
+    };
     
     await put('tables' as any, newTable as any);
     await trackChange('tables', 'INSERT', id, newTable);

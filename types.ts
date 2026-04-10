@@ -165,7 +165,8 @@ export interface Expense {
 export enum SubscriptionStatus {
   ACTIVE = 'ACTIVE',
   WARNING = 'WARNING',
-  EXPIRED = 'EXPIRED'
+  EXPIRED = 'EXPIRED',
+  DEBT_BLOCKED = 'DEBT_BLOCKED'
 }
 
 export interface PaymentRecord {
@@ -174,6 +175,7 @@ export interface PaymentRecord {
   amount: number;
   method: string;
   transactionId: string;
+  type?: 'SUBSCRIPTION' | 'EQUIPMENT';
 }
 
 export interface WaitlistEntry {
