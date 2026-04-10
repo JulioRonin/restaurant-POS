@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useUser } from './UserContext';
 import { MenuItem } from '../types';
 import { getAll, put, deleteRecord } from '../services/db';
-import { trackChange, triggerSync } from '../services/SyncService';
+import { trackChange, triggerSync, onSyncComplete } from '../services/SyncService';
 
 interface MenuContextType {
     menuItems: MenuItem[];
@@ -19,41 +19,51 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const { authProfile } = useUser();
     const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
 
-    // Load data from IndexedDB
-    useEffect(() => {
-        if (!authProfile?.businessId) return;
+    // 1. Memoized load method so we can call it on mount and on sync
+    const loadMenu = React.useCallback(async () => {
+        if (!authProfile?.businessId) {
+            setMenuItems([]);
+            return;
+        }
 
-        const loadMenu = async () => {
-            try {
-                // --- EMERGENCY RECOVERY ---
-                // If menu is empty, try to recover from inventory (legacy system)
-                if (authProfile?.businessId) {
-                    const { repairAndRecoverMenuData } = await import('../services/SyncService');
-                    const recoveredCount = await repairAndRecoverMenuData(authProfile.businessId);
-                    if (recoveredCount > 0) {
-                        console.log(`[MenuContext] Recovered ${recoveredCount} items from legacy storage.`);
-                    }
+        try {
+            // --- EMERGENCY RECOVERY ---
+            // If menu is empty, try to recover from inventory (legacy system)
+            if (authProfile?.businessId) {
+                const { repairAndRecoverMenuData } = await import('../services/SyncService');
+                const recoveredCount = await repairAndRecoverMenuData(authProfile.businessId);
+                if (recoveredCount > 0) {
+                    console.log(`[MenuContext] Recovered ${recoveredCount} items from legacy storage.`);
                 }
-                // --- END RECOVERY ---
-
-                const data = await getAll('products');
-                // CRITICAL: Filter by businessId to prevent cross-tenant leakage
-                if (!authProfile?.businessId) {
-                    setMenuItems([]);
-                    return;
-                }
-
-                const filtered = (data as any[]).filter(p => 
-                    (p.business_id === authProfile.businessId || p.businessId === authProfile.businessId)
-                );
-                setMenuItems(filtered as MenuItem[]);
-            } catch (err) {
-                console.error('[MenuContext] Error loading menu:', err);
             }
-        };
+            // --- END RECOVERY ---
 
-        loadMenu();
+            const data = await getAll('products');
+            // CRITICAL: Filter by businessId to prevent cross-tenant leakage
+            const filtered = (data as any[]).filter(p => 
+                (p.business_id === authProfile.businessId || p.businessId === authProfile.businessId)
+            );
+            setMenuItems(filtered as MenuItem[]);
+        } catch (err) {
+            console.error('[MenuContext] Error loading menu:', err);
+        }
     }, [authProfile?.businessId]);
+
+    // 2. Load data on mount/profile change AND listen to sync events
+    useEffect(() => {
+        loadMenu();
+
+        // Listen for background syncs (like when switching businesses)
+        const unsubscribe = onSyncComplete(() => {
+            console.log('[MenuContext] Sync complete - Refreshing menu items');
+            loadMenu();
+        });
+
+        // Cleanup listener when unmounted or when business changes
+        return () => {
+            if (typeof unsubscribe === 'function') unsubscribe();
+        };
+    }, [loadMenu]);
 
     const addItem = async (item: Omit<MenuItem, 'id' | 'businessId'>) => {
         const id = crypto.randomUUID();

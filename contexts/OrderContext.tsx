@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useUser } from './UserContext';
 import { Order, OrderStatus, OrderSource } from '../types';
 import { getAll, put, deleteRecord } from '../services/db';
-import { trackChange, triggerSync } from '../services/SyncService';
+import { trackChange, triggerSync, onSyncComplete } from '../services/SyncService';
 
 interface OrderContextType {
   orders: Order[];
@@ -24,10 +24,14 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const { authProfile } = useUser();
   const [orders, setOrders] = useState<Order[]>([]);
 
-  // Initial data from localStorage for instant load, then replace with IndexedDB
-  useEffect(() => {
-    if (!authProfile?.businessId) return;
+  // Memoized load method for initial load and background syncs
+  const loadOrders = React.useCallback(async () => {
+    if (!authProfile?.businessId) {
+      setOrders([]);
+      return;
+    }
 
+    // Fast initial load from localStorage
     const key = `culinex_orders_${authProfile.businessId}`;
     const saved = localStorage.getItem(key);
     if (saved) {
@@ -37,18 +41,11 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       } catch (e) {
         console.error('Error loading orders:', e);
       }
-    } else {
-      setOrders([]);
     }
 
-    if (!authProfile?.businessId) {
-      setOrders([]);
-      return;
-    }
-
-    getAll('orders').then(idbOrders => {
-      // Filter orders by business if IndexedDB contains multiple (though it shouldn't if we use business-aware sync)
-      // For now, let's just use what's there but the localStorage fix is primary
+    // Durable load from IndexedDB
+    try {
+      const idbOrders = await getAll('orders');
       if (idbOrders.length > 0) {
         // CRITICAL SECURITY: Filter by businessId to prevent cross-tenant leakage
         const myOrders = (idbOrders as any[]).filter(o => 
@@ -60,8 +57,25 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           timestamp: new Date(o.timestamp),
         })));
       }
-    }).catch(console.error);
+    } catch (err) {
+      console.error('[OrderContext] Error loading orders from IDB:', err);
+    }
   }, [authProfile?.businessId]);
+
+  // Initial data loading and sync listeners
+  useEffect(() => {
+    loadOrders();
+
+    // Auto-refresh when sync finishes
+    const unsubscribe = onSyncComplete(() => {
+      console.log('[OrderContext] Sync complete - Refreshing orders');
+      loadOrders();
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [loadOrders]);
 
   // Persist to both localStorage (fast) and IndexedDB (durable)
   useEffect(() => {
