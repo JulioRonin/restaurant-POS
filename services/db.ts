@@ -176,11 +176,31 @@ export interface CulinexDB extends DBSchema {
         'by-business': string;
     };
   };
+  order_items: {
+    key: string;
+    value: {
+      id: string;
+      orderId: string;
+      menuItemId: string;
+      name: string;
+      quantity: number;
+      price: number;
+      notes?: string;
+      businessId: string;
+      locationId?: string;
+      synced: boolean;
+      updated_at: string;
+    };
+    indexes: {
+      'by-order': string;
+      'by-sync': string;
+    };
+  };
 }
 
 // ─── Database Instance ────────────────────────────────────────
 const DB_NAME = 'culinex-pos';
-const DB_VERSION = 2; // Increased from 1 to 2
+const DB_VERSION = 3; // Increased to 3 for order_items
 
 let dbInstance: IDBPDatabase<CulinexDB> | null = null;
 
@@ -188,66 +208,78 @@ export async function getDB(): Promise<IDBPDatabase<CulinexDB>> {
   if (dbInstance) return dbInstance;
 
   dbInstance = await openDB<CulinexDB>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      // Products store
-      if (!db.objectStoreNames.contains('products')) {
-        const productStore = db.createObjectStore('products', { keyPath: 'id' });
-        productStore.createIndex('by-category', 'category');
-        productStore.createIndex('by-sync', 'synced');
+    upgrade(db, oldVersion) {
+      // Version 1-2 initialization
+      if (oldVersion < 3) {
+          // Products store
+          if (!db.objectStoreNames.contains('products')) {
+            const productStore = db.createObjectStore('products', { keyPath: 'id' });
+            productStore.createIndex('by-category', 'category');
+            productStore.createIndex('by-sync', 'synced');
+          }
+
+          // Orders store
+          if (!db.objectStoreNames.contains('orders')) {
+            const orderStore = db.createObjectStore('orders', { keyPath: 'id' });
+            orderStore.createIndex('by-status', 'status');
+            orderStore.createIndex('by-date', 'updated_at');
+            orderStore.createIndex('by-sync', 'synced');
+          }
+
+          // Employees store
+          if (!db.objectStoreNames.contains('employees')) {
+            const empStore = db.createObjectStore('employees', { keyPath: 'id' });
+            empStore.createIndex('by-role', 'role');
+            empStore.createIndex('by-sync', 'synced');
+          }
+
+          // Inventory store
+          if (!db.objectStoreNames.contains('inventory')) {
+            const invStore = db.createObjectStore('inventory', { keyPath: 'id' });
+            invStore.createIndex('by-category', 'category');
+            invStore.createIndex('by-sync', 'synced');
+          }
+
+          // Expenses store
+          if (!db.objectStoreNames.contains('expenses')) {
+            const expStore = db.createObjectStore('expenses', { keyPath: 'id' });
+            expStore.createIndex('by-date', 'date');
+            expStore.createIndex('by-sync', 'synced');
+          }
+
+          // Settings store (key-value)
+          if (!db.objectStoreNames.contains('settings')) {
+            db.createObjectStore('settings', { keyPath: 'key' });
+          }
+
+          // Supplier Orders store
+          if (!db.objectStoreNames.contains('supplier_orders')) {
+            const supStore = db.createObjectStore('supplier_orders', { keyPath: 'id' });
+            supStore.createIndex('by-status', 'status');
+            supStore.createIndex('by-sync', 'synced');
+          }
+
+          // Tables store
+          if (!db.objectStoreNames.contains('tables')) {
+            const tableStore = db.createObjectStore('tables', { keyPath: 'id' });
+            tableStore.createIndex('by-sync', 'synced');
+            tableStore.createIndex('by-business', 'businessId');
+          }
+
+          // Sync queue
+          if (!db.objectStoreNames.contains('sync_queue')) {
+            const syncStore = db.createObjectStore('sync_queue', { keyPath: 'id', autoIncrement: true });
+            syncStore.createIndex('by-status', 'status');
+          }
       }
 
-      // Orders store
-      if (!db.objectStoreNames.contains('orders')) {
-        const orderStore = db.createObjectStore('orders', { keyPath: 'id' });
-        orderStore.createIndex('by-status', 'status');
-        orderStore.createIndex('by-date', 'updated_at');
-        orderStore.createIndex('by-sync', 'synced');
-      }
-
-      // Employees store
-      if (!db.objectStoreNames.contains('employees')) {
-        const empStore = db.createObjectStore('employees', { keyPath: 'id' });
-        empStore.createIndex('by-role', 'role');
-        empStore.createIndex('by-sync', 'synced');
-      }
-
-      // Inventory store
-      if (!db.objectStoreNames.contains('inventory')) {
-        const invStore = db.createObjectStore('inventory', { keyPath: 'id' });
-        invStore.createIndex('by-category', 'category');
-        invStore.createIndex('by-sync', 'synced');
-      }
-
-      // Expenses store
-      if (!db.objectStoreNames.contains('expenses')) {
-        const expStore = db.createObjectStore('expenses', { keyPath: 'id' });
-        expStore.createIndex('by-date', 'date');
-        expStore.createIndex('by-sync', 'synced');
-      }
-
-      // Settings store (key-value)
-      if (!db.objectStoreNames.contains('settings')) {
-        db.createObjectStore('settings', { keyPath: 'key' });
-      }
-
-      // Supplier Orders store
-      if (!db.objectStoreNames.contains('supplier_orders')) {
-        const supStore = db.createObjectStore('supplier_orders', { keyPath: 'id' });
-        supStore.createIndex('by-status', 'status');
-        supStore.createIndex('by-sync', 'synced');
-      }
-
-      // Tables store
-      if (!db.objectStoreNames.contains('tables')) {
-        const tableStore = db.createObjectStore('tables', { keyPath: 'id' });
-        tableStore.createIndex('by-sync', 'synced');
-        tableStore.createIndex('by-business', 'businessId');
-      }
-
-      // Sync queue
-      if (!db.objectStoreNames.contains('sync_queue')) {
-        const syncStore = db.createObjectStore('sync_queue', { keyPath: 'id', autoIncrement: true });
-        syncStore.createIndex('by-status', 'status');
+      // Version 3 changes
+      if (oldVersion < 3) {
+        if (!db.objectStoreNames.contains('order_items')) {
+            const itemStore = db.createObjectStore('order_items', { keyPath: 'id' });
+            itemStore.createIndex('by-order', 'orderId');
+            itemStore.createIndex('by-sync', 'synced');
+        }
       }
     },
   });
@@ -257,7 +289,7 @@ export async function getDB(): Promise<IDBPDatabase<CulinexDB>> {
 
 // ─── Generic CRUD Helpers ─────────────────────────────────────
 
-type StoreName = 'products' | 'orders' | 'employees' | 'inventory' | 'expenses' | 'supplier_orders' | 'tables';
+type StoreName = 'products' | 'orders' | 'employees' | 'inventory' | 'expenses' | 'supplier_orders' | 'tables' | 'order_items';
 
 export async function getAll<T extends StoreName>(store: T): Promise<CulinexDB[T]['value'][]> {
   const db = await getDB();
@@ -349,7 +381,7 @@ export async function clearAllBusinessData(prevBusinessId?: string): Promise<voi
   const db = await getDB();
   const businessStores: Array<keyof CulinexDB> = [
     'products', 'orders', 'employees', 'inventory',
-    'supplier_orders', 'tables', 'menus', 'categories'
+    'supplier_orders', 'tables', 'order_items'
   ];
 
   for (const store of businessStores) {

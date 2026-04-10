@@ -1,6 +1,8 @@
-import React, { createContext, useContext, ReactNode } from 'react';
-import { useInventory } from './InventoryContext';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useUser } from './UserContext';
 import { MenuItem } from '../types';
+import { getAll, put, deleteRecord } from '../services/db';
+import { trackChange, triggerSync } from '../services/SyncService';
 
 interface MenuContextType {
     menuItems: MenuItem[];
@@ -14,42 +16,71 @@ interface MenuContextType {
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
 
 export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const { inventory, addInventoryItem, updateInventoryItem } = useInventory();
+    const { authProfile } = useUser();
+    const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
 
-    // The Menu is simply the inventory filtered for public items
-    const menuItems = React.useMemo(() => {
-        return inventory.filter(p => p.publicInMenu === true);
-    }, [inventory]);
+    // Load data from IndexedDB
+    useEffect(() => {
+        if (!authProfile?.businessId) return;
+
+        const loadMenu = async () => {
+            try {
+                const data = await getAll('products');
+                // Filter by businessId locally if needed, though IndexedDB is cleared on business switch
+                setMenuItems(data as MenuItem[]);
+            } catch (err) {
+                console.error('[MenuContext] Error loading menu:', err);
+            }
+        };
+
+        loadMenu();
+    }, [authProfile?.businessId]);
 
     const addItem = async (item: Omit<MenuItem, 'id' | 'businessId'>) => {
-        const fullItem: any = {
+        const id = crypto.randomUUID();
+        const newItem: MenuItem = {
             ...item,
-            publicInMenu: true,
-            quantity: 10,
-            unit: 'Pza',
-            costPerUnit: (item as any).price / 1.3,
-            maxStock: 100,
-            minStock: 10,
-            supplier: 'Manual',
-            lastRestock: new Date().toISOString()
-        };
-        await addInventoryItem(fullItem);
+            id,
+            businessId: authProfile?.businessId || '',
+            synced: false,
+            updated_at: new Date().toISOString()
+        } as MenuItem;
+
+        await put('products', newItem as any);
+        setMenuItems(prev => [...prev, newItem]);
+        
+        await trackChange('products', 'INSERT', id, newItem);
     };
 
     const updateItem = async (id: string, updates: Partial<MenuItem>) => {
-        await updateInventoryItem(id, updates);
+        const existing = menuItems.find(i => i.id === id);
+        if (!existing) return;
+
+        const updated = { 
+            ...existing, 
+            ...updates, 
+            synced: false, 
+            updated_at: new Date().toISOString() 
+        };
+
+        await put('products', updated as any);
+        setMenuItems(prev => prev.map(i => i.id === id ? updated : i));
+        
+        await trackChange('products', 'UPDATE', id, updated);
     };
 
     const deleteItem = async (id: string) => {
-        // Soft delete from menu
-        await updateInventoryItem(id, { publicInMenu: false });
+        await deleteRecord('products', id);
+        setMenuItems(prev => prev.filter(i => i.id !== id));
+        
+        await trackChange('products', 'DELETE', id);
     };
 
     const toggleStatus = async (id: string) => {
         const item = menuItems.find(i => i.id === id);
         if (item) {
             const newStatus = item.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-            await updateInventoryItem(id, { status: newStatus });
+            await updateItem(id, { status: newStatus });
         }
     };
 
@@ -64,7 +95,6 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             const parts = line.split(',').map(p => p.trim());
             
-            // Expected Format: Nombre, Categoría, Precio, Descripción, Gramaje, Estatus
             if (parts.length < 3) {
                 errors.push(`Línea ${i + 1}: Formato inválido (mínimo Nombre, Categoría, Precio)`);
                 continue;
@@ -95,8 +125,7 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             }
         }
 
-        // Force a sync after bulk import
-        const { triggerSync } = require('../services/SyncService');
+        // Trigger sync
         triggerSync().catch(console.error);
 
         return { success: errors.length === 0, count, errors };

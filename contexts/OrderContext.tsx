@@ -72,17 +72,43 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [orders, authProfile?.businessId]);
 
-  const addOrder = (order: Order) => {
+  const addOrder = async (order: Order) => {
     // Ensure order has a unique ID if not provided
+    const orderId = order.id || crypto.randomUUID();
     const finalOrder = {
       ...order,
-      id: order.id || crypto.randomUUID()
+      id: orderId,
+      synced: false,
+      updated_at: new Date().toISOString()
     };
     
     setOrders((prev) => [...prev, finalOrder]);
     
-    // Track for sync
-    trackChange('orders', 'INSERT', finalOrder.id, finalOrder).catch(console.error);
+    // 1. Save and Track Main Order
+    await put('orders', finalOrder as any);
+    await trackChange('orders', 'INSERT', orderId, finalOrder);
+
+    // 2. Save and Track Individual Order Items
+    if (order.items && order.items.length > 0) {
+      for (const item of order.items) {
+        const orderItemId = item.id || crypto.randomUUID();
+        const orderItemRecord = {
+          ...item,
+          id: orderItemId,
+          orderId: orderId,
+          businessId: authProfile?.businessId || '',
+          locationId: authProfile?.locationId || '',
+          synced: false,
+          updated_at: new Date().toISOString()
+        };
+
+        await put('order_items', orderItemRecord as any);
+        await trackChange('order_items', 'INSERT', orderItemId, orderItemRecord);
+      }
+    }
+
+    // Trigger immediate sync
+    triggerSync().catch(console.error);
   };
 
   const updateOrderStatus = (orderId: string, status: OrderStatus, updatedOrder?: Order) => {

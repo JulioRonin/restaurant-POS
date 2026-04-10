@@ -38,6 +38,7 @@ const TABLE_MAP: Record<string, string> = {
   supplier_orders: 'supplier_orders',
   settings: 'business_settings',
   tables: 'tables',
+  order_items: 'order_items',
 };
 
 // ─── Sync Callbacks ───────────────────────────────────────────
