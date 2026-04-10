@@ -185,42 +185,57 @@ async function pushLocalChanges(): Promise<void> {
       let result;
 
       switch (op.operation) {
-        case 'INSERT': {
+        case 'INSERT':
+        case 'UPDATE': {
           let payload = { ...op.payload };
+          
+          // Cleanup incompatible fields for multi-tenant tables
           if (op.table === 'orders') {
             delete payload.items;
+            delete payload.waiter; // Legacy field cleanup
+          }
+          
+          if (op.table === 'order_items') {
+            // Remove fields from MenuItem that don't belong in OrderItem table
+            delete payload.category;
+            delete payload.image;
+            delete payload.inventoryLevel;
+            delete payload.publicInMenu;
+            delete payload.status;
+            delete payload.gramaje;
+            delete payload.description;
+
+            // Handle legacy price mapping if record was created before the schema alignment fix
+            if (payload.price !== undefined && payload.priceAtTime === undefined) {
+              payload.priceAtTime = payload.price;
+            }
+            delete payload.price;
           }
 
-          // Check for duplicates first
-          const { data: existing } = await supabaseClient
-            .from(supabaseTable)
-            .select('id')
-            .eq('id', op.record_id)
-            .single();
+          if (op.operation === 'INSERT') {
+            // Check for duplicates first
+            const { data: existing } = await supabaseClient
+              .from(supabaseTable)
+              .select('id')
+              .eq('id', op.record_id)
+              .single();
 
-          if (existing) {
-            // Record already exists on server — update instead
+            if (existing) {
+              result = await supabaseClient
+                .from(supabaseTable)
+                .update(transformForSupabase(payload))
+                .eq('id', op.record_id);
+            } else {
+              result = await supabaseClient
+                .from(supabaseTable)
+                .insert(transformForSupabase(payload));
+            }
+          } else {
             result = await supabaseClient
               .from(supabaseTable)
               .update(transformForSupabase(payload))
               .eq('id', op.record_id);
-          } else {
-            result = await supabaseClient
-              .from(supabaseTable)
-              .insert(transformForSupabase(payload));
           }
-          break;
-        }
-        case 'UPDATE': {
-          let payload = { ...op.payload };
-          if (op.table === 'orders') {
-            delete payload.items;
-          }
-
-          result = await supabaseClient
-            .from(supabaseTable)
-            .update(transformForSupabase(payload))
-            .eq('id', op.record_id);
           break;
         }
         case 'DELETE': {
