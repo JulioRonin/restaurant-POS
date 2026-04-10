@@ -218,6 +218,19 @@ async function pushLocalChanges(): Promise<void> {
             delete payload.price;
           }
 
+          let finalPayload: any;
+          if (op.table === 'settings') {
+             // For settings, we store everything as a single JSON blob in the 'value' column
+             // where the key is 'config'
+             finalPayload = {
+                key: 'config',
+                value: payload,
+                updated_at: new Date().toISOString()
+             };
+          } else {
+             finalPayload = transformForSupabase(payload);
+          }
+
           if (op.operation === 'INSERT') {
             // Check for duplicates first
             const { data: existing } = await supabaseClient
@@ -229,18 +242,34 @@ async function pushLocalChanges(): Promise<void> {
             if (existing) {
               result = await supabaseClient
                 .from(supabaseTable)
-                .update(transformForSupabase(payload))
+                .update(finalPayload)
                 .eq('id', op.record_id);
             } else {
               result = await supabaseClient
                 .from(supabaseTable)
-                .insert(transformForSupabase(payload));
+                .insert(finalPayload);
             }
           } else {
-            result = await supabaseClient
-              .from(supabaseTable)
-              .update(transformForSupabase(payload))
-              .eq('id', op.record_id);
+             // Special case for settings update: we use the key to find the record
+             if (op.table === 'settings') {
+                result = await supabaseClient
+                  .from(supabaseTable)
+                  .update(finalPayload)
+                  .eq('business_id', payload.business_id || payload.businessId)
+                  .eq('key', 'config');
+                
+                // If update failed to find or affected 0 rows, try insert
+                if (result.error || (result as any).count === 0) {
+                    result = await supabaseClient
+                      .from(supabaseTable)
+                      .insert({ ...finalPayload, business_id: payload.business_id || payload.businessId });
+                }
+             } else {
+                result = await supabaseClient
+                  .from(supabaseTable)
+                  .update(finalPayload)
+                  .eq('id', op.record_id);
+             }
           }
           break;
         }
