@@ -48,21 +48,39 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
       const filteredInv = (invData as any[]).filter(i => (i.businessId || i.business_id) === authProfile.businessId);
       const filteredOrders = (orderData as any[]).filter(o => (o.businessId || o.business_id) === authProfile.businessId);
       
-      // Combine with Menu Items so they appear in Inventory too
-      const menuInvItems = (menuData as any[])
-        .filter(m => (m.businessId || m.business_id) === authProfile.businessId)
-        .map(m => ({
-          ...m,
-          id: m.id,
-          name: m.name,
-          category: m.category || 'Menu',
-          quantity: m.inventoryLevel || 0,
-          unit: 'Pza',
-          costPerUnit: (m.price || 0) / 1.3,
-          isFromMenu: true
-        }));
+      // Combine with Menu Items and DEDUPLICATE by name
+      const combinedMap = new Map<string, any>();
 
-      setInventory([...(filteredInv as InventoryItem[]), ...menuInvItems]);
+      // First, add all Menu Items as base
+      (menuData as any[])
+        .filter(m => (m.businessId || m.business_id) === authProfile.businessId)
+        .forEach(m => {
+          combinedMap.set(m.name.toLowerCase(), {
+            ...m,
+            quantity: m.inventoryLevel || 0,
+            unit: 'Pza',
+            costPerUnit: (m.price || 0) / 1.3,
+            isFromMenu: true
+          });
+        });
+
+      // Then, merge with Inventory records
+      filteredInv.forEach(item => {
+        const key = item.name.toLowerCase();
+        if (combinedMap.has(key)) {
+          const existing = combinedMap.get(key);
+          combinedMap.set(key, {
+            ...existing,
+            quantity: (existing.quantity || 0) + (item.quantity || 0),
+            // Prefer the item ID if it was originally an inventory item
+            id: existing.isFromMenu ? existing.id : item.id 
+          });
+        } else {
+          combinedMap.set(key, item);
+        }
+      });
+
+      setInventory(Array.from(combinedMap.values()));
       setOrders(filteredOrders as SupplierOrder[]);
       setLoading(false);
     } catch (err) {
