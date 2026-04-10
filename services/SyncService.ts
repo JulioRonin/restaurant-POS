@@ -192,7 +192,13 @@ async function pushLocalChanges(): Promise<void> {
           // Cleanup incompatible fields for multi-tenant tables
           if (op.table === 'orders') {
             delete payload.items;
-            delete payload.waiter; // Legacy field cleanup
+            delete payload.table; // Object reference cleanup
+            delete payload.waiter; // Object reference cleanup
+            delete payload.changeAmount;
+            delete payload.receivedAmount;
+            delete payload.paidSplits;
+            delete payload.splitType;
+            delete payload.invoiceDetails; // If causing issues, can be kept as JSONB but usually empty
           }
           
           if (op.table === 'order_items') {
