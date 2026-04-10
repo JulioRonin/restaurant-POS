@@ -186,6 +186,11 @@ async function pushLocalChanges(): Promise<void> {
 
       switch (op.operation) {
         case 'INSERT': {
+          let payload = { ...op.payload };
+          if (op.table === 'orders') {
+            delete payload.items;
+          }
+
           // Check for duplicates first
           const { data: existing } = await supabaseClient
             .from(supabaseTable)
@@ -197,19 +202,24 @@ async function pushLocalChanges(): Promise<void> {
             // Record already exists on server — update instead
             result = await supabaseClient
               .from(supabaseTable)
-              .update(transformForSupabase(op.payload))
+              .update(transformForSupabase(payload))
               .eq('id', op.record_id);
           } else {
             result = await supabaseClient
               .from(supabaseTable)
-              .insert(transformForSupabase(op.payload));
+              .insert(transformForSupabase(payload));
           }
           break;
         }
         case 'UPDATE': {
+          let payload = { ...op.payload };
+          if (op.table === 'orders') {
+            delete payload.items;
+          }
+
           result = await supabaseClient
             .from(supabaseTable)
-            .update(transformForSupabase(op.payload))
+            .update(transformForSupabase(payload))
             .eq('id', op.record_id);
           break;
         }
