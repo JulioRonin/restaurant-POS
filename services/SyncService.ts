@@ -480,7 +480,13 @@ function transformForSupabase(payload: any): any {
     if (blacklistedKeys.includes(key)) continue; 
     
     const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-    transformed[snakeKey] = value;
+    
+    // CRITICAL: Supabase table_id is UUID. 'COUNTER' is invalid. Convert to null.
+    if (snakeKey === 'table_id' && value === 'COUNTER') {
+      transformed[snakeKey] = null;
+    } else {
+      transformed[snakeKey] = value;
+    }
   }
   transformed.updated_at = new Date().toISOString();
   return transformed;
@@ -491,7 +497,13 @@ function transformFromSupabase(record: any, storeName: string): any {
   const transformed: any = {};
   for (const [key, value] of Object.entries(record)) {
     const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-    transformed[camelKey] = value;
+    
+    // CRITICAL: Bridge Supabase null back to UI 'COUNTER'
+    if (camelKey === 'tableId' && value === null) {
+      transformed[camelKey] = 'COUNTER';
+    } else {
+      transformed[camelKey] = value;
+    }
   }
   return transformed;
 }
