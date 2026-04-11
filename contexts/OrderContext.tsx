@@ -37,7 +37,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setOrders(parsed.map((o: any) => ({ ...o, timestamp: new Date(o.timestamp) })));
+        setOrders(parsed.map((o: any) => ({ ...o, items: o.items || [], timestamp: new Date(o.timestamp) })));
       } catch (e) {
         console.error('Error loading orders:', e);
       }
@@ -54,6 +54,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         setOrders(myOrders.map((o: any) => ({
           ...o,
+          items: o.items || [], // PREVENT CRASH from undefined items after Supabase Pull
           timestamp: new Date(o.timestamp),
         })));
       }
