@@ -159,3 +159,31 @@ create policy "Enable all for authenticated users" on supplier_orders for all us
 
 -- Supplier Order Items
 create policy "Enable all for authenticated users" on supplier_order_items for all using (auth.role() = 'authenticated');
+
+-- 12. Business Settings Table
+create table if not exists business_settings (
+  id text primary key default uuid_generate_v4()::text,
+  business_id text not null,
+  key text not null,
+  value jsonb not null,
+  updated_at timestamp with time zone default now(),
+  unique(business_id, key)
+);
+
+alter table business_settings enable row level security;
+create policy "Enable all for authenticated users" on business_settings for all using (auth.role() = 'authenticated');
+
+-- 13. Expenses Table
+create table if not exists expenses (
+  id text primary key default uuid_generate_v4()::text,
+  business_id text not null,
+  description text not null,
+  amount numeric(10, 2) not null,
+  category text not null,
+  date timestamp with time zone default now(),
+  executor text,
+  created_at timestamp with time zone default now()
+);
+
+alter table expenses enable row level security;
+create policy "Enable all for authenticated users" on expenses for all using (auth.role() = 'authenticated');
