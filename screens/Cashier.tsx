@@ -362,7 +362,7 @@ export const CashierScreen: React.FC = () => {
                                                 </div>
                                                 {order && <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full font-bold">${order.total.toFixed(2)}</span>}
                                             </div>
-                                            <div className="text-xs text-gray-500">{order ? `${order.items.length} Items • Waiter: ${order.waiterName || 'N/A'}` : 'No Active Order'}</div>
+                                            <div className="text-xs text-gray-500">{order ? `${(order.items || []).length} Items • Waiter: ${order.waiterName || 'N/A'}` : 'No Active Order'}</div>
                                         </div>
                                     );
                                 })}
@@ -408,7 +408,7 @@ export const CashierScreen: React.FC = () => {
                                             </div>
                                             <span className="bg-white/60 px-2 py-1 rounded-full font-black text-xs shadow-sm">${order.total.toFixed(2)}</span>
                                         </div>
-                                        <div className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-2">{order.items.length} Platillos • ID: {order.id.slice(-6)}</div>
+                                        <div className="text-[8px] text-gray-400 font-bold uppercase tracking-widest mt-2">{(order.items || []).length} Platillos • ID: {order.id.slice(-6)}</div>
                                     </div>
                                 ))}
                                 {orders.filter(o => o.source && o.source !== OrderSource.DINE_IN && o.status !== 'COMPLETED').length === 0 && (
@@ -473,10 +473,10 @@ export const CashierScreen: React.FC = () => {
                                 <div className="flex-1 p-8 overflow-y-auto">
                                     <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
                                         <h2 className="text-xl font-bold mb-4 border-b pb-2">Order Summary</h2>
-                                        {selectedOrder.items.map((item, idx) => (
+                                        {(selectedOrder.items || []).map((item, idx) => (
                                             <div key={idx} className="flex justify-between py-2 border-b border-gray-50 last:border-0">
                                                 <div><span className="font-bold bg-gray-100 px-2 py-0.5 rounded mr-2">{item.quantity}x</span><span>{item.name}</span></div>
-                                                <span className="font-semibold">${(item.price * item.quantity).toFixed(2)}</span>
+                                                <span className="font-semibold">${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
                                             </div>
                                         ))}
                                         <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-200 text-right">
