@@ -46,7 +46,11 @@ export const CashierScreen: React.FC = () => {
     const [isProcessingTerminal, setIsProcessingTerminal] = useState(false);
     const [terminalStep, setTerminalStep] = useState('');
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState<string>(() => {
+        const d = new Date();
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        return d.toISOString().split('T')[0];
+    });
     const [showFinancialReport, setShowFinancialReport] = useState(false);
     const [cashCutToPrint, setCashCutToPrint] = useState<{
         orders: Order[],
@@ -190,7 +194,10 @@ export const CashierScreen: React.FC = () => {
                 const dateVal = o.timestamp || (o as any).created_at || (o as any).createdAt || Date.now();
                 const d = new Date(dateVal);
                 if (isNaN(d.getTime())) return false;
-                return d.toISOString().split('T')[0] === selectedDate;
+                
+                const localD = new Date(d);
+                localD.setMinutes(localD.getMinutes() - localD.getTimezoneOffset());
+                return localD.toISOString().split('T')[0] === selectedDate;
             } catch (e) {
                 return false;
             }
@@ -198,7 +205,18 @@ export const CashierScreen: React.FC = () => {
     }, [orders, selectedDate]);
 
     const filteredByDateExpenses = useMemo(() => {
-        return expenses.filter(e => e.date === selectedDate);
+        return expenses.filter(e => {
+            if (!e.date) return false;
+            if (!e.date.includes('T')) return e.date === selectedDate;
+
+            const d = new Date(e.date);
+            if (!isNaN(d.getTime())) {
+                const localD = new Date(d);
+                localD.setMinutes(localD.getMinutes() - localD.getTimezoneOffset());
+                return localD.toISOString().split('T')[0] === selectedDate;
+            }
+            return false;
+        });
     }, [expenses, selectedDate]);
 
     const completedOrdersCount = useMemo(() => filteredByDateOrders.filter(o => o.status === 'COMPLETED'), [filteredByDateOrders]);
