@@ -699,6 +699,20 @@ export const CashierScreen: React.FC = () => {
                     restaurantName={settings.name}
                 />
             )}
+
+            {/* Print Elements */}
+            <div className="hidden print-only w-full">
+                {orderToPrint && <Ticket order={orderToPrint} settings={settings} />}
+                {cashCutToPrint && (
+                    <CashCutTicket 
+                        orders={cashCutToPrint.orders}
+                        metrics={cashCutToPrint.metrics}
+                        expenses={cashCutToPrint.expenses}
+                        totalExpenses={cashCutToPrint.totalExpenses}
+                        settings={settings}
+                    />
+                )}
+            </div>
         </div>
     );
 };
