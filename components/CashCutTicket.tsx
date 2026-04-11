@@ -48,12 +48,12 @@ export const CashCutTicket: React.FC<CashCutTicketProps> = ({
           <span>- EFECTIVO:</span>
           <span>${metrics.cashSales.toFixed(2)}</span>
         </div>
-        <div className="flex justify-between pl-2">
+        <div className="flex justify-between pl-2 pb-1">
           <span>- TARJETA:</span>
           <span>${metrics.cardSales.toFixed(2)}</span>
         </div>
         <div className="flex justify-between pl-2 pb-1">
-          <span>- DELIVERY:</span>
+          <span>- TRANSF/APP:</span>
           <span>${metrics.deliverySales.toFixed(2)}</span>
         </div>
         <div className="flex justify-between font-bold mt-2">

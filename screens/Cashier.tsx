@@ -228,8 +228,13 @@ export const CashierScreen: React.FC = () => {
         const cardSales = _sales.filter(o => o.paymentMethod === PaymentMethod.CARD).reduce((sum, o) => sum + (o.total || 0), 0);
         const mixedSales = _sales.filter(o => o.paymentMethod === PaymentMethod.MIXED).reduce((sum, o) => sum + (o.total || 0), 0);
         
-        // Delivery Sales Calculation
-        const deliverySales = _sales.filter(o => o.source === OrderSource.UBER_EATS || o.source === OrderSource.RAPPI).reduce((sum, o) => sum + (o.total || 0), 0);
+        // Delivery & Transfer Sales Calculation (grouped as requested)
+        const deliverySales = _sales.filter(o => 
+            o.source === OrderSource.UBER_EATS || 
+            o.source === OrderSource.RAPPI ||
+            o.source === OrderSource.DIDI ||
+            o.paymentMethod === PaymentMethod.TRANSFER
+        ).reduce((sum, o) => sum + (o.total || 0), 0);
 
         const categoryBreakdown: Record<string, number> = {};
         _sales.forEach(order => {
@@ -635,7 +640,7 @@ export const CashierScreen: React.FC = () => {
                                     <div className="text-3xl font-black text-blue-600">${salesMetrics.cardSales.toFixed(2)}</div>
                                 </div>
                                 <div className="bg-white p-6 rounded-2xl shadow-soft border border-gray-100">
-                                    <h3 className="text-gray-400 text-[10px] font-black uppercase mb-1 tracking-widest">Delivery Apps</h3>
+                                    <h3 className="text-gray-400 text-[10px] font-black uppercase mb-1 tracking-widest">Transf / Apps</h3>
                                     <div className="text-3xl font-black text-amber-500">${salesMetrics.deliverySales.toFixed(2)}</div>
                                 </div>
                                 <div className="bg-white p-6 rounded-2xl shadow-soft border border-gray-100">

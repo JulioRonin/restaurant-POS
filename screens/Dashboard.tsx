@@ -57,19 +57,38 @@ export const DashboardScreen: React.FC = () => {
         setTimeRange(val);
     };
 
-    const totalSales = useMemo(() => {
-        return orders.reduce((sum, o) => (o.status === 'COMPLETED' || o.status === 'PAID') ? sum + o.total : sum, 0);
+    const { sales, items, customers, avgTicket } = useMemo(() => {
+        let _sales = 0;
+        let _items = 0;
+        let _customers = 0;
+        let _count = 0;
+        
+        orders.forEach(o => {
+            if (o.status === 'COMPLETED' || o.status === 'PAID') {
+                _sales += o.total || 0;
+                _items += (o.items || []).reduce((sum, i) => sum + (i.quantity || 1), 0);
+                _customers += 1;
+                _count++;
+            }
+        });
+        
+        return {
+            sales: _sales,
+            items: _items,
+            customers: _customers,
+            avgTicket: _count > 0 ? (_sales / _count) : 0
+        };
     }, [orders]);
 
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-    const netCashFlow = totalSales - totalExpenses;
+    const netCashFlow = sales - totalExpenses;
 
     const waiterStats = useMemo(() => {
         const stats: Record<string, number> = {};
         orders.forEach(order => {
             if (order.status !== 'CANCELLED' && order.waiterName) {
                 const name = order.waiterName;
-                stats[name] = (stats[name] || 0) + order.total;
+                stats[name] = (stats[name] || 0) + (order.total || 0);
             }
         });
 
@@ -81,7 +100,10 @@ export const DashboardScreen: React.FC = () => {
     const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088FE', '#00C49F'];
 
     const DYNAMIC_KPIS = [
-        ...DASHBOARD_KPIS,
+        { label: 'Ventas Totales', value: `$${sales.toFixed(2)}`, trend: 0, trendUp: true, icon: 'monetization_on' },
+        { label: 'Platillos Servidos', value: `${items}`, trend: 0, trendUp: true, icon: 'restaurant_menu' },
+        { label: 'Clientes Atendidos', value: `${customers}`, trend: 0, trendUp: true, icon: 'groups' },
+        { label: 'Ticket Promedio', value: `$${avgTicket.toFixed(2)}`, trend: 0, trendUp: true, icon: 'receipt' },
         {
             label: 'Total Expenses (Caja Chica)',
             value: `$${totalExpenses.toFixed(2)}`,
