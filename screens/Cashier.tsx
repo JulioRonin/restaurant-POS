@@ -206,9 +206,9 @@ export const CashierScreen: React.FC = () => {
 
         const categoryBreakdown: Record<string, number> = {};
         _sales.forEach(order => {
-            order.items.forEach(item => {
+            (order.items || []).forEach(item => {
                 const cat = item.category || 'Uncategorized';
-                const amt = item.price * item.quantity;
+                const amt = (item.price || 0) * (item.quantity || 1);
                 categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + amt;
             });
         });
@@ -217,17 +217,17 @@ export const CashierScreen: React.FC = () => {
     }, [filteredByDateOrders]);
 
     const completedOrders = filteredByDateOrders.filter(o => o.status === 'COMPLETED');
-    const totalExpenses = filteredByDateExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalExpenses = filteredByDateExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
 
     const filteredHistory = useMemo(() => {
         const _base = filteredByDateOrders.filter(o => o.status === 'COMPLETED');
         if (historyCategoryFilter === 'All') return _base;
-        return _base.filter(o => o.items.some(i => i.category === historyCategoryFilter));
+        return _base.filter(o => (o.items || []).some(i => i.category === historyCategoryFilter));
     }, [filteredByDateOrders, historyCategoryFilter]);
 
     const availableCategories = useMemo(() => {
         const cats = new Set<string>();
-        completedOrders.forEach(o => o.items.forEach(i => cats.add(i.category)));
+        completedOrders.forEach(o => (o.items || []).forEach(i => cats.add(i.category)));
         return ['All', ...Array.from(cats)];
     }, [completedOrders]);
 
