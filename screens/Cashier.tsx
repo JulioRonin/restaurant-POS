@@ -185,7 +185,16 @@ export const CashierScreen: React.FC = () => {
 
     // --- History / Cash Cut Logic ---
     const filteredByDateOrders = useMemo(() => {
-        return orders.filter(o => new Date(o.timestamp).toISOString().split('T')[0] === selectedDate);
+        return orders.filter(o => {
+            try {
+                const dateVal = o.timestamp || (o as any).created_at || (o as any).createdAt || Date.now();
+                const d = new Date(dateVal);
+                if (isNaN(d.getTime())) return false;
+                return d.toISOString().split('T')[0] === selectedDate;
+            } catch (e) {
+                return false;
+            }
+        });
     }, [orders, selectedDate]);
 
     const filteredByDateExpenses = useMemo(() => {
