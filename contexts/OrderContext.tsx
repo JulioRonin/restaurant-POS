@@ -46,17 +46,45 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // Durable load from IndexedDB
     try {
       const idbOrders = await getAll('orders');
+      const idbOrderItems = await getAll('order_items');
+      const idbProducts = await getAll('products');
+      
+      const allItems = idbOrderItems as any[];
+      const allProducts = idbProducts as any[];
+      
       if (idbOrders.length > 0) {
         // CRITICAL SECURITY: Filter by businessId to prevent cross-tenant leakage
         const myOrders = (idbOrders as any[]).filter(o => 
           (o.business_id === authProfile.businessId || o.businessId === authProfile.businessId)
         );
 
-        setOrders(myOrders.map((o: any) => ({
-          ...o,
-          items: o.items || [], // PREVENT CRASH from undefined items after Supabase Pull
-          timestamp: new Date(o.timestamp || o.created_at || o.createdAt || Date.now()),
-        })));
+        setOrders(myOrders.map((o: any) => {
+          let assembledItems = o.items;
+          
+          // Re-assemble items from relational database if they were wiped by SyncService
+          if (!assembledItems || !Array.isArray(assembledItems) || assembledItems.length === 0) {
+              assembledItems = allItems
+                .filter(item => item.orderId === o.id || item.order_id === o.id)
+                .map(item => {
+                    const productId = item.menuItemId || item.menu_item_id;
+                    const originalProduct = allProducts.find(p => p.id === productId);
+                    return {
+                        ...item,
+                        id: productId, // Match expected frontend format
+                        name: originalProduct ? originalProduct.name : 'Platillo (Sincronizado)',
+                        price: item.priceAtTime || item.price_at_time || 0,
+                        quantity: item.quantity || 1,
+                        category: originalProduct ? originalProduct.category : 'Uncategorized'
+                    };
+                });
+          }
+
+          return {
+            ...o,
+            items: assembledItems || [], // PREVENT CRASH from undefined items after Supabase Pull
+            timestamp: new Date(o.timestamp || o.created_at || o.createdAt || Date.now()),
+          };
+        }));
       }
     } catch (err) {
       console.error('[OrderContext] Error loading orders from IDB:', err);
