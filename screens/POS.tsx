@@ -118,15 +118,18 @@ export const POSScreen: React.FC = () => {
         
         // Auto Kitchen Printing
         if (settings.isKitchenPrintingEnabled) {
+          let printSuccess = false;
           if (settings.isDirectPrintingEnabled) {
-            await printerService.printKitchenTicket(newOrder, settings);
-          } else {
+            printSuccess = await printerService.printKitchenTicket(newOrder, settings);
+          }
+          
+          if (!printSuccess) {
             // Fallback to Browser Print
             setKitchenOrderToPrint(newOrder);
             setTimeout(() => {
               window.print();
               setKitchenOrderToPrint(null);
-            }, 300);
+            }, 500);
           }
         }
 
