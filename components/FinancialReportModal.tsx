@@ -42,11 +42,11 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 print-container">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 print-container print:relative print:block print:h-auto print:inset-auto print:p-0">
             {/* Backdrop - Manual backdrop instead of no-print on parent to avoid hiding everything in print */}
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm no-print" onClick={onClose} />
             
-            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 relative z-10 print:h-auto print:shadow-none print:rounded-none">
+            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 relative z-10 print:h-auto print:shadow-none print:rounded-none print:overflow-visible print:block print:max-w-none">
                 {/* Header - Buttons */}
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 no-print">
                     <div className="flex items-center gap-3">

@@ -57,18 +57,28 @@ export const DashboardScreen: React.FC = () => {
         setTimeRange(val);
     };
 
-    const { sales, items, customers, avgTicket } = useMemo(() => {
+    const { sales, items, customers, avgTicket, appScores } = useMemo(() => {
         let _sales = 0;
         let _items = 0;
         let _customers = 0;
         let _count = 0;
         
+        const _appScores = {
+            UBER_EATS: 0,
+            RAPPI: 0,
+            DIDI: 0
+        };
+
         orders.forEach(o => {
             if (o.status === 'COMPLETED' || o.status === 'PAID') {
                 _sales += o.total || 0;
                 _items += (o.items || []).reduce((sum, i) => sum + (i.quantity || 1), 0);
                 _customers += 1;
                 _count++;
+
+                if (o.source === 'UBER_EATS') _appScores.UBER_EATS += (o.total || 0);
+                if (o.source === 'RAPPI') _appScores.RAPPI += (o.total || 0);
+                if (o.source === 'DIDI') _appScores.DIDI += (o.total || 0);
             }
         });
         
@@ -76,7 +86,8 @@ export const DashboardScreen: React.FC = () => {
             sales: _sales,
             items: _items,
             customers: _customers,
-            avgTicket: _count > 0 ? (_sales / _count) : 0
+            avgTicket: _count > 0 ? (_sales / _count) : 0,
+            appScores: _appScores
         };
     }, [orders]);
 
@@ -104,20 +115,11 @@ export const DashboardScreen: React.FC = () => {
         { label: 'Platillos Servidos', value: `${items}`, trend: 0, trendUp: true, icon: 'restaurant_menu' },
         { label: 'Clientes Atendidos', value: `${customers}`, trend: 0, trendUp: true, icon: 'groups' },
         { label: 'Ticket Promedio', value: `$${avgTicket.toFixed(2)}`, trend: 0, trendUp: true, icon: 'receipt' },
-        {
-            label: 'Total Expenses (Caja Chica)',
-            value: `$${totalExpenses.toFixed(2)}`,
-            trend: 0,
-            trendUp: false,
-            icon: 'money_off'
-        },
-        {
-            label: 'Net Cash Flow (Est.)',
-            value: `$${netCashFlow.toFixed(2)}`,
-            trend: 0,
-            trendUp: true,
-            icon: 'account_balance_wallet'
-        }
+        { label: 'Total Expenses (Caja Chica)', value: `$${totalExpenses.toFixed(2)}`, trend: 0, trendUp: false, icon: 'money_off' },
+        { label: 'Net Cash Flow (Est.)', value: `$${netCashFlow.toFixed(2)}`, trend: 0, trendUp: true, icon: 'account_balance_wallet' },
+        { label: 'Uber Eats', value: `$${appScores.UBER_EATS.toFixed(2)}`, trend: 0, trendUp: true, icon: 'directions_bike', color: 'bg-[#06C167]/10 text-[#06C167]' },
+        { label: 'Rappi', value: `$${appScores.RAPPI.toFixed(2)}`, trend: 0, trendUp: true, icon: 'delivery_dining', color: 'bg-[#FF3C5C]/10 text-[#FF3C5C]' },
+        { label: 'DiDi Food', value: `$${appScores.DIDI.toFixed(2)}`, trend: 0, trendUp: true, icon: 'motorcycle', color: 'bg-[#FF7D00]/10 text-[#FF7D00]' }
     ];
 
     return (

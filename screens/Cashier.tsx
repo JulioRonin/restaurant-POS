@@ -265,19 +265,7 @@ export const CashierScreen: React.FC = () => {
 
     return (
         <div className="flex h-full bg-gray-100 font-sans">
-            {/* Ticket to print (hidden onscreen) */}
-            <div className="hidden print:block absolute inset-0 z-[9999] bg-white">
-                {orderToPrint && <Ticket order={orderToPrint} settings={settings} />}
-                {cashCutToPrint && (
-                    <CashCutTicket 
-                        orders={cashCutToPrint.orders}
-                        metrics={cashCutToPrint.metrics}
-                        expenses={cashCutToPrint.expenses}
-                        totalExpenses={cashCutToPrint.totalExpenses}
-                        settings={settings}
-                    />
-                )}
-            </div>
+
 
             <div className="flex flex-1 h-full print:hidden relative">
                 {/* Bill Request Alerts */}
@@ -720,7 +708,7 @@ export const CashierScreen: React.FC = () => {
             )}
 
             {/* Print Elements */}
-            <div className="hidden print-only w-full">
+            <div className="hidden print:block print:relative print:w-full print:h-auto overflow-visible">
                 {orderToPrint && <Ticket order={orderToPrint} settings={settings} />}
                 {cashCutToPrint && (
                     <CashCutTicket 
