@@ -6,7 +6,7 @@ import { useTables } from '../contexts/TableContext';
 import { useMenu } from '../contexts/MenuContext';
 
 export const MyTablesScreen: React.FC = () => {
-    const { orders, updateOrderStatus } = useOrders();
+    const { orders, updateOrderStatus, removeOrder } = useOrders();
     const { activeEmployee } = useUser();
     const { tables: TABLES } = useTables();
     const { menuItems } = useMenu();
@@ -143,6 +143,20 @@ export const MyTablesScreen: React.FC = () => {
                                         <h3 className="text-3xl font-black text-gray-900">{order.tableId}</h3>
                                     </div>
                                     <div className="text-right flex flex-col items-end">
+                                        <div className="flex gap-2 mb-2">
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (window.confirm('¿Eliminar esta orden por completo?')) {
+                                                        removeOrder(order.id);
+                                                    }
+                                                }}
+                                                className="p-2 bg-red-100 text-red-600 rounded-xl shadow-sm border border-red-200 hover:bg-red-600 hover:text-white transition-all active:scale-95"
+                                                title="Eliminar Orden"
+                                            >
+                                                <span className="material-icons-round text-sm">delete</span>
+                                            </button>
+                                        </div>
                                         <span className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-1">TIEMPO</span>
                                         <span className="font-bold text-gray-600 flex items-center gap-1 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
                                             <span className="material-icons-round text-sm">schedule</span>

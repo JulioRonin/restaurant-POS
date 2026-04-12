@@ -411,20 +411,6 @@ export const CashierScreen: React.FC = () => {
                                                     CUENTA
                                                 </div>
                                             )}
-                                            {order && (
-                                                <button 
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (window.confirm('¿Eliminar esta orden por completo?')) {
-                                                            removeOrder(order.id);
-                                                            if (selectedTableId === table.id) setSelectedTableId(null);
-                                                        }
-                                                    }}
-                                                    className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-lg shadow-sm border border-red-200 hover:bg-red-600 hover:text-white transition-all z-10 flex items-center justify-center"
-                                                >
-                                                    <span className="material-icons-round text-sm">delete</span>
-                                                </button>
-                                            )}
                                             <div className="flex justify-between items-center mb-2">
                                                 <div className="flex flex-col">
                                                     <span className="font-bold text-lg">{table.name}</span>
@@ -447,18 +433,6 @@ export const CashierScreen: React.FC = () => {
                                                 onClick={() => setSelectedTableId(order.tableId)}
                                                 className={`p-4 rounded-xl border-2 cursor-pointer transition-all bg-blue-50 border-blue-100 mb-2 group relative ${selectedTableId === order.tableId ? 'ring-2 ring-primary border-primary' : ''}`}
                                             >
-                                                <button 
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (window.confirm('¿Eliminar esta venta directa?')) {
-                                                            removeOrder(order.id);
-                                                            if (selectedTableId === order.tableId) setSelectedTableId(null);
-                                                        }
-                                                    }}
-                                                    className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-lg shadow-sm border border-red-200 hover:bg-red-600 hover:text-white transition-all z-10 flex items-center justify-center"
-                                                >
-                                                    <span className="material-icons-round text-sm">delete</span>
-                                                </button>
                                                 <div className="flex justify-between items-center mb-1">
                                                     <span className="font-bold text-gray-700">Orden #{order.id.slice(-4)}</span>
                                                     <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-bold">${order.total.toFixed(2)}</span>

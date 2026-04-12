@@ -8,6 +8,7 @@ interface KitchenTicketProps {
 }
 
 export const KitchenTicket: React.FC<KitchenTicketProps> = ({ order, settings }) => {
+  if (!settings) return null;
   const is58mm = settings.printerWidth === '58mm';
   const widthClass = is58mm ? 'w-[48mm]' : 'w-[72mm]';
   const fontSize = is58mm ? 'text-[10px]' : 'text-sm';

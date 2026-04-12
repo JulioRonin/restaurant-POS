@@ -137,7 +137,8 @@ export const POSScreen: React.FC = () => {
               quantity: item.quantity,
               notes: item.notes || '',
               price_at_time: item.price,
-              name: item.name
+              name: item.name,
+              business_id: authProfile?.businessId
             };
             // Note: trackChange already handles the enqueue + sync trigger
             await (await import('../services/SyncService')).trackChange('order_items', 'INSERT', orderItem.id, orderItem);
@@ -674,7 +675,7 @@ export const POSScreen: React.FC = () => {
 
       {/* Printing Component (Browser print fallback) */}
       <div className="hidden print:block">
-        {kitchenOrderToPrint && <KitchenTicket order={kitchenOrderToPrint} />}
+        {kitchenOrderToPrint && <KitchenTicket order={kitchenOrderToPrint} settings={settings} />}
       </div>
     </div>
   );
