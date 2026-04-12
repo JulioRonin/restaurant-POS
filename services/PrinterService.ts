@@ -175,20 +175,21 @@ class PrinterService {
     }
 
     try {
+      console.log('[PrinterService] Starting print process for order:', order.id);
       const encoder = new ReceiptPrinterEncoder();
       const is58mm = settings.printerWidth === '58mm';
       const lineChars = is58mm ? 26 : 42;
 
       // Helper for Manual Centering
       const center = (text: string) => {
-        const str = text.trim().slice(0, lineChars);
+        const str = (text || '').trim().slice(0, lineChars);
         const pad = Math.max(0, Math.floor((lineChars - str.length) / 2));
         return ' '.repeat(pad) + str;
       };
 
       // Helper for Wrapped Centering
       const wrapCenter = (text: string) => {
-        const words = (text || '').split(' ');
+        const words = (text || '').toString().split(' ');
         const lines: string[] = [];
         let currentLine = '';
 
@@ -204,93 +205,78 @@ class PrinterService {
         return lines;
       };
 
-      let result = encoder.initialize()
-        .align('left')
-        .size('normal');
-
-      // Centered Header with manual padding
-      wrapCenter(settings.name.toUpperCase()).forEach(l => result = result.text(l).newline());
-      wrapCenter(settings.legalName).forEach(l => result = result.text(l).newline());
-      wrapCenter(settings.rfc).forEach(l => result = result.text(l).newline());
-      wrapCenter(settings.address).forEach(l => result = result.text(l).newline());
-      wrapCenter(settings.phone).forEach(l => result = result.text(l).newline());
-
-      result = result
-        .text('-'.repeat(lineChars))
-        .newline()
-        .align('left')
-        .text(`ORDEN: #${order.id.slice(-6).toUpperCase()}`)
-        .newline()
-        .text(`FECHA: ${new Date(order.timestamp).toLocaleDateString()}`)
-        .newline()
-        .text(`HORA: ${new Date(order.timestamp).toLocaleTimeString()}`)
-        .newline();
-
-      if (order.tableId) result.text(`MESA: ${order.tableId}`).newline();
-      if (order.waiterName) result.text(`MESERO: ${order.waiterName}`).newline();
-
-      result = result.text('-'.repeat(lineChars)).newline();
+      let result = encoder.initialize();
       
-      // Column Header
-      if (is58mm) {
-        // 26 chars: 3 (CAN) + 1 + 13 (PRODUCTO) + 1 + 8 (TOTAL)
-        result.text('CAN PRODUCTO         TOTAL').newline();
-      } else {
-        result.text('CANT  PRODUCTO                    TOTAL').newline();
+      try {
+          result = result.align('left').size('normal');
+          
+          wrapCenter(settings.name || 'CULINEX').forEach(l => result = result.text(l).newline());
+          if (settings.legalName) wrapCenter(settings.legalName).forEach(l => result = result.text(l).newline());
+          if (settings.address) wrapCenter(settings.address).forEach(l => result = result.text(l).newline());
+          if (settings.phone) wrapCenter(settings.phone).forEach(l => result = result.text(l).newline());
+
+          result = result.text('-'.repeat(lineChars)).newline();
+          result = result.text(`ORDEN: #${order.id.slice(-6).toUpperCase()}`).newline();
+          
+          const timestamp = order.timestamp || new Date();
+          result = result.text(`FECHA: ${new Date(timestamp).toLocaleDateString()}`).newline();
+          result = result.text(`HORA: ${new Date(timestamp).toLocaleTimeString()}`).newline();
+
+          if (order.tableId) result.text(`MESA: ${order.tableId}`).newline();
+          if (order.waiterName) result.text(`MESERO: ${order.waiterName}`).newline();
+
+          result = result.text('-'.repeat(lineChars)).newline();
+          
+          // Column Header
+          const colHeader = is58mm ? 'CAN PRODUCTO         TOTAL' : 'CANT  PRODUCTO                    TOTAL';
+          result = result.text(colHeader).newline();
+
+          order.items.forEach((item: any) => {
+            if (is58mm) {
+              const qty = item.quantity.toString().padEnd(3);
+              const name = (item.name || 'ITEM').toUpperCase().slice(0, 13).padEnd(14);
+              const price = (item.price * item.quantity).toFixed(2).padStart(8);
+              result = result.text(`${qty}${name}${price}`).newline();
+            } else {
+              const qty = item.quantity.toString().padEnd(5);
+              const name = (item.name || 'ITEM').toUpperCase().slice(0, 25).padEnd(27);
+              const price = (item.price * item.quantity).toFixed(2).padStart(10);
+              result = result.text(`${qty}${name}${price}`).newline();
+            }
+          });
+
+          result = result.text('-'.repeat(lineChars)).newline();
+
+          if (order.receivedAmount !== undefined && order.receivedAmount > 0) {
+            const recLabel = 'RECIBIDO:'.padEnd(15);
+            const recVal = `$${order.receivedAmount.toFixed(2)}`.padStart(is58mm ? 10 : 25);
+            result = result.text(`${recLabel}${recVal}`).newline();
+            const changeLabel = 'CAMBIO:'.padEnd(15);
+            const changeVal = `$${(order.changeAmount || 0).toFixed(2)}`.padStart(is58mm ? 10 : 25);
+            result = result.text(`${changeLabel}${changeVal}`).newline();
+          }
+
+          const totalLabel = 'TOTAL:'.padEnd(8);
+          const totalVal = `$${(order.total || 0).toFixed(2)}`.padStart(is58mm ? 17 : 33);
+          result = result.text(`${totalLabel}${totalVal}`).newline().newline();
+
+          wrapCenter(settings.footerMessage || '¡Gracias!').forEach(l => result = result.text(l).newline());
+          result = result.newline().cut().encode();
+      } catch (encodeErr: any) {
+          console.error('[PrinterService] Encoding error:', encodeErr);
+          alert(`Error de formato de ticket: ${encodeErr.message}`);
+          return false;
       }
-
-      order.items.forEach((item: any) => {
-        if (is58mm) {
-          // 26 chars: 3 (qty) + 1 + 13 (name) + 1 + 8 (total) = 26
-          const qty = item.quantity.toString().padEnd(3);
-          const name = item.name.toUpperCase().slice(0, 13).padEnd(14);
-          const price = (item.price * item.quantity).toFixed(2).padStart(8);
-          result.text(`${qty}${name}${price}`).newline();
-        } else {
-          // 80mm: 5 (qty) + 2 + 25 (name) + 2 + 8 (total) = 42
-          const qty = item.quantity.toString().padEnd(5);
-          const name = item.name.toUpperCase().slice(0, 25).padEnd(27);
-          const price = (item.price * item.quantity).toFixed(2).padStart(10);
-          result.text(`${qty}${name}${price}`).newline();
-        }
-      });
-
-      result = result.text('-'.repeat(lineChars)).newline();
-
-      if (order.receivedAmount !== undefined && order.receivedAmount > 0) {
-        const recLabel = 'RECIBIDO:'.padEnd(15);
-        const recVal = `$${order.receivedAmount.toFixed(2)}`.padStart(is58mm ? 15 : 27);
-        result.text(`${recLabel}${recVal}`).newline();
-        
-        const changeLabel = 'CAMBIO:'.padEnd(15);
-        const changeVal = `$${(order.changeAmount || 0).toFixed(2)}`.padStart(is58mm ? 15 : 27);
-        result.text(`${changeLabel}${changeVal}`).newline();
-      }
-
-      const totalLabel = 'TOTAL:'.padEnd(8);
-      const totalVal = `$${order.total.toFixed(2)}`.padStart(is58mm ? 18 : 32);
-      result = result
-        .size('normal')
-        .text(`${totalLabel}${totalVal}`)
-        .newline()
-        .newline();
-
-      // Footer Message
-      wrapCenter(`PAGO: ${order.paymentMethod || 'EFECTIVO'}`).forEach(l => result = result.text(l).newline());
-      result = result.text('-'.repeat(lineChars)).newline();
-      wrapCenter(settings.footerMessage).forEach(l => result = result.text(l).newline());
-      wrapCenter('Culinex POS').forEach(l => result = result.text(l).newline());
-      wrapCenter('Ronin Studio').forEach(l => result = result.text(l).newline());
-
-      result = result
-        .newline()
-        .cut()
-        .encode();
 
       await this.sendData(result);
+      console.log('[PrinterService] Data sent successfully');
       return true;
-    } catch (err) {
-      console.error('Direct printing failed:', err);
+    } catch (err: any) {
+      console.error('[PrinterService] Direct printing crash:', err);
+      // Only alert if we haven't already alerted in sendData
+      if (!err.message.includes('No device connected')) {
+          alert(`Error crítico de impresora: ${err.message}`);
+      }
       return false;
     }
   }
