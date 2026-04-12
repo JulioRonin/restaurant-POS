@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Order, Expense } from '../types';
+import { useSettings } from '../contexts/SettingsContext';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
 
 interface FinancialReportProps {
     isOpen: boolean;
@@ -20,6 +22,7 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
     categoryLabel,
     restaurantName 
 }) => {
+    const { settings } = useSettings();
     if (!isOpen) return null;
 
     const totalSales = orders.reduce((sum, o) => sum + o.total, 0);
@@ -29,13 +32,27 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
     const netFlow = totalSales - totalExpenses;
     const averageTicket = orders.length > 0 ? totalSales / orders.length : 0;
 
-    const waiterStats = React.useMemo(() => {
+    const waiterStats = useMemo(() => {
         const stats: Record<string, number> = {};
         orders.forEach(o => {
             if (o.waiterName) stats[o.waiterName] = (stats[o.waiterName] || 0) + o.total;
         });
         return Object.entries(stats).sort((a, b) => b[1] - a[1]).slice(0, 5);
     }, [orders]);
+
+    const cashTotal = orders.filter(o => o.paymentMethod === 'Cash' && (!o.source || o.source === 'DINE_IN' || o.source === 'TAKEAWAY')).reduce((sum, o) => sum + o.total, 0);
+    const cardTotal = orders.filter(o => o.paymentMethod === 'Card' && (!o.source || o.source === 'DINE_IN' || o.source === 'TAKEAWAY')).reduce((sum, o) => sum + o.total, 0);
+    const uberTotal = orders.filter(o => o.source === 'UBER_EATS').reduce((sum, o) => sum + o.total, 0);
+    const didiTotal = orders.filter(o => o.source === 'DIDI_FOOD').reduce((sum, o) => sum + o.total, 0);
+    const rappiTotal = orders.filter(o => o.source === 'RAPPI').reduce((sum, o) => sum + o.total, 0);
+
+    const cashflowData = useMemo(() => [
+        { name: 'Efectivo', amount: cashTotal - totalExpenses, date: 'Día Actual', fill: '#10B981', note: 'Líquido en Caja' },
+        { name: 'Terminales', amount: cardTotal, date: 'Día Siguiente', fill: '#6366F1', note: 'Transferencia' },
+        { name: 'Uber Eats', amount: uberTotal, date: settings.uberPayoutDay || 'Lunes', fill: '#059669', note: 'Liquidación Semanal' },
+        { name: 'DiDi Food', amount: didiTotal, date: settings.didiPayoutDay || 'Martes', fill: '#F97316', note: 'Liquidación Semanal' },
+        { name: 'Rappi', amount: rappiTotal, date: 'Personalizado', fill: '#EF4444', note: settings.rappiPayoutNotes || 'Al sumar $500' },
+    ].filter(item => item.amount !== 0), [cashTotal, cardTotal, uberTotal, didiTotal, rappiTotal, totalExpenses, settings]);
 
     const handlePrint = () => {
         window.print();
@@ -159,6 +176,64 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Cashflow Map (Recharts) */}
+                        <div className="mb-16 print:break-inside-avoid shadow-sm border border-gray-100 rounded-3xl p-8 bg-white">
+                            <div className="flex justify-between items-end mb-8">
+                                <div>
+                                    <h3 className="text-[12px] font-black text-gray-800 uppercase tracking-[0.2em] mb-1">Flujo de Efectivo Proyectado</h3>
+                                    <p className="text-sm font-bold text-gray-400">Distribución de ingresos por canales y días de compensación</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Proyectado</p>
+                                    <p className="text-xl font-black text-gray-900">${cashflowData.reduce((acc, curr) => acc + curr.amount, 0).toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <div className="h-72 w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={cashflowData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 700 }} dy={10} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 700 }} tickFormatter={(val) => `$${val}`} />
+                                        <Tooltip 
+                                            cursor={{ fill: '#F3F4F6' }}
+                                            content={({ active, payload }) => {
+                                                if (active && payload && payload.length) {
+                                                    const data = payload[0].payload;
+                                                    return (
+                                                        <div className="bg-white p-4 shadow-xl rounded-2xl border border-gray-100">
+                                                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">{data.name}</p>
+                                                            <p className="text-lg font-black text-gray-900 mb-2">${data.amount.toLocaleString()}</p>
+                                                            <p className="text-xs font-bold text-primary flex items-center gap-1">
+                                                                <span className="material-icons-round text-sm">event</span>
+                                                                Día/Nota: {data.date}
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            }}
+                                        />
+                                        <Bar dataKey="amount" radius={[8, 8, 0, 0]} maxBarSize={60}>
+                                            {cashflowData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="mt-6 flex flex-wrap gap-4 pt-6 border-t border-gray-100">
+                                {cashflowData.map(item => (
+                                    <div key={item.name} className="flex items-center gap-2">
+                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.fill }}></div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase text-gray-800">{item.name}</p>
+                                            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider scale-90 origin-left">{item.date}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
                         {/* Performance Grid */}

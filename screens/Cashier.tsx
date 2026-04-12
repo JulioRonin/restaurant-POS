@@ -451,7 +451,7 @@ export const CashierScreen: React.FC = () => {
                                     <div key={expense.id} className="p-4 rounded-xl border border-gray-100 bg-white shadow-sm flex justify-between items-center group">
                                         <div>
                                             <div className="font-bold text-gray-800">{expense.description}</div>
-                                            <div className="text-xs text-gray-400">{expense.category} • {new Date(expense.date).toLocaleDateString()}</div>
+                                            <div className="text-xs text-gray-400">{expense.category} • {expense.date ? new Date(expense.date).toLocaleDateString() : 'N/A'}</div>
                                         </div>
                                         <div className="text-right">
                                             <div className="font-bold text-red-500">-${expense.amount.toFixed(2)}</div>

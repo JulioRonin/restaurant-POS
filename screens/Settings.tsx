@@ -302,6 +302,32 @@ export const SettingsScreen: React.FC = () => {
                                     </div>
                                 </div>
 
+                                {/* Delivery Platforms Payout Section */}
+                                <div className="pt-6 border-t border-gray-100">
+                                    <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                        <span className="material-icons-round text-primary">local_shipping</span>
+                                        Días de Depósito (Delivery Apps)
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">Uber Eats (Día de Pago)</label>
+                                            <select value={localSettings.uberPayoutDay || 'Lunes'} onChange={e => setLocalSettings(prev => ({ ...prev, uberPayoutDay: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+                                                <option value="Lunes">Lunes</option><option value="Martes">Martes</option><option value="Miércoles">Miércoles</option><option value="Jueves">Jueves</option><option value="Viernes">Viernes</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">Didi Food (Día de Pago)</label>
+                                            <select value={localSettings.didiPayoutDay || 'Martes'} onChange={e => setLocalSettings(prev => ({ ...prev, didiPayoutDay: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+                                                <option value="Lunes">Lunes</option><option value="Martes">Martes</option><option value="Miércoles">Miércoles</option><option value="Jueves">Jueves</option><option value="Viernes">Viernes</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2">Rappi (Nota Promedio)</label>
+                                            <input type="text" value={localSettings.rappiPayoutNotes || ''} onChange={e => setLocalSettings(prev => ({ ...prev, rappiPayoutNotes: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Ej. Al sumar $500" />
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div className="bg-blue-50 border border-blue-100 p-6 rounded-2xl flex items-center justify-between group hover:bg-blue-100/50 transition-all">
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary group-hover:scale-110 transition-transform">

@@ -26,6 +26,9 @@ export interface BusinessSettings {
   bankCLABE?: string;
   bankBeneficiary?: string;
   bankWhatsapp?: string;
+  uberPayoutDay?: string;
+  didiPayoutDay?: string;
+  rappiPayoutNotes?: string;
   tables: { id: string; name: string; seats: number; status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED'; x: number; y: number }[];
 }
 
@@ -56,6 +59,9 @@ const DEFAULT_SETTINGS: BusinessSettings = {
   bankCLABE: '',
   bankBeneficiary: '',
   bankWhatsapp: '',
+  uberPayoutDay: 'Lunes',
+  didiPayoutDay: 'Martes',
+  rappiPayoutNotes: 'Al acumular $500',
   tables: [] // Start with no tables
 };
 

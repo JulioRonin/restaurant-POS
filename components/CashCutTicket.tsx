@@ -81,23 +81,23 @@ export const CashCutTicket: React.FC<CashCutTicketProps> = ({
       {/* Detailed Orders List */}
       <div className="mb-6">
         <div className="text-center font-bold mb-2 p-1 bg-gray-100 uppercase text-[10px]">Detalle de Ventas</div>
-        <div className="flex font-bold border-b border-black mb-1 text-[10px]">
-          <span className="w-12">ID</span>
-          <span className="flex-1">MESA/REF</span>
-          <span className="w-16 text-right">MONTO</span>
+        <div className="flex font-bold border-b border-black mb-1 text-[10px] uppercase">
+          <span className="w-12 shrink-0">ID</span>
+          <span className="flex-1 px-1">MESA/REF</span>
+          <span className="w-16 shrink-0 text-right">MONTO</span>
         </div>
         {orders.map((order, idx) => (
           <div key={idx} className="flex flex-col border-b border-gray-100 py-2 mb-1">
-            <div className="flex items-center">
-                <span className="w-12 font-bold">#{order.id.slice(-4)}</span>
-                <span className="flex-1 uppercase font-bold min-w-0 pr-1 truncate text-[10px]">
+            <div className="flex items-start">
+                <span className="w-12 shrink-0 font-bold uppercase">#{order.id.slice(-4)}</span>
+                <span className="flex-1 px-1 uppercase font-bold break-words text-[10px] leading-tight flex-wrap">
                     {order.tableId || 'VENTA'}
                 </span>
-                <span className="w-16 text-right font-bold">${order.total.toFixed(2)}</span>
+                <span className="w-16 shrink-0 text-right font-bold">${order.total.toFixed(2)}</span>
             </div>
-            <div className="flex flex-col text-[8px] pl-4 mt-1 opacity-80">
+            <div className="flex flex-col text-[8px] pl-1 mt-1 opacity-80 break-words">
                 {(order.items || []).map((item, idxx) => (
-                    <span key={idxx}>- {item.quantity}x {item.name}</span>
+                    <span key={idxx} className="w-full break-words leading-tight">- {item.quantity}x {item.name}</span>
                 ))}
             </div>
             <div className="text-[8px] font-bold text-right opacity-60 mt-1 uppercase">
