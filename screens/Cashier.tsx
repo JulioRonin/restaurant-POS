@@ -667,7 +667,21 @@ export const CashierScreen: React.FC = () => {
                                                 <td className="py-4 font-bold">#{order.id.slice(-4)}</td>
                                                 <td className="py-4 text-gray-500">{new Date(order.timestamp).toLocaleTimeString()}</td>
                                                 <td className="py-4 font-medium text-gray-700">{order.tableId}</td>
-                                                <td className="py-4 font-bold text-gray-500 uppercase text-[10px]"><span className="px-2 py-1 bg-gray-100 rounded-md">{order.paymentMethod}</span></td>
+                                                <td className="py-4 font-bold text-gray-500 uppercase text-[10px]">
+                                                    <div className="flex flex-col gap-1 items-start">
+                                                        <span className="px-2 py-1 bg-gray-100 rounded-md">{order.paymentMethod}</span>
+                                                        {order.source && order.source !== OrderSource.DINE_IN && (
+                                                            <span className={`px-2 py-0.5 rounded-full text-[8px] font-black text-white uppercase tracking-widest ${
+                                                                order.source === OrderSource.RAPPI ? 'bg-[#FF3C5C]' :
+                                                                order.source === OrderSource.DIDI ? 'bg-[#FF7D00]' :
+                                                                order.source === OrderSource.UBER_EATS ? 'bg-[#06C167]' :
+                                                                'bg-primary'
+                                                            }`}>
+                                                                {order.source.replace('_', ' ')}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
                                                 <td className="py-4 font-black text-gray-900 text-right">${order.total.toFixed(2)}</td>
                                             </tr>
                                         ))}

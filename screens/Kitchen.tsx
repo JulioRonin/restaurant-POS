@@ -205,33 +205,6 @@ export const KitchenScreen: React.FC = () => {
 
                 {/* Control Center */}
                 <div className="flex gap-4 items-center">
-                    {/* Demo Button */}
-                    <button
-                        onClick={() => {
-                            const apps = [OrderSource.UBER_EATS, OrderSource.RAPPI, OrderSource.PICKUP];
-                            const randomSource = apps[Math.floor(Math.random() * apps.length)];
-                            const randomID = Math.floor(Math.random() * 1000) + 9000;
-
-                            const newOrder: Order = {
-                                id: randomID.toString(),
-                                tableId: `${randomSource === OrderSource.PICKUP ? 'Pickup' : randomSource === OrderSource.UBER_EATS ? 'Uber' : 'Rappi'} #${Math.floor(Math.random() * 100)}`,
-                                items: [
-                                    { id: '1', name: 'Aguachiles Mixto', price: 220, category: 'Aguachiles', image: '', inventoryLevel: 10, quantity: 1, status: 'ACTIVE' }
-                                ],
-                                status: OrderStatus.PENDING,
-                                timestamp: new Date(),
-                                total: 220,
-                                source: randomSource,
-                                waiterName: 'App System'
-                            };
-                            addOrder(newOrder);
-                        }}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg shadow-purple-500/30 transition-all active:scale-95 flex items-center gap-2"
-                    >
-                        <span className="material-icons-round text-sm">bolt</span>
-                        DEMO ORDER
-                    </button>
-
                     {/* Toggle Split View */}
                     <div className="bg-[#1F2937] p-1 rounded-xl border border-gray-700 flex">
                         <button
