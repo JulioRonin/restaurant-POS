@@ -18,6 +18,7 @@ export const POSScreen: React.FC = () => {
   const { menuItems, addItem } = useMenu();
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isPrinterHardwareConnected, setIsPrinterHardwareConnected] = useState(false);
 
   // Derive categories dynamically from menu items
   const dynamicCategories = useMemo(() => {
@@ -101,6 +102,25 @@ export const POSScreen: React.FC = () => {
       return item;
     }));
   };
+
+  // Printer Status Heartbeat
+  useEffect(() => {
+    const checkPrinter = async () => {
+       const connected = printerService.isConnected();
+       if (connected !== isPrinterHardwareConnected) {
+          setIsPrinterHardwareConnected(connected);
+       }
+       
+       // If signal says connected in settings but hardware is sleeping, try a silent wake
+       if (!connected && settings.connectedDeviceName && settings.connectedDeviceName !== 'None') {
+          await printerService.autoConnect(settings.connectedDeviceName);
+       }
+    };
+
+    const interval = setInterval(checkPrinter, 5000); // Check every 5s
+    checkPrinter();
+    return () => clearInterval(interval);
+  }, [isPrinterHardwareConnected, settings.connectedDeviceName]);
 
   const handleSendOrder = async () => {
     if (cart.length === 0) return;
@@ -244,7 +264,22 @@ export const POSScreen: React.FC = () => {
               </div>
               
               {activeEmployee && (
-                <div className="flex items-center gap-3 pr-2">
+                <div className="flex items-center gap-6 pr-2">
+                   {/* Digital Link Status Badge */}
+                   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all ${isPrinterHardwareConnected ? 'bg-green-50 border-green-100' : 'bg-amber-50 border-amber-100'}`}>
+                      <span className={`material-icons-round text-sm ${isPrinterHardwareConnected ? 'text-green-500' : 'text-amber-500'}`}>
+                        {isPrinterHardwareConnected ? 'print' : 'history'}
+                      </span>
+                      <div className="flex flex-col">
+                        <span className={`text-[9px] font-black uppercase leading-none ${isPrinterHardwareConnected ? 'text-green-700' : 'text-amber-700'}`}>
+                          {isPrinterHardwareConnected ? '1-CLIC LISTO' : 'MODO DIÁLOGO'}
+                        </span>
+                        <span className="text-[8px] font-bold text-gray-400 leading-tight">
+                          {settings.connectedDeviceName !== 'None' ? settings.connectedDeviceName : 'Sin Impresora'}
+                        </span>
+                      </div>
+                   </div>
+
                    <div className="text-right">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block leading-none">Cajero / Mesero</span>
                     <span className="text-sm font-black text-gray-900">{activeEmployee.name}</span>

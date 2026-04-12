@@ -110,12 +110,36 @@ class PrinterService {
 
         throw new Error('Could not find a valid printing service on this device');
       } else {
-        // USB Device
+        // USB Device: High-compatibility connection sequence
         await this.device.open();
+        
+        // Reset device if it was previously in a bad state
+        try { await this.device.reset(); } catch(e) {}
+        
         if (this.device.configuration === null) {
           await this.device.selectConfiguration(1);
         }
-        await this.device.claimInterface(0);
+
+        // Proactively find the best interface for printing (usually the first one with Bulk Out)
+        let targetInterface = 0;
+        let targetAlternate = 0;
+
+        for (const iface of this.device.configuration.interfaces) {
+           for (const alt of iface.alternates) {
+              if (alt.endpoints.some((e: any) => e.direction === 'out' && e.type === 'bulk')) {
+                 targetInterface = iface.interfaceNumber;
+                 targetAlternate = alt.alternateSetting;
+                 break;
+              }
+           }
+        }
+
+        await this.device.claimInterface(targetInterface);
+        if (targetAlternate !== 0) {
+           await this.device.selectAlternateInterface(targetInterface, targetAlternate);
+        }
+        
+        console.log(`[PrinterService] USB Interface ${targetInterface} claimed successfully.`);
         return true;
       }
     } catch (err) {

@@ -527,70 +527,61 @@ export const SettingsScreen: React.FC = () => {
                                                 <p className="text-[10px] text-gray-400">USB Direct Communication</p>
                                             </div>
                                             
-                                                {localSettings.connectedDeviceName !== 'None' && (
-                                                    <div className="flex items-center gap-2 bg-blue-50 p-2 rounded-lg border border-blue-100">
+                                                {localSettings.connectedDeviceName !== 'None' ? (
+                                                    <div className="flex items-center gap-3 bg-green-50 p-3 rounded-2xl border border-green-100 animate-in fade-in zoom-in duration-300">
                                                         <div className="flex-1">
-                                                            <p className="text-[10px] font-bold text-blue-800 uppercase">Direct Printing</p>
-                                                            <p className="text-[9px] text-blue-600 leading-tight">Skip browser print dialog</p>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                                                <p className="text-[11px] font-black text-green-800 uppercase tracking-tight">Impresión en UN CLIC Activa</p>
+                                                            </div>
+                                                            <p className="text-[10px] text-green-600 font-bold leading-tight mt-0.5">La señal se enviará directamente al hardware.</p>
                                                         </div>
                                                         <button 
                                                             onClick={() => setLocalSettings(prev => ({ ...prev, isDirectPrintingEnabled: !prev.isDirectPrintingEnabled }))}
-                                                            className={`w-10 h-5 rounded-full relative transition-all ${localSettings.isDirectPrintingEnabled ? 'bg-blue-500' : 'bg-gray-300'}`}
+                                                            className={`w-12 h-6 rounded-full relative transition-all shadow-inner ${localSettings.isDirectPrintingEnabled ? 'bg-green-600' : 'bg-gray-300'}`}
                                                         >
-                                                            <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${localSettings.isDirectPrintingEnabled ? 'left-5' : 'left-1'}`}></div>
+                                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${localSettings.isDirectPrintingEnabled ? 'left-7' : 'left-1'}`}></div>
                                                         </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100 flex items-start gap-3">
+                                                       <span className="material-icons-round text-amber-600 text-lg">info</span>
+                                                       <div>
+                                                           <p className="text-[10px] font-black text-amber-800 uppercase">Sin Enlace Directo</p>
+                                                           <p className="text-[9px] text-amber-600 leading-tight">Usa el botón "CONECTAR USB" abajo para habilitar la impresión de un clic.</p>
+                                                       </div>
                                                     </div>
                                                 )}
 
-                                            <div className="mt-auto flex flex-col gap-2">
+                                            <div className="mt-auto flex flex-col gap-3">
                                                 <div className="flex gap-2">
                                                     <button
                                                         onClick={localSettings.connectedDeviceName === 'None' ? handleConnectUSB : handleDisconnectUSB}
-                                                        className={`flex-1 py-3 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-1 ${localSettings.connectedDeviceName !== 'None'
-                                                                ? 'bg-red-50 text-red-500 border border-red-200'
-                                                                : 'bg-primary text-white shadow-lg shadow-blue-900/20'
+                                                        className={`flex-1 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2 ${localSettings.connectedDeviceName !== 'None'
+                                                                ? 'bg-white text-red-500 border-2 border-red-50'
+                                                                : 'bg-primary text-white shadow-xl shadow-blue-900/10'
                                                             }`}
                                                     >
-                                                        <span className="material-icons-round text-sm">usb</span>
-                                                        {localSettings.connectedDeviceName !== 'None' ? 'DESCONECTAR' : 'CONECTAR USB'}
+                                                        <span className="material-icons-round text-base">{localSettings.connectedDeviceName !== 'None' ? 'link_off' : 'usb'}</span>
+                                                        {localSettings.connectedDeviceName !== 'None' ? 'DESVINCULAR' : 'CONECTAR USB'}
                                                     </button>
-
-                                                    {localSettings.connectedDeviceName === 'None' && (
-                                                        <button
-                                                            onClick={async () => {
-                                                                const device = await printerService.requestBluetoothPrinter();
-                                                                if (device) {
-                                                                    const ok = await printerService.connect(device);
-                                                                    if (ok) {
-                                                                       const name = device.name || 'BT-Printer';
-                                                                       setLocalSettings(prev => ({ 
-                                                                           ...prev, 
-                                                                           connectedDeviceName: name,
-                                                                           isDirectPrintingEnabled: true 
-                                                                       }));
-                                                                       alert(`✅ Impresora Bluetooth "${name}" Conectada`);
-                                                                    }
-                                                                }
-                                                            }}
-                                                            className="flex-1 py-3 bg-slate-900 text-white rounded-xl font-black text-[11px] uppercase tracking-widest shadow-lg hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-1"
-                                                        >
-                                                            <span className="material-icons-round text-sm text-blue-400">bluetooth</span>
-                                                            CONECTAR BT
-                                                        </button>
-                                                    )}
                                                 </div>
                                                 
-                                                {localSettings.connectedDeviceName === 'None' && (
-                                                    <div className="bg-yellow-50 border border-yellow-100 p-2 rounded-lg">
-                                                        <p className="text-[9px] text-yellow-800 leading-tight">
-                                                            <strong>Note:</strong> Windows users may need to replace the driver with <strong>WinUSB</strong> via Zadig for direct printing.
+                                                <div className="bg-slate-900 text-white p-4 rounded-2xl relative overflow-hidden group">
+                                                    <div className="absolute top-0 right-0 p-2 opacity-5 scale-150 rotate-12 transition-transform group-hover:scale-[2] group-hover:rotate-0">
+                                                        <span className="material-icons-round text-4xl">bolt</span>
+                                                    </div>
+                                                    <div className="relative z-10">
+                                                        <p className="text-[9px] font-black uppercase text-blue-400 mb-1 tracking-widest">Truco Pro: Impresión Silenciosa</p>
+                                                        <p className="text-[10px] leading-tight text-slate-300 font-medium italic">
+                                                            "Añade --kiosk-printing a tu acceso directo de Chrome para ignorar la ventana de imprimir de Windows."
                                                         </p>
                                                     </div>
-                                                )}
+                                                </div>
 
                                                 {localSettings.connectedDeviceName !== 'None' && (
-                                                    <button onClick={handlePrintTest} className="py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2">
-                                                        <span className="material-icons-round text-sm">print</span> Print Test Ticket
+                                                    <button onClick={handlePrintTest} className="py-3 bg-gray-50 hover:bg-gray-100 text-gray-400 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                                                        <span className="material-icons-round text-sm">print</span> Probar Impresora
                                                     </button>
                                                 )}
                                             </div>
