@@ -482,8 +482,17 @@ class PrinterService {
   }
 
   async printKitchenTicket(order: any, settings: any): Promise<boolean> {
-    if (!this.device) {
-       console.warn('No direct printer connected for kitchen ticket.');
+    // Proactively attempt to reconnect if we have a saved device name
+    if (!this.isConnected() && settings.connectedDeviceName && settings.connectedDeviceName !== 'None') {
+        console.log('[PrinterService] Kitchen Connection lost. Attempting silent wake-up for:', settings.connectedDeviceName);
+        const reconnected = await this.autoConnect(settings.connectedDeviceName);
+        if (!reconnected) {
+            console.warn('[PrinterService] Kitchen Silent auto-connect failed.');
+        }
+    }
+
+    if (!this.isConnected()) {
+       console.warn('[PrinterService] No direct printer active for kitchen.');
        return false;
     }
 

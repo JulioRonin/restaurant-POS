@@ -119,7 +119,7 @@ export const POSScreen: React.FC = () => {
         // Auto Kitchen Printing
         if (settings.isKitchenPrintingEnabled) {
           if (settings.isDirectPrintingEnabled) {
-            printerService.printKitchenTicket(newOrder, settings);
+            await printerService.printKitchenTicket(newOrder, settings);
           } else {
             // Fallback to Browser Print
             setKitchenOrderToPrint(newOrder);
