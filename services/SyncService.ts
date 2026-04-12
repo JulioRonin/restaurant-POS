@@ -480,8 +480,26 @@ async function pullServerChanges(businessId?: string): Promise<void> {
           }
         } else {
           // New record from server, insert locally
+          let finalRecord = transformFromSupabase(serverRecord, localStore);
+
+          // CRITICAL PROTECTION: Do not let cloud settings wipe out local hardware preferences
+          if (localStore === 'settings' || localStore === 'business_settings') {
+             const bizId = serverRecord.business_id || (finalRecord as any).business_id || (finalRecord as any).businessId;
+             const idbKey = `settings_${bizId}`;
+             const existingLocal = await import('./db').then(db => db.getSetting(idbKey));
+             
+             if (existingLocal) {
+                const hardwareKeys = ['connectedDeviceName', 'connectedTerminalName', 'isDirectPrintingEnabled'];
+                hardwareKeys.forEach(k => {
+                   if (existingLocal[k] !== undefined) {
+                      finalRecord[k] = existingLocal[k];
+                   }
+                });
+             }
+          }
+
           await put(storeName, { 
-            ...transformFromSupabase(serverRecord, localStore), 
+            ...finalRecord, 
             synced: true,
             updated_at: serverTimestamp,
           });
@@ -527,7 +545,18 @@ function transformForSupabase(payload: any): any {
 }
 
 function transformFromSupabase(record: any, storeName: string): any {
-  // Convert snake_case to camelCase for local usage
+  // If it's the settings table, the data is inside the 'value' column jsonb
+  if (storeName === 'settings' || storeName === 'business_settings') {
+     if (record.value && typeof record.value === 'object') {
+        const value = { ...record.value };
+        // Transfer key metadata from row to the object
+        if (record.business_id) value.businessId = record.business_id;
+        if (record.updated_at) value.updated_at = record.updated_at;
+        return value;
+     }
+  }
+
+  // Convert snake_case to camelCase for local use
   const transformed: any = {};
   for (const [key, value] of Object.entries(record)) {
     const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
@@ -539,6 +568,10 @@ function transformFromSupabase(record: any, storeName: string): any {
       transformed[camelKey] = value;
     }
   }
+  
+  // Custom mappings for consistency
+  if (record.business_id) transformed.businessId = record.business_id;
+  
   return transformed;
 }
 

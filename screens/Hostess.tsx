@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { TABLES, MOCK_STAFF } from '../constants';
-import { Table, TableStatus, WaitlistEntry } from '../types';
+import { Table, TableStatus, WaitlistEntry, OrderStatus } from '../types';
 import { useTables } from '../contexts/TableContext';
+import { useOrders } from '../contexts/OrderContext';
 
 export const HostessScreen: React.FC = () => {
     // Table State
     const { tables: activeTables, addTable, updateTableStatus, deleteTable, updateTable } = useTables();
+    const { orders, updateOrderStatus } = useOrders();
     const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'floor' | 'list'>('floor');
 
@@ -201,6 +203,25 @@ export const HostessScreen: React.FC = () => {
     const handleMakeAvailable = () => {
         if (selectedTableId) {
             updateTableStatus(selectedTableId, TableStatus.AVAILABLE);
+        }
+    };
+
+    const handleCancelOrder = () => {
+        if (selectedTableId && window.confirm('¿Estás seguro de que deseas CANCELAR esta comanda? Esta acción no se puede deshacer.')) {
+            // 1. Find the active order for this table
+            const activeOrder = orders.find(o => 
+                (o.tableId === selectedTableId || o.tableName === selectedTable?.name) && 
+                ['PENDING', 'COOKING', 'READY', 'SERVED'].includes(o.status)
+            );
+
+            if (activeOrder) {
+                // 2. Mark order as CANCELLED
+                updateOrderStatus(activeOrder.id, OrderStatus.CANCELLED);
+            }
+
+            // 3. Clear the table status
+            handleClearTable();
+            handleMakeAvailable();
         }
     };
 
@@ -670,14 +691,20 @@ export const HostessScreen: React.FC = () => {
                             </div>
 
                             {selectedTable.status === TableStatus.OCCUPIED && (
-                                <button onClick={handleClearTable} className="w-full py-3 bg-white border border-gray-200 hover:bg-red-50 hover:border-red-200 hover:text-red-600 rounded-xl font-bold transition-all flex items-center justify-center gap-2">
-                                    <span className="material-icons-round">cleaning_services</span>
-                                    Mark as Dirty / Clear
-                                </button>
+                                <>
+                                    <button onClick={handleCancelOrder} className="w-full py-3 bg-red-500 text-white rounded-xl font-black text-sm shadow-lg shadow-red-200 hover:bg-red-600 transition-all flex items-center justify-center gap-2 mb-2">
+                                        <span className="material-icons-round">block</span>
+                                        CANCELAR COMANDA
+                                    </button>
+                                    <button onClick={handleClearTable} className="w-full py-3 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl font-bold transition-all flex items-center justify-center gap-2">
+                                        <span className="material-icons-round">cleaning_services</span>
+                                        Liberar Mesa (Sucia)
+                                    </button>
+                                </>
                             )}
                             {selectedTable.status === TableStatus.DIRTY && (
                                 <button onClick={handleMakeAvailable} className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-green-200">
-                                    Mark as Clean & Available
+                                    Mesa Limpia / Disponible
                                 </button>
                             )}
                         </div>

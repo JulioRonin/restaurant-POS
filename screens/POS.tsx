@@ -124,26 +124,36 @@ export const POSScreen: React.FC = () => {
 
     try {
         console.log('[POS] Sending order:', newOrder);
-        addOrder(newOrder);
         
-        // Auto Kitchen Printing
+        // 1. Critical Atomic Sequence: Save order locally first
+        await addOrder(newOrder);
+        
+        // 2. Enqueue items for Supabase (relational sync)
+        for (const item of cart) {
+            const orderItem = {
+              id: crypto.randomUUID(),
+              order_id: orderId,
+              menu_item_id: item.id || (item as any).menu_item_id,
+              quantity: item.quantity,
+              notes: item.notes || '',
+              price_at_time: item.price,
+              name: item.name
+            };
+            // Note: trackChange already handles the enqueue + sync trigger
+            await (await import('../services/SyncService')).trackChange('order_items', 'INSERT', orderItem.id, orderItem);
+        }
+
+        // 3. Auto Kitchen Printing
         if (settings.isKitchenPrintingEnabled) {
           let printSuccess = false;
           
-          // CRITICAL: We attempt direct print if the user has it enabled
           if (settings.isDirectPrintingEnabled) {
             console.log('[POS] Checking direct printer status...');
-            
-            // Proactive Repair: If disconnected, try ONE quick silent re-connect
             if (!printerService.isConnected() && settings.connectedDeviceName !== 'None') {
-                console.log('[POS] Printer disconnected, attempting one-tap repair...');
                 await printerService.autoConnect(settings.connectedDeviceName);
             }
 
             printSuccess = await printerService.printKitchenTicket(newOrder, settings);
-            
-            // Special case: if it still fails and it's a known device, don't just fallback silenty
-            // We give it one more chance or asking the user.
             if (!printSuccess && settings.connectedDeviceName !== 'None') {
                 console.warn('[POS] Direct print failed even after repair attempt.');
             }

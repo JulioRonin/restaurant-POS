@@ -4,7 +4,8 @@ export enum OrderStatus {
   READY = 'READY',
   SERVED = 'SERVED',
   BILL_REQUESTED = 'BILL_REQUESTED',
-  COMPLETED = 'COMPLETED'
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED'
 }
 
 export enum TableStatus {
