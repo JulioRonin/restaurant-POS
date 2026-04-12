@@ -51,7 +51,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // Also load from IndexedDB, strictly filtered by businessId
         getAll('expenses').then(idbExpenses => {
             const filtered = (idbExpenses as any[]).filter(e =>
-                e.businessId === authProfile.businessId ||
+                !e.businessId || e.businessId === authProfile.businessId ||
                 e.business_id === authProfile.businessId
             );
             if (filtered.length > 0) {

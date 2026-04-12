@@ -33,6 +33,11 @@ export const CashierScreen: React.FC = () => {
     const [newExpenseDesc, setNewExpenseDesc] = useState('');
     const [newExpenseAmount, setNewExpenseAmount] = useState('');
     const [newExpenseCategory, setNewExpenseCategory] = useState<ExpenseCategory>('Insumos');
+    const [newExpenseDate, setNewExpenseDate] = useState<string>(() => {
+        const d = new Date();
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        return d.toISOString().split('T')[0];
+    });
 
     // History / Sales Log State
     const [historyCategoryFilter, setHistoryCategoryFilter] = useState<string>('All');
@@ -470,7 +475,7 @@ export const CashierScreen: React.FC = () => {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <div className="font-bold text-red-500">-${expense.amount.toFixed(2)}</div>
+                                            <div className="font-bold text-red-500">-${(expense.amount || 0).toFixed(2)}</div>
                                             <button onClick={() => deleteExpense(expense.id)} className="text-xs text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">Delete</button>
                                         </div>
                                     </div>
