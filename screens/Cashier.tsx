@@ -80,10 +80,13 @@ export const CashierScreen: React.FC = () => {
         
         // Fallback for Manual Print Dialog
         setOrderToPrint(enrichedOrder);
+        
+        // Wait longer for DOM to render the printable hidden div
         setTimeout(() => {
             window.print();
-            setOrderToPrint(null);
-        }, 350);
+            // Reset after printing
+            setTimeout(() => setOrderToPrint(null), 1000);
+        }, 800);
     };
 
     const handlePrintCashCut = async () => {

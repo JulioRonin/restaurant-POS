@@ -1,17 +1,21 @@
 import React, { useState, useMemo } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { useUser } from '../contexts/UserContext';
-import { OrderStatus, TableStatus, OrderSource } from '../types';
+import { OrderStatus, TableStatus, OrderSource, MenuItem } from '../types';
 import { useTables } from '../contexts/TableContext';
+import { useMenu } from '../contexts/MenuContext';
 
 export const MyTablesScreen: React.FC = () => {
     const { orders, updateOrderStatus } = useOrders();
     const { activeEmployee } = useUser();
     const { tables: TABLES } = useTables();
+    const { menuItems } = useMenu();
     const [editingOrder, setEditingOrder] = useState<any | null>(null);
     const [showPinModal, setShowPinModal] = useState(false);
     const [pin, setPin] = useState('');
     const [tempItems, setTempItems] = useState<any[]>([]);
+    const [showItemPicker, setShowItemPicker] = useState(false);
+    const [pickerSearch, setPickerSearch] = useState('');
 
     // Filter current waiter active orders
     const myOrders = useMemo(() => {
@@ -214,6 +218,17 @@ export const MyTablesScreen: React.FC = () => {
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-8 space-y-4 custom-scrollbar">
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Productos en la Cuenta</span>
+                                <button 
+                                    onClick={() => setShowItemPicker(true)}
+                                    className="px-4 py-1.5 bg-green-50 text-green-600 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-green-100 transition-all flex items-center gap-1"
+                                >
+                                    <span className="material-icons-round text-xs">add_circle</span>
+                                    Agregar Producto
+                                </button>
+                            </div>
+
                             {tempItems.map((item, idx) => (
                                 <div key={idx} className="bg-gray-50 rounded-3xl p-5 border border-gray-100 flex items-center justify-between group hover:border-primary/30 transition-all">
                                     <div className="flex flex-col">
@@ -243,6 +258,48 @@ export const MyTablesScreen: React.FC = () => {
                                 <div className="py-20 text-center text-gray-400 italic">No hay productos en la comanda</div>
                             )}
                         </div>
+
+                        {showItemPicker && (
+                            <div className="p-8 pt-0 border-t border-gray-100 bg-gray-50/50">
+                                <div className="relative mb-4 mt-8">
+                                    <span className="material-icons-round absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Buscar para agregar..." 
+                                        className="w-full pl-12 pr-4 py-3 bg-white border border-gray-100 rounded-2xl outline-none focus:border-primary font-bold text-sm"
+                                        value={pickerSearch}
+                                        onChange={(e) => setPickerSearch(e.target.value)}
+                                        autoFocus
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                    {menuItems
+                                        .filter(i => i.status === 'ACTIVE' && i.name.toLowerCase().includes(pickerSearch.toLowerCase()))
+                                        .slice(0, 10)
+                                        .map(item => (
+                                            <button 
+                                                key={item.id}
+                                                onClick={() => {
+                                                    const existing = tempItems.find(ti => ti.id === item.id);
+                                                    if (existing) {
+                                                        const newItems = tempItems.map(ti => ti.id === item.id ? { ...ti, quantity: ti.quantity + 1 } : ti);
+                                                        setTempItems(newItems);
+                                                    } else {
+                                                        setTempItems([...tempItems, { ...item, quantity: 1, notes: '' }]);
+                                                    }
+                                                    setShowItemPicker(false);
+                                                    setPickerSearch('');
+                                                }}
+                                                className="flex justify-between items-center p-4 bg-white hover:bg-primary hover:text-white rounded-2xl border border-gray-100 transition-all group"
+                                            >
+                                                <span className="font-bold text-sm tracking-tight">{item.name}</span>
+                                                <span className="font-black">${item.price.toFixed(2)}</span>
+                                            </button>
+                                        ))}
+                                </div>
+                                <button onClick={() => setShowItemPicker(false)} className="w-full mt-4 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-600 transition-colors">Cancelar Búsqueda</button>
+                            </div>
+                        )}
 
                         <div className="p-8 bg-white border-t border-gray-100 space-y-4">
                             <div className="flex justify-between items-center px-2">

@@ -156,11 +156,22 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     triggerSync().catch(console.error);
   };
 
-  const updateOrderStatus = (orderId: string, status: OrderStatus, updatedOrder?: Order) => {
-    setOrders((prev) => prev.map(o => o.id === orderId ? (updatedOrder ? { ...updatedOrder, status } : { ...o, status }) : o));
+  const updateOrderStatus = async (orderId: string, status: OrderStatus, updatedOrder?: Order) => {
+    const existingOrder = orders.find(o => o.id === orderId);
+    if (!existingOrder && !updatedOrder) return;
+
+    const finalOrder = updatedOrder ? { ...updatedOrder, status } : { ...existingOrder!, status, synced: false, updated_at: new Date().toISOString() };
+
+    setOrders((prev) => prev.map(o => o.id === orderId ? finalOrder : o));
     
+    // Save locally immediately to avoid race conditions with sync
+    await put('orders', finalOrder as any);
+
     // Track for sync
-    trackChange('orders', 'UPDATE', orderId, updatedOrder || { status }).catch(console.error);
+    await trackChange('orders', 'UPDATE', orderId, finalOrder);
+
+    // Trigger immediate sync to inform other terminals
+    triggerSync().catch(console.error);
   };
 
   return (

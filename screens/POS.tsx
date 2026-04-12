@@ -17,6 +17,16 @@ export const POSScreen: React.FC = () => {
   const { menuItems, addItem } = useMenu();
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Derive categories dynamically from menu items
+  const dynamicCategories = useMemo(() => {
+    const cats = new Set<string>();
+    menuItems.forEach(item => {
+      if (item.category) cats.add(item.category);
+    });
+    return Array.from(cats).sort();
+  }, [menuItems]);
+
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState('A la carte');
@@ -240,10 +250,18 @@ export const POSScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Categories (Horizontal pills) */}
         <div className="mb-6">
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {CATEGORIES.filter(c => c !== 'All').map(cat => (
+            <button
+                onClick={() => setActiveCategory('All')}
+                className={`px-6 py-3 rounded-full whitespace-nowrap font-bold transition-all transform hover:scale-105 shadow-sm border ${activeCategory === 'All'
+                  ? 'bg-primary text-white border-primary shadow-primary/30'
+                  : 'bg-white text-gray-600 border-gray-100 hover:bg-gray-50'
+                  }`}
+              >
+                Todas
+              </button>
+            {dynamicCategories.map(cat => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat === activeCategory ? 'All' : cat)}
