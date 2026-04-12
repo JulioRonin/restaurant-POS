@@ -53,8 +53,20 @@ export const CashCutTicket: React.FC<CashCutTicketProps> = ({
           <span>${metrics.cardSales.toFixed(2)}</span>
         </div>
         <div className="flex justify-between pl-2 pb-1">
-          <span>- TRANSF/APP:</span>
-          <span>${metrics.deliverySales.toFixed(2)}</span>
+          <span>- TRANSFERENCIA:</span>
+          <span>${orders.filter(o => o.paymentMethod === 'TRANSFER').reduce((sum, o) => sum + (o.total || 0), 0).toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between pl-2 pb-1">
+          <span>- UBER EATS:</span>
+          <span>${orders.filter(o => o.source === 'UBER_EATS').reduce((sum, o) => sum + (o.total || 0), 0).toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between pl-2 pb-1">
+          <span>- RAPPI:</span>
+          <span>${orders.filter(o => o.source === 'RAPPI').reduce((sum, o) => sum + (o.total || 0), 0).toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between pl-2 pb-1">
+          <span>- DIDI FOOD:</span>
+          <span>${orders.filter(o => o.source === 'DIDI').reduce((sum, o) => sum + (o.total || 0), 0).toFixed(2)}</span>
         </div>
         <div className="flex justify-between font-bold mt-2">
           <span>GASTOS (CONTADO):</span>
@@ -75,10 +87,22 @@ export const CashCutTicket: React.FC<CashCutTicketProps> = ({
           <span className="w-16 text-right">MONTO</span>
         </div>
         {orders.map((order, idx) => (
-          <div key={idx} className="flex border-b border-gray-100 py-1">
-            <span className="w-12">#{order.id.slice(-4)}</span>
-            <span className="flex-1 uppercase truncate pr-1">{order.tableId || 'VENTA'}</span>
-            <span className="w-16 text-right font-bold">${order.total.toFixed(2)}</span>
+          <div key={idx} className="flex flex-col border-b border-gray-100 py-2 mb-1">
+            <div className="flex items-center">
+                <span className="w-12 font-bold">#{order.id.slice(-4)}</span>
+                <span className="flex-1 uppercase font-bold min-w-0 pr-1 truncate text-[10px]">
+                    {order.tableId || 'VENTA'}
+                </span>
+                <span className="w-16 text-right font-bold">${order.total.toFixed(2)}</span>
+            </div>
+            <div className="flex flex-col text-[8px] pl-4 mt-1 opacity-80">
+                {(order.items || []).map((item, idxx) => (
+                    <span key={idxx}>- {item.quantity}x {item.name}</span>
+                ))}
+            </div>
+            <div className="text-[8px] font-bold text-right opacity-60 mt-1 uppercase">
+                Pago: {order.paymentMethod} {order.source && order.source !== 'DINE_IN' ? `(${order.source.replace('_', ' ')})` : ''}
+            </div>
           </div>
         ))}
         {/* Orders Total Summation */}

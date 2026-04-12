@@ -177,7 +177,7 @@ export const CashierScreen: React.FC = () => {
 
     const handleAddExpense = () => {
         if (!newExpenseDesc || !newExpenseAmount) return;
-        addExpense(newExpenseDesc, parseFloat(newExpenseAmount), newExpenseCategory, 'Cashier');
+        addExpense(newExpenseDesc, parseFloat(newExpenseAmount), newExpenseCategory, 'Cashier', newExpenseDate);
         setNewExpenseDesc('');
         setNewExpenseAmount('');
         setSuccessMessage('Gasto registrado con éxito');
@@ -575,11 +575,12 @@ export const CashierScreen: React.FC = () => {
                                         <label className="block text-sm font-bold text-gray-600 mb-2 uppercase">Description / Reason</label>
                                         <input type="text" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-primary transition-all font-medium" placeholder="e.g. Compra de limones de emergencia" value={newExpenseDesc} onChange={e => setNewExpenseDesc(e.target.value)} />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div><label className="block text-sm font-bold text-gray-600 mb-2 uppercase">Amount ($)</label><input type="number" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-primary transition-all font-bold text-lg" placeholder="0.00" value={newExpenseAmount} onChange={e => setNewExpenseAmount(e.target.value)} /></div>
                                         <div><label className="block text-sm font-bold text-gray-600 mb-2 uppercase">Category</label><select className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-primary transition-all appearance-none cursor-pointer" value={newExpenseCategory} onChange={e => setNewExpenseCategory(e.target.value as any)}><option value="Insumos">Insumos (Supplies)</option><option value="Mantenimiento">Mantenimiento</option><option value="Nomina">Nomina (Payroll)</option><option value="Servicios">Servicios (Utilities)</option><option value="Otros">Otros</option></select></div>
+                                        <div><label className="block text-sm font-bold text-gray-600 mb-2 uppercase">Date</label><input type="date" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-primary transition-all font-bold" value={newExpenseDate} onChange={e => setNewExpenseDate(e.target.value)} /></div>
                                     </div>
-                                    <button onClick={handleAddExpense} disabled={!newExpenseDesc || !newExpenseAmount} className="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-100 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4 font-bold text-lg"><span className="material-icons-round">publish</span>Record Expense</button>
+                                    <button onClick={handleAddExpense} disabled={!newExpenseDesc || !newExpenseAmount} className="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold shadow-lg shadow-red-100 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4 text-lg"><span className="material-icons-round">publish</span>Record Expense</button>
                                 </div>
                             </div>
                         </div>

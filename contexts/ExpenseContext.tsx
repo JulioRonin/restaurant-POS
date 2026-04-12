@@ -6,7 +6,7 @@ import { trackChange } from '../services/SyncService';
 
 interface ExpenseContextType {
     expenses: Expense[];
-    addExpense: (description: string, amount: number, category: ExpenseCategory, user: string) => void;
+    addExpense: (description: string, amount: number, category: ExpenseCategory, user: string, date?: string) => void;
     deleteExpense: (id: string) => void;
 }
 
@@ -77,13 +77,13 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
     }, [expenses, authProfile?.businessId]);
 
-    const addExpense = (description: string, amount: number, category: ExpenseCategory, user: string) => {
+    const addExpense = (description: string, amount: number, category: ExpenseCategory, user: string, date?: string) => {
         const newExpense: Expense = {
             id: Date.now().toString(),
             description,
             amount,
             category,
-            date: new Date().toISOString(),
+            date: date ? new Date(date).toISOString() : new Date().toISOString(),
             user,
             // Tag with businessId for multi-tenant isolation
             ...(authProfile?.businessId ? { businessId: authProfile.businessId } : {})

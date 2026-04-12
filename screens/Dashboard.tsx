@@ -57,6 +57,54 @@ export const DashboardScreen: React.FC = () => {
         setTimeRange(val);
     };
 
+    const activeOrders = useMemo(() => {
+        return orders.filter(o => {
+            if (timeRange === 'Weekly' || timeRange === 'Monthly') return true;
+            try {
+                const dateVal = o.timestamp || (o as any).created_at || (o as any).createdAt || Date.now();
+                const d = new Date(dateVal);
+                if (isNaN(d.getTime())) return false;
+                
+                const localD = new Date(d);
+                localD.setMinutes(localD.getMinutes() - localD.getTimezoneOffset());
+                const dateStr = localD.toISOString().split('T')[0];
+
+                if (timeRange === 'SpecificDay') {
+                    return dateStr === selectedDate;
+                } else if (timeRange === 'SpecificMonth') {
+                    return dateStr.startsWith(selectedDate.substring(0, 7));
+                }
+            } catch (e) {
+                return false;
+            }
+            return true;
+        });
+    }, [orders, timeRange, selectedDate]);
+
+    const activeExpenses = useMemo(() => {
+        return expenses.filter(e => {
+            if (timeRange === 'Weekly' || timeRange === 'Monthly') return true;
+            try {
+                const dateVal = e.date || new Date();
+                const d = new Date(dateVal);
+                if (isNaN(d.getTime())) return false;
+                
+                const localD = new Date(d);
+                localD.setMinutes(localD.getMinutes() - localD.getTimezoneOffset());
+                const dateStr = localD.toISOString().split('T')[0];
+
+                if (timeRange === 'SpecificDay') {
+                    return dateStr === selectedDate;
+                } else if (timeRange === 'SpecificMonth') {
+                    return dateStr.startsWith(selectedDate.substring(0, 7));
+                }
+            } catch (e) {
+                return false;
+            }
+            return true;
+        });
+    }, [expenses, timeRange, selectedDate]);
+
     const { sales, items, customers, avgTicket, appScores } = useMemo(() => {
         let _sales = 0;
         let _items = 0;
@@ -69,7 +117,7 @@ export const DashboardScreen: React.FC = () => {
             DIDI: 0
         };
 
-        orders.forEach(o => {
+        activeOrders.forEach(o => {
             if (o.status === 'COMPLETED' || o.status === 'PAID') {
                 _sales += o.total || 0;
                 _items += (o.items || []).reduce((sum, i) => sum + (i.quantity || 1), 0);
@@ -89,14 +137,14 @@ export const DashboardScreen: React.FC = () => {
             avgTicket: _count > 0 ? (_sales / _count) : 0,
             appScores: _appScores
         };
-    }, [orders]);
+    }, [activeOrders]);
 
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalExpenses = activeExpenses.reduce((sum, e) => sum + e.amount, 0);
     const netCashFlow = sales - totalExpenses;
 
     const waiterStats = useMemo(() => {
         const stats: Record<string, number> = {};
-        orders.forEach(order => {
+        activeOrders.forEach(order => {
             if (order.status !== 'CANCELLED' && order.waiterName) {
                 const name = order.waiterName;
                 stats[name] = (stats[name] || 0) + (order.total || 0);
@@ -123,7 +171,7 @@ export const DashboardScreen: React.FC = () => {
     ];
 
     return (
-        <div className="flex-1 bg-[#F3F4F6] text-gray-800 p-8 overflow-y-auto h-full relative">
+        <div className="flex-1 bg-[#F3F4F6] text-gray-800 p-8 overflow-y-auto h-full relative print:overflow-visible print:h-auto print:block print:p-0">
             <style>{`
                 @media print {
                     .no-print-dashboard { display: none !important; }
@@ -188,8 +236,8 @@ export const DashboardScreen: React.FC = () => {
             <FinancialReportModal 
                 isOpen={isReportOpen}
                 onClose={() => setIsReportOpen(false)}
-                orders={orders}
-                expenses={expenses}
+                orders={activeOrders}
+                expenses={activeExpenses}
                 periodLabel={timeRange === 'SpecificDay' ? selectedDate : timeRange === 'SpecificMonth' ? selectedDate.substring(0, 7) : timeRange}
                 categoryLabel={selectedCategory}
                 restaurantName={settings.name}
