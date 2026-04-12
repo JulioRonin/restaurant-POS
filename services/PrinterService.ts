@@ -13,25 +13,34 @@ class PrinterService {
     
     try {
         if (this.btCharacteristic) {
-            // Bluetooth Chunking (Fix for MTU limits)
-            const CHUNK_SIZE = 512;
+            // High-Stability Bluetooth Chunking for small buffer printers
+            const CHUNK_SIZE = 32; // Safe for all thermal printers
             for (let i = 0; i < data.length; i += CHUNK_SIZE) {
                 const chunk = data.slice(i, i + CHUNK_SIZE);
-                // Use writeValueWithoutResponse for better compatibility with thermal printers
-                if (this.btCharacteristic.writeValueWithoutResponse) {
-                    await this.btCharacteristic.writeValueWithoutResponse(chunk);
-                } else {
+                
+                // Chrome/Android GATT queue can only handle a few requests at a time.
+                // Using writeValue (With Response) is slower but much more reliable
+                // because it waits for the printer to acknowledge receipt.
+                try {
                     await this.btCharacteristic.writeValue(chunk);
+                } catch (writeErr: any) {
+                    // Fallback to WithoutResponse if the characteristic doesn't support with response
+                    if (this.btCharacteristic.writeValueWithoutResponse) {
+                        await this.btCharacteristic.writeValueWithoutResponse(chunk);
+                    } else {
+                        throw writeErr;
+                    }
                 }
-                // Small delay to prevent overflow on some printers
-                await new Promise(resolve => setTimeout(resolve, 50));
+                
+                // Small delay to allow the printer to process the buffer
+                await new Promise(resolve => setTimeout(resolve, 80));
             }
         } else {
             await this.device.transferOut(this.getEndpointNum(), data);
         }
     } catch (err: any) {
         console.error('[PrinterService] Send failed:', err);
-        alert(`Error de impresión: ${err.message}. Intenta reconectar la impresora.`);
+        alert(`Error de impresión: ${err.message}. La impresora está saturada o desconectada. Intenta apagarla y encenderla.`);
     }
   }
 
