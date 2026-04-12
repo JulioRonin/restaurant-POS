@@ -27,6 +27,16 @@ export const POSScreen: React.FC = () => {
     return Array.from(cats).sort();
   }, [menuItems]);
 
+  const [printerReady, setPrinterReady] = useState(false);
+
+  // Monitor hardware status
+  useEffect(() => {
+    const interval = setInterval(() => {
+        setPrinterReady(printerService.isConnected());
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [activeMenu, setActiveMenu] = useState('A la carte');
@@ -122,15 +132,20 @@ export const POSScreen: React.FC = () => {
           
           // CRITICAL: We attempt direct print if the user has it enabled
           if (settings.isDirectPrintingEnabled) {
-            console.log('[POS] Attempting direct kitchen print...');
+            console.log('[POS] Checking direct printer status...');
+            
+            // Proactive Repair: If disconnected, try ONE quick silent re-connect
+            if (!printerService.isConnected() && settings.connectedDeviceName !== 'None') {
+                console.log('[POS] Printer disconnected, attempting one-tap repair...');
+                await printerService.autoConnect(settings.connectedDeviceName);
+            }
+
             printSuccess = await printerService.printKitchenTicket(newOrder, settings);
             
-            // If it failed but it was supposed to work, we give it ONE more silent retry 
-            // after a quick pause to let hardware wake up
-            if (!printSuccess && settings.connectedDeviceName && settings.connectedDeviceName !== 'None') {
-                console.log('[POS] Direct print failed, retrying once...');
-                await new Promise(r => setTimeout(r, 1000));
-                printSuccess = await printerService.printKitchenTicket(newOrder, settings);
+            // Special case: if it still fails and it's a known device, don't just fallback silenty
+            // We give it one more chance or asking the user.
+            if (!printSuccess && settings.connectedDeviceName !== 'None') {
+                console.warn('[POS] Direct print failed even after repair attempt.');
             }
           }
           
@@ -240,6 +255,22 @@ export const POSScreen: React.FC = () => {
                     <img src={activeEmployee.image} alt={activeEmployee.name} className="w-full h-full object-cover" />
                   </div>
                 </div>
+              )}
+
+              {/* Hardware Status Indicator - Top Level Header */}
+              {settings.isDirectPrintingEnabled && settings.connectedDeviceName !== 'None' && (
+                <button 
+                  onClick={() => printerService.connectStoredDevice(settings.connectedDeviceName)}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-tighter transition-all active:scale-95 border ${
+                    printerReady 
+                    ? 'bg-green-50 text-green-700 border-green-200' 
+                    : 'bg-red-50 text-red-600 border-red-200 animate-pulse'
+                  }`}
+                  title={printerReady ? 'Impresora Conectada' : 'Haz clic para reconectar impresora'}
+                >
+                  <span className="material-icons-round text-sm">{printerReady ? 'print' : 'print_disabled'}</span>
+                  {printerReady ? 'LISTO' : 'REPARAR'}
+                </button>
               )}
             </div>
 

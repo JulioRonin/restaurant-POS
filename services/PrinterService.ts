@@ -230,6 +230,35 @@ class PrinterService {
     return this.device.opened || false;
   }
 
+  /**
+   * Proactive repair helper: used from UI icons to ensure connection
+   */
+  async connectStoredDevice(deviceName: string): Promise<boolean> {
+     console.log('[PrinterService] Attempting to repair connection to:', deviceName);
+     
+     // 1. Try silent first
+     const silentOk = await this.autoConnect(deviceName);
+     if (silentOk) return true;
+     
+     // 2. If silent failed, it might be a permission expiration. 
+     // We MUST trigger a requestDevice (active) which requires this user gesture.
+     try {
+        if (window.confirm(`La impresora "${deviceName}" está desconectada. ¿Deseas volver a vincularla ahora?`)) {
+            // Check if it's likely USB (many thermal printers have 'Printer' or 'USB' in name)
+            // or just ask user to pick. 
+            // For robustness, we trigger the Bluetooth one as it's the most common for mobile POS
+            const device = await (navigator as any).bluetooth.requestDevice({
+                filters: [{ services: ['000018f0'] }, { services: ['0000ffe0'] }],
+                optionalServices: ['000018f0', '0000ffe0', '0000ff00', '000018f1']
+            });
+            if (device) return await this.connect(device);
+        }
+     } catch (e) {
+        console.error('[PrinterService] Repair failed:', e);
+     }
+     return false;
+  }
+
   async printOrder(order: any, settings: any): Promise<boolean> {
     // Proactively attempt to reconnect if we have a saved device name
     if (!this.isConnected() && settings.connectedDeviceName && settings.connectedDeviceName !== 'None') {
