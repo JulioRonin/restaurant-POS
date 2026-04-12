@@ -91,7 +91,7 @@ export const POSScreen: React.FC = () => {
     }));
   };
 
-  const handleSendOrder = () => {
+  const handleSendOrder = async () => {
     if (cart.length === 0) return;
 
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
