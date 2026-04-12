@@ -217,24 +217,30 @@ class PrinterService {
   }
 
   isConnected(): boolean {
+  isConnected(): boolean {
     if (!this.device) return false;
-    if (this.btCharacteristic) {
-      return this.device.gatt?.connected || false;
+    
+    // For Bluetooth
+    if (this.device.gatt) {
+        return this.device.gatt.connected || false;
     }
+    
+    // For USB
     return this.device.opened || false;
   }
 
   async printOrder(order: any, settings: any): Promise<boolean> {
+    // Proactively attempt to reconnect if we have a saved device name
     if (!this.isConnected() && settings.connectedDeviceName && settings.connectedDeviceName !== 'None') {
-        console.log('[PrinterService] Not connected. Attempting auto-reconnect to:', settings.connectedDeviceName);
+        console.log('[PrinterService] Connection lost. Attempting silent wake-up for:', settings.connectedDeviceName);
         const reconnected = await this.autoConnect(settings.connectedDeviceName);
         if (!reconnected) {
-            console.warn('[PrinterService] Auto-reconnect failed.');
+            console.warn('[PrinterService] Silent auto-connect failed.');
         }
     }
 
-    if (!this.device) {
-       console.warn('No direct printer connected. Use window.print()');
+    if (!this.isConnected()) {
+       console.warn('[PrinterService] No direct printer active.');
        return false;
     }
 

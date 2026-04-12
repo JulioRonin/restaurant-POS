@@ -74,10 +74,14 @@ export const CashierScreen: React.FC = () => {
             waiterName: order.waiterName || currentUser?.name || 'ADMIN'
         };
 
-        // Standardized Direct Print Attempt
-        if (settings.isDirectPrintingEnabled || true) { // Default to attempting direct for better UX
-            const success = await printerService.printOrder(enrichedOrder, settings);
-            if (success) return true; 
+        // Proactive Direct Print Attempt
+        const success = await printerService.printOrder(enrichedOrder, settings);
+        if (success) return true; 
+        
+        // If direct failed AND a name was saved, it might be a hardware timeout
+        if (settings.connectedDeviceName && settings.connectedDeviceName !== 'None') {
+            console.warn('[Cashier] Direct print failed. Verify hardware status.');
+            // We proceed to fallback but log the failure
         }
         
         // Manual Print Fallback (Silent Dialog)
