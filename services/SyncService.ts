@@ -188,12 +188,17 @@ async function pushLocalChanges(): Promise<void> {
 
   for (const op of pending) {
     try {
-      // FK PROTECTION: If this is an order item, ensure its order is already synced or at least not in this pending batch
+      // FK PROTECTION: If this is an order item, ensure its order is already synced on the server
       if (op.table === 'order_items' && op.operation === 'INSERT') {
           const parentOrderId = (op.payload as any).orderId || (op.payload as any).order_id;
-          if (ordersPendingInThisBatch.has(parentOrderId)) {
-              console.log(`[SyncService] Skipping order_item ${op.record_id} - Parent order ${parentOrderId} still pending.`);
-              continue; // Skip for now, will try next sync cycle after order is INSERTed
+          
+          // Check local 'orders' table to see if it's already synced
+          const { getOrder } = await import('./db');
+          const localOrder = await getOrder(parentOrderId);
+          
+          if (!localOrder || !localOrder.synced) {
+              console.log(`[SyncService] Skipping order_item ${op.record_id} - Parent order ${parentOrderId} not yet synced on server.`);
+              continue; // Skip for now, will try next sync cycle after order is confirmed
           }
       }
 
@@ -272,28 +277,19 @@ async function pushLocalChanges(): Promise<void> {
             }
           } else {
               // Special case for settings: find by logical key and update by ID
-              if (op.table === 'settings') {
-                 const bizId = payload.businessId || payload.business_id;
-                 const { data: rec } = await supabaseClient
-                   .from(supabaseTable)
-                   .select('id')
-                   .eq('business_id', bizId)
-                   .eq('key', 'config')
-                   .single();
-
-                 if (rec) {
-                    result = await supabaseClient
-                      .from(supabaseTable)
-                      .update(finalPayload)
-                      .eq('id', (rec as any).id);
-                 } else {
-                    result = await supabaseClient
-                      .from(supabaseTable)
-                      .insert({ ...finalPayload, business_id: bizId });
-                 }
-                 // Skip the normal flow
-                 op.status = 'synced'; // Mark as done manually for this special case logic
-              } else {
+               if (op.table === 'settings') {
+                  const bizId = payload.businessId || payload.business_id;
+                  
+                  // Use Upsert with onConflict for settings to resolve the 'key' column cache issues
+                  result = await supabaseClient
+                    .from('business_settings')
+                    .upsert(
+                      { ...finalPayload, business_id: bizId },
+                      { onConflict: 'business_id,key' }
+                    );
+                    
+                  op.status = 'synced'; 
+               } else {
                  result = await supabaseClient
                    .from(supabaseTable)
                    .update(finalPayload)
