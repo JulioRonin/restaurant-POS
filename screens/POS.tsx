@@ -146,11 +146,13 @@ export const POSScreen: React.FC = () => {
           
           if (!printSuccess) {
             console.log('[POS] Direct print unavailable, falling back to browser dialog');
+            document.body.classList.add('print-mode');
             setKitchenOrderToPrint(newOrder);
             setTimeout(() => {
               window.print();
               setKitchenOrderToPrint(null);
-            }, 800);
+              document.body.classList.remove('print-mode');
+            }, 1200);
           }
         }
 
@@ -658,7 +660,7 @@ export const POSScreen: React.FC = () => {
       )}
 
       {/* Printing Component (Browser print fallback) */}
-      <div className="hidden print:block">
+      <div className="print-only-container">
         {kitchenOrderToPrint && <KitchenTicket order={kitchenOrderToPrint} settings={settings} />}
       </div>
     </div>

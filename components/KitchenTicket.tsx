@@ -14,7 +14,7 @@ export const KitchenTicket: React.FC<KitchenTicketProps> = ({ order, settings })
   const fontSize = is58mm ? 'text-[10px]' : 'text-sm';
   
   return (
-    <div className={`bg-white text-black p-0 font-mono ${fontSize} leading-tight ${widthClass} mx-auto print:mx-auto print:w-[48mm]`}>
+    <div className={`print-only-content bg-white text-black p-0 font-mono ${fontSize} leading-tight ${widthClass} mx-auto print:mx-auto print:w-[48mm]`}>
       {/* Kitchen Header */}
       <div className="flex flex-col items-center text-center mb-4 border-b-2 border-black pb-2">
         {order.source && order.source !== 'DINE_IN' && (
