@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
       port: 3001,
       host: '0.0.0.0',
     },
+    base: './',
     plugins: [
       react(),
       VitePWA({
