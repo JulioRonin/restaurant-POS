@@ -46,6 +46,7 @@ export const CashierScreen: React.FC = () => {
     const { settings } = useSettings();
     const { currentUser } = useUser();
     const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
+    const [isTicketPreviewOpen, setIsTicketPreviewOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [cashReceived, setCashReceived] = useState<string>('');
     const [isProcessingTerminal, setIsProcessingTerminal] = useState(false);
@@ -151,7 +152,15 @@ export const CashierScreen: React.FC = () => {
 
         // Generate TICKET for this split
         const splitOrderTicket = { ...updatedOrder, total: splitAmount }; 
-        await handlePrintTicket(splitOrderTicket as Order);
+        
+        // Auto-print if enabled
+        if (settings.isDirectPrintingEnabled) {
+            await handlePrintTicket(splitOrderTicket as Order);
+        } else {
+            // If direct printing is OFF, we show the preview for manual print
+            setOrderToPrint(splitOrderTicket as Order);
+            setIsTicketPreviewOpen(true);
+        }
 
         if (!isFullyPaid) {
             setSuccessMessage(`Pago parcial registrado (${currentPaidSplits} de ${splitCount} partes).`);
@@ -292,12 +301,10 @@ export const CashierScreen: React.FC = () => {
                     const activeRequests = orders.filter(o => o.status === OrderStatus.BILL_REQUESTED && !dismissedBillRequests.includes(o.id));
                     if (activeRequests.length === 0) return null;
 
-                    const handleBannerClick = () => {
+                    const handleRequestsBannerClick = () => {
                         const ids = activeRequests.map(o => o.id);
                         setDismissedBillRequests(prev => [...new Set([...prev, ...ids])]);
                         setActiveTab('tables');
-                        
-                        // Select the first one automatically
                         if (activeRequests[0].tableId) {
                             setSelectedTableId(activeRequests[0].tableId);
                         }
@@ -305,8 +312,17 @@ export const CashierScreen: React.FC = () => {
 
                     return (
                         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[500] animate-in slide-in-from-top-4 duration-500 w-full max-w-xl px-4">
+                            <style>{`
+                                @media print {
+                                    .no-print { display: none !important; }
+                                    .print-only { display: block !important; }
+                                    body { background: white !important; }
+                                    #print-area { display: block !important; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: white; }
+                                    .modal-backdrop, .fixed, .no-print { display: none !important; }
+                                }
+                            `}</style>
                             <div 
-                                onClick={handleBannerClick}
+                                onClick={handleRequestsBannerClick}
                                 className="bg-amber-500 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center justify-between border-4 border-white cursor-pointer hover:bg-amber-600 transition-all group scale-100 hover:scale-[1.02] active:scale-95"
                             >
                                 <div className="flex items-center gap-3">
@@ -355,12 +371,12 @@ export const CashierScreen: React.FC = () => {
                 <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col no-print">
                     <div className="p-6 border-b border-gray-100">
                         <h1 className="text-2xl font-bold text-gray-800 mb-4">Caja / Facturación</h1>
-                        <div className="flex p-1 bg-gray-100 rounded-xl">
+                        <div className="flex p-1 bg-gray-100 rounded-xl gap-1">
                             {['tables', 'expenses', 'history', 'delivery'].map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab as any)}
-                                    className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all uppercase ${activeTab === tab ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`flex-1 py-2 px-1 rounded-lg text-[10px] font-black transition-all uppercase truncate ${activeTab === tab ? 'bg-white shadow text-primary' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     {tab}
                                 </button>
@@ -571,7 +587,22 @@ export const CashierScreen: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="p-6 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex gap-4">
-                                    <button onClick={() => handlePrintTicket(selectedOrder)} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 py-4 rounded-xl font-bold text-lg transition-all active:scale-95 flex items-center justify-center gap-2"><span className="material-icons-round">print</span>Ticket Preview</button>
+                                    <button 
+                                        onClick={() => {
+                                            if (selectedOrder) {
+                                                setOrderToPrint({
+                                                    ...selectedOrder,
+                                                    tableId: selectedOrder.tableId || selectedTableId || 'VENTA',
+                                                    waiterName: selectedOrder.waiterName || currentUser?.name || 'ADMIN'
+                                                } as Order);
+                                                setIsTicketPreviewOpen(true);
+                                            }
+                                        }} 
+                                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 py-4 rounded-xl font-bold text-lg transition-all active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        <span className="material-icons-round">print</span>
+                                        Ticket Preview
+                                    </button>
                                     <button onClick={() => setIsPaymentModalOpen(true)} className="flex-[2] bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-xl shadow-lg shadow-green-200 transition-all active:scale-95 flex items-center justify-center gap-3 font-bold"><span className="material-icons-round">payments</span>Pay ${(total / splitCount).toFixed(2)}</button>
                                 </div>
                             </div>
@@ -612,16 +643,6 @@ export const CashierScreen: React.FC = () => {
                         </div>
                     ) : (
                         <div className="h-full bg-gray-50 flex flex-col p-8 overflow-y-auto print:p-0 print:bg-white relative">
-                            <style>{`
-                                @media print {
-                                    .no-print { display: none !important; }
-                                    .print-only { display: block !important; }
-                                    body { background: white; }
-                                    .print-container { width: 100%; height: 100%; overflow: visible; }
-                                    nav, aside, .w-1\\/3 { display: none !important; } 
-                                    .w-full { width: 100% !important; }
-                                }
-                            `}</style>
                             <div className="flex justify-between items-center mb-6 no-print">
                                 <div className="flex flex-col">
                                     <h2 className="text-2xl font-bold text-gray-800">Corte de Caja (Cash Cut)</h2>
@@ -734,8 +755,39 @@ export const CashierScreen: React.FC = () => {
                 />
             )}
 
-            {/* Print Elements */}
-            <div className="hidden print:block print:relative print:w-full print:h-auto overflow-visible">
+            {/* Ticket Preview Modal */}
+            {isTicketPreviewOpen && orderToPrint && (
+                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
+                    <div className="bg-white rounded-[40px] w-full max-w-sm shadow-2xl overflow-hidden relative">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center text-gray-800">
+                            <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Vista Previa</h3>
+                            <button onClick={() => {
+                                setIsTicketPreviewOpen(false);
+                                setOrderToPrint(null);
+                            }} className="material-icons-round text-gray-400">close</button>
+                        </div>
+                        <div className="p-8 flex justify-center bg-gray-50 max-h-[60vh] overflow-y-auto">
+                            <div className="bg-white shadow-xl p-4">
+                                <Ticket order={orderToPrint} settings={settings} />
+                            </div>
+                        </div>
+                        <div className="p-6 bg-white flex gap-4">
+                            <button 
+                                onClick={() => {
+                                    handlePrintTicket(orderToPrint);
+                                    setIsTicketPreviewOpen(false);
+                                }}
+                                className="flex-1 py-4 bg-primary text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-lg shadow-blue-200"
+                            >
+                                Imprimir Ahora
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Support for global window.print fallback */}
+            <div id="print-area" className="hidden print:block print:absolute print:inset-0 print:bg-white print:z-[5000]">
                 {orderToPrint && <Ticket order={orderToPrint} settings={settings} />}
                 {cashCutToPrint && (
                     <CashCutTicket 

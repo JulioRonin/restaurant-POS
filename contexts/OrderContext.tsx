@@ -160,7 +160,12 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const existingOrder = orders.find(o => o.id === orderId);
     if (!existingOrder && !updatedOrder) return;
 
-    const finalOrder = updatedOrder ? { ...updatedOrder, status } : { ...existingOrder!, status, synced: false, updated_at: new Date().toISOString() };
+    const finalOrder = {
+      ...(updatedOrder || existingOrder!),
+      status,
+      synced: false,
+      updated_at: new Date().toISOString()
+    };
 
     setOrders((prev) => prev.map(o => o.id === orderId ? finalOrder : o));
     

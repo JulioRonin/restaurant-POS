@@ -62,10 +62,53 @@ class PrinterService {
       if (this.device.gatt) {
         // Bluetooth Device
         const server = await this.device.gatt.connect();
-        const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb'); // Generic printer UUID
-        const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb'); // Generic write UUID
-        this.btCharacteristic = characteristic;
-        return true;
+        
+        // Dynamic discovery of printer services
+        const services = await server.getPrimaryServices();
+        let printerService = null;
+        let printerChar = null;
+
+        // Common Printer Service UUIDs
+        const commonPrinterUUIDs = [
+            '000018f0', '0000ff00', '0000ffe0', '000018f1', 
+            '49535343', 'e7810400'
+        ];
+
+        for (const service of services) {
+            console.log('[PrinterService] Found Service:', service.uuid);
+            const isPrinterService = commonPrinterUUIDs.some(uuid => service.uuid.includes(uuid));
+            
+            if (isPrinterService) {
+                const chars = await service.getCharacteristics();
+                // Find first writeable characteristic
+                const writeChar = chars.find((c: any) => c.properties.write || c.properties.writeWithoutResponse);
+                if (writeChar) {
+                    printerService = service;
+                    printerChar = writeChar;
+                    break;
+                }
+            }
+        }
+
+        // Fallback: if no recognized service, try to find any writeable characteristic in the first service
+        if (!printerChar && services.length > 0) {
+            for (const service of services) {
+                const chars = await service.getCharacteristics();
+                const writeChar = chars.find((c: any) => c.properties.write || c.properties.writeWithoutResponse);
+                if (writeChar) {
+                    printerChar = writeChar;
+                    break;
+                }
+            }
+        }
+
+        if (printerChar) {
+            this.btCharacteristic = printerChar;
+            console.log('[PrinterService] Successfully bound to characteristic:', printerChar.uuid);
+            return true;
+        }
+
+        throw new Error('Could not find a valid printing service on this device');
       } else {
         // USB Device
         await this.device.open();
@@ -87,10 +130,14 @@ class PrinterService {
       const device = await (navigator as any).bluetooth.requestDevice({
         acceptAllDevices: true,
         optionalServices: [
-            '000018f0-0000-1000-8000-00805f9b34fb', // Common Thermal Printer
-            '49535343-fe7d-4ae5-8fa9-9fafd205e455', // Integrated System Solution Corp
-            '000018f1-0000-1000-8000-00805f9b34fb', // Alternative PRINTER_SERVICE_UUID
-            'e7810400-410a-45c0-9315-dd95a1d74331'  // Some other Chinese printers
+            '000018f0-0000-1000-8000-00805f9b34fb', // Generic
+            '0000ff00-0000-1000-8000-00805f9b34fb', // Common Chinese
+            '0000ffe0-0000-1000-8000-00805f9b34fb', // Common Chinese Alternative
+            '000018f1-0000-1000-8000-00805f9b34fb', // Alt Printer
+            '49535343-fe7d-4ae5-8fa9-9fafd205e455', // ISSC
+            'e7810400-410a-45c0-9315-dd95a1d74331', // Ribao/Others
+            '00001800-0000-1000-8000-00805f9b34fb', // Generic Access
+            '0000180a-0000-1000-8000-00805f9b34fb'  // Device Info
         ]
       });
       return device;
@@ -301,14 +348,12 @@ class PrinterService {
       
       const result = encoder.initialize()
         .raw([0x1b, 0x3d, 0x01]) // ESC = 1: Select peripheral
-        .pulse(0, 25, 250)      // Pin 2 - Single Pulse
+        .pulse(0, 50, 250)      // Pin 2
+        .pulse(1, 50, 250)      // Pin 5
         .encode();
 
       await this.sendData(result);
-      
-      // Delay to allow physical movement before printer buffer clears
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
+      await new Promise(resolve => setTimeout(resolve, 500));
       return true;
     } catch (err) {
       console.error('Failed to open cash drawer:', err);

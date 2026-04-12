@@ -220,10 +220,10 @@ async function pushLocalChanges(): Promise<void> {
 
           let finalPayload: any;
           if (op.table === 'settings' || op.table === 'business_settings') {
-             // For settings, we store everything as a single JSON blob in the 'value' column
-             // ensure we have business_id
-             const bizId = payload.business_id || payload.businessId || (supabaseClient as any)?.auth?.session?.user?.user_metadata?.business_id;
+             // For settings, ensure we have business_id
+             const bizId = payload.businessId || payload.business_id;
              
+             // The column is called 'key' in SQL, we must ensure it's not blacklisted or renamed
              finalPayload = {
                 key: 'config',
                 value: payload,
@@ -253,28 +253,37 @@ async function pushLocalChanges(): Promise<void> {
                 .insert(finalPayload);
             }
           } else {
-             // Special case for settings update: we use the key to find the record
-             if (op.table === 'settings') {
-                result = await supabaseClient
-                  .from(supabaseTable)
-                  .update(finalPayload)
-                  .eq('business_id', payload.business_id || payload.businessId)
-                  .eq('key', 'config');
-                
-                // If update failed to find or affected 0 rows, try insert
-                if (result.error || (result as any).count === 0) {
+              // Special case for settings: find by logical key and update by ID
+              if (op.table === 'settings') {
+                 const bizId = payload.businessId || payload.business_id;
+                 const { data: rec } = await supabaseClient
+                   .from(supabaseTable)
+                   .select('id')
+                   .eq('business_id', bizId)
+                   .eq('key', 'config')
+                   .single();
+
+                 if (rec) {
                     result = await supabaseClient
                       .from(supabaseTable)
-                      .insert({ ...finalPayload, business_id: payload.business_id || payload.businessId });
-                }
-             } else {
-                result = await supabaseClient
-                  .from(supabaseTable)
-                  .update(finalPayload)
-                  .eq('id', op.record_id);
-             }
+                      .update(finalPayload)
+                      .eq('id', (rec as any).id);
+                 } else {
+                    result = await supabaseClient
+                      .from(supabaseTable)
+                      .insert({ ...finalPayload, business_id: bizId });
+                 }
+                 // Skip the normal flow
+                 op.status = 'synced'; // Mark as done manually for this special case logic
+              } else {
+                 result = await supabaseClient
+                   .from(supabaseTable)
+                   .update(finalPayload)
+                   .eq('id', op.record_id);
+              }
+              break; // Ensure we break the switch safely if this block is reached
           }
-          break;
+          break; // This break is for the operation switch case update
         }
         case 'DELETE': {
           result = await supabaseClient
@@ -474,11 +483,17 @@ function transformForSupabase(payload: any): any {
     const blacklistedKeys = [
       'synced', 'updated_at', 'timestamp', 'items', 'table', 
       'waiter', 'changeAmount', 'receivedAmount', 'paidSplits', 
-      'splitType', 'inventoryLevel', 'publicInMenu', 'isFromMenu'
+      'splitType', 'inventoryLevel', 'publicInMenu', 'isFromMenu',
+      'id' // Key is usually used instead of random ID for settings
     ];
     
     if (blacklistedKeys.includes(key)) continue; 
     
+    // Check if the key is 'key' and we are doing settings
+    if (key === 'key') {
+       transformed.key = value;
+       continue;
+    }    
     const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
     
     // CRITICAL: Supabase table_id is UUID. 'COUNTER' is invalid. Convert to null.
