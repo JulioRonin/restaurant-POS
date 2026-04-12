@@ -255,6 +255,10 @@ async function pushLocalChanges(): Promise<void> {
              };
           } else {
              finalPayload = transformForSupabase(payload);
+             // CRITICAL: Ensure the ID is included in the payload for proper FK relationships
+             if (op.record_id) {
+               finalPayload.id = op.record_id;
+             }
           }
 
           if (op.operation === 'INSERT') {
@@ -495,12 +499,11 @@ function transformForSupabase(payload: any): any {
   // Convert camelCase to snake_case for Supabase
   const transformed: any = {};
   for (const [key, value] of Object.entries(payload)) {
-    // List of fields that should NEVER be sent to Supabase (local-only or UI-only)
     const blacklistedKeys = [
       'synced', 'updated_at', 'timestamp', 'items', 'table', 
       'waiter', 'changeAmount', 'receivedAmount', 'paidSplits', 
-      'splitType', 'inventoryLevel', 'publicInMenu', 'isFromMenu',
-      'id' // Key is usually used instead of random ID for settings
+      'splitType', 'inventoryLevel', 'publicInMenu', 'isFromMenu'
+      // Note: 'id' is intentionally NOT blacklisted here anymore to preserve PK/FK integrity
     ];
     
     if (blacklistedKeys.includes(key)) continue; 
