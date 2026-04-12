@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { CATEGORIES } from '../constants';
 import { MenuItem, OrderItem, Order, OrderStatus, Table, OrderSource } from '../types';
 import { useOrders } from '../contexts/OrderContext';
