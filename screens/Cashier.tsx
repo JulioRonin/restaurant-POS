@@ -584,7 +584,6 @@ export const CashierScreen: React.FC = () => {
                                 </div>
                                 <div className="p-6 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex gap-4">
                                     <button 
-                                        onClick={() => {
                                         onClick={() => selectedOrder && handlePrintTicket(selectedOrder)}
                                         className="flex-1 py-4 bg-primary text-white rounded-3xl font-black uppercase text-xs tracking-[0.2em] shadow-lg shadow-blue-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
                                     >
