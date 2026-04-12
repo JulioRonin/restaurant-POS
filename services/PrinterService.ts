@@ -6,19 +6,32 @@ class PrinterService {
   private serverUrl = 'http://localhost:3001'; // Fallback / meta
 
   private async sendData(data: Uint8Array): Promise<void> {
-    if (!this.device) throw new Error('No device connected');
+    if (!this.device) {
+        alert("La impresora no está conectada. Por favor, ve a Configuración y conéctala.");
+        throw new Error('No device connected');
+    }
     
-    if (this.btCharacteristic) {
-      // Bluetooth Chunking (Fix for MTU limits)
-      const CHUNK_SIZE = 512;
-      for (let i = 0; i < data.length; i += CHUNK_SIZE) {
-        const chunk = data.slice(i, i + CHUNK_SIZE);
-        await this.btCharacteristic.writeValue(chunk);
-        // Small delay to prevent overflow on some printers
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-    } else {
-      await this.device.transferOut(this.getEndpointNum(), data);
+    try {
+        if (this.btCharacteristic) {
+            // Bluetooth Chunking (Fix for MTU limits)
+            const CHUNK_SIZE = 512;
+            for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+                const chunk = data.slice(i, i + CHUNK_SIZE);
+                // Use writeValueWithoutResponse for better compatibility with thermal printers
+                if (this.btCharacteristic.writeValueWithoutResponse) {
+                    await this.btCharacteristic.writeValueWithoutResponse(chunk);
+                } else {
+                    await this.btCharacteristic.writeValue(chunk);
+                }
+                // Small delay to prevent overflow on some printers
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+        } else {
+            await this.device.transferOut(this.getEndpointNum(), data);
+        }
+    } catch (err: any) {
+        console.error('[PrinterService] Send failed:', err);
+        alert(`Error de impresión: ${err.message}. Intenta reconectar la impresora.`);
     }
   }
 

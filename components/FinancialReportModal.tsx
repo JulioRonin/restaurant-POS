@@ -97,17 +97,17 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
                 </div>
 
                 {/* Report Content - This part is what will be printed */}
-                <div id="financial-report" className="flex-1 overflow-y-auto p-12 bg-white print:p-0 print:overflow-visible print:block">
-                    <div className="max-w-4xl mx-auto">
-                        {/* Company Header */}
-                        <div className="flex justify-between items-start mb-16 pb-8 border-b-2 border-gray-900">
+                <div id="financial-report" className="flex-1 overflow-y-auto p-12 bg-white print:p-0 print:overflow-visible print:block printable-content">
+                    {/* Page 1: Executive Summary */}
+                    <div className="max-w-4xl mx-auto print:max-w-none print:w-full">
+                        <div className="flex justify-between items-start mb-12">
                             <div>
-                                <h1 className="text-5xl font-black text-gray-900 tracking-tighter uppercase mb-2">CULINEX POS</h1>
-                                <p className="text-xs font-black text-primary tracking-[0.3em] uppercase">{restaurantName} — Reporte Ejecutivo</p>
+                                <h1 className="text-4xl font-black text-gray-900 tracking-tighter mb-2">{restaurantName.toUpperCase()}</h1>
+                                <p className="text-gray-500 font-bold uppercase tracking-[0.3em] text-[10px]">Reporte Ejecutivo de Caja y Operaciones</p>
                             </div>
                             <div className="text-right">
-                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Fecha Emisión</p>
-                                <p className="text-sm font-black text-gray-900">{new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                <p className="text-sm font-black text-gray-900">{periodLabel}</p>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Generado: {new Date().toLocaleString()}</p>
                             </div>
                         </div>
 

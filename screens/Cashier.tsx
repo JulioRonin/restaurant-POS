@@ -179,9 +179,10 @@ export const CashierScreen: React.FC = () => {
 
     // --- Expense Logic ---
     const filteredExpenses = useMemo(() => {
-        if (expenseCategoryFilter === 'All') return expenses;
-        return expenses.filter(e => e.category === expenseCategoryFilter);
-    }, [expenses, expenseCategoryFilter]);
+        return filteredByDateExpenses.filter(e => {
+            return expenseCategoryFilter === 'All' || e.category === expenseCategoryFilter;
+        });
+    }, [filteredByDateExpenses, expenseCategoryFilter]);
 
     const handleAddExpense = () => {
         if (!newExpenseDesc || !newExpenseAmount) return;

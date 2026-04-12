@@ -94,12 +94,25 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     }
 
     // Prioritize business-scoped IndexedDB settings
-    // Prioritize business-scoped IndexedDB settings
     const loadFromStore = async () => {
       try {
         const idbSettings = await getSetting(idbKey);
         if (idbSettings) {
-          setSettings(prev => ({ ...prev, ...idbSettings }));
+          const merged = { ...DEFAULT_SETTINGS, ...idbSettings };
+          setSettings(merged);
+          
+          // Auto-connect hardware if enabled
+          if (merged.connectedDeviceName && merged.connectedDeviceName !== 'None') {
+            console.log('[SettingsContext] Auto-connecting printer:', merged.connectedDeviceName);
+            printerService.autoConnect(merged.connectedDeviceName).catch(console.warn);
+          }
+        } else {
+          // Initialize logic
+          setSettings(prev => ({
+            ...prev,
+            name: authProfile.businessName || prev.name,
+            email: authProfile.email || prev.email
+          }));
         }
 
         // Check if we need to sync basic info from Supabase (Source of Truth)
