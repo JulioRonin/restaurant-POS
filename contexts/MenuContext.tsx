@@ -102,7 +102,7 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await deleteRecord('products', id);
         setMenuItems(prev => prev.filter(i => i.id !== id));
         
-        await trackChange('products', 'DELETE', id);
+        await trackChange('products', 'DELETE', id, { id });
     };
 
     const toggleStatus = async (id: string) => {

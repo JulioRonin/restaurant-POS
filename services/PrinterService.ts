@@ -225,6 +225,14 @@ class PrinterService {
   }
 
   async printOrder(order: any, settings: any): Promise<boolean> {
+    if (!this.isConnected() && settings.connectedDeviceName && settings.connectedDeviceName !== 'None') {
+        console.log('[PrinterService] Not connected. Attempting auto-reconnect to:', settings.connectedDeviceName);
+        const reconnected = await this.autoConnect(settings.connectedDeviceName);
+        if (!reconnected) {
+            console.warn('[PrinterService] Auto-reconnect failed.');
+        }
+    }
+
     if (!this.device) {
        console.warn('No direct printer connected. Use window.print()');
        return false;

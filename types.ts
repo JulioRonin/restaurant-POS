@@ -59,6 +59,8 @@ export interface Order {
   receivedAmount?: number;
   changeAmount?: number;
   paidSplits?: number;
+  businessId?: string;
+  locationId?: string;
 }
 
 export enum PaymentStatus {

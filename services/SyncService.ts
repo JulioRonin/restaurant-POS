@@ -174,11 +174,29 @@ export async function triggerSync(businessId?: string): Promise<void> {
 // ─── PUSH: Send pending operations to Supabase ───────────────
 
 async function pushLocalChanges(): Promise<void> {
-  const pending = await getPendingSyncOps();
+  const allPending = await getPendingSyncOps();
+  // CRITICAL: Sort by ID (auto-increment) to preserve creation order
+  // This ensures 'orders' are INSERTed before 'order_items'
+  const pending = allPending.sort((a, b) => (a.id || 0) - (b.id || 0));
+  
   console.log(`[SyncService] PENDING OPERATIONS: ${pending.length}`);
   
+  // Track IDs of orders being synced in this batch
+  const ordersPendingInThisBatch = new Set(
+    pending.filter(op => op.table === 'orders' && op.operation === 'INSERT').map(op => op.record_id)
+  );
+
   for (const op of pending) {
     try {
+      // FK PROTECTION: If this is an order item, ensure its order is already synced or at least not in this pending batch
+      if (op.table === 'order_items' && op.operation === 'INSERT') {
+          const parentOrderId = (op.payload as any).orderId || (op.payload as any).order_id;
+          if (ordersPendingInThisBatch.has(parentOrderId)) {
+              console.log(`[SyncService] Skipping order_item ${op.record_id} - Parent order ${parentOrderId} still pending.`);
+              continue; // Skip for now, will try next sync cycle after order is INSERTed
+          }
+      }
+
       await updateSyncOp(op.id!, { status: 'syncing' });
 
       const supabaseTable = TABLE_MAP[op.table] || op.table;

@@ -45,8 +45,6 @@ export const CashierScreen: React.FC = () => {
     // Printing / Payment State
     const { settings } = useSettings();
     const { currentUser } = useUser();
-    const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
-    const [isTicketPreviewOpen, setIsTicketPreviewOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [cashReceived, setCashReceived] = useState<string>('');
     const [isProcessingTerminal, setIsProcessingTerminal] = useState(false);
@@ -67,27 +65,31 @@ export const CashierScreen: React.FC = () => {
     const [dismissedBillRequests, setDismissedBillRequests] = useState<string[]>([]);
 
     const handlePrintTicket = async (order: Order) => {
-        // Enrich order with table info and current user if missing
+        // ENSURE items are present for printing (re-assemble if needed from the order object)
         const enrichedOrder = {
             ...order,
+            items: (order.items && order.items.length > 0) ? order.items : (selectedOrder?.items || []),
             tableId: order.tableId || selectedTableId || 'VENTA',
             waiterName: order.waiterName || currentUser?.name || 'ADMIN'
         };
 
-        if (settings.isDirectPrintingEnabled) {
+        // Standardized Direct Print Attempt
+        if (settings.isDirectPrintingEnabled || true) { // Default to attempting direct for better UX
             const success = await printerService.printOrder(enrichedOrder, settings);
-            if (success) return; // Silent print worked!
+            if (success) return true; 
         }
         
-        // Fallback for Manual Print Dialog
+        // Manual Print Fallback (Silent Dialog)
         setOrderToPrint(enrichedOrder);
-        
-        // Wait longer for DOM to render the printable hidden div
-        setTimeout(() => {
-            window.print();
-            // Reset after printing
-            setTimeout(() => setOrderToPrint(null), 1000);
-        }, 800);
+        return new Promise<boolean>((resolve) => {
+            setTimeout(() => {
+                window.print();
+                setTimeout(() => {
+                    setOrderToPrint(null);
+                    resolve(true);
+                }, 1000);
+            }, 500);
+        });
     };
 
     const handlePrintCashCut = async () => {
@@ -153,14 +155,8 @@ export const CashierScreen: React.FC = () => {
         // Generate TICKET for this split
         const splitOrderTicket = { ...updatedOrder, total: splitAmount }; 
         
-        // Auto-print if enabled
-        if (settings.isDirectPrintingEnabled) {
-            await handlePrintTicket(splitOrderTicket as Order);
-        } else {
-            // If direct printing is OFF, we show the preview for manual print
-            setOrderToPrint(splitOrderTicket as Order);
-            setIsTicketPreviewOpen(true);
-        }
+        // Auto-print directly (no modal)
+        await handlePrintTicket(splitOrderTicket as Order);
 
         if (!isFullyPaid) {
             setSuccessMessage(`Pago parcial registrado (${currentPaidSplits} de ${splitCount} partes).`);
@@ -589,19 +585,11 @@ export const CashierScreen: React.FC = () => {
                                 <div className="p-6 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex gap-4">
                                     <button 
                                         onClick={() => {
-                                            if (selectedOrder) {
-                                                setOrderToPrint({
-                                                    ...selectedOrder,
-                                                    tableId: selectedOrder.tableId || selectedTableId || 'VENTA',
-                                                    waiterName: selectedOrder.waiterName || currentUser?.name || 'ADMIN'
-                                                } as Order);
-                                                setIsTicketPreviewOpen(true);
-                                            }
-                                        }} 
-                                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 py-4 rounded-xl font-bold text-lg transition-all active:scale-95 flex items-center justify-center gap-2"
+                                        onClick={() => selectedOrder && handlePrintTicket(selectedOrder)}
+                                        className="flex-1 py-4 bg-primary text-white rounded-3xl font-black uppercase text-xs tracking-[0.2em] shadow-lg shadow-blue-200 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
                                     >
-                                        <span className="material-icons-round">print</span>
-                                        Ticket Preview
+                                        <span className="material-icons-round text-lg">print</span>
+                                        Ticket
                                     </button>
                                     <button onClick={() => setIsPaymentModalOpen(true)} className="flex-[2] bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-bold text-xl shadow-lg shadow-green-200 transition-all active:scale-95 flex items-center justify-center gap-3 font-bold"><span className="material-icons-round">payments</span>Pay ${(total / splitCount).toFixed(2)}</button>
                                 </div>
@@ -756,36 +744,6 @@ export const CashierScreen: React.FC = () => {
             )}
 
             {/* Ticket Preview Modal */}
-            {isTicketPreviewOpen && orderToPrint && (
-                <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm">
-                    <div className="bg-white rounded-[40px] w-full max-w-sm shadow-2xl overflow-hidden relative">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center text-gray-800">
-                            <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">Vista Previa</h3>
-                            <button onClick={() => {
-                                setIsTicketPreviewOpen(false);
-                                setOrderToPrint(null);
-                            }} className="material-icons-round text-gray-400">close</button>
-                        </div>
-                        <div className="p-8 flex justify-center bg-gray-50 max-h-[60vh] overflow-y-auto">
-                            <div className="bg-white shadow-xl p-4">
-                                <Ticket order={orderToPrint} settings={settings} />
-                            </div>
-                        </div>
-                        <div className="p-6 bg-white flex gap-4">
-                            <button 
-                                onClick={() => {
-                                    handlePrintTicket(orderToPrint);
-                                    setIsTicketPreviewOpen(false);
-                                }}
-                                className="flex-1 py-4 bg-primary text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-lg shadow-blue-200"
-                            >
-                                Imprimir Ahora
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Support for global window.print fallback */}
             <div id="print-area" className="hidden print:block print:absolute print:inset-0 print:bg-white print:z-[5000]">
                 {orderToPrint && <Ticket order={orderToPrint} settings={settings} />}
