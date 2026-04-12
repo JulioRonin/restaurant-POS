@@ -119,17 +119,28 @@ export const POSScreen: React.FC = () => {
         // Auto Kitchen Printing
         if (settings.isKitchenPrintingEnabled) {
           let printSuccess = false;
+          
+          // CRITICAL: We attempt direct print if the user has it enabled
           if (settings.isDirectPrintingEnabled) {
+            console.log('[POS] Attempting direct kitchen print...');
             printSuccess = await printerService.printKitchenTicket(newOrder, settings);
+            
+            // If it failed but it was supposed to work, we give it ONE more silent retry 
+            // after a quick pause to let hardware wake up
+            if (!printSuccess && settings.connectedDeviceName && settings.connectedDeviceName !== 'None') {
+                console.log('[POS] Direct print failed, retrying once...');
+                await new Promise(r => setTimeout(r, 1000));
+                printSuccess = await printerService.printKitchenTicket(newOrder, settings);
+            }
           }
           
           if (!printSuccess) {
-            // Fallback to Browser Print
+            console.log('[POS] Direct print unavailable, falling back to browser dialog');
             setKitchenOrderToPrint(newOrder);
             setTimeout(() => {
               window.print();
               setKitchenOrderToPrint(null);
-            }, 500);
+            }, 800);
           }
         }
 

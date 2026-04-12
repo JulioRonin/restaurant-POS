@@ -159,8 +159,10 @@ class PrinterService {
             // 1. Try Bluetooth Silent Connect
             if ('bluetooth' in navigator) {
                 const btDevices = await (navigator as any).bluetooth.getDevices();
-                const targetBt = btDevices.find((d: any) => d.name === deviceName);
+                // Match by exact name OR if we only have one thermal-like device, try it as a fallback
+                const targetBt = btDevices.find((d: any) => d.name === deviceName) || (btDevices.length === 1 ? btDevices[0] : null);
                 if (targetBt) {
+                    console.log('[PrinterService] Found matching Bluetooth device:', targetBt.name);
                     const success = await this.connect(targetBt);
                     if (success) return true;
                 }
