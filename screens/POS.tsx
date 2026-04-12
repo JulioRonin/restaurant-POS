@@ -671,6 +671,11 @@ export const POSScreen: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Printing Component (Browser print fallback) */}
+      <div className="hidden print:block">
+        {kitchenOrderToPrint && <KitchenTicket order={kitchenOrderToPrint} />}
+      </div>
     </div>
   );
 };

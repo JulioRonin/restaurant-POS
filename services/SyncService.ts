@@ -233,6 +233,7 @@ async function pushLocalChanges(): Promise<void> {
             delete payload.status;
             delete payload.gramaje;
             delete payload.description;
+            delete payload.name; // Not in Supabase schema
 
             // Handle legacy price mapping if record was created before the schema alignment fix
             if (payload.price !== undefined && payload.priceAtTime === undefined) {

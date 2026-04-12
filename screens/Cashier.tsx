@@ -420,9 +420,9 @@ export const CashierScreen: React.FC = () => {
                                                             if (selectedTableId === table.id) setSelectedTableId(null);
                                                         }
                                                     }}
-                                                    className="absolute top-2 right-2 p-1 bg-red-50 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
+                                                    className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-lg shadow-sm border border-red-200 hover:bg-red-600 hover:text-white transition-all z-10 flex items-center justify-center"
                                                 >
-                                                    <span className="material-icons-round text-xs">delete</span>
+                                                    <span className="material-icons-round text-sm">delete</span>
                                                 </button>
                                             )}
                                             <div className="flex justify-between items-center mb-2">
@@ -455,9 +455,9 @@ export const CashierScreen: React.FC = () => {
                                                             if (selectedTableId === order.tableId) setSelectedTableId(null);
                                                         }
                                                     }}
-                                                    className="absolute top-2 right-2 p-1 bg-red-50 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
+                                                    className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-600 rounded-lg shadow-sm border border-red-200 hover:bg-red-600 hover:text-white transition-all z-10 flex items-center justify-center"
                                                 >
-                                                    <span className="material-icons-round text-xs">delete</span>
+                                                    <span className="material-icons-round text-sm">delete</span>
                                                 </button>
                                                 <div className="flex justify-between items-center mb-1">
                                                     <span className="font-bold text-gray-700">Orden #{order.id.slice(-4)}</span>
