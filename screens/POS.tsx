@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CATEGORIES } from '../constants';
 import { MenuItem, OrderItem, Order, OrderStatus, Table, OrderSource } from '../types';
 import { useOrders } from '../contexts/OrderContext';
@@ -659,10 +660,13 @@ export const POSScreen: React.FC = () => {
         </div>
       )}
 
-      {/* Printing Component (Browser print fallback) */}
-      <div className="print-only-container">
-        {kitchenOrderToPrint && <KitchenTicket order={kitchenOrderToPrint} settings={settings} />}
-      </div>
+      {/* Printing Component (Browser print portal) */}
+      {kitchenOrderToPrint && createPortal(
+        <div className="print-only-container">
+          <KitchenTicket order={kitchenOrderToPrint} settings={settings} />
+        </div>,
+        document.getElementById('print-root') || document.body
+      )}
     </div>
   );
 };

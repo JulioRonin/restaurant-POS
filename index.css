@@ -52,17 +52,23 @@ body {
     display: none !important;
   }
 
-  /* Ensure the print container is the ONLY thing visible and at the top */
-  .print-only-content {
+  /* When print-mode is active, ONLY show the #print-root portal */
+  #print-root {
+    display: none;
+  }
+
+  body.print-mode #print-root {
     display: block !important;
     position: absolute !important;
     top: 0 !important;
     left: 0 !important;
     width: 100% !important;
-    height: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    z-index: 999999 !important;
+  }
+
+  /* Ensure the print container inside the portal is visible */
+  .print-only-container, .print-only-content {
+    display: block !important;
+    width: 100% !important;
   }
 
   /* Restore layout resets */
