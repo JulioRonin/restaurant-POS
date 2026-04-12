@@ -301,6 +301,24 @@ export async function getById<T extends StoreName>(store: T, id: string): Promis
   return db.get(store, id);
 }
 
+export async function updateRecordSyncStatus(table: any, id: string, synced: boolean) {
+  if (table === 'sync_queue' || table === 'settings') return; 
+  try {
+    const db = await getDB();
+    const tx = db.transaction(table, 'readwrite');
+    const store = tx.objectStore(table);
+    const record = await store.get(id);
+    if (record) {
+      record.synced = synced;
+      record.updated_at = new Date().toISOString();
+      await store.put(record);
+    }
+    await tx.done;
+  } catch (error) {
+    console.error(`[DB] Error updating sync status for ${table}/${id}:`, error);
+  }
+}
+
 export async function put<T extends StoreName>(store: T, value: CulinexDB[T]['value']): Promise<string> {
   const db = await getDB();
   return db.put(store, value);

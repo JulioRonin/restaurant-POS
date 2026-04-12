@@ -1,7 +1,7 @@
 import { 
   getAll, put, deleteRecord, enqueueSyncOp, 
   getPendingSyncOps, updateSyncOp, clearSyncedOps, 
-  getSyncQueueCount, SyncOperation 
+  getSyncQueueCount, SyncOperation, updateRecordSyncStatus, getById
 } from './db';
 
 // ─── Configuration ────────────────────────────────────────────
@@ -193,8 +193,8 @@ async function pushLocalChanges(): Promise<void> {
           const parentOrderId = (op.payload as any).orderId || (op.payload as any).order_id;
           
           // Check local 'orders' table to see if it's already synced
-          const { getOrder } = await import('./db');
-          const localOrder = await getOrder(parentOrderId);
+          // This ensures we never send an item before stay-behind orders finish syncing
+          const localOrder = await getById('orders', parentOrderId);
           
           if (!localOrder || !localOrder.synced) {
               console.log(`[SyncService] Skipping order_item ${op.record_id} - Parent order ${parentOrderId} not yet synced on server.`);
@@ -318,6 +318,8 @@ async function pushLocalChanges(): Promise<void> {
         console.log(`[SyncService] PUSH SUCCESS for ${op.table} (${op.record_id})`);
       }
 
+       // Update local record immediately so subsequent items in the batch can see it
+      await updateRecordSyncStatus(op.table, op.record_id, true);
       await updateSyncOp(op.id!, { status: 'synced' });
     } catch (err: any) {
       console.error(`[SyncService] Failed to push ${op.table}/${op.operation}:`, err);
