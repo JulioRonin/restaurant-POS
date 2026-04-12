@@ -203,14 +203,23 @@ export const CashierScreen: React.FC = () => {
             }
         });
     }, [orders, selectedDate]);
-
     const filteredByDateExpenses = useMemo(() => {
         return expenses.filter(e => {
-            if (!e.date) return false;
-            if (!e.date.includes('T')) return e.date === selectedDate;
+            let d;
+            if (!e.date) {
+                const idNum = parseInt(e.id, 10);
+                if (!isNaN(idNum) && idNum > 1000000000000) {
+                    d = new Date(idNum);
+                } else {
+                    return false; // Unable to recover a valid date
+                }
+            } else if (!e.date.includes('T')) {
+                return e.date === selectedDate;
+            } else {
+                d = new Date(e.date);
+            }
 
-            const d = new Date(e.date);
-            if (!isNaN(d.getTime())) {
+            if (d && !isNaN(d.getTime())) {
                 const localD = new Date(d);
                 localD.setMinutes(localD.getMinutes() - localD.getTimezoneOffset());
                 return localD.toISOString().split('T')[0] === selectedDate;
@@ -451,7 +460,14 @@ export const CashierScreen: React.FC = () => {
                                     <div key={expense.id} className="p-4 rounded-xl border border-gray-100 bg-white shadow-sm flex justify-between items-center group">
                                         <div>
                                             <div className="font-bold text-gray-800">{expense.description}</div>
-                                            <div className="text-xs text-gray-400">{expense.category} • {expense.date ? new Date(expense.date).toLocaleDateString() : 'N/A'}</div>
+                                            <div className="text-xs text-gray-400">
+                                                {expense.category} • {
+                                                    expense.date ? new Date(expense.date).toLocaleDateString() 
+                                                    : (!isNaN(parseInt(expense.id, 10)) && parseInt(expense.id, 10) > 1000000000000) 
+                                                        ? new Date(parseInt(expense.id, 10)).toLocaleDateString()
+                                                        : 'N/A'
+                                                }
+                                            </div>
                                         </div>
                                         <div className="text-right">
                                             <div className="font-bold text-red-500">-${expense.amount.toFixed(2)}</div>
