@@ -217,7 +217,6 @@ class PrinterService {
   }
 
   isConnected(): boolean {
-  isConnected(): boolean {
     if (!this.device) return false;
     
     // For Bluetooth
