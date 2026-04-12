@@ -45,6 +45,7 @@ export const CashierScreen: React.FC = () => {
     // Printing / Payment State
     const { settings } = useSettings();
     const { currentUser } = useUser();
+    const [orderToPrint, setOrderToPrint] = useState<Order | null>(null);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [cashReceived, setCashReceived] = useState<string>('');
     const [isProcessingTerminal, setIsProcessingTerminal] = useState(false);
