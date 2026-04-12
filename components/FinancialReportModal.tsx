@@ -40,19 +40,23 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
         return Object.entries(stats).sort((a, b) => b[1] - a[1]).slice(0, 5);
     }, [orders]);
 
-    const cashTotal = orders.filter(o => o.paymentMethod === 'Cash' && (!o.source || o.source === 'DINE_IN' || o.source === 'TAKEAWAY')).reduce((sum, o) => sum + o.total, 0);
-    const cardTotal = orders.filter(o => o.paymentMethod === 'Card' && (!o.source || o.source === 'DINE_IN' || o.source === 'TAKEAWAY')).reduce((sum, o) => sum + o.total, 0);
+    const cashTotal = orders.filter(o => o.paymentMethod === 'CASH' && (!o.source || o.source === 'DINE_IN' || o.source === 'TO_GO' || o.source === 'PICKUP' || o.source === 'DRIVE_THRU')).reduce((sum, o) => sum + o.total, 0);
+    const cardTotal = orders.filter(o => o.paymentMethod === 'CARD' && (!o.source || o.source === 'DINE_IN' || o.source === 'TO_GO' || o.source === 'PICKUP' || o.source === 'DRIVE_THRU')).reduce((sum, o) => sum + o.total, 0);
+    const transferTotal = orders.filter(o => o.paymentMethod === 'TRANSFER' && (!o.source || o.source === 'DINE_IN' || o.source === 'TO_GO' || o.source === 'PICKUP' || o.source === 'DRIVE_THRU')).reduce((sum, o) => sum + o.total, 0);
+    
     const uberTotal = orders.filter(o => o.source === 'UBER_EATS').reduce((sum, o) => sum + o.total, 0);
-    const didiTotal = orders.filter(o => o.source === 'DIDI_FOOD').reduce((sum, o) => sum + o.total, 0);
+    const didiTotal = orders.filter(o => o.source === 'DIDI').reduce((sum, o) => sum + o.total, 0);
     const rappiTotal = orders.filter(o => o.source === 'RAPPI').reduce((sum, o) => sum + o.total, 0);
 
     const cashflowData = useMemo(() => [
-        { name: 'Efectivo', amount: cashTotal - totalExpenses, date: 'Día Actual', fill: '#10B981', note: 'Líquido en Caja' },
-        { name: 'Terminales', amount: cardTotal, date: 'Día Siguiente', fill: '#6366F1', note: 'Transferencia' },
-        { name: 'Uber Eats', amount: uberTotal, date: settings.uberPayoutDay || 'Lunes', fill: '#059669', note: 'Liquidación Semanal' },
-        { name: 'DiDi Food', amount: didiTotal, date: settings.didiPayoutDay || 'Martes', fill: '#F97316', note: 'Liquidación Semanal' },
-        { name: 'Rappi', amount: rappiTotal, date: 'Personalizado', fill: '#EF4444', note: settings.rappiPayoutNotes || 'Al sumar $500' },
-    ].filter(item => item.amount !== 0), [cashTotal, cardTotal, uberTotal, didiTotal, rappiTotal, totalExpenses, settings]);
+        { name: 'Efectivo Neto', amount: cashTotal - totalExpenses, date: 'Disponible', fill: '#10B981', note: 'En Caja (Tras Gastos)' },
+        { name: 'Gastos Pagados', amount: totalExpenses, date: 'Liquidado', fill: '#EF4444', note: 'Salida de Caja' },
+        { name: 'Tarjetas', amount: cardTotal, date: 'Día Siguiente', fill: '#6366F1', note: 'Ingreso Bancario' },
+        { name: 'Transferencias', amount: transferTotal, date: 'Al Instante', fill: '#3B82F6', note: 'Ingreso Bancario' },
+        { name: 'Uber Eats', amount: uberTotal, date: settings.uberPayoutDay || 'Lunes', fill: '#059669', note: 'Paga Aplicación' },
+        { name: 'DiDi Food', amount: didiTotal, date: settings.didiPayoutDay || 'Martes', fill: '#F97316', note: 'Paga Aplicación' },
+        { name: 'Rappi', amount: rappiTotal, date: 'Personalizado', fill: '#EAB308', note: settings.rappiPayoutNotes || 'Al sumar monto' },
+    ].filter(item => Math.abs(item.amount) > 0), [cashTotal, cardTotal, transferTotal, uberTotal, didiTotal, rappiTotal, totalExpenses, settings]);
 
     const handlePrint = () => {
         window.print();
