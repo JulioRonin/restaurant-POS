@@ -177,25 +177,6 @@ export const CashierScreen: React.FC = () => {
     const subtotal = selectedOrder?.total || 0;
     const total = subtotal + tipAmount;
 
-    // --- Expense Logic ---
-    const filteredExpenses = useMemo(() => {
-        return filteredByDateExpenses.filter(e => {
-            return expenseCategoryFilter === 'All' || e.category === expenseCategoryFilter;
-        });
-    }, [filteredByDateExpenses, expenseCategoryFilter]);
-
-    const handleAddExpense = () => {
-        if (!newExpenseDesc || !newExpenseAmount) return;
-        addExpense(newExpenseDesc, parseFloat(newExpenseAmount), newExpenseCategory, 'Cashier', newExpenseDate);
-        setNewExpenseDesc('');
-        setNewExpenseAmount('');
-        setSuccessMessage('Gasto registrado con éxito');
-        setTimeout(() => setSuccessMessage(null), 3000);
-    };
-
-    const STARTING_BALANCE = 5000;
-    const currentBalance = STARTING_BALANCE - (expenses.reduce((sum, e) => sum + e.amount, 0));
-
     // --- History / Cash Cut Logic ---
     const filteredByDateOrders = useMemo(() => {
         return orders.filter(o => {
@@ -212,6 +193,7 @@ export const CashierScreen: React.FC = () => {
             }
         });
     }, [orders, selectedDate]);
+
     const filteredByDateExpenses = useMemo(() => {
         return expenses.filter(e => {
             let d;
@@ -236,6 +218,25 @@ export const CashierScreen: React.FC = () => {
             return false;
         });
     }, [expenses, selectedDate]);
+
+    // --- Expense Logic ---
+    const filteredExpenses = useMemo(() => {
+        return filteredByDateExpenses.filter(e => {
+            return expenseCategoryFilter === 'All' || e.category === expenseCategoryFilter;
+        });
+    }, [filteredByDateExpenses, expenseCategoryFilter]);
+
+    const handleAddExpense = () => {
+        if (!newExpenseDesc || !newExpenseAmount) return;
+        addExpense(newExpenseDesc, parseFloat(newExpenseAmount), newExpenseCategory, 'Cashier', newExpenseDate);
+        setNewExpenseDesc('');
+        setNewExpenseAmount('');
+        setSuccessMessage('Gasto registrado con éxito');
+        setTimeout(() => setSuccessMessage(null), 3000);
+    };
+
+    const STARTING_BALANCE = 5000;
+    const currentBalance = STARTING_BALANCE - (expenses.reduce((sum, e) => sum + e.amount, 0));
 
     const completedOrdersCount = useMemo(() => filteredByDateOrders.filter(o => o.status === 'COMPLETED'), [filteredByDateOrders]);
 
