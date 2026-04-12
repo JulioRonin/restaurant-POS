@@ -118,9 +118,12 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const addOrder = async (order: Order) => {
     // Ensure order has a unique ID if not provided
     const orderId = order.id || crypto.randomUUID();
+    const bizId = authProfile?.businessId || order.businessId;
+    
     const finalOrder = {
       ...order,
       id: orderId,
+      businessId: bizId,
       synced: false,
       updated_at: new Date().toISOString()
     };
@@ -138,12 +141,12 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const orderItemRecord = {
           id: orderItemId,
           orderId: orderId,
-          menuItemId: (item as any).menuItemId || item.id,
+          menuItemId: (item as any).menuItemId || (item as any).menu_item_id || item.id,
           quantity: item.quantity,
           priceAtTime: item.price,
           notes: item.notes || '',
-          businessId: authProfile?.businessId || '',
-          locationId: authProfile?.locationId || '',
+          businessId: bizId, // CRITICAL: Map to businessId which transformForSupabase converts to business_id
+          locationId: authProfile?.locationId || (order as any).locationId || '',
           synced: false,
           updated_at: new Date().toISOString()
         };

@@ -125,26 +125,10 @@ export const POSScreen: React.FC = () => {
     try {
         console.log('[POS] Sending order:', newOrder);
         
-        // 1. Critical Atomic Sequence: Save order locally first
+        // 1. Single entry for local save and cloud tracking
         await addOrder(newOrder);
         
-        // 2. Enqueue items for Supabase (relational sync)
-        for (const item of cart) {
-            const orderItem = {
-              id: crypto.randomUUID(),
-              order_id: orderId,
-              menu_item_id: item.id || (item as any).menu_item_id,
-              quantity: item.quantity,
-              notes: item.notes || '',
-              price_at_time: item.price,
-              name: item.name,
-              business_id: authProfile?.businessId
-            };
-            // Note: trackChange already handles the enqueue + sync trigger
-            await (await import('../services/SyncService')).trackChange('order_items', 'INSERT', orderItem.id, orderItem);
-        }
-
-        // 3. Auto Kitchen Printing
+        // 2. Kitchen Printing
         if (settings.isKitchenPrintingEnabled) {
           let printSuccess = false;
           
