@@ -8,6 +8,7 @@ interface OrderContextType {
   orders: Order[];
   addOrder: (order: Order) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus, updatedOrder?: Order) => void;
+  removeOrder: (orderId: string) => Promise<void>;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
@@ -179,8 +180,26 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     triggerSync().catch(console.error);
   };
 
+  const removeOrder = async (orderId: string) => {
+    try {
+      await deleteRecord('orders', orderId);
+      // Also delete items (clean up orphans)
+      const allItems = await getAll('order_items');
+      const orphans = (allItems as any[]).filter(i => (i.order_Id === orderId || i.order_id === orderId));
+      for (const item of orphans) {
+        await deleteRecord('order_items', item.id);
+        await trackChange('order_items', 'DELETE', item.id, {});
+      }
+      
+      await trackChange('orders', 'DELETE', orderId, {});
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+    } catch (err) {
+      console.error('[OrderContext] Error removing order:', err);
+    }
+  };
+
   return (
-    <OrderContext.Provider value={{ orders, addOrder, updateOrderStatus }}>
+    <OrderContext.Provider value={{ orders, addOrder, updateOrderStatus, removeOrder }}>
       {children}
     </OrderContext.Provider>
   );

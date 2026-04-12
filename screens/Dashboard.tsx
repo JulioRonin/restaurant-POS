@@ -4,6 +4,7 @@ import { useExpenses } from '../contexts/ExpenseContext';
 import { useOrders } from '../contexts/OrderContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { useInventory } from '../contexts/InventoryContext';
 import { FinancialReportModal } from '../components/FinancialReportModal';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, Cell } from 'recharts';
 
@@ -105,7 +106,9 @@ export const DashboardScreen: React.FC = () => {
         });
     }, [expenses, timeRange, selectedDate]);
 
-    const { sales, items, customers, avgTicket, appScores } = useMemo(() => {
+    const { inventory } = useInventory();
+
+    const { sales, items, customers, avgTicket, appScores, cancelledSales, cancelledCount } = useMemo(() => {
         let _sales = 0;
         let _items = 0;
         let _customers = 0;
@@ -360,27 +363,36 @@ export const DashboardScreen: React.FC = () => {
                 </div>
 
                 <div className="bg-white p-6 rounded-2xl shadow-soft mb-8">
-                    <h3 className="text-xl font-bold mb-4 text-gray-900">Inventory Alerts</h3>
+                    <h3 className="text-xl font-bold mb-4 text-gray-900">Alertas de Inventario (Real)</h3>
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="text-gray-400 border-b border-gray-100 text-xs uppercase">
-                                    <th className="py-3">Item Name</th>
-                                    <th className="py-3">Stock Level</th>
-                                    <th className="py-3">Status</th>
+                                    <th className="py-3">Insumo / Producto</th>
+                                    <th className="py-3">Stock Actual</th>
+                                    <th className="py-3">Estado</th>
                                 </tr>
                             </thead>
                             <tbody className="text-sm">
-                                <tr className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                                    <td className="py-4 font-medium text-gray-900">Large Brown Eggs</td>
-                                    <td className="py-4">15% Left</td>
-                                    <td className="py-4"><span className="bg-red-50 text-red-600 px-2 py-1 rounded-md text-xs font-bold uppercase">Critical</span></td>
-                                </tr>
-                                <tr className="hover:bg-gray-50 transition-colors">
-                                    <td className="py-4 font-medium text-gray-900">Basmati Rice</td>
-                                    <td className="py-4">45% Left</td>
-                                    <td className="py-4"><span className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded-md text-xs font-bold uppercase">Warning</span></td>
-                                </tr>
+                                {inventory.filter(i => i.quantity <= (i.minStock || 5)).slice(0, 10).map((item) => {
+                                    const isCritical = item.quantity <= (item.minStock || 2);
+                                    return (
+                                        <tr key={item.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                                            <td className="py-4 font-medium text-gray-900">{item.name}</td>
+                                            <td className="py-4 text-gray-600">{item.quantity} {item.unit || 'Pza'}</td>
+                                            <td className="py-4">
+                                                <span className={`${isCritical ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'} px-2 py-1 rounded-md text-xs font-bold uppercase`}>
+                                                    {isCritical ? 'Crítico' : 'Bajo'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {inventory.filter(i => i.quantity <= (i.minStock || 5)).length === 0 && (
+                                    <tr>
+                                        <td colSpan={3} className="py-10 text-center text-gray-400 italic">No hay alertas de inventario activas</td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>

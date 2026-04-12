@@ -13,7 +13,7 @@ import { bluetoothTerminalService } from '../services/BluetoothTerminalService';
 
 export const CashierScreen: React.FC = () => {
     // Contexts
-    const { orders, updateOrderStatus } = useOrders();
+    const { orders, updateOrderStatus, removeOrder } = useOrders();
     const { expenses, addExpense, deleteExpense } = useExpenses();
     const { tables: TABLES } = useTables();
 
@@ -404,12 +404,26 @@ export const CashierScreen: React.FC = () => {
                                         <div
                                             key={table.id}
                                             onClick={() => order && setSelectedTableId(table.id)}
-                                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all relative overflow-hidden ${statusColor} ${selectedTableId === table.id ? 'ring-2 ring-primary border-primary' : ''} ${isHighlighted ? 'animate-pulse' : ''}`}
+                                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all relative overflow-hidden group ${statusColor} ${selectedTableId === table.id ? 'ring-2 ring-primary border-primary' : ''} ${isHighlighted ? 'animate-pulse' : ''}`}
                                         >
                                             {isBillRequested && (
                                                 <div className={`absolute top-0 right-0 ${isHighlighted ? 'bg-amber-500' : 'bg-orange-500'} text-white px-2 py-0.5 rounded-bl-lg text-[8px] font-black`}>
                                                     CUENTA
                                                 </div>
+                                            )}
+                                            {order && (
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (window.confirm('¿Eliminar esta orden por completo?')) {
+                                                            removeOrder(order.id);
+                                                            if (selectedTableId === table.id) setSelectedTableId(null);
+                                                        }
+                                                    }}
+                                                    className="absolute top-2 right-2 p-1 bg-red-50 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
+                                                >
+                                                    <span className="material-icons-round text-xs">delete</span>
+                                                </button>
                                             )}
                                             <div className="flex justify-between items-center mb-2">
                                                 <div className="flex flex-col">
@@ -431,10 +445,22 @@ export const CashierScreen: React.FC = () => {
                                             <div
                                                 key={order.id}
                                                 onClick={() => setSelectedTableId(order.tableId)}
-                                                className={`p-4 rounded-xl border-2 cursor-pointer transition-all bg-blue-50 border-blue-100 mb-2 ${selectedTableId === order.tableId ? 'ring-2 ring-primary border-primary' : ''}`}
+                                                className={`p-4 rounded-xl border-2 cursor-pointer transition-all bg-blue-50 border-blue-100 mb-2 group relative ${selectedTableId === order.tableId ? 'ring-2 ring-primary border-primary' : ''}`}
                                             >
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (window.confirm('¿Eliminar esta venta directa?')) {
+                                                            removeOrder(order.id);
+                                                            if (selectedTableId === order.tableId) setSelectedTableId(null);
+                                                        }
+                                                    }}
+                                                    className="absolute top-2 right-2 p-1 bg-red-50 text-red-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
+                                                >
+                                                    <span className="material-icons-round text-xs">delete</span>
+                                                </button>
                                                 <div className="flex justify-between items-center mb-1">
-                                                    <span className="font-bold text-gray-700">Orden #{order.id}</span>
+                                                    <span className="font-bold text-gray-700">Orden #{order.id.slice(-4)}</span>
                                                     <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-bold">${order.total.toFixed(2)}</span>
                                                 </div>
                                                 <div className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Barra / Mostrador</div>
