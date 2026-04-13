@@ -65,6 +65,7 @@ export const CashierScreen: React.FC = () => {
     } | null>(null);
     const [dismissedBillRequests, setDismissedBillRequests] = useState<string[]>([]);
 
+    const handlePrintTicket = async (order: Order) => {
         // ENSURE items are present for printing
         if (!order.items || order.items.length === 0) {
             console.warn('[Cashier] Order items missing for printing. Checking local context...');
