@@ -93,12 +93,12 @@ export function startNetworkMonitoring() {
     emitStatus({ isOnline: false });
   });
 
-  // Periodic sync (every 15 seconds when online) to ensure kitchen/pos stay in sync
+  // Periodic sync (every 60 seconds when online) to ensure kitchen/pos stay in sync
   syncIntervalId = window.setInterval(() => {
     if (navigator.onLine && !currentStatus.isSyncing) {
-      triggerSync();
+      triggerSync(undefined, true); // true = is background sync
     }
-  }, 15_000);
+  }, 60_000);
 
   // Initial status
   emitStatus({ isOnline: navigator.onLine });
@@ -121,7 +121,7 @@ async function updatePendingCount() {
 
 // ─── Core Sync Logic ─────────────────────────────────────────
 
-export async function triggerSync(businessId?: string): Promise<void> {
+export async function triggerSync(businessId?: string, isBackground: boolean = false): Promise<void> {
   if (!navigator.onLine) {
     emitStatus({ syncError: 'Sin conexión a internet' });
     return;
@@ -137,7 +137,7 @@ export async function triggerSync(businessId?: string): Promise<void> {
     return;
   }
 
-  console.log('[SyncService] Sync Triggered for Business:', businessId);
+  console.log('[SyncService] Sync Triggered. Background:', isBackground, 'Business:', businessId);
   emitStatus({ isSyncing: true, syncError: null });
 
   try {
@@ -148,7 +148,7 @@ export async function triggerSync(businessId?: string): Promise<void> {
     await pushLocalChanges();
 
     console.log('[SyncService] Starting PULL phase for:', currentBizId);
-    await pullServerChanges(currentBizId);
+    const modifiedCount = await pullServerChanges(currentBizId) as any as number;
 
     // Phase 3: Cleanup synced operations
     await clearSyncedOps();
@@ -160,8 +160,14 @@ export async function triggerSync(businessId?: string): Promise<void> {
       syncError: null 
     });
 
-    // Notify listeners that data has been updated
-    syncCompleteListeners.forEach(listener => listener());
+    // Notify listeners ONLY if it was a manual user action OR if something actually changed on pull
+    // This prevents the 'flicker' every 60 seconds if data is identical
+    if (!isBackground || modifiedCount > 0) {
+        console.log(`[SyncService] Notifying UI. Change Detected: ${modifiedCount > 0}, Background: ${isBackground}`);
+        syncCompleteListeners.forEach(listener => listener());
+    } else {
+        console.log('[SyncService] Background sync yielded no changes. Suppressing UI update signal to prevent flicker.');
+    }
   } catch (error: any) {
     console.error('[SyncService] Sync failed:', error);
     emitStatus({ 
@@ -444,7 +450,8 @@ export async function repairAndRecoverMenuData(targetBusinessId: string): Promis
 
 // ─── PULL: Fetch latest data from Supabase ───────────────────
 
-async function pullServerChanges(businessId?: string): Promise<void> {
+async function pullServerChanges(businessId?: string): Promise<number> {
+  let globalModifiedCount = 0;
   for (const [localStore, supabaseTable] of Object.entries(TABLE_MAP)) {
     try {
       let query = supabaseClient
@@ -488,11 +495,12 @@ async function pullServerChanges(businessId?: string): Promise<void> {
               synced: true,
               updated_at: serverTimestamp,
             });
+            globalModifiedCount++;
             continue;
           }
           
           // For orders: client wins (skip server update if local is newer)
-          if (localStore === 'orders' && localTimestamp > serverTimestamp) {
+          if (localStore === 'orders' && localTimestamp >= serverTimestamp) {
             continue;
           }
           
@@ -503,6 +511,7 @@ async function pullServerChanges(businessId?: string): Promise<void> {
               synced: true,
               updated_at: serverTimestamp,
             });
+            globalModifiedCount++;
           }
         } else {
           // New record from server, insert locally
@@ -529,12 +538,14 @@ async function pullServerChanges(businessId?: string): Promise<void> {
             synced: true,
             updated_at: serverTimestamp,
           });
+          globalModifiedCount++;
         }
       }
     } catch (error) {
       console.error(`[SyncService] Pull failed for ${localStore}:`, error);
     }
   }
+  return globalModifiedCount;
 }
 
 // ─── Transform Helpers ────────────────────────────────────────

@@ -97,19 +97,19 @@ export const StaffScreen: React.FC = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
                 <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
                     <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">Staff Network</h1>
-                    <p className="text-gray-600 font-bold text-[10px] uppercase tracking-[0.4em]">Resource Orchestration & Bio-ID Management</p>
+                    <p className="text-solaris-orange/40 font-bold text-[10px] uppercase tracking-[0.4em]">Resource Orchestration & Bio-ID Management</p>
                 </motion.div>
 
                 <div className="flex gap-4 items-center flex-wrap">
-                    <button onClick={handleDownload} className="bg-white/[0.03] border border-white/5 text-gray-400 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-white/[0.05] hover:text-white transition-all">
+                    <button onClick={handleDownload} className="bg-white/[0.03] border border-white/5 text-white/40 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-white/[0.05] hover:text-white transition-all">
                         <FileText size={16} /> Export Intel
                     </button>
                     
                     <div className="bg-white/[0.03] border border-white/5 p-1 rounded-2xl flex">
-                        <button onClick={() => setViewMode('grid')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${viewMode === 'grid' ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-gray-500 hover:text-gray-300'}`}>
+                        <button onClick={() => setViewMode('grid')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${viewMode === 'grid' ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-white/20 hover:text-white'}`}>
                             <LayoutGrid size={14} /> Matrix
                         </button>
-                        <button onClick={() => setViewMode('schedule')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${viewMode === 'schedule' ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-gray-500 hover:text-gray-300'}`}>
+                        <button onClick={() => setViewMode('schedule')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${viewMode === 'schedule' ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-white/20 hover:text-white'}`}>
                             <Calendar size={14} /> Timeline
                         </button>
                     </div>
@@ -126,7 +126,7 @@ export const StaffScreen: React.FC = () => {
             <div className="flex flex-col xl:flex-row gap-6 mb-12">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
                     {[
-                        { label: 'Total Node Units', val: employees.length, icon: Users, color: 'text-gray-400' },
+                        { label: 'Total Node Units', val: employees.length, icon: Users, color: 'text-white/40' },
                         { label: 'Active Channels', val: onShiftCount, icon: UserCheck, color: 'text-solaris-orange' },
                         { label: 'Network Integrity', val: '4.8', icon: Star, color: 'text-solaris-orange' },
                     ].map((s, i) => (
@@ -134,7 +134,7 @@ export const StaffScreen: React.FC = () => {
                             <div className={`p-4 bg-white/[0.03] rounded-2xl ${s.color}`}><s.icon size={24} /></div>
                             <div>
                                 <h3 className="text-2xl font-black italic tracking-tighter text-white">{s.val}</h3>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-gray-600">{s.label}</p>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-solaris-orange/40">{s.label}</p>
                             </div>
                         </div>
                     ))}
@@ -142,7 +142,7 @@ export const StaffScreen: React.FC = () => {
 
                 <div className="bg-white/[0.02] border border-white/5 p-2 rounded-2xl flex items-center gap-1 overflow-x-auto min-w-max">
                     {areas.map(area => (
-                        <button key={area} onClick={() => setSelectedArea(area)} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectedArea === area ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-gray-500 hover:text-gray-300'}`}>
+                        <button key={area} onClick={() => setSelectedArea(area)} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectedArea === area ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-white/20 hover:text-white'}`}>
                             {area}
                         </button>
                     ))}
@@ -151,9 +151,9 @@ export const StaffScreen: React.FC = () => {
 
             {filteredStaff.length === 0 ? (
                 <div className="bg-white/[0.01] rounded-solaris p-20 flex flex-col items-center justify-center text-center border border-white/5 border-dashed">
-                    <Search size={64} className="text-gray-800 mb-6" />
+                    <Search size={64} className="text-white/5 mb-6" />
                     <h2 className="text-xl font-black italic text-white uppercase tracking-tighter mb-2">No Bio-ID Detected</h2>
-                    <p className="text-gray-600 text-[10px] font-bold uppercase tracking-widest max-w-sm mb-10">Iniciando protocolo de búsqueda en red local...</p>
+                    <p className="text-solaris-orange/20 text-[10px] font-bold uppercase tracking-widest max-w-sm mb-10">Iniciando protocolo de búsqueda en red local...</p>
                     <div className="flex gap-4">
                         <button onClick={() => triggerSync()} className="bg-solaris-orange text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-solaris-glow hover:scale-105 transition-all flex items-center gap-3">
                             <RefreshCw size={16} /> Sync Network
@@ -174,24 +174,24 @@ export const StaffScreen: React.FC = () => {
                                                 className="w-full h-full rounded-full object-cover filter contrast-125" 
                                             />
                                         </div>
-                                        <div className={`absolute bottom-2 right-2 w-4 h-4 rounded-full border-2 border-solaris-black ${emp.status === 'ON_SHIFT' ? 'bg-solaris-orange shadow-solaris-glow' : 'bg-gray-800'}`}></div>
+                                        <div className={`absolute bottom-2 right-2 w-4 h-4 rounded-full border-2 border-solaris-black ${emp.status === 'ON_SHIFT' ? 'bg-solaris-orange shadow-solaris-glow' : 'bg-[#1a1a1b]'}`}></div>
                                     </div>
                                     <h3 className="text-lg font-black italic text-white tracking-tight text-center mb-1 uppercase">{emp.name}</h3>
                                     <p className="text-solaris-orange text-[9px] font-black uppercase tracking-[0.3em] mb-4">{emp.role}</p>
                                     
                                     <div className="w-full grid grid-cols-2 gap-2 text-center mb-8 bg-white/[0.03] p-4 rounded-2xl border border-white/5">
-                                        <div><p className="text-[10px] font-black text-white italic">{emp.hoursWorked}h</p><p className="text-[8px] font-black uppercase text-gray-700">Payload</p></div>
-                                        <div><p className="text-[10px] font-black text-white flex items-center justify-center gap-1 italic">{emp.rating} <Star size={10} className="text-solaris-orange" /></p><p className="text-[8px] font-black uppercase text-gray-700">Trust Index</p></div>
+                                        <div><p className="text-[10px] font-black text-white italic">{emp.hoursWorked}h</p><p className="text-[8px] font-black uppercase text-solaris-orange/40">Payload</p></div>
+                                        <div><p className="text-[10px] font-black text-white flex items-center justify-center gap-1 italic">{emp.rating} <Star size={10} className="text-solaris-orange" /></p><p className="text-[8px] font-black uppercase text-solaris-orange/40">Trust Index</p></div>
                                     </div>
 
                                     <div className="flex gap-2 w-full">
-                                        <button onClick={() => handleProfileClick(emp)} className="flex-1 py-3 px-4 rounded-xl bg-white/[0.03] border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/10 transition-all">Profile</button>
+                                        <button onClick={() => handleProfileClick(emp)} className="flex-1 py-3 px-4 rounded-xl bg-white/[0.03] border border-white/10 text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-white hover:bg-white/10 transition-all">Profile</button>
                                         {(activeEmployee?.role?.toLowerCase() === 'admin' || isSuperAdmin) && (
-                                            <button onClick={() => setActiveModal('schedule')} className="flex-1 py-3 px-4 rounded-xl bg-white/[0.03] border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/10 transition-all">Tasking</button>
+                                            <button onClick={() => setActiveModal('schedule')} className="flex-1 py-3 px-4 rounded-xl bg-white/[0.03] border border-white/10 text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-white hover:bg-white/10 transition-all">Tasking</button>
                                         )}
                                     </div>
                                 </div>
-                                <div className={`absolute top-4 right-4 text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest ${emp.status === 'ON_SHIFT' ? 'bg-solaris-orange/10 text-solaris-orange border border-solaris-orange/20' : 'bg-white/5 text-gray-700'}`}>
+                                <div className={`absolute top-4 right-4 text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest ${emp.status === 'ON_SHIFT' ? 'bg-solaris-orange/10 text-solaris-orange border border-solaris-orange/20' : 'bg-white/5 text-white/20'}`}>
                                     {emp.status.replace('_', ' ')}
                                 </div>
                             </GlowCard>
@@ -203,7 +203,7 @@ export const StaffScreen: React.FC = () => {
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="border-b border-white/5 text-gray-600 text-[9px] font-black uppercase tracking-[0.3em]">
+                                <tr className="border-b border-white/5 text-solaris-orange/40 text-[9px] font-black uppercase tracking-[0.3em]">
                                     <th className="py-6 px-8 italic">Operator Biological ID</th>
                                     {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => <th key={day} className="py-6 px-4 text-center">{day}</th>)}
                                     <th className="py-6 px-8 text-right italic">Node Hours</th>
@@ -221,7 +221,7 @@ export const StaffScreen: React.FC = () => {
                                                 />
                                                 <div>
                                                     <p className="font-bold text-white group-hover:text-solaris-orange transition-colors">{emp.name}</p>
-                                                    <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest">{emp.role}</p>
+                                                    <p className="text-[8px] font-black uppercase text-solaris-orange/30 tracking-widest">{emp.role}</p>
                                                 </div>
                                             </div>
                                         </td>
@@ -255,22 +255,22 @@ export const StaffScreen: React.FC = () => {
                             <div className="p-10">
                                 <div className="flex justify-between items-center mb-10">
                                     <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">System Command</h2>
-                                    <button onClick={() => setActiveModal('none')} className="text-gray-600 hover:text-white transition-colors"><X size={24} /></button>
+                                    <button onClick={() => setActiveModal('none')} className="text-white/20 hover:text-white transition-colors"><X size={24} /></button>
                                 </div>
 
                                 {activeModal === 'add' && (
                                     <form onSubmit={handleAddEmployee} className="space-y-8">
                                         <div className="space-y-2">
-                                            <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Biological Identity</label>
-                                            <input name="name" type="text" required placeholder="Unidad de Personal" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-solaris-orange/50 transition-all font-bold" />
+                                            <label className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-widest px-1 italic">Biological Identity</label>
+                                            <input name="name" type="text" required placeholder="Unidad de Personal" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-solaris-orange/50 transition-all font-bold placeholder:text-white/5" />
                                         </div>
                                         <div className="grid grid-cols-2 gap-6">
                                             <div className="space-y-2">
-                                                <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Functional Designation</label>
-                                                <input name="role" type="text" required placeholder="Role" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-solaris-orange/50 transition-all font-bold" />
+                                                <label className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-widest px-1 italic">Functional Designation</label>
+                                                <input name="role" type="text" required placeholder="Role" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-solaris-orange/50 transition-all font-bold placeholder:text-white/5" />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Sector Node</label>
+                                                <label className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-widest px-1 italic">Sector Node</label>
                                                 <select name="area" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-solaris-orange/50 transition-all font-bold appearance-none">
                                                     <option value="Kitchen" className="bg-[#0a0a0b]">Kitchen</option>
                                                     <option value="Service" className="bg-[#0a0a0b]">Service</option>
@@ -296,15 +296,15 @@ export const StaffScreen: React.FC = () => {
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl text-center">
-                                                <p className="text-[8px] font-black text-gray-700 uppercase mb-1">Status</p>
+                                                <p className="text-[8px] font-black text-solaris-orange/40 uppercase mb-1">Status</p>
                                                 <p className="text-[10px] font-black text-white italic">{selectedEmployee.status}</p>
                                             </div>
                                             <div className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl text-center">
-                                                <p className="text-[8px] font-black text-gray-700 uppercase mb-1">Node Security</p>
+                                                <p className="text-[8px] font-black text-solaris-orange/40 uppercase mb-1">Node Security</p>
                                                 <p className="text-[10px] font-black text-solaris-orange italic">Tier 5 Encryption</p>
                                             </div>
                                         </div>
-                                        <button className="w-full bg-white/[0.03] border border-white/10 text-gray-500 font-black uppercase py-4 rounded-2xl text-[10px] tracking-widest cursor-not-allowed">Access Blocked • Auth Level 1 Required</button>
+                                        <button className="w-full bg-white/[0.03] border border-white/10 text-white/20 font-black uppercase py-4 rounded-2xl text-[10px] tracking-widest cursor-not-allowed italic">Access Blocked • Auth Level 1 Required</button>
                                     </div>
                                 )}
                             </div>

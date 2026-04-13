@@ -126,33 +126,33 @@ export const SettingsScreen: React.FC = () => {
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                             <div className="space-y-3">
-                                                <label className="text-[10px] font-black uppercase text-white/10 tracking-[0.3em] px-2 italic">Node Identifier</label>
-                                                <input value={localSettings.name} onChange={e => setLocalSettings(prev => ({ ...prev, name: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-white/5" />
+                                                <label className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-2 italic">Node Identifier</label>
+                                                <input value={localSettings.name} onChange={e => setLocalSettings(prev => ({ ...prev, name: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-white/10" />
                                             </div>
                                             <div className="space-y-3">
-                                                <label className="text-[10px] font-black uppercase text-white/10 tracking-[0.3em] px-2 italic">Legal Protocol Entity</label>
-                                                <input value={localSettings.legalName} onChange={e => setLocalSettings(prev => ({ ...prev, legalName: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-white/5" />
+                                                <label className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-2 italic">Legal Protocol Entity</label>
+                                                <input value={localSettings.legalName} onChange={e => setLocalSettings(prev => ({ ...prev, legalName: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-white/10" />
                                             </div>
                                             <div className="space-y-3">
-                                                <label className="text-[10px] font-black uppercase text-white/10 tracking-[0.3em] px-2 italic">Tax / Nexus Hash Code</label>
-                                                <input value={localSettings.rfc} onChange={e => setLocalSettings(prev => ({ ...prev, rfc: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-white/5" />
+                                                <label className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-2 italic">Tax / Nexus Hash Code</label>
+                                                <input value={localSettings.rfc} onChange={e => setLocalSettings(prev => ({ ...prev, rfc: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-white/10" />
                                             </div>
                                             <div className="space-y-3">
-                                                <label className="text-[10px] font-black uppercase text-white/10 tracking-[0.3em] px-2 italic">Geospatial Coordinates</label>
-                                                <input value={localSettings.address} onChange={e => setLocalSettings(prev => ({ ...prev, address: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-white/5" />
+                                                <label className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-2 italic">Geospatial Coordinates</label>
+                                                <input value={localSettings.address} onChange={e => setLocalSettings(prev => ({ ...prev, address: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-white/10" />
                                             </div>
                                         </div>
                                         
                                         <div className="pt-12 border-t border-white/5">
-                                             <h3 className="text-[11px] font-black italic uppercase text-white/20 mb-8 tracking-[0.4em]">Financial Settlement Endpoints</h3>
+                                             <h3 className="text-[11px] font-black italic uppercase text-solaris-orange/40 mb-8 tracking-[0.4em]">Financial Settlement Endpoints</h3>
                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                                  <div className="space-y-3">
-                                                     <label className="text-[10px] font-black uppercase text-white/10 tracking-[0.3em] px-2 italic">CLABE Interface Stream</label>
-                                                     <input value={localSettings.bankCLABE || ''} onChange={e => setLocalSettings(prev => ({ ...prev, bankCLABE: e.target.value }))} placeholder="18-digit digital signature" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none font-black italic tracking-[0.4em] transition-all placeholder:text-white/5" />
+                                                     <label className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-2 italic">CLABE Interface Stream</label>
+                                                     <input value={localSettings.bankCLABE || ''} onChange={e => setLocalSettings(prev => ({ ...prev, bankCLABE: e.target.value }))} placeholder="18-digit digital signature" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none font-black italic tracking-[0.4em] transition-all placeholder:text-white/10" />
                                                  </div>
                                                  <div className="space-y-3">
-                                                     <label className="text-[10px] font-black uppercase text-white/10 tracking-[0.3em] px-2 italic">Primary Node Beneficiary</label>
-                                                     <input value={localSettings.bankBeneficiary || ''} onChange={e => setLocalSettings(prev => ({ ...prev, bankBeneficiary: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-white/5" />
+                                                     <label className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-2 italic">Primary Node Beneficiary</label>
+                                                     <input value={localSettings.bankBeneficiary || ''} onChange={e => setLocalSettings(prev => ({ ...prev, bankBeneficiary: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-white outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-white/10" />
                                                  </div>
                                              </div>
                                         </div>
@@ -170,7 +170,7 @@ export const SettingsScreen: React.FC = () => {
                                         </div>
 
                                         <div className="space-y-6">
-                                            <label className="text-[11px] font-black uppercase text-white/20 tracking-[0.4em] px-2 italic">Interface Theme Protocol</label>
+                                            <label className="text-[11px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] px-2 italic">Interface Theme Protocol</label>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                                 {[
                                                     { id: 'solaris', name: 'Solaris Core', bg: 'bg-[#030303]', accent: 'bg-solaris-orange', desc: 'Brand Master Mode' },
@@ -188,7 +188,7 @@ export const SettingsScreen: React.FC = () => {
                                                         </div>
                                                         <div className="relative z-10">
                                                             <p className="text-base font-black italic text-white uppercase tracking-tighter">{t.name}</p>
-                                                            <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mt-2 italic">{t.desc}</p>
+                                                            <p className="text-[9px] font-black text-solaris-orange/40 uppercase tracking-[0.2em] mt-2 italic">{t.desc}</p>
                                                         </div>
                                                         <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-white/[0.01] rounded-full group-hover:bg-white/[0.03] transition-colors"></div>
                                                     </button>
@@ -203,9 +203,9 @@ export const SettingsScreen: React.FC = () => {
                                                 </div>
                                                 <div className="flex-1">
                                                     <h3 className="text-lg font-black italic uppercase text-white mb-2 tracking-tighter">Branding Asset Injection</h3>
-                                                    <p className="text-[10px] font-black uppercase text-white/20 tracking-[0.3em] italic mb-6">Global Logo Stream Resource URL</p>
+                                                    <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.3em] italic mb-6">Global Logo Stream Resource URL</p>
                                                     <div className="relative max-w-md">
-                                                        <input value={localSettings.logoUrl || ''} onChange={e => setLocalSettings(prev => ({ ...prev, logoUrl: e.target.value }))} className="w-full bg-white/[0.04] border border-white/5 rounded-xl py-3 px-5 text-[11px] text-solaris-orange font-black italic tracking-widest focus:outline-none focus:border-solaris-orange/20 transition-all" placeholder="https://assets.solaris.io/logo.png" />
+                                                        <input value={localSettings.logoUrl || ''} onChange={e => setLocalSettings(prev => ({ ...prev, logoUrl: e.target.value }))} className="w-full bg-white/[0.04] border border-white/5 rounded-xl py-3 px-5 text-[11px] text-solaris-orange font-black italic tracking-widest focus:outline-none focus:border-solaris-orange/20 transition-all placeholder:text-white/10" placeholder="https://assets.solaris.io/logo.png" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -232,7 +232,7 @@ export const SettingsScreen: React.FC = () => {
                                                     </div>
                                                 </div>
                                                 <div className="relative z-10">
-                                                    <p className="text-[10px] font-black uppercase text-white/10 tracking-[0.4em] mb-2 italic">Thermal Stream Output</p>
+                                                    <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] mb-2 italic">Thermal Stream Output</p>
                                                     <p className="text-xl font-black italic text-white mb-10 uppercase truncate tracking-tight">{localSettings.connectedDeviceName}</p>
                                                 </div>
                                                 <div className="flex gap-4 relative z-10">
@@ -252,7 +252,7 @@ export const SettingsScreen: React.FC = () => {
                                                     </div>
                                                 </div>
                                                 <div className="relative z-10">
-                                                    <p className="text-[10px] font-black uppercase text-white/10 tracking-[0.4em] mb-2 italic">Transaction Logic Terminal</p>
+                                                    <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] mb-2 italic">Transaction Logic Terminal</p>
                                                     <p className="text-xl font-black italic text-white mb-10 uppercase truncate tracking-tight">{localSettings.connectedTerminalName}</p>
                                                 </div>
                                                 <button onClick={async () => { const d = await bluetoothTerminalService.requestTerminal(); if(d) setLocalSettings(p => ({ ...p, connectedTerminalName: d.name || 'BT TERM' })); }} className="w-full py-5 bg-white/[0.03] border border-white/10 text-white font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:bg-white/5 hover:scale-[1.02] active:scale-95 transition-all italic relative z-10">Sync Peripheral Node</button>
@@ -260,6 +260,57 @@ export const SettingsScreen: React.FC = () => {
                                             </GlowCard>
                                         </div>
                                     </div>
+                                )}
+
+                                {activeTab === 'users' && (
+                                     <div className="space-y-12">
+                                         <div className="flex justify-between items-center mb-4">
+                                             <div className="flex items-center gap-4">
+                                                 <div className="w-1.5 h-1.5 bg-solaris-orange rounded-full animate-pulse shadow-solaris-glow" />
+                                                 <h2 className="text-3xl font-black italic uppercase text-white">Personnel Gateway</h2>
+                                             </div>
+                                             <button 
+                                                 onClick={() => {
+                                                     const name = window.prompt("Operator Designation:");
+                                                     const role = window.prompt("Functional Role (mesero/cocina/admin):");
+                                                     if (name && role && authProfile) {
+                                                         addUser({
+                                                             name,
+                                                             role: role.charAt(0).toUpperCase() + role.slice(1),
+                                                             area: role.toLowerCase() === 'cocina' ? 'Kitchen' : 'Service',
+                                                             status: 'OFF_SHIFT',
+                                                             pin: '1111',
+                                                             image: `https://ui-avatars.com/api/?name=${name}&background=f97316&color=fff`,
+                                                             rating: 5,
+                                                             hoursWorked: 0,
+                                                             schedule: [],
+                                                             businessId: authProfile.businessId
+                                                         });
+                                                     }
+                                                 }}
+                                                 className="px-6 py-2.5 bg-solaris-orange/10 border border-solaris-orange/20 rounded-xl text-[10px] font-black text-solaris-orange uppercase tracking-widest hover:bg-solaris-orange/20 transition-all flex items-center gap-2"
+                                             >
+                                                 <Plus size={14} /> Onboard New Unit
+                                             </button>
+                                         </div>
+
+                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                             {users.map(user => (
+                                                 <div key={user.id} className="p-6 bg-white/[0.02] border border-white/5 rounded-[28px] flex items-center gap-6 group hover:bg-white/[0.04] transition-all">
+                                                     <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 group-hover:border-solaris-orange/40 transition-all flex-shrink-0">
+                                                         <img src={user.image} className="w-full h-full object-cover" />
+                                                     </div>
+                                                     <div className="flex-1">
+                                                         <p className="text-lg font-black italic text-white uppercase tracking-tight">{user.name}</p>
+                                                         <p className="text-[10px] font-black text-solaris-orange uppercase tracking-widest">{user.role} • PIN: {user.pin}</p>
+                                                     </div>
+                                                     <div className="flex gap-2">
+                                                         <button onClick={() => deleteUser(user.id)} className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-all opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
+                                                     </div>
+                                                 </div>
+                                             ))}
+                                         </div>
+                                     </div>
                                 )}
 
                                 {activeTab === 'diagnostics' && (
@@ -281,7 +332,7 @@ export const SettingsScreen: React.FC = () => {
                                                         </div>
                                                     </div>
                                                     <h3 className="text-xl font-black italic text-white uppercase tracking-tighter mb-2">{d.label}</h3>
-                                                    <p className="text-[9px] font-black uppercase text-white/20 tracking-[0.3em] mb-10 italic leading-relaxed">{d.desc}</p>
+                                                    <p className="text-[9px] font-black uppercase text-solaris-orange/40 tracking-[0.3em] mb-10 italic leading-relaxed">{d.desc}</p>
                                                     <button onClick={d.action} className="w-full py-4.5 bg-white text-black font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all italic">Execute Probe</button>
                                                 </GlowCard>
                                             ))}
@@ -291,18 +342,18 @@ export const SettingsScreen: React.FC = () => {
                             </motion.div>
                         </AnimatePresence>
 
-                        {/* Save Action Bar with Premium Blur */}
-                        <div className="sticky bottom-4 mt-16 flex items-center justify-end gap-8 bg-black/60 backdrop-blur-2xl p-8 rounded-[36px] border border-white/5 shadow-2xl">
+                        {/* Save Action Bar with Premium Blur - Increased padding and separation */}
+                        <div className="sticky bottom-0 mt-20 pt-10 pb-4 flex items-center justify-end gap-8 bg-gradient-to-t from-[#0a0a0b] via-[#0a0a0b]/95 to-transparent z-50">
                             <AnimatePresence>
                                 {showsSavedMessage && (
-                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-3 text-green-500 font-black italic text-xs tracking-widest">
+                                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-3 text-green-500 font-black italic text-xs tracking-widest bg-green-500/5 px-6 py-3 rounded-2xl border border-green-500/20 shadow-2xl">
                                         <CheckCircle2 size={18} /> DATA_SYNC_SUCCESS_PROTOCOL_88
                                     </motion.div>
                                 )}
                             </AnimatePresence>
                             <button 
                                 onClick={handleSave}
-                                className="bg-solaris-orange text-white px-12 py-6 rounded-[28px] font-black italic uppercase tracking-[0.3em] text-base shadow-solaris-glow hover:scale-[1.05] active:scale-95 transition-all flex items-center gap-5"
+                                className="bg-solaris-orange text-white px-12 py-6 rounded-[28px] font-black italic uppercase tracking-[0.3em] text-base shadow-solaris-glow hover:scale-[1.05] active:scale-95 transition-all flex items-center gap-5 border border-white/10"
                             >
                                 <Save size={24} /> Deploy Configuration Hub
                             </button>

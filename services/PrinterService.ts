@@ -387,24 +387,30 @@ class PrinterService {
 
   async openCashDrawer(): Promise<boolean> {
     if (!this.device) {
-       console.warn('No direct printer connected to open drawer.');
+       console.warn('[PrinterService] No direct printer connected to open drawer.');
        return false;
     }
 
     try {
+      console.log('[PrinterService] Initiating cash drawer pulse protocol...');
       const encoder = new ReceiptPrinterEncoder();
       
+      // Standard ESC/POS Pulse Command (ESC p m t1 t2)
+      // m = 0 (Pin 2), t1 = 50ms pulse, t2 = 250ms wait
       const result = encoder.initialize()
-        .raw([0x1b, 0x3d, 0x01]) // ESC = 1: Select peripheral
-        .pulse(0, 50, 250)      // Pin 2
-        .pulse(1, 50, 250)      // Pin 5
+        .raw([0x1b, 0x70, 0x00, 0x32, 0xff]) // ESC p 0 50 255
+        .raw([0x1b, 0x70, 0x01, 0x32, 0xff]) // ESC p 1 50 255 (Try secondary pin)
         .encode();
 
       await this.sendData(result);
-      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Secondary fallback for some generic printers (DLE DC4 1 m t)
+      const fallback = new Uint8Array([0x10, 0x14, 0x01, 0x00, 0x05]); // DLE DC4 1 0 5
+      await this.sendData(fallback);
+
       return true;
     } catch (err) {
-      console.error('Failed to open cash drawer:', err);
+      console.error('[PrinterService] Failed to open cash drawer:', err);
       return false;
     }
   }
