@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { LockScreen } from './components/LockScreen';
@@ -43,13 +44,26 @@ const RoleGuard: React.FC<{ children: React.ReactNode; path: string }> = ({ chil
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { clearActiveEmployee } = useUser();
+  const location = window.location.hash; // Simple way to track route changes in HashRouter
+
   return (
-    <div className="flex h-screen w-screen bg-[#F3F4F6] font-sans overflow-hidden">
+    <div className="flex h-screen w-screen bg-solaris-black text-white font-sans overflow-hidden antialiased">
       <div className="no-print">
         <Sidebar onLock={clearActiveEmployee} />
       </div>
       <main className="flex-1 h-full overflow-hidden relative">
-        {children}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location}
+            initial={{ opacity: 0, scale: 0.98, Filter: 'blur(10px)' }}
+            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+            exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
+            transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+            className="h-full w-full"
+          >
+            {children}
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   );

@@ -1,8 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Base Styles */
 :root {
-  --primary-color: #5D5FEF;
-  --secondary-color: #A5A6F6;
-  --primary-rgb: 93, 95, 239;
+  --primary-color: #f97316;
+  --secondary-color: #fb923c;
+  --primary-rgb: 249, 115, 22;
 }
 
 body {
