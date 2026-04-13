@@ -285,18 +285,18 @@ async function pushLocalChanges(): Promise<void> {
                if (op.table === 'settings') {
                   const bizId = payload.businessId || payload.business_id;
                   
-                  // Use Upsert for settings to resolve the 'key' column cache issues
-                  // Try multiple conflict strategies to account for different schema versions
-                  try {
-                      result = await supabaseClient
-                        .from('business_settings')
-                        .upsert(
-                          { ...finalPayload, business_id: bizId },
-                          { onConflict: 'business_id,key' }
-                        );
-                  } catch (upsertErr) {
-                      console.warn('[SyncService] Standard upsert failed, trying manual match update');
-                      // Fallback: search and update
+                  // Strategy 1: Attempt Upsert (Fastest if constraint exists)
+                  const { data: upsertData, error: upsertError } = await supabaseClient
+                    .from('business_settings')
+                    .upsert(
+                      { ...finalPayload, business_id: bizId, key: 'config' },
+                      { onConflict: 'business_id,key' }
+                    );
+
+                  if (upsertError && (upsertError.message.includes('constraint') || upsertError.code === '42710')) {
+                      console.warn('[SyncService] Standard upsert failed due to constraint issue, trying manual merge');
+                      
+                      // Strategy 2: Manual Check & Update (Fallback)
                       const { data: existing } = await supabaseClient
                         .from('business_settings')
                         .select('id')
@@ -312,8 +312,10 @@ async function pushLocalChanges(): Promise<void> {
                       } else {
                           result = await supabaseClient
                             .from('business_settings')
-                            .insert({ ...finalPayload, business_id: bizId });
+                            .insert({ ...finalPayload, business_id: bizId, key: 'config' });
                       }
+                  } else {
+                      result = { data: upsertData, error: upsertError };
                   }
                     
                   op.status = 'synced'; 

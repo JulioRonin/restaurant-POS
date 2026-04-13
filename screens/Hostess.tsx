@@ -3,6 +3,12 @@ import { TABLES, MOCK_STAFF } from '../constants';
 import { Table, TableStatus, WaitlistEntry, OrderStatus } from '../types';
 import { useTables } from '../contexts/TableContext';
 import { useOrders } from '../contexts/OrderContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    Plus, UserPlus, Hourglass, Users, GripVertical, 
+    Bookmark, Check, Edit3, Trash2, XCircle, 
+    RotateCw, Monitor, Layers, List as ListIcon, AlertTriangle
+} from 'lucide-react';
 
 export const HostessScreen: React.FC = () => {
     // Table State
@@ -187,13 +193,10 @@ export const HostessScreen: React.FC = () => {
         if (selectedTableId) {
             updateTableStatus(selectedTableId, TableStatus.DIRTY);
 
-            // Optional: Keep session history? For now, just clear active session view or keep it until "Cleaned"
-            // Let's remove the session when clearing
             const newSessions = { ...customerSessions };
             delete newSessions[selectedTableId];
             setCustomerSessions(newSessions);
 
-            // Clear waiter?
             const newAssignments = { ...waiterAssignments };
             delete newAssignments[selectedTableId];
             setWaiterAssignments(newAssignments);
@@ -208,18 +211,15 @@ export const HostessScreen: React.FC = () => {
 
     const handleCancelOrder = () => {
         if (selectedTableId && window.confirm('¿Estás seguro de que deseas CANCELAR esta comanda? Esta acción no se puede deshacer.')) {
-            // 1. Find the active order for this table
             const activeOrder = orders.find(o => 
                 (o.tableId === selectedTableId || o.tableName === selectedTable?.name) && 
                 ['PENDING', 'COOKING', 'READY', 'SERVED'].includes(o.status)
             );
 
             if (activeOrder) {
-                // 2. Mark order as CANCELLED
                 updateOrderStatus(activeOrder.id, OrderStatus.CANCELLED);
             }
 
-            // 3. Clear the table status
             handleClearTable();
             handleMakeAvailable();
         }
@@ -227,10 +227,8 @@ export const HostessScreen: React.FC = () => {
 
     const handleReserveTable = () => {
         if (selectedTableId && customerName) {
-            // Update Table Status
             updateTableStatus(selectedTableId, TableStatus.RESERVED);
 
-            // Create Reservation
             setReservations(prev => ({
                 ...prev,
                 [selectedTableId]: {
@@ -241,7 +239,6 @@ export const HostessScreen: React.FC = () => {
                 }
             }));
 
-            // Reset Form (Optional)
             setCustomerName('');
         }
     };
@@ -268,16 +265,6 @@ export const HostessScreen: React.FC = () => {
         }
     };
 
-    const getStatusColor = (status: TableStatus) => {
-        switch (status) {
-            case TableStatus.AVAILABLE: return 'border-green-400 bg-white';
-            case TableStatus.OCCUPIED: return 'border-red-400 bg-red-50';
-            case TableStatus.RESERVED: return 'border-yellow-400 bg-yellow-50';
-            case TableStatus.DIRTY: return 'border-gray-400 bg-gray-200';
-            default: return 'border-gray-200 bg-gray-100';
-        }
-    };
-
     const selectedTable = activeTables.find(t => t.id === selectedTableId);
     const assignedWaiterId = selectedTableId ? waiterAssignments[selectedTableId] : null;
     const assignedWaiter = assignedWaiterId ? MOCK_STAFF.find(s => s.id === assignedWaiterId) : null;
@@ -286,106 +273,113 @@ export const HostessScreen: React.FC = () => {
     const availableWaiters = MOCK_STAFF.filter(s => s.area === 'Service' || s.role.includes('Mesero'));
 
     return (
-        <div className="flex h-full w-full bg-[#F3F4F6] text-gray-800">
+        <div className="flex h-full w-full bg-[#030303] text-white/70 font-sans antialiased overflow-hidden">
             {/* Map Area */}
-            <div className="flex-1 p-8 relative overflow-auto">
-                <header className="flex justify-between items-center mb-8">
-                    <div className="flex items-center gap-4">
-                        <h1 className="text-3xl font-bold text-gray-900">Floor Plan</h1>
+            <div className="flex-1 p-8 relative overflow-hidden flex flex-col">
+                <header className="flex justify-between items-center mb-12 shrink-0">
+                    <div className="flex items-center gap-6">
+                        <div>
+                            <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2 text-white">Floor Plan</h1>
+                            <p className="text-white/40 font-bold text-[10px] uppercase tracking-[0.5em]">Active Node Orchestration</p>
+                        </div>
                         <button
                             onClick={() => setIsAddTableModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg shadow-md hover:bg-primary-dark transition-all"
+                            className="flex items-center gap-3 px-6 py-4 bg-solaris-orange text-white rounded-2xl shadow-solaris-glow hover:scale-105 transition-all text-[10px] font-black uppercase tracking-widest"
                         >
-                            <span className="material-icons-round text-sm">add</span>
-                            Add Table
+                            <Plus size={16} />
+                            Ingresar Mesa
                         </button>
                     </div>
 
-                    <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-[24px]">
                         <button
                             onClick={() => setViewMode('floor')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'floor' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600'}`}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'floor' ? 'bg-white/10 text-white shadow-xl' : 'text-white/20 hover:text-white'}`}
                         >
-                            <span className="material-icons-round text-base">layers</span>
                             Floor Plan
                         </button>
                         <button
                             onClick={() => setViewMode('list')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'list' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600'}`}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white/10 text-white shadow-xl' : 'text-white/20 hover:text-white'}`}
                         >
-                            <span className="material-icons-round text-base">format_list_bulleted</span>
                             List View
                         </button>
                     </div>
 
-                    <div className="flex gap-4">
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                            <span className="text-xs text-gray-500 font-medium">Available</span>
+                    <div className="flex gap-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
+                            <span className="text-[9px] text-white/40 font-black uppercase tracking-widest">Available</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                            <span className="text-xs text-gray-500 font-medium">Occupied</span>
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
+                            <span className="text-[9px] text-white/40 font-black uppercase tracking-widest">Occupied</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                            <span className="text-xs text-gray-500 font-medium">Reserved</span>
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]"></div>
+                            <span className="text-[9px] text-white/40 font-black uppercase tracking-widest">Reserved</span>
                         </div>
                     </div>
                 </header>
 
-                <div className="flex gap-8 h-[calc(100%-100px)]">
+                <div className="flex gap-8 flex-1 overflow-hidden">
                     {/* WAITLIST KANBAN SIDEBAR */}
-                    <div className="w-64 bg-gray-50/50 rounded-3xl p-6 border border-gray-200 border-dashed flex flex-col shrink-0 overflow-hidden">
-                        <h3 className="font-black text-gray-400 text-[10px] uppercase tracking-widest mb-6 flex items-center gap-2">
-                             <span className="material-icons-round text-sm">hourglass_empty</span>
-                             Lista de Espera
-                             <span className="ml-auto bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded text-[8px]">{waitlist.length}</span>
+                    <div className="w-72 bg-white/[0.02] rounded-solaris p-8 border border-white/5 flex flex-col shrink-0 overflow-hidden shadow-2xl">
+                        <h3 className="font-black text-white/20 text-[10px] uppercase tracking-[0.4em] mb-8 flex items-center gap-3 italic">
+                             <Hourglass size={14} />
+                             Waitlist Core
+                             <span className="ml-auto bg-solaris-orange text-white px-2 py-0.5 rounded-lg text-[8px] font-black">{waitlist.length}</span>
                         </h3>
                         
-                        <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-1">
+                        <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-1">
                             {waitlist.length > 0 ? waitlist.map(entry => (
                                 <div
                                     key={entry.id}
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, entry.id)}
-                                    className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-all group border-l-4 border-l-primary"
+                                    className="bg-[#0a0a0b] p-6 rounded-2xl border border-white/5 shadow-xl cursor-grab active:cursor-grabbing hover:border-solaris-orange/20 transition-all group relative overflow-hidden"
                                 >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h4 className="font-bold text-gray-900 text-sm leading-tight">{entry.customerName}</h4>
-                                        <span className="text-[9px] font-black text-primary bg-primary/5 px-2 py-0.5 rounded-full">{entry.timestamp}</span>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <h4 className="font-black italic text-white text-sm uppercase tracking-tight leading-tight">{entry.customerName}</h4>
+                                        <span className="text-[8px] font-black text-solaris-orange bg-solaris-orange/10 px-2 py-1 rounded-lg border border-solaris-orange/20">{entry.timestamp}</span>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-1 text-[10px] text-gray-400 font-bold">
-                                            <span className="material-icons-round text-xs">groups</span>
+                                        <div className="flex items-center gap-2 text-[10px] text-white/40 font-black italic">
+                                            <Users size={12} />
                                             {entry.partySize} PAX
                                         </div>
-                                        <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
-                                             <span className="material-icons-round text-gray-300 text-sm">drag_indicator</span>
-                                        </div>
+                                    </div>
+                                    <div className="absolute right-2 bottom-6 opacity-0 group-hover:opacity-10 transition-opacity">
+                                         <GripVertical size={24} className="text-white" />
                                     </div>
                                 </div>
                             )) : (
-                                <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
-                                    <span className="material-icons-round text-3xl mb-2 text-gray-300">hourglass_disabled</span>
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Sin Espera</p>
+                                <div className="h-full flex flex-col items-center justify-center text-center opacity-10">
+                                    <Hourglass size={48} className="mb-4" />
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em]">Zero Queue</p>
                                 </div>
                             )}
                         </div>
                     </div>
 
-                    <div className="flex-1 min-h-[600px] border-2 border-dashed border-gray-300 rounded-3xl relative bg-white shadow-soft overflow-auto custom-scrollbar">
+                    <div className="flex-1 border border-white/5 rounded-solaris relative bg-[#0a0a0b]/30 shadow-2xl overflow-auto custom-scrollbar">
                         {viewMode === 'floor' ? (
-                            <div className="relative w-full h-full p-8 min-w-[800px] min-h-[800px]" onDragOver={(e) => e.preventDefault()}>
+                            <div className="relative w-full h-full p-12 min-w-[800px] min-h-[800px]" onDragOver={(e) => e.preventDefault()}>
+                                <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
                                 {activeTables.map(table => {
                                     const waiterId = waiterAssignments[table.id];
                                     const waiter = waiterId ? MOCK_STAFF.find(s => s.id === waiterId) : null;
                                     const session = customerSessions[table.id];
                                     const reservation = reservations[table.id];
+                                    const isSelected = selectedTableId === table.id;
+                                    const isOccupied = table.status === TableStatus.OCCUPIED;
+                                    const isReserved = table.status === TableStatus.RESERVED;
 
                                     return (
-                                        <div
+                                        <motion.div
                                             key={table.id}
+                                            layout
+                                            initial={false}
                                             onClick={() => setSelectedTableId(table.id)}
                                             onDragOver={(e) => {
                                                 e.preventDefault();
@@ -394,94 +388,97 @@ export const HostessScreen: React.FC = () => {
                                             onDragLeave={() => setIsDraggingOver(null)}
                                             onDrop={(e) => handleDrop(e, table.id)}
                                             style={{ left: `${table.x}%`, top: `${table.y}%` }}
-                                            className={`absolute w-32 h-24 border-2 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 shadow-lg ${getStatusColor(table.status)} ${selectedTableId === table.id ? 'ring-4 ring-primary ring-opacity-30' : ''} ${isDraggingOver === table.id ? 'ring-4 ring-green-400 scale-110 !border-green-400' : ''}`}
+                                            className={`absolute w-36 h-28 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 shadow-2xl border-2 ${
+                                                isSelected ? 'border-solaris-orange shadow-solaris-glow scale-110 z-20' : 
+                                                isDraggingOver === table.id ? 'border-green-500 bg-green-500/10 scale-110' :
+                                                isOccupied ? 'border-red-500/20 bg-red-500/5' :
+                                                isReserved ? 'border-yellow-500/20 bg-yellow-500/5' :
+                                                'border-white/10 bg-white/[0.02] hover:border-white/30'
+                                            }`}
                                         >
-                                            <span className="font-bold text-lg text-gray-900">{table.name}</span>
+                                            <span className={`font-black italic text-xl uppercase tracking-tighter transition-colors ${isSelected ? 'text-white' : 'text-white/60'}`}>{table.name}</span>
                                             {session ? (
-                                                <div className="text-xs text-center">
-                                                    <p className="font-bold text-gray-800 truncate w-28 px-1">{session.name}</p>
-                                                    <p className="text-gray-500">{session.pax} Guests</p>
+                                                <div className="text-center mt-2">
+                                                    <p className="font-black italic text-[10px] text-white uppercase tracking-tight truncate w-28">{session.name}</p>
+                                                    <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">{session.pax} Guests</p>
                                                 </div>
                                             ) : reservation ? (
-                                                <div className="text-xs text-center">
-                                                    <div className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-[10px] font-bold mb-1">{reservation.time}</div>
-                                                    <p className="font-bold text-gray-800 truncate w-28 px-1">{reservation.name}</p>
+                                                <div className="text-center mt-2">
+                                                    <div className="bg-yellow-500/10 text-yellow-500 px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest mb-1 border border-yellow-500/20">{reservation.time}</div>
+                                                    <p className="font-black italic text-[10px] text-white uppercase tracking-tight truncate w-28">{reservation.name}</p>
                                                 </div>
                                             ) : (
-                                                <span className="text-xs text-gray-500 font-medium">{table.seats} Seats</span>
+                                                <span className="text-[9px] font-black text-white/20 uppercase tracking-widest mt-2">{table.seats} Seats</span>
                                             )}
 
                                             {/* Waiter Indicator */}
                                             {waiter && (
-                                                <div className="absolute -top-3 -right-3 w-8 h-8 rounded-full border-2 border-white shadow-md overflow-hidden" title={`Assigned to ${waiter.name}`}>
+                                                <div className="absolute -top-4 -right-4 w-10 h-10 rounded-full border-2 border-white/20 shadow-2xl overflow-hidden ring-4 ring-black/50" title={`Assigned to ${waiter.name}`}>
                                                     <img src={waiter.image} alt={waiter.name} className="w-full h-full object-cover" />
                                                 </div>
                                             )}
-
-                                            {/* Chairs (Visual Flourish) */}
-                                            <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-2 h-12 bg-gray-200 rounded-l-md"></div>
-                                            <div className="absolute -right-3 top-1/2 -translate-y-1/2 w-2 h-12 bg-gray-200 rounded-r-md"></div>
-                                        </div>
+                                        </motion.div>
                                     );
                                 })}
                             </div>
                         ) : (
-                            <div className="p-8 h-full overflow-y-auto">
-                                <table className="w-full text-left">
+                            <div className="p-12 h-full overflow-y-auto custom-scrollbar">
+                                <table className="w-full text-left border-separate border-spacing-y-4">
                                     <thead>
-                                        <tr className="border-b border-gray-100">
-                                            <th className="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Mesa</th>
-                                            <th className="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Estado</th>
-                                            <th className="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Capacidad</th>
-                                            <th className="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cliente</th>
-                                            <th className="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Mesero</th>
+                                        <tr>
+                                            <th className="pb-4 px-6 text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Designación Nodo</th>
+                                            <th className="pb-4 px-6 text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Protocolo Estado</th>
+                                            <th className="pb-4 px-6 text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Métrica Pax</th>
+                                            <th className="pb-4 px-6 text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Asignación Cliente</th>
+                                            <th className="pb-4 px-6 text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Unidad de Servicio</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-50">
+                                    <tbody>
                                         {activeTables.map(table => {
                                             const session = customerSessions[table.id];
                                             const waiterId = waiterAssignments[table.id];
                                             const waiter = waiterId ? MOCK_STAFF.find(s => s.id === waiterId) : null;
+                                            const isSelected = selectedTableId === table.id;
                                             
                                             return (
                                                 <tr 
                                                     key={table.id} 
-                                                    className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedTableId === table.id ? 'bg-primary/5' : ''}`}
+                                                    className={`transition-all cursor-pointer group ${isSelected ? 'scale-[1.01]' : ''}`}
                                                     onClick={() => setSelectedTableId(table.id)}
                                                 >
-                                                    <td className="py-4 font-bold text-gray-900">{table.name}</td>
-                                                    <td className="py-4">
-                                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                                                            table.status === TableStatus.AVAILABLE ? 'bg-green-50 text-green-600' :
-                                                            table.status === TableStatus.OCCUPIED ? 'bg-red-50 text-red-600' :
-                                                            table.status === TableStatus.RESERVED ? 'bg-yellow-50 text-yellow-600' :
-                                                            'bg-gray-100 text-gray-600'
+                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-l border-white/5 rounded-l-[24px] font-black italic text-white uppercase tracking-tight group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-solaris-orange/10' : ''}`}>{table.name}</td>
+                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-solaris-orange/10' : ''}`}>
+                                                        <span className={`inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                                            table.status === TableStatus.AVAILABLE ? 'bg-green-500/10 text-green-500' :
+                                                            table.status === TableStatus.OCCUPIED ? 'bg-red-500/10 text-red-500' :
+                                                            table.status === TableStatus.RESERVED ? 'bg-yellow-500/10 text-yellow-500' :
+                                                            'bg-white/5 text-white/40'
                                                         }`}>
-                                                            <span className={`w-1.5 h-1.5 rounded-full ${
+                                                            <div className={`w-1.5 h-1.5 rounded-full ${
                                                                 table.status === TableStatus.AVAILABLE ? 'bg-green-500' :
                                                                 table.status === TableStatus.OCCUPIED ? 'bg-red-500' :
                                                                 table.status === TableStatus.RESERVED ? 'bg-yellow-500' :
-                                                                'bg-gray-400'
-                                                            }`}></span>
+                                                                'bg-white/40'
+                                                            }`}></div>
                                                             {table.status}
                                                         </span>
                                                     </td>
-                                                    <td className="py-4 text-sm text-gray-500 font-medium">{table.seats} Pers.</td>
-                                                    <td className="py-4">
+                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 font-black italic text-white/60 text-xs tracking-widest group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-solaris-orange/10' : ''}`}>{table.seats} PERS.</td>
+                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-solaris-orange/10' : ''}`}>
                                                         {session ? (
                                                             <div>
-                                                                <p className="text-sm font-bold text-gray-900">{session.name}</p>
-                                                                <p className="text-[10px] text-gray-400 uppercase font-black tracking-tight">{session.pax} PAX • {session.time}</p>
+                                                                <p className="text-xs font-black italic text-white uppercase tracking-tight">{session.name}</p>
+                                                                <p className="text-[9px] text-white/20 uppercase font-black tracking-widest mt-1">{session.pax} PAX • {session.time}</p>
                                                             </div>
-                                                        ) : <span className="text-gray-300">—</span>}
+                                                        ) : <span className="text-white/10 font-black tracking-widest">---</span>}
                                                     </td>
-                                                    <td className="py-4">
+                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-r border-white/5 rounded-r-[24px] group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-solaris-orange/10' : ''}`}>
                                                         {waiter ? (
-                                                            <div className="flex items-center gap-2">
-                                                                <img src={waiter.image} className="w-6 h-6 rounded-full" alt="" />
-                                                                <span className="text-sm font-medium text-gray-700">{waiter.name}</span>
+                                                            <div className="flex items-center gap-3">
+                                                                <img src={waiter.image} className="w-8 h-8 rounded-full border border-white/10" alt="" />
+                                                                <span className="text-[10px] font-black italic text-white/60 uppercase tracking-widest">{waiter.name}</span>
                                                             </div>
-                                                        ) : <span className="text-gray-300">—</span>}
+                                                        ) : <span className="text-white/10 font-black tracking-widest">---</span>}
                                                     </td>
                                                 </tr>
                                             );
@@ -495,137 +492,139 @@ export const HostessScreen: React.FC = () => {
             </div>
 
             {/* Side Panel */}
-            <aside className="w-96 bg-white border-l border-gray-100 p-6 flex flex-col shadow-xl overflow-y-auto">
-                <div className="mb-8 p-5 bg-primary/5 rounded-2xl border-2 border-primary/10 shadow-inner">
-                    <h3 className="font-bold text-primary mb-4 flex items-center gap-2">
-                        <span className="material-icons-round">person_add</span>
-                        Cliente Actual / Walk-in
+            <aside className="w-[420px] bg-[#030303] border-l border-white/10 p-8 flex flex-col shadow-2xl overflow-y-auto custom-scrollbar shrink-0">
+                <div className="mb-10 p-8 bg-white/[0.02] rounded-solaris border border-white/5 shadow-inner relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-solaris-orange/40 to-transparent opacity-50"></div>
+                    <h3 className="font-black italic text-white text-sm uppercase tracking-tight mb-8 flex items-center gap-3">
+                        <UserPlus size={18} className="text-solaris-orange" />
+                        Terminal Walk-in
                     </h3>
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                         <div>
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 block">Nombre del Cliente</label>
+                            <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.4em] mb-2.5 block">Identidad Cliente</label>
                             <input
                                 type="text"
                                 value={customerName}
                                 onChange={(e) => setCustomerName(e.target.value)}
-                                className="w-full p-3 bg-white border border-gray-200 rounded-xl outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all font-bold text-gray-700"
-                                placeholder="Escribe el nombre..."
+                                className="w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl outline-none focus:border-solaris-orange/40 text-white font-bold transition-all text-sm placeholder:text-white/10 shadow-inner"
+                                placeholder="Ingresar designación..."
                             />
                         </div>
-                        <div className="flex justify-between items-center bg-white p-2 rounded-xl border border-gray-100">
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Personas</span>
-                            <div className="flex items-center gap-3">
-                                <button onClick={() => setPartySize(Math.max(1, partySize - 1))} className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center font-bold text-gray-500 border border-gray-100 transition-colors">-</button>
-                                <span className="font-bold text-lg w-6 text-center text-primary">{partySize}</span>
-                                <button onClick={() => setPartySize(partySize + 1)} className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center font-bold text-gray-500 border border-gray-100 transition-colors">+</button>
+                        <div className="flex justify-between items-center bg-white/[0.02] p-3 rounded-2xl border border-white/5">
+                            <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.4em] ml-4 italic text-xs">Métrica Pax</span>
+                            <div className="flex items-center gap-6 pr-2">
+                                <button onClick={() => setPartySize(Math.max(1, partySize - 1))} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-white transition-all border border-white/5 shadow-xl">-</button>
+                                <span className="font-black italic text-2xl text-solaris-orange w-8 text-center">{partySize}</span>
+                                <button onClick={() => setPartySize(partySize + 1)} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-white transition-all border border-white/5 shadow-xl">+</button>
                             </div>
                         </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-2 mt-4">
+                    <div className="mt-8">
                         <button
                             onClick={handleAddToWaitlist}
                             disabled={!customerName}
-                            className="w-full py-4 bg-primary text-white rounded-xl font-black text-sm shadow-lg shadow-primary/30 hover:bg-primary-dark transition-all transform active:scale-95 flex items-center justify-center gap-2"
+                            className="w-full py-5 bg-solaris-orange text-white rounded-[24px] font-black italic uppercase text-[11px] tracking-[0.3em] shadow-solaris-glow hover:scale-[1.02] transition-all transform active:scale-95 flex items-center justify-center gap-4 disabled:opacity-20 disabled:grayscale"
                         >
-                            <span className="material-icons-round">person_add_alt</span>
-                            Registrar Cliente
+                            <Hourglass size={18} />
+                            Desplegar a Espera
                         </button>
                     </div>
                 </div>
 
-                <div className="mb-6 pb-6 border-b border-gray-100">
-                    <h2 className="text-xl font-black mb-1 text-gray-900 tracking-tight">{selectedTable ? selectedTable.name : 'Selecciona una Mesa'}</h2>
-                    <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">Panel de Control</p>
+                <div className="mb-8 pb-8 border-b border-white/10">
+                    <h2 className="text-2xl font-black italic text-white tracking-tighter uppercase mb-2">{selectedTable ? selectedTable.name : 'Sector Desconectado'}</h2>
+                    <p className="text-white/20 text-[9px] font-black uppercase tracking-[0.5em]">Consola de Comando de Mesa</p>
                 </div>
 
                 {selectedTable ? (
                     <div className="flex flex-col gap-6 animate-in fade-in">
                         {/* Status Card */}
-                        <div className="bg-gray-50 p-4 rounded-xl flex justify-between items-center">
+                        <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/5 flex justify-between items-center relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-solaris-orange"></div>
                             <div>
-                                <span className="text-xs text-gray-400 uppercase font-bold">Current Status</span>
-                                <div className={`text-lg font-bold mt-1 ${selectedTable.status === TableStatus.AVAILABLE ? 'text-green-600' :
+                                <span className="text-[9px] text-white/20 uppercase font-black tracking-widest block mb-2">Vector de Estado</span>
+                                <div className={`text-xl font-black italic uppercase tracking-tight ${selectedTable.status === TableStatus.AVAILABLE ? 'text-green-500' :
                                     selectedTable.status === TableStatus.OCCUPIED ? 'text-red-500' :
-                                        selectedTable.status === TableStatus.RESERVED ? 'text-yellow-600' :
-                                            'text-gray-700'}`}>
+                                        selectedTable.status === TableStatus.RESERVED ? 'text-yellow-500' :
+                                            'text-white'}`}>
                                     {selectedTable.status}
                                 </div>
                             </div>
                             {currentSession && (
                                 <div className="text-right">
-                                    <div className="text-xs text-gray-400 font-bold">Time</div>
-                                    <div className="text-lg font-mono">{currentSession.time}</div>
+                                    <div className="text-[9px] text-white/20 font-black uppercase tracking-widest mb-2">Tiempo de Sesión</div>
+                                    <div className="text-xl font-mono text-white font-black">{currentSession.time}</div>
                                 </div>
                             )}
                         </div>
 
                         {/* RESERVATION DETAILS CARD */}
                         {currentReservation && selectedTable.status === TableStatus.RESERVED && (
-                            <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4 shadow-sm">
-                                <h3 className="font-bold text-yellow-800 mb-3 flex items-center gap-2">
-                                    <span className="material-icons-round">event_seat</span>
-                                    Reservation Info
+                            <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-6 shadow-2xl">
+                                <h3 className="font-black italic text-yellow-500 mb-6 flex items-center gap-3 uppercase text-xs tracking-widest">
+                                    <Bookmark size={16} />
+                                    Reservación Detalle
                                 </h3>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-yellow-700 text-sm">Guest</span>
-                                        <span className="font-bold text-gray-900">{currentReservation.name}</span>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-white/40 text-[10px] uppercase font-black tracking-widest">Huésped</span>
+                                        <span className="font-black italic text-white uppercase text-sm tracking-tight">{currentReservation.name}</span>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-yellow-700 text-sm">Time</span>
-                                        <span className="font-bold text-gray-900">{currentReservation.time}</span>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-white/40 text-[10px] uppercase font-black tracking-widest">Cronograma</span>
+                                        <span className="font-black italic text-white uppercase text-sm tracking-tight">{currentReservation.time}</span>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-yellow-700 text-sm">Party Size</span>
-                                        <span className="font-bold text-gray-900">{currentReservation.pax} Guests</span>
+                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                        <span className="text-white/40 text-[10px] uppercase font-black tracking-widest">Métrica Pax</span>
+                                        <span className="font-black italic text-white uppercase text-sm tracking-tight">{currentReservation.pax} PAX</span>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2 mt-4">
+                                <div className="grid grid-cols-2 gap-3 mt-8">
                                     <button
                                         onClick={handleChangeReservationTime}
-                                        className="py-2 bg-white border border-yellow-200 text-yellow-700 rounded-lg text-sm font-bold hover:bg-yellow-50"
+                                        className="py-4 bg-white/5 border border-white/10 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all italic"
                                     >
                                         Edit Time
                                     </button>
                                     <button
                                         onClick={handleCancelReservation}
-                                        className="py-2 bg-white border border-red-200 text-red-500 rounded-lg text-sm font-bold hover:bg-red-50"
+                                        className="py-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-500/20 transition-all italic"
                                     >
-                                        Cancel Res.
+                                        Drop Res.
                                     </button>
                                 </div>
                                 <button
                                     onClick={handleCheckIn}
-                                    className="w-full mt-2 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-bold shadow-lg shadow-yellow-200 transition-all flex items-center justify-center gap-2"
+                                    className="w-full mt-3 py-5 bg-white text-black rounded-[24px] font-black italic uppercase text-[11px] tracking-[0.2em] shadow-2xl hover:scale-[1.02] transition-all flex items-center justify-center gap-4"
                                 >
-                                    <span className="material-icons-round">check</span>
-                                    Check In Guest
+                                    <Check size={18} />
+                                    Sincronizar Check-In
                                 </button>
                             </div>
                         )}
 
                         {/* Check-In Action (Only if Available) */}
                         {selectedTable.status === TableStatus.AVAILABLE && !currentSession && (
-                            <div className="space-y-3">
-                                <div className="p-4 bg-green-50 rounded-xl border border-green-100">
-                                    <p className="text-xs text-green-700 font-medium mb-3">Asignar mesa a <b>{customerName || 'Sin Nombre'}</b> con <b>{partySize}</b> personas.</p>
-                                    <div className="grid grid-cols-1 gap-3">
+                            <div className="space-y-4">
+                                <div className="p-6 bg-white/[0.02] rounded-2xl border border-white/10">
+                                    <p className="text-[10px] text-white/40 font-black uppercase tracking-widest mb-6 italic">Asignar mesa a <b className="text-solaris-orange underline decoration-orange-500/30 underline-offset-4">{customerName || 'Designación Vacía'}</b> con <b className="text-white">{partySize}</b> personas.</p>
+                                    <div className="grid grid-cols-1 gap-4">
                                         <button
                                             onClick={handleCheckIn}
                                             disabled={!customerName}
-                                            className="w-full py-4 bg-primary text-white rounded-xl font-black text-sm shadow-lg shadow-primary/30 disabled:opacity-50 disabled:shadow-none hover:bg-primary-dark transition-all active:scale-95 flex items-center justify-center gap-2"
+                                            className="w-full py-5 bg-solaris-orange text-white rounded-[24px] font-black italic uppercase text-[11px] tracking-[0.3em] shadow-solaris-glow hover:scale-[1.02] transition-all transform active:scale-95 flex items-center justify-center gap-4 disabled:opacity-20 disabled:grayscale"
                                         >
-                                            <span className="material-icons-round">event_seat</span>
-                                            OCUPAR MESA (SEAT)
+                                            <Users size={18} />
+                                            Ocupar Mesa (Seat)
                                         </button>
                                         <button
                                             onClick={handleReserveTable}
                                             disabled={!customerName}
-                                            className="w-full py-3 bg-yellow-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-md shadow-yellow-100 disabled:opacity-50 hover:bg-yellow-600 transition-all active:scale-95 flex items-center justify-center gap-2"
+                                            className="w-full py-4 bg-white/5 border border-white/10 text-white rounded-xl font-black italic uppercase text-[9px] tracking-widest hover:bg-white/10 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-20"
                                         >
-                                            <span className="material-icons-round text-sm">bookmark</span>
-                                            APARTAR MESA (RESERVE)
+                                            <Bookmark size={14} className="text-yellow-500" />
+                                            Apartar Mesa (Reserve)
                                         </button>
                                     </div>
                                 </div>
@@ -634,15 +633,15 @@ export const HostessScreen: React.FC = () => {
 
                         {/* Active Session Info */}
                         {currentSession && (
-                            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-                                <h3 className="font-bold text-blue-800 mb-2">Customer Details</h3>
+                            <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-6">
+                                <h3 className="font-black italic text-blue-500 mb-4 uppercase text-[10px] tracking-widest">Log de Sesión</h3>
                                 <div className="flex justify-between items-center mb-1">
-                                    <span className="text-blue-600">Name</span>
-                                    <span className="font-bold text-gray-800">{currentSession.name}</span>
+                                    <span className="text-white/40 text-[10px] font-black uppercase tracking-widest">Huésped</span>
+                                    <span className="font-black italic text-white uppercase text-sm tracking-tight">{currentSession.name}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-blue-600">Guests</span>
-                                    <span className="font-bold text-gray-800">{currentSession.pax} People</span>
+                                    <span className="text-white/40 text-[10px] font-black uppercase tracking-widest">Métrica Pax</span>
+                                    <span className="font-black italic text-white uppercase text-sm tracking-tight">{currentSession.pax} Guests</span>
                                 </div>
                             </div>
                         )}
@@ -650,21 +649,21 @@ export const HostessScreen: React.FC = () => {
                         {/* Waiter Assignment Section */}
                         {selectedTable.status === TableStatus.OCCUPIED && (
                             <div>
-                                <span className="text-xs text-gray-400 uppercase font-bold block mb-3">Assigned Waiter</span>
-                                <div className="grid grid-cols-3 gap-2">
+                                <span className="text-[9px] text-white/20 uppercase font-black tracking-[0.4em] block mb-4 italic">Asignación de Unidad</span>
+                                <div className="grid grid-cols-3 gap-3">
                                     {availableWaiters.map(waiter => (
                                         <button
                                             key={waiter.id}
                                             onClick={() => handleAssignWaiter(waiter.id)}
-                                            className={`flex flex-col items-center p-2 rounded-xl border transition-all ${assignedWaiterId === waiter.id
-                                                ? 'border-primary bg-primary/10'
-                                                : 'border-gray-100 hover:border-gray-300 hover:bg-gray-50'
+                                            className={`flex flex-col items-center p-3 rounded-2xl border transition-all ${assignedWaiterId === waiter.id
+                                                ? 'border-solaris-orange bg-solaris-orange/10'
+                                                : 'border-white/5 bg-white/[0.02] hover:border-white/20'
                                                 }`}
                                         >
-                                            <div className="w-10 h-10 rounded-full overflow-hidden mb-1">
+                                            <div className="w-12 h-12 rounded-full overflow-hidden mb-2 border border-white/10">
                                                 <img src={waiter.image} alt={waiter.name} className="w-full h-full object-cover" />
                                             </div>
-                                            <span className="text-[10px] font-bold text-gray-700 text-center leading-tight">{waiter.name.split(' ')[0]}</span>
+                                            <span className="text-[9px] font-black text-white/60 text-center leading-tight uppercase tracking-tighter truncate w-full">{waiter.name.split(' ')[0]}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -672,187 +671,206 @@ export const HostessScreen: React.FC = () => {
                         )}
 
                         {/* Actions */}
-                        <div className="border-t border-gray-100 pt-6 space-y-3">
-                            <div className="flex gap-2 mb-2">
+                        <div className="border-t border-white/10 pt-8 space-y-4">
+                            <div className="flex gap-3 mb-4">
                                 <button 
                                     onClick={handleOpenEditModal}
-                                    className="flex-1 py-3 bg-blue-50 text-blue-600 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors"
+                                    className="flex-1 py-4 bg-white/5 border border-white/10 text-white/60 rounded-xl font-black uppercase italic text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-white/10 transition-all"
                                 >
-                                    <span className="material-icons-round text-sm">edit</span>
-                                    Editar
+                                    <Edit3 size={14} />
+                                    Ajustes
                                 </button>
                                 <button 
                                     onClick={() => setIsDeleteConfirmOpen(true)}
-                                    className="flex-1 py-3 bg-red-50 text-red-500 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+                                    className="flex-1 py-4 bg-red-500/5 border border-red-500/10 text-red-500/60 rounded-xl font-black uppercase italic text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-red-500/10 transition-all"
                                 >
-                                    <span className="material-icons-round text-sm">delete</span>
-                                    Borrar
+                                    <Trash2 size={14} />
+                                    Remover
                                 </button>
                             </div>
 
                             {selectedTable.status === TableStatus.OCCUPIED && (
                                 <>
-                                    <button onClick={handleCancelOrder} className="w-full py-3 bg-red-500 text-white rounded-xl font-black text-sm shadow-lg shadow-red-200 hover:bg-red-600 transition-all flex items-center justify-center gap-2 mb-2">
-                                        <span className="material-icons-round">block</span>
-                                        CANCELAR COMANDA
+                                    <button onClick={handleCancelOrder} className="w-full py-5 bg-red-600 text-white rounded-[24px] font-black italic uppercase text-[11px] tracking-[0.3em] shadow-[0_15px_30px_rgba(220,38,38,0.3)] hover:scale-[1.02] transition-all flex items-center justify-center gap-4 mb-4">
+                                        <XCircle size={18} />
+                                        Abortar Comanda
                                     </button>
-                                    <button onClick={handleClearTable} className="w-full py-3 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl font-bold transition-all flex items-center justify-center gap-2">
-                                        <span className="material-icons-round">cleaning_services</span>
-                                        Liberar Mesa (Sucia)
+                                    <button onClick={handleClearTable} className="w-full py-4 bg-white/[0.03] border border-white/10 hover:bg-white/10 text-white rounded-xl font-black italic uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-3">
+                                        <RotateCw size={14} />
+                                        Estatus Post-Servicio
                                     </button>
                                 </>
                             )}
                             {selectedTable.status === TableStatus.DIRTY && (
-                                <button onClick={handleMakeAvailable} className="w-full py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition-all shadow-lg shadow-green-200">
-                                    Mesa Limpia / Disponible
+                                <button onClick={handleMakeAvailable} className="w-full py-5 bg-white text-black rounded-[24px] font-black italic uppercase text-[11px] tracking-[0.3em] shadow-2xl hover:scale-[1.02] transition-all">
+                                    Sincronizar Disponibilidad
                                 </button>
                             )}
                         </div>
                     </div>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-gray-300 text-center">
-                        <span className="material-icons-round text-5xl mb-4">touch_app</span>
-                        <p>Tap a table on the floor plan to view details and manage seating.</p>
+                    <div className="flex-1 flex flex-col items-center justify-center text-white/10 text-center px-12">
+                        <Monitor size={64} strokeWidth={1} className="mb-6 opacity-20" />
+                        <h4 className="text-white/40 font-black italic uppercase text-xs tracking-widest mb-2">Escaneo de Red Requerido</h4>
+                        <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em] leading-relaxed">Selecciona un nodo de mesa para iniciar la secuencia de control táctico operacional.</p>
                     </div>
                 )}
             </aside>
 
-            {/* Add Table Modal */}
-            {isAddTableModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in">
-                    <div className="bg-white rounded-2xl p-6 w-96 shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Table</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Table Name</label>
-                                <input
-                                    type="text"
-                                    value={newTableName}
-                                    onChange={(e) => setNewTableName(e.target.value)}
-                                    placeholder="e.g. Mesa 10"
-                                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-primary transition-all"
-                                    autoFocus
-                                />
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Seats</label>
-                                <div className="flex items-center gap-4">
+            {/* Modals Container */}
+            <AnimatePresence>
+                {/* Add Table Modal */}
+                {isAddTableModalOpen && (
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100]">
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="bg-[#0a0a0b] border border-white/10 rounded-solaris p-10 w-[450px] shadow-[0_50px_100px_rgba(0,0,0,0.8)] relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-1 bg-solaris-orange"></div>
+                            <h2 className="text-2xl font-black italic text-white mb-10 uppercase tracking-tighter">Desplegar Nuevo Nodo</h2>
+                            <div className="space-y-8">
+                                <div>
+                                    <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] block mb-3">Identificador de Mesa</label>
+                                    <input
+                                        type="text"
+                                        value={newTableName}
+                                        onChange={(e) => setNewTableName(e.target.value)}
+                                        placeholder="ej. MESA 24"
+                                        className="w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl outline-none focus:border-solaris-orange font-black italic text-white transition-all text-lg placeholder:text-white/5 uppercase tracking-tight"
+                                        autoFocus
+                                    />
+                                </div>
+                                <div className="bg-white/[0.02] p-8 rounded-2xl border border-white/5">
+                                    <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] block mb-6 text-center">Capacidad Máxima PAX</label>
+                                    <div className="flex items-center justify-center gap-10">
+                                        <button
+                                            onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))}
+                                            className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-white transition-all border border-white/5"
+                                        >
+                                            -
+                                        </button>
+                                        <span className="font-black italic text-5xl text-solaris-orange w-16 text-center">{newTableSeats}</span>
+                                        <button
+                                            onClick={() => setNewTableSeats(newTableSeats + 1)}
+                                            className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-white transition-all border border-white/5"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex gap-4 mt-10">
                                     <button
-                                        onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))}
-                                        className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-600 transition-all"
+                                        onClick={() => setIsAddTableModalOpen(false)}
+                                        className="flex-1 py-5 bg-white/5 text-white/20 rounded-[20px] font-black italic uppercase text-[10px] tracking-widest hover:text-white transition-all"
                                     >
-                                        -
+                                        Cancelar
                                     </button>
-                                    <span className="font-bold text-2xl w-8 text-center">{newTableSeats}</span>
                                     <button
-                                        onClick={() => setNewTableSeats(newTableSeats + 1)}
-                                        className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-600 transition-all"
+                                        onClick={handleAddTable}
+                                        disabled={!newTableName}
+                                        className="flex-1 py-5 bg-solaris-orange text-white rounded-[20px] font-black italic uppercase text-[10px] tracking-widest shadow-solaris-glow hover:scale-[1.05] transition-all disabled:opacity-20"
                                     >
-                                        +
+                                        Confirmar Nodo
                                     </button>
                                 </div>
                             </div>
-                            <div className="flex gap-3 mt-6">
-                                <button
-                                    onClick={() => setIsAddTableModalOpen(false)}
-                                    className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-all"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleAddTable}
-                                    disabled={!newTableName}
-                                    className="flex-1 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold shadow-lg shadow-primary/30 disabled:opacity-50 disabled:shadow-none transition-all"
-                                >
-                                    Add Table
-                                </button>
-                            </div>
-                        </div>
+                        </motion.div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Edit Table Modal */}
-            {isEditModalOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-in fade-in">
-                    <div className="bg-white rounded-2xl p-6 w-96 shadow-2xl scale-100 animate-in zoom-in-95 duration-200">
-                        <h2 className="text-xl font-bold text-gray-900 mb-4">Edit Table</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Table Name</label>
-                                <input
-                                    type="text"
-                                    value={newTableName}
-                                    onChange={(e) => setNewTableName(e.target.value)}
-                                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-primary transition-all font-bold"
-                                    autoFocus
-                                />
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase block mb-1">Seats</label>
-                                <div className="flex items-center gap-4">
+                {/* Edit Table Modal */}
+                {isEditModalOpen && (
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100]">
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            className="bg-[#0a0a0b] border border-white/10 rounded-solaris p-10 w-[450px] shadow-2xl relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
+                            <h2 className="text-2xl font-black italic text-white mb-10 uppercase tracking-tighter">Ajuste de Nodo</h2>
+                            <div className="space-y-8">
+                                <div>
+                                    <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] block mb-3">Identificador</label>
+                                    <input
+                                        type="text"
+                                        value={newTableName}
+                                        onChange={(e) => setNewTableName(e.target.value)}
+                                        className="w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl outline-none focus:border-blue-500 font-black italic text-white transition-all text-lg placeholder:text-white/5 uppercase tracking-tight"
+                                        autoFocus
+                                    />
+                                </div>
+                                <div className="bg-white/[0.02] p-8 rounded-2xl border border-white/5">
+                                    <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] block mb-6 text-center">Protocolo Pax</label>
+                                    <div className="flex items-center justify-center gap-10">
+                                        <button
+                                            onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))}
+                                            className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-white transition-all border border-white/5"
+                                        >
+                                            -
+                                        </button>
+                                        <span className="font-black italic text-5xl text-blue-500 w-16 text-center">{newTableSeats}</span>
+                                        <button
+                                            onClick={() => setNewTableSeats(newTableSeats + 1)}
+                                            className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-white transition-all border border-white/5"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex gap-4 mt-10">
                                     <button
-                                        onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))}
-                                        className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-600 transition-all"
+                                        onClick={() => setIsEditModalOpen(false)}
+                                        className="flex-1 py-5 bg-white/5 text-white/20 rounded-[20px] font-black italic uppercase text-[10px] tracking-widest hover:text-white transition-all"
                                     >
-                                        -
+                                        Descartar
                                     </button>
-                                    <span className="font-bold text-2xl w-8 text-center">{newTableSeats}</span>
                                     <button
-                                        onClick={() => setNewTableSeats(newTableSeats + 1)}
-                                        className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-600 transition-all"
+                                        onClick={handleUpdateTable}
+                                        disabled={!newTableName}
+                                        className="flex-1 py-5 bg-blue-600 text-white rounded-[20px] font-black italic uppercase text-[10px] tracking-widest shadow-lg shadow-blue-500/20 hover:scale-[1.05] transition-all"
                                     >
-                                        +
+                                        Guardar Cambios
                                     </button>
                                 </div>
                             </div>
-                            <div className="flex gap-3 mt-6">
+                        </motion.div>
+                    </div>
+                )}
+
+                {/* Delete Confirmation Modal */}
+                {isDeleteConfirmOpen && (
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[110]">
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className="bg-[#0a0a0b] border border-red-500/20 rounded-solaris p-10 w-[400px] shadow-2xl text-center"
+                        >
+                            <AlertTriangle size={64} className="text-red-500 mx-auto mb-6 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]" />
+                            <h2 className="text-2xl font-black italic text-white mb-2 uppercase tracking-tighter">¿Purgar Nodo?</h2>
+                            <p className="text-white/40 mb-10 font-bold text-[10px] uppercase tracking-[0.2em] leading-relaxed px-4">Esta acción eliminará la mesa <b className="text-white">{selectedTable?.name}</b> permanentemente del ecosistema Solaris.</p>
+                            
+                            <div className="flex flex-col gap-4">
                                 <button
-                                    onClick={() => setIsEditModalOpen(false)}
-                                    className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-bold transition-all"
+                                    onClick={handleDeleteTableAction}
+                                    className="w-full py-5 bg-red-600 text-white rounded-[24px] font-black italic uppercase text-[11px] tracking-[0.3em] shadow-[0_15px_30px_rgba(220,38,38,0.3)] hover:scale-[1.05] transition-all"
                                 >
-                                    Cancel
+                                    Confirmar Purga
                                 </button>
                                 <button
-                                    onClick={handleUpdateTable}
-                                    disabled={!newTableName}
-                                    className="flex-1 py-3 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold shadow-lg shadow-primary/30 disabled:opacity-50 disabled:shadow-none transition-all"
+                                    onClick={() => setIsDeleteConfirmOpen(false)}
+                                    className="w-full py-4 bg-white/5 text-white/20 rounded-xl font-black italic uppercase text-[10px] tracking-widest hover:text-white transition-all"
                                 >
-                                    Save Changes
+                                    Abortar Procedimiento
                                 </button>
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
-                </div>
-            )}
-
-            {/* Delete Confirmation Modal */}
-            {isDeleteConfirmOpen && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] animate-in fade-in backdrop-blur-sm">
-                    <div className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl scale-100 animate-in zoom-in-95 duration-200 text-center">
-                        <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <span className="material-icons-round text-5xl">warning</span>
-                        </div>
-                        <h2 className="text-2xl font-black text-gray-900 mb-2 uppercase tracking-tight">¿Borrar Mesa?</h2>
-                        <p className="text-gray-500 mb-8 font-medium">Esta acción eliminará la mesa <b>{selectedTable?.name}</b> permanentemente del sistema.</p>
-                        
-                        <div className="flex flex-col gap-3">
-                            <button
-                                onClick={handleDeleteTableAction}
-                                className="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-black text-sm shadow-lg shadow-red-100 transition-all active:scale-95"
-                            >
-                                SÍ, ELIMINAR MESA
-                            </button>
-                            <button
-                                onClick={() => setIsDeleteConfirmOpen(false)}
-                                className="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-xl font-bold text-sm transition-all"
-                            >
-                                CANCELAR
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                )}
+            </AnimatePresence>
         </div>
     );
 };
