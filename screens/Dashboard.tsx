@@ -378,6 +378,5 @@ export const DashboardScreen: React.FC = () => {
                   </div>
               </div>
           </div>
-        </div>
     );
 };
