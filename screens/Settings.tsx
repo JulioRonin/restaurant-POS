@@ -239,6 +239,11 @@ export const SettingsScreen: React.FC = () => {
                                                     <button onClick={async () => { const d = await printerService.requestPrinter(); if(d) setLocalSettings(p => ({ ...p, connectedDeviceName: d.productName || 'USB PRNT' })); }} className="flex-1 py-4 bg-white text-black font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl shadow-xl hover:scale-[1.05] active:scale-95 transition-all italic">USB Probe</button>
                                                     <button onClick={async () => { const d = await printerService.requestBluetoothPrinter(); if(d) setLocalSettings(p => ({ ...p, connectedDeviceName: d.name || 'BT PRNT' })); }} className="flex-1 py-4 bg-solaris-orange text-white font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl shadow-solaris-glow hover:scale-[1.05] active:scale-95 transition-all italic">BT Connect</button>
                                                 </div>
+                                                <div className="mt-6 p-4 rounded-2xl bg-solaris-orange/5 border border-solaris-orange/10 relative z-10">
+                                                    <p className="text-[9px] font-black text-solaris-orange/60 uppercase tracking-widest leading-relaxed italic">
+                                                        <span className="text-solaris-orange">TIP:</span> El protocolo Web Bluetooth requiere dispositivos <span className="text-white">BLE (Bluetooth Low Energy)</span>. Si tu impresora es Bluetooth "Clásico", usa la aplicación de escritorio para una vinculación nativa. 
+                                                    </p>
+                                                </div>
                                                 <Bluetooth className="absolute -bottom-10 -left-10 text-white/[0.01] rotate-45" size={160} />
                                             </GlowCard>
 

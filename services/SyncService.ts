@@ -121,6 +121,8 @@ async function updatePendingCount() {
 
 // ─── Core Sync Logic ─────────────────────────────────────────
 
+let sessionBusinessId: string | null = null;
+
 export async function triggerSync(businessId?: string, isBackground: boolean = false): Promise<void> {
   if (!navigator.onLine) {
     emitStatus({ syncError: 'Sin conexión a internet' });
@@ -137,13 +139,22 @@ export async function triggerSync(businessId?: string, isBackground: boolean = f
     return;
   }
 
-  console.log('[SyncService] Sync Triggered. Background:', isBackground, 'Business:', businessId);
+  // Update cached businessId if provided
+  if (businessId) {
+    sessionBusinessId = businessId;
+  }
+
+  const supabase = getSupabase();
+  const currentBizId = businessId || sessionBusinessId || (supabase as any)?.auth?.session?.user?.user_metadata?.business_id;
+
+  if (!currentBizId && !isBackground) {
+     console.warn('[SyncService] Triggered without businessId and no cached session found.');
+  }
+
+  console.log('[SyncService] Sync Triggered. Background:', isBackground, 'Business:', currentBizId);
   emitStatus({ isSyncing: true, syncError: null });
 
   try {
-    const supabase = getSupabase();
-    const currentBizId = businessId || (supabase as any)?.auth?.session?.user?.user_metadata?.business_id;
-
     console.log('[SyncService] Starting PUSH phase...');
     await pushLocalChanges();
 
@@ -154,16 +165,20 @@ export async function triggerSync(businessId?: string, isBackground: boolean = f
     await clearSyncedOps();
     await updatePendingCount();
 
+    const isFirstSync = currentStatus.lastSyncTime === null;
+
     emitStatus({ 
       isSyncing: false, 
       lastSyncTime: new Date(),
       syncError: null 
     });
 
-    // Notify listeners ONLY if it was a manual user action OR if something actually changed on pull
-    // This prevents the 'flicker' every 60 seconds if data is identical
-    if (!isBackground || modifiedCount > 0) {
-        console.log(`[SyncService] Notifying UI. Change Detected: ${modifiedCount > 0}, Background: ${isBackground}`);
+    // Notify listeners if:
+    // 1. It was a manual action (not background)
+    // 2. Data actually changed
+    // 3. It's the first sync of the session (to ensure initial data load)
+    if (!isBackground || modifiedCount > 0 || isFirstSync) {
+        console.log(`[SyncService] Notifying UI. Change: ${modifiedCount > 0}, Background: ${isBackground}, Initial: ${isFirstSync}`);
         syncCompleteListeners.forEach(listener => listener());
     } else {
         console.log('[SyncService] Background sync yielded no changes. Suppressing UI update signal to prevent flicker.');

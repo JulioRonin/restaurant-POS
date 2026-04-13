@@ -46,18 +46,18 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation(); // Accurate location tracking for stable transitions
 
   return (
-    <div className="flex h-screen w-screen bg-[#030303] text-white font-sans overflow-hidden antialiased">
+    <div className="flex h-screen w-screen bg-[#030303] text-white font-sans overflow-hidden antialiased selection:bg-solaris-orange selection:text-white">
       <div className="no-print">
         <Sidebar onLock={clearActiveEmployee} />
       </div>
-      <main className="flex-1 h-full overflow-hidden relative">
-        <AnimatePresence mode="wait" initial={false}>
+      <main className="flex-1 h-full overflow-hidden relative bg-[#030303]">
+        <AnimatePresence mode="popLayout" initial={true}>
           <motion.div
             key={location.pathname}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
             className="h-full w-full bg-[#030303]"
           >
             {children}
@@ -115,7 +115,7 @@ const AppContent: React.FC = () => {
     <OrderProvider>
       {isSuperAdmin ? (
         <Layout>
-          <Routes>
+          <Routes location={location} key="super-admin-routes">
             <Route path="/" element={<Navigate to="/super-admin" replace />} />
             <Route path="/super-admin" element={<SuperAdminScreen />} />
             <Route path="/dashboard" element={<DashboardScreen />} />
@@ -138,7 +138,7 @@ const AppContent: React.FC = () => {
       ) : (
         <SubscriptionGuard>
           <Layout>
-            <Routes>
+            <Routes location={location} key="employee-routes">
               <Route path="/" element={<Navigate to={getDefaultRoute(activeEmployee?.role)} replace />} />
               
               <Route path="/dashboard" element={<RoleGuard path="/dashboard"><DashboardScreen /></RoleGuard>} />
@@ -156,7 +156,7 @@ const AppContent: React.FC = () => {
               <Route path="/my-tables" element={<RoleGuard path="/my-tables"><MyTablesScreen /></RoleGuard>} />
               
               <Route path="/onboarding" element={<OnboardingScreen />} />
-              <Route path="*" element={<div className="flex items-center justify-center h-full text-gray-700 uppercase font-black tracking-widest italic text-xs">404 - Module Lost in Solaris</div>} />
+              <Route path="*" element={<div className="flex flex-col items-center justify-center h-full text-solaris-orange uppercase font-black tracking-[0.5em] italic text-[10px] gap-6"><Activity size={48} className="animate-pulse" /> 404 - Module Lost in Solaris</div>} />
             </Routes>
           </Layout>
         </SubscriptionGuard>
