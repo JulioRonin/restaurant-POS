@@ -32,6 +32,7 @@ import OnboardingScreen from './screens/Onboarding';
 import { BarScreen } from './screens/Bar';
 import { MyTablesScreen } from './screens/MyTables';
 import { canAccess, getDefaultRoute } from './services/rbac';
+import { Activity } from 'lucide-react';
 
 const RoleGuard: React.FC<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
   const { activeEmployee } = useUser();
