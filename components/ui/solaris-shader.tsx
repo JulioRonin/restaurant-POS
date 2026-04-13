@@ -19,8 +19,6 @@ export const SolarisShader: React.FC = () => {
 
       {/* Noise Texture for Digital Aesthetic */}
       <div className="absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
-    </div>
-      
       {/* Overlay for even more depth */}
       <div className="absolute inset-0 bg-gradient-to-tr from-black via-transparent to-solaris-orange/5 opacity-50"></div>
     </div>
