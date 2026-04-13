@@ -132,6 +132,26 @@ export const SettingsScreen: React.FC = () => {
         setHardwareStatus(prev => ({ ...prev, terminal: 'disconnected' }));
     };
 
+    const handleResetHardware = async () => {
+        if (window.confirm("¿Deseas reiniciar todas las conexiones de hardware? Esto desconectará la impresora y terminal actuales para intentar una nueva vinculación limpia.")) {
+            await printerService.disconnect();
+            setLocalSettings(prev => ({
+                ...prev,
+                connectedDeviceName: 'None',
+                connectedTerminalName: 'None',
+                isDirectPrintingEnabled: false,
+                isTerminalEnabled: false
+            }));
+            setHardwareStatus({
+                printer: 'disconnected',
+                scanner: 'disconnected',
+                drawer: 'disconnected',
+                terminal: 'disconnected'
+            });
+            alert("Hardware reiniciado. Por favor, vuelve a vincular tus dispositivos.");
+        }
+    };
+
     const toggleHardwareConnection = (device: keyof typeof hardwareStatus) => {
         if (device === 'terminal') {
             if (hardwareStatus.terminal === 'connected') {
@@ -728,13 +748,14 @@ export const SettingsScreen: React.FC = () => {
                                     <div className="absolute top-0 right-0 p-8 opacity-10">
                                         <span className="material-icons-round text-[120px]">verified</span>
                                     </div>
+                                    </div>
                                     <div className="relative z-10">
                                         <h3 className="text-xl font-black uppercase tracking-tight mb-4">Certificación de Estación</h3>
                                         <p className="text-slate-400 text-sm leading-relaxed mb-6 max-w-lg">
                                             Si las tres pruebas anteriores son exitosas, el equipo está listo para operar. 
                                             Recuerda que la persistencia de datos (con o sin internet) está asegurada por el motor de sincronización de Culinex.
                                         </p>
-                                        <div className="flex gap-4">
+                                        <div className="flex flex-wrap gap-4">
                                             <div className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-full border border-white/10">
                                                 <span className="material-icons-round text-emerald-400 text-sm">security</span>
                                                 <span className="text-[10px] font-black uppercase tracking-widest">Cifrado Local</span>
@@ -743,6 +764,13 @@ export const SettingsScreen: React.FC = () => {
                                                 <span className="material-icons-round text-blue-400 text-sm">cloud_sync</span>
                                                 <span className="text-[10px] font-black uppercase tracking-widest">Auto-Backup</span>
                                             </div>
+                                            <button 
+                                                onClick={handleResetHardware}
+                                                className="flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/40 rounded-full border border-red-500/20 transition-all"
+                                            >
+                                                <span className="material-icons-round text-red-400 text-sm">restart_alt</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-red-200">Resetear Todo</span>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>

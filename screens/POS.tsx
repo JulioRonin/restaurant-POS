@@ -134,14 +134,24 @@ export const POSScreen: React.FC = () => {
           let printSuccess = false;
           
           if (settings.isDirectPrintingEnabled) {
-            console.log('[POS] Checking direct printer status...');
+            console.log('[POS] Initiating kitchen print for order:', newOrder.id);
+            
+            // Re-verify connection if we have a saved device
             if (!printerService.isConnected() && settings.connectedDeviceName !== 'None') {
+                console.log('[POS] Auto-connecting to:', settings.connectedDeviceName);
                 await printerService.autoConnect(settings.connectedDeviceName);
             }
 
-            printSuccess = await printerService.printKitchenTicket(newOrder, settings);
-            if (!printSuccess && settings.connectedDeviceName !== 'None') {
-                console.warn('[POS] Direct print failed even after repair attempt.');
+            try {
+                printSuccess = await printerService.printKitchenTicket(newOrder, settings);
+                if (!printSuccess) {
+                    console.warn('[POS] Direct kitchen print returned failure. Fallback required.');
+                } else {
+                    console.log('[POS] Kitchen ticket printed successfully.');
+                }
+            } catch (printErr: any) {
+                console.error('[POS] Error during kitchen printing:', printErr);
+                printSuccess = false;
             }
           }
           

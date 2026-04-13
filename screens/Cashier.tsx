@@ -65,23 +65,38 @@ export const CashierScreen: React.FC = () => {
     } | null>(null);
     const [dismissedBillRequests, setDismissedBillRequests] = useState<string[]>([]);
 
-    const handlePrintTicket = async (order: Order) => {
-        // ENSURE items are present for printing (re-assemble if needed from the order object)
+        // ENSURE items are present for printing
+        if (!order.items || order.items.length === 0) {
+            console.warn('[Cashier] Order items missing for printing. Checking local context...');
+        }
+
         const enrichedOrder = {
             ...order,
-            items: (order.items && order.items.length > 0) ? order.items : (selectedOrder?.items || []),
-            tableId: order.tableId || selectedTableId || 'VENTA',
+            items: (order.items && order.items.length > 0) ? order.items : [],
+            tableId: order.tableId || 'VENTA',
             waiterName: order.waiterName || currentUser?.name || 'ADMIN'
         };
 
+        if (enrichedOrder.items.length === 0) {
+            alert('Error: La orden no tiene productos registrados. No se puede imprimir.');
+            return false;
+        }
+
         // Proactive Direct Print Attempt
-        const success = await printerService.printOrder(enrichedOrder, settings);
-        if (success) return true; 
+        try {
+            const success = await printerService.printOrder(enrichedOrder, settings);
+            if (success) {
+                setSuccessMessage('Impresión enviada con éxito');
+                setTimeout(() => setSuccessMessage(null), 2000);
+                return true; 
+            }
+        } catch (err: any) {
+            console.error('[Cashier] Direct print error:', err);
+        }
         
         // If direct failed AND a name was saved, it might be a hardware timeout
-        if (settings.connectedDeviceName && settings.connectedDeviceName !== 'None') {
-            console.warn('[Cashier] Direct print failed. Verify hardware status.');
-            // We proceed to fallback but log the failure
+        if (settings.isDirectPrintingEnabled && settings.connectedDeviceName !== 'None') {
+            console.warn('[Cashier] Direct print failed. Falling back to browser.');
         }
         
         // Manual Print Fallback (Silent Dialog)

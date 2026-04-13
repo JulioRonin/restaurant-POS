@@ -6,21 +6,26 @@ class PrinterService {
   private serverUrl = 'http://localhost:3001'; // Fallback / meta
 
   private async sendData(data: Uint8Array): Promise<void> {
+    if (!this.isConnected()) {
+        console.warn('[PrinterService] Device disconnected before send. Attempting repair...');
+        // We don't throw yet, print methods will handle reconnection
+    }
+    
     if (!this.device) {
-        alert("La impresora no está conectada. Por favor, ve a Configuración y conéctala.");
         throw new Error('No device connected');
     }
     
     try {
         if (this.btCharacteristic) {
             // High-Stability Bluetooth Chunking for small buffer printers
-            const CHUNK_SIZE = 32; // Safe for all thermal printers
+            // Most budget BT printers have a 64-128 byte buffer. 20-32 is safe.
+            const CHUNK_SIZE = 20; 
             for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+                if (!this.isConnected()) throw new Error('Bluetooth connection lost during transmission');
+                
                 const chunk = data.slice(i, i + CHUNK_SIZE);
                 
-                // Chrome/Android GATT queue can only handle a few requests at a time.
                 // Using writeValue (With Response) is slower but much more reliable
-                // because it waits for the printer to acknowledge receipt.
                 try {
                     await this.btCharacteristic.writeValue(chunk);
                 } catch (writeErr: any) {
@@ -33,14 +38,16 @@ class PrinterService {
                 }
                 
                 // Small delay to allow the printer to process the buffer
-                await new Promise(resolve => setTimeout(resolve, 80));
+                // Reduced from 80 to 25 for better performance while remaining safe
+                await new Promise(resolve => setTimeout(resolve, 25));
             }
         } else {
+            // USB
             await this.device.transferOut(this.getEndpointNum(), data);
         }
     } catch (err: any) {
         console.error('[PrinterService] Send failed:', err);
-        alert(`Error de impresión: ${err.message}. La impresora está saturada o desconectada. Intenta apagarla y encenderla.`);
+        throw err; // Rethrow to let caller handle alerts/fallbacks
     }
   }
 
@@ -263,14 +270,11 @@ class PrinterService {
     // Proactively attempt to reconnect if we have a saved device name
     if (!this.isConnected() && settings.connectedDeviceName && settings.connectedDeviceName !== 'None') {
         console.log('[PrinterService] Connection lost. Attempting silent wake-up for:', settings.connectedDeviceName);
-        const reconnected = await this.autoConnect(settings.connectedDeviceName);
-        if (!reconnected) {
-            console.warn('[PrinterService] Silent auto-connect failed.');
-        }
+        await this.autoConnect(settings.connectedDeviceName);
     }
 
     if (!this.isConnected()) {
-       console.warn('[PrinterService] No direct printer active.');
+       console.warn('[PrinterService] No direct printer active for normal ticket.');
        return false;
     }
 

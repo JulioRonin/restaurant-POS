@@ -93,12 +93,12 @@ export function startNetworkMonitoring() {
     emitStatus({ isOnline: false });
   });
 
-  // Periodic sync (every 60 seconds when online)
+  // Periodic sync (every 15 seconds when online) to ensure kitchen/pos stay in sync
   syncIntervalId = window.setInterval(() => {
     if (navigator.onLine && !currentStatus.isSyncing) {
       triggerSync();
     }
-  }, 60_000);
+  }, 15_000);
 
   // Initial status
   emitStatus({ isOnline: navigator.onLine });
@@ -247,10 +247,10 @@ async function pushLocalChanges(): Promise<void> {
              // For settings, ensure we have business_id
              const bizId = payload.businessId || payload.business_id;
              
-             // The column is called 'key' in SQL, we must ensure it's not blacklisted or renamed
+             // The column 'value' is JSONB in Supabase.
              finalPayload = {
                 key: 'config',
-                value: payload,
+                value: payload, // The object itself
                 business_id: bizId,
                 updated_at: new Date().toISOString()
              };
@@ -285,13 +285,36 @@ async function pushLocalChanges(): Promise<void> {
                if (op.table === 'settings') {
                   const bizId = payload.businessId || payload.business_id;
                   
-                  // Use Upsert with onConflict for settings to resolve the 'key' column cache issues
-                  result = await supabaseClient
-                    .from('business_settings')
-                    .upsert(
-                      { ...finalPayload, business_id: bizId },
-                      { onConflict: 'business_id,key' }
-                    );
+                  // Use Upsert for settings to resolve the 'key' column cache issues
+                  // Try multiple conflict strategies to account for different schema versions
+                  try {
+                      result = await supabaseClient
+                        .from('business_settings')
+                        .upsert(
+                          { ...finalPayload, business_id: bizId },
+                          { onConflict: 'business_id,key' }
+                        );
+                  } catch (upsertErr) {
+                      console.warn('[SyncService] Standard upsert failed, trying manual match update');
+                      // Fallback: search and update
+                      const { data: existing } = await supabaseClient
+                        .from('business_settings')
+                        .select('id')
+                        .eq('business_id', bizId)
+                        .eq('key', 'config')
+                        .single();
+                        
+                      if (existing) {
+                          result = await supabaseClient
+                            .from('business_settings')
+                            .update({ ...finalPayload, business_id: bizId })
+                            .eq('id', existing.id);
+                      } else {
+                          result = await supabaseClient
+                            .from('business_settings')
+                            .insert({ ...finalPayload, business_id: bizId });
+                      }
+                  }
                     
                   op.status = 'synced'; 
                } else {
@@ -521,11 +544,13 @@ function transformForSupabase(payload: any): any {
     const blacklistedKeys = [
       'synced', 'updated_at', 'timestamp', 'items', 'table', 
       'waiter', 'changeAmount', 'receivedAmount', 'paidSplits', 
-      'splitType', 'inventoryLevel', 'publicInMenu', 'isFromMenu'
+      'splitType', 'inventoryLevel', 'publicInMenu', 'isFromMenu',
+      'connectedDeviceName', 'connectedTerminalName', 'isDirectPrintingEnabled',
+      'isKitchenPrintingEnabled', 'isCashDrawerEnabled', 'isTerminalEnabled'
       // Note: 'id' is intentionally NOT blacklisted here anymore to preserve PK/FK integrity
     ];
     
-    if (blacklistedKeys.includes(key)) continue; 
+    if (blacklistedKeys.includes(key) && key !== 'value') continue; 
     
     // Check if the key is 'key' and we are doing settings
     if (key === 'key') {

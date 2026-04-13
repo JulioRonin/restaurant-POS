@@ -173,13 +173,65 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     setOrders((prev) => prev.map(o => o.id === orderId ? finalOrder : o));
     
-    // Save locally immediately to avoid race conditions with sync
+    // 1. Save and Track Main Order
     await put('orders', finalOrder as any);
-
-    // Track for sync
     await trackChange('orders', 'UPDATE', orderId, finalOrder);
 
-    // Trigger immediate sync to inform other terminals
+    // 2. IMPORTANT: Sync individual items if this was an item modification (e.g. from MyTables)
+    if (updatedOrder && updatedOrder.items) {
+        const bizId = authProfile?.businessId || finalOrder.businessId;
+        
+        // Load existing items from IDB to find what to add/update
+        const existingItems = await getAll('order_items');
+        const orderItems = (existingItems as any[]).filter(i => i.orderId === orderId || i.order_id === orderId);
+        
+        for (const item of updatedOrder.items) {
+            // If item has a specific record ID already (from relational re-assembly), use it.
+            // Otherwise, check if it's already in the database by menuItemId
+            const dbItem = orderItems.find(i => (i.menuItemId === item.id || i.id === item.id));
+            
+            if (dbItem) {
+                // UPDATE existing item record
+                const updatedItemRecord = {
+                    ...dbItem,
+                    quantity: item.quantity,
+                    priceAtTime: item.price,
+                    notes: item.notes || '',
+                    synced: false,
+                    updated_at: new Date().toISOString()
+                };
+                await put('order_items', updatedItemRecord);
+                await trackChange('order_items', 'UPDATE', updatedItemRecord.id, updatedItemRecord);
+            } else {
+                // INSERT new item record
+                const newItemId = crypto.randomUUID();
+                const newItemRecord = {
+                    id: newItemId,
+                    orderId: orderId,
+                    menuItemId: item.id,
+                    quantity: item.quantity,
+                    priceAtTime: item.price,
+                    notes: item.notes || '',
+                    businessId: bizId,
+                    synced: false,
+                    updated_at: new Date().toISOString()
+                };
+                await put('order_items', newItemRecord);
+                await trackChange('order_items', 'INSERT', newItemId, newItemRecord);
+            }
+        }
+        
+        // Optional: handle deletions (items in DB but not in updatedOrder)
+        for (const dbItem of orderItems) {
+            const stillExists = updatedOrder.items.some(i => (i.id === dbItem.menuItemId || i.id === dbItem.id));
+            if (!stillExists) {
+                await deleteRecord('order_items', dbItem.id);
+                await trackChange('order_items', 'DELETE', dbItem.id, {});
+            }
+        }
+    }
+
+    // Trigger immediate sync
     triggerSync().catch(console.error);
   };
 
