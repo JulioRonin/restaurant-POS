@@ -52,18 +52,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <Sidebar onLock={clearActiveEmployee} />
       </div>
       <main className="flex-1 h-full overflow-hidden relative bg-[#030303]">
-        <AnimatePresence mode="popLayout" initial={true}>
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className="h-full w-full bg-[#030303]"
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
+        {children}
       </main>
     </div>
   );
