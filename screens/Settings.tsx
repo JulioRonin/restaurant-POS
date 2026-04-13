@@ -748,7 +748,6 @@ export const SettingsScreen: React.FC = () => {
                                     <div className="absolute top-0 right-0 p-8 opacity-10">
                                         <span className="material-icons-round text-[120px]">verified</span>
                                     </div>
-                                    </div>
                                     <div className="relative z-10">
                                         <h3 className="text-xl font-black uppercase tracking-tight mb-4">Certificación de Estación</h3>
                                         <p className="text-slate-400 text-sm leading-relaxed mb-6 max-w-lg">
