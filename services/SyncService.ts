@@ -478,11 +478,41 @@ async function pullServerChanges(businessId?: string): Promise<number> {
 
       if (!data || data.length === 0) continue;
 
-      const storeName = localStore as any;
-
       for (const serverRecord of data) {
-        const localRecord = await import('./db').then(db => db.getById(storeName, serverRecord.id));
+        let localRecord: any;
         const serverTimestamp = serverRecord.updated_at || serverRecord.created_at;
+        const storeName = localStore as any;
+
+        // SPECIAL CASE: Settings store uses logical keys, not UUIDs from Supabase
+        if (localStore === 'settings' || localStore === 'business_settings') {
+           const bizId = serverRecord.business_id;
+           const idbKey = `settings_${bizId}`;
+           // We use a separate helper or raw access for settings 
+           localRecord = await import('./db').then(db => db.getDB().then(inst => inst.get('settings', idbKey)));
+           
+           let finalRecord = transformFromSupabase(serverRecord, localStore);
+
+           // CRITICAL PROTECTION: Do not let cloud settings wipe out local hardware preferences
+           if (localRecord && localRecord.data) {
+              const hardwareKeys = ['connectedDeviceName', 'connectedTerminalName', 'isDirectPrintingEnabled'];
+              hardwareKeys.forEach(k => {
+                 if (localRecord.data[k] !== undefined) {
+                    finalRecord.data[k] = localRecord.data[k];
+                 }
+              });
+           }
+
+           // Check if we actually need to update
+           const localTimestamp = localRecord?.updated_at;
+           if (!localRecord || serverTimestamp > localTimestamp) {
+              await import('./db').then(db => db.getDB().then(inst => inst.put('settings', finalRecord)));
+              globalModifiedCount++;
+           }
+           continue; 
+        }
+
+        // NORMAL CASE: Relational entries use UUIDs
+        localRecord = await import('./db').then(db => db.getById(storeName, serverRecord.id));
         
         // Conflict resolution
         if (localRecord) {
@@ -516,22 +546,6 @@ async function pullServerChanges(businessId?: string): Promise<number> {
         } else {
           // New record from server, insert locally
           let finalRecord = transformFromSupabase(serverRecord, localStore);
-
-          // CRITICAL PROTECTION: Do not let cloud settings wipe out local hardware preferences
-          if (localStore === 'settings' || localStore === 'business_settings') {
-             const bizId = serverRecord.business_id || (finalRecord as any).business_id || (finalRecord as any).businessId;
-             const idbKey = `settings_${bizId}`;
-             const existingLocal = await import('./db').then(db => db.getSetting(idbKey));
-             
-             if (existingLocal) {
-                const hardwareKeys = ['connectedDeviceName', 'connectedTerminalName', 'isDirectPrintingEnabled'];
-                hardwareKeys.forEach(k => {
-                   if (existingLocal[k] !== undefined) {
-                      finalRecord[k] = existingLocal[k];
-                   }
-                });
-             }
-          }
 
           await put(storeName, { 
             ...finalRecord, 
@@ -587,11 +601,15 @@ function transformFromSupabase(record: any, storeName: string): any {
   // If it's the settings table, the data is inside the 'value' column jsonb
   if (storeName === 'settings' || storeName === 'business_settings') {
      if (record.value && typeof record.value === 'object') {
-        const value = { ...record.value };
-        // Transfer key metadata from row to the object
-        if (record.business_id) value.businessId = record.business_id;
-        if (record.updated_at) value.updated_at = record.updated_at;
-        return value;
+        // IDB 'settings' store expects { key, data, updated_at }
+        const dataPayload = { ...record.value };
+        if (record.business_id) dataPayload.businessId = record.business_id;
+        
+        return {
+           key: `settings_${record.business_id}`,
+           data: dataPayload,
+           updated_at: record.updated_at || new Date().toISOString()
+        };
      }
   }
 
