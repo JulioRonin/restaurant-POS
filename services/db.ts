@@ -14,7 +14,7 @@ export interface SyncOperation {
 }
 
 // ─── Database Schema ──────────────────────────────────────────
-export interface CulinexDB extends DBSchema {
+export interface SolarisDB extends DBSchema {
   products: {
     key: string;
     value: {
@@ -199,15 +199,15 @@ export interface CulinexDB extends DBSchema {
 }
 
 // ─── Database Instance ────────────────────────────────────────
-const DB_NAME = 'culinex-pos';
+const DB_NAME = 'solaris-pos';
 const DB_VERSION = 3; // Increased to 3 for order_items
 
-let dbInstance: IDBPDatabase<CulinexDB> | null = null;
+let dbInstance: IDBPDatabase<SolarisDB> | null = null;
 
-export async function getDB(): Promise<IDBPDatabase<CulinexDB>> {
+export async function getDB(): Promise<IDBPDatabase<SolarisDB>> {
   if (dbInstance) return dbInstance;
 
-  dbInstance = await openDB<CulinexDB>(DB_NAME, DB_VERSION, {
+  dbInstance = await openDB<SolarisDB>(DB_NAME, DB_VERSION, {
     upgrade(db, oldVersion) {
       // Version 1-2 initialization
       if (oldVersion < 3) {
@@ -291,12 +291,12 @@ export async function getDB(): Promise<IDBPDatabase<CulinexDB>> {
 
 type StoreName = 'products' | 'orders' | 'employees' | 'inventory' | 'expenses' | 'supplier_orders' | 'tables' | 'order_items';
 
-export async function getAll<T extends StoreName>(store: T): Promise<CulinexDB[T]['value'][]> {
+export async function getAll<T extends StoreName>(store: T): Promise<SolarisDB[T]['value'][]> {
   const db = await getDB();
   return db.getAll(store);
 }
 
-export async function getById<T extends StoreName>(store: T, id: string): Promise<CulinexDB[T]['value'] | undefined> {
+export async function getById<T extends StoreName>(store: T, id: string): Promise<SolarisDB[T]['value'] | undefined> {
   const db = await getDB();
   return db.get(store, id);
 }
@@ -319,7 +319,7 @@ export async function updateRecordSyncStatus(table: any, id: string, synced: boo
   }
 }
 
-export async function put<T extends StoreName>(store: T, value: CulinexDB[T]['value']): Promise<string> {
+export async function put<T extends StoreName>(store: T, value: SolarisDB[T]['value']): Promise<string> {
   const db = await getDB();
   return db.put(store, value);
 }
@@ -333,7 +333,7 @@ export async function getAllByIndex<T extends StoreName>(
   store: T,
   indexName: string,
   value: any
-): Promise<CulinexDB[T]['value'][]> {
+): Promise<SolarisDB[T]['value'][]> {
   const db = await getDB();
   return db.getAllFromIndex(store, indexName as any, value);
 }
@@ -397,7 +397,7 @@ export async function getSyncQueueCount(): Promise<number> {
 // Called when a different business logs in to ensure a clean slate.
 export async function clearAllBusinessData(prevBusinessId?: string): Promise<void> {
   const db = await getDB();
-  const businessStores: Array<keyof CulinexDB> = [
+  const businessStores: Array<keyof SolarisDB> = [
     'products', 'orders', 'employees', 'inventory',
     'supplier_orders', 'tables', 'order_items'
   ];
@@ -420,11 +420,11 @@ export async function clearAllBusinessData(prevBusinessId?: string): Promise<voi
   // Clear localStorage keys for the previous business
   if (prevBusinessId) {
     const lsKeyPrefixes = [
-      `culinex_menu_${prevBusinessId}`,
-      `culinex_expenses_${prevBusinessId}`,
-      `culinex_subscription_${prevBusinessId}`,
-      `culinex_settings_${prevBusinessId}`,
-      `culinex_pos_status_${prevBusinessId}`,
+      `solaris_menu_${prevBusinessId}`,
+      `solaris_expenses_${prevBusinessId}`,
+      `solaris_subscription_${prevBusinessId}`,
+      `solaris_settings_${prevBusinessId}`,
+      `solaris_pos_status_${prevBusinessId}`,
     ];
     lsKeyPrefixes.forEach(key => {
       localStorage.removeItem(key);

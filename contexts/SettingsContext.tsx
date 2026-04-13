@@ -38,7 +38,7 @@ interface SettingsContextType {
 }
 
 const DEFAULT_SETTINGS: BusinessSettings = {
-  name: 'Culinex Restaurante',
+  name: 'Solaris Restaurante',
   legalName: '',
   rfc: '',
   address: '',
@@ -78,7 +78,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
       return;
     }
 
-    const bizKey = `culinex_settings_${authProfile.businessId}`;
+    const bizKey = `solaris_settings_${authProfile.businessId}`;
     const idbKey = `settings_${authProfile.businessId}`;
 
     const saved = localStorage.getItem(bizKey);
@@ -226,7 +226,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   useEffect(() => {
     if (!authProfile?.businessId) return;
 
-    const bizKey = `culinex_settings_${authProfile.businessId}`;
+    const bizKey = `solaris_settings_${authProfile.businessId}`;
     const idbKey = `settings_${authProfile.businessId}`;
 
     localStorage.setItem(bizKey, JSON.stringify(settings));

@@ -1,7 +1,21 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useMenu } from '../contexts/MenuContext';
 import { MenuItem } from '../types';
-import { CATEGORIES } from '../constants';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GlowCard } from '../components/ui/spotlight-card';
+import { 
+  Utensils, 
+  Plus, 
+  Upload, 
+  Search, 
+  Edit3, 
+  Trash2, 
+  CheckCircle, 
+  XCircle,
+  ChevronRight,
+  Coffee,
+  Circle
+} from 'lucide-react';
 
 export const MenuScreen: React.FC = () => {
     const { menuItems, addItem, updateItem, deleteItem, toggleStatus, importCSV } = useMenu();
@@ -16,9 +30,7 @@ export const MenuScreen: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const importFileRef = useRef<HTMLInputElement>(null);
     const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
-    const [newCategoryName, setNewCategoryName] = useState('');
 
-    // Dynamic Categories from existing items + initial ones
     const dynamicCategories = useMemo(() => {
         const existing = Array.from(new Set(menuItems.map(item => item.category)));
         const base = ['Entradas', 'Plato Fuerte', 'Bebidas', 'Postres', 'Extras', 'Tacos', 'Tortas'];
@@ -38,9 +50,7 @@ export const MenuScreen: React.FC = () => {
         const file = e.target.files?.[0];
         if (file) {
             const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
+            reader.onloadend = () => setImagePreview(reader.result as string);
             reader.readAsDataURL(file);
         }
     };
@@ -51,18 +61,6 @@ export const MenuScreen: React.FC = () => {
         if (result.success) {
             setCsvInput('');
             setTimeout(() => setIsImportModalOpen(false), 2000);
-        }
-    };
-
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const text = event.target?.result as string;
-                setCsvInput(text);
-            };
-            reader.readAsText(file);
         }
     };
 
@@ -91,368 +89,173 @@ export const MenuScreen: React.FC = () => {
     };
 
     return (
-        <div className="flex h-full w-full bg-[#F3F4F6] text-gray-800 p-8 overflow-hidden font-sans">
-            <div className="flex-1 flex flex-col max-w-7xl mx-auto w-full">
+        <div className="h-full w-full bg-solaris-black text-white p-6 md:p-10 overflow-y-auto antialiased">
+            <div className="max-w-7xl mx-auto w-full">
                 {/* Header */}
-                <header className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-3xl font-black text-gray-900 tracking-tight">Gestión de Menú</h1>
-                        <p className="text-gray-500 font-medium">Administra tus platillos, precios y disponibilidad en tiempo real.</p>
-                    </div>
-                    <div className="flex gap-3">
+                <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">Solaris Menu</h1>
+                        <p className="text-gray-600 font-bold text-[10px] uppercase tracking-[0.4em]">Gastronomical Asset Registry & Pricing Logic</p>
+                    </motion.div>
+                    <div className="flex gap-4">
                         <button
                             onClick={() => setIsImportModalOpen(true)}
-                            className="flex items-center gap-2 px-5 py-3 bg-white text-gray-700 font-bold rounded-2xl shadow-sm border border-gray-100 hover:bg-gray-50 transition-all active:scale-95"
+                            className="flex items-center gap-3 px-6 py-3 bg-white/[0.03] border border-white/5 text-gray-400 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/[0.05] transition-all"
                         >
-                            <span className="material-icons-round text-primary">upload_file</span>
-                            Carga Masiva CSV
+                            <Upload size={16} /> Bulk Import
                         </button>
                         <button
-                            onClick={() => { 
-                                setEditingItem(null); 
-                                setImagePreview(null);
-                                setIsAddModalOpen(true); 
-                            }}
-                            className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/30 hover:bg-primary-dark transition-all active:scale-95"
+                            onClick={() => { setEditingItem(null); setImagePreview(null); setIsAddModalOpen(true); }}
+                            className="flex items-center gap-3 px-8 py-3 bg-solaris-orange text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-105 transition-all"
                         >
-                            <span className="material-icons-round">add</span>
-                            Nuevo Platillo
+                            <Plus size={16} /> Register Asset
                         </button>
                     </div>
                 </header>
 
-                {/* Filters & Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="md:col-span-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-2">
-                        <div className="flex-1 flex items-center gap-2 px-4 border-r border-gray-100">
-                            <span className="material-icons-round text-gray-400">search</span>
+                {/* Filters */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+                    <div className="md:col-span-3 bg-white/[0.02] border border-white/5 p-2 rounded-solaris flex items-center gap-4">
+                        <div className="flex-1 flex items-center gap-4 px-6 border-r border-white/5">
+                            <Search className="text-gray-600" size={18} />
                             <input
                                 type="text"
-                                placeholder="Buscar por nombre o descripción..."
+                                placeholder="Search by name or technical spec..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-transparent border-none outline-none font-medium py-2"
+                                className="w-full bg-transparent border-none outline-none font-bold text-white text-sm"
                             />
                         </div>
-                        <div className="flex gap-2 overflow-x-auto p-1 no-scrollbar max-w-full">
+                        <div className="flex gap-1 overflow-x-auto p-1 max-w-full no-scrollbar">
                             {dynamicCategories.map(cat => (
                                 <button
                                     key={cat}
                                     onClick={() => setActiveCategory(cat)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeCategory === cat ? 'bg-primary text-white' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'}`}
+                                    className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeCategory === cat ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-gray-600 hover:text-gray-400'}`}
                                 >
                                     {cat}
                                 </button>
                             ))}
                         </div>
                     </div>
-                    <div className="bg-primary/5 border-2 border-primary/10 rounded-2xl p-4 flex items-center justify-between">
+                    <div className="bg-white/[0.02] border border-white/5 p-4 rounded-solaris flex items-center justify-between">
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Total Platillos</p>
-                            <p className="text-2xl font-black text-primary">{menuItems.length}</p>
+                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-700">Total Registry</p>
+                            <p className="text-2xl font-black italic text-solaris-orange">{menuItems.length}</p>
                         </div>
-                        <span className="material-icons-round text-primary/30 text-3xl">restaurant</span>
+                        <Utensils className="text-gray-800" size={32} />
                     </div>
                 </div>
 
-                {/* Table */}
-                <div className="bg-white rounded-3xl shadow-soft border border-gray-100 flex-1 overflow-hidden flex flex-col">
-                    <div className="overflow-x-auto flex-1 custom-scrollbar">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-gray-50/50 border-b border-gray-100">
-                                    <th className="px-6 py-4 text-[10px] uppercase font-black text-gray-400 tracking-widest">Platillo</th>
-                                    <th className="px-6 py-4 text-[10px] uppercase font-black text-gray-400 tracking-widest text-center">Precio</th>
-                                    <th className="px-6 py-4 text-[10px] uppercase font-black text-gray-400 tracking-widest">Categoría</th>
-                                    <th className="px-6 py-4 text-[10px] uppercase font-black text-gray-400 tracking-widest">Gramaje/Desglose</th>
-                                    <th className="px-6 py-4 text-[10px] uppercase font-black text-gray-400 tracking-widest text-center">Estatus</th>
-                                    <th className="px-6 py-4 text-[10px] uppercase font-black text-gray-400 tracking-widest text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                                {filteredItems.map(item => (
-                                    <tr key={item.id} className="hover:bg-gray-50/80 transition-colors group">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden shadow-sm">
-                                                    <img src={item.image} alt="" className="w-full h-full object-cover" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-gray-900">{item.name}</p>
-                                                    <p className="text-xs text-gray-400 line-clamp-1">{item.description || 'Sin descripción'}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className="font-black text-primary">${item.price.toFixed(2)}</span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-[10px] font-black uppercase tracking-wider border border-gray-200">
-                                                {item.category}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="text-sm font-medium text-gray-500">{item.gramaje || '—'}</span>
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button 
-                                                onClick={() => toggleStatus(item.id)}
-                                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${
-                                                item.status === 'ACTIVE' ? 'bg-green-50 text-green-600 hover:bg-green-100' : 'bg-red-50 text-red-600 hover:bg-red-100'
-                                            }`}>
-                                                <span className={`w-1.5 h-1.5 rounded-full ${item.status === 'ACTIVE' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                                {item.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}
-                                            </button>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button 
-                                                    onClick={() => { 
-                                                        setEditingItem(item); 
-                                                        setImagePreview(item.image);
-                                                        setIsAddModalOpen(true); 
-                                                    }}
-                                                    className="p-2 bg-white border border-gray-200 text-gray-400 hover:text-primary hover:border-primary/50 rounded-xl transition-all shadow-sm"
-                                                >
-                                                    <span className="material-icons-round text-sm">edit</span>
-                                                </button>
-                                                <button 
-                                                    onClick={() => { if(confirm('¿Seguro?')) deleteItem(item.id); }}
-                                                    className="p-2 bg-white border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 rounded-xl transition-all shadow-sm"
-                                                >
-                                                    <span className="material-icons-round text-sm">delete</span>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        {filteredItems.length === 0 && (
-                            <div className="flex flex-col items-center justify-center p-20 text-gray-300">
-                                <span className="material-icons-round text-6xl mb-4 text-gray-100">restaurant_menu</span>
-                                <p className="font-bold text-lg">No se encontraron platillos</p>
-                                <p className="text-sm">Ajusta los filtros o agrega uno nuevo.</p>
-                            </div>
-                        )}
-                    </div>
+                {/* Grid of Items (Replacing Table for better visual) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+                    {filteredItems.map(item => (
+                        <motion.div key={item.id} layout>
+                            <GlowCard glowColor="orange" className={`relative group border !p-0 overflow-hidden ${item.status === 'ACTIVE' ? 'border-white/5' : 'border-red-500/10 opacity-60'}`}>
+                                <div className="h-48 overflow-hidden relative">
+                                    <img src={item.image} alt="" className="w-full h-full object-cover filter contrast-125 transition-transform duration-700 group-hover:scale-110" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                    <div className="absolute top-4 right-4">
+                                        <button 
+                                            onClick={() => toggleStatus(item.id)}
+                                            className={`px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-2 border ${item.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}
+                                        >
+                                            <Circle size={8} fill="currentColor" /> {item.status}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="p-6">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="text-lg font-black italic tracking-tight text-white uppercase">{item.name}</h3>
+                                        <span className="text-solaris-orange font-black italic text-lg">${item.price.toFixed(0)}</span>
+                                    </div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-6">{item.category}</p>
+                                    
+                                    <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl mb-6">
+                                        <p className="text-[10px] text-gray-400 line-clamp-2 italic font-medium">"{item.description || 'No data recorded for this asset.'}"</p>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <button 
+                                            onClick={() => { setEditingItem(item); setImagePreview(item.image); setIsAddModalOpen(true); }}
+                                            className="flex-1 py-3 px-4 bg-white/[0.03] border border-white/5 text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                                        >
+                                            <Edit3 size={12} /> Mod.
+                                        </button>
+                                        <button 
+                                            onClick={() => { if(confirm('Erase asset from network?')) deleteItem(item.id); }}
+                                            className="px-4 bg-red-500/5 border border-red-500/10 text-red-500/60 hover:text-red-500 transition-all flex items-center justify-center rounded-xl"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </GlowCard>
+                        </motion.div>
+                    ))}
                 </div>
             </div>
 
-            {/* Add/Edit Modal */}
-            {isAddModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-3xl shadow-2xl w-[600px] max-h-[90vh] overflow-y-auto transform scale-100 animate-in zoom-in-95 duration-200 border border-gray-100 custom-scrollbar">
-                        <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-primary/5">
-                            <div>
-                                <h2 className="text-2xl font-black text-gray-900 tracking-tight">{editingItem ? 'Editar Platillo' : 'Nuevo Platillo'}</h2>
-                                <p className="text-xs text-gray-500 font-bold uppercase tracking-widest mt-1">Completa la información del menú</p>
-                            </div>
-                            <button onClick={() => setIsAddModalOpen(false)} className="w-10 h-10 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600">
-                                <span className="material-icons-round text-lg">close</span>
-                            </button>
-                        </div>
-                        <div className="px-8 pt-8 flex items-center gap-6">
-                            <div className="relative group">
-                                <div className="w-32 h-32 rounded-3xl bg-gray-100 overflow-hidden border-4 border-white shadow-xl relative">
-                                    <img 
-                                        src={imagePreview || (editingItem?.image) || 'https://via.placeholder.com/200?text=SIN+FOTO'} 
-                                        alt="Preview" 
-                                        className="w-full h-full object-cover" 
-                                    />
-                                    <button 
-                                        type="button"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                        <span className="material-icons-round text-2xl">photo_camera</span>
-                                        <span className="text-[10px] font-black uppercase mt-1">Cambiar</span>
-                                    </button>
-                                </div>
-                                <input 
-                                    type="file" 
-                                    ref={fileInputRef} 
-                                    onChange={handleImageChange} 
-                                    className="hidden" 
-                                    accept="image/*"
-                                />
-                            </div>
-                            <div>
-                                <p className="font-black text-gray-900 text-lg leading-tight">{editingItem?.name || 'Nuevo Platillo'}</p>
-                                <p className="text-xs text-primary font-bold uppercase tracking-widest mt-1">Fotografía del Platillo</p>
-                                <button 
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="mt-3 px-4 py-1.5 bg-white border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-500 rounded-full hover:bg-gray-50 transition-all"
-                                >
-                                    Seleccionar Archivo
-                                </button>
-                            </div>
-                        </div>
-                        <form onSubmit={handleSaveItem} className="p-8 grid grid-cols-2 gap-6">
-                            <div className="col-span-2">
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Nombre del Platillo</label>
-                                <input name="name" defaultValue={editingItem?.name} required className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl outline-none font-bold text-gray-800 transition-all" placeholder="Ej. Ceviche especial de camarón" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Categoría</label>
-                                <div className="flex gap-2">
-                                    {!isAddingNewCategory ? (
-                                        <>
-                                            <select name="category" defaultValue={editingItem?.category || 'General'} className="flex-1 px-5 py-4 bg-gray-50 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl outline-none font-bold text-gray-800 transition-all appearance-none cursor-pointer">
-                                                {dynamicCategories.filter(c => c !== 'All').map(cat => (
-                                                    <option key={cat} value={cat}>{cat}</option>
-                                                ))}
-                                            </select>
-                                            <button 
-                                                type="button"
-                                                onClick={() => setIsAddingNewCategory(true)}
-                                                className="w-14 bg-gray-50 hover:bg-white border-2 border-transparent hover:border-primary rounded-2xl flex items-center justify-center text-primary transition-all"
-                                                title="Nueva Categoría"
-                                            >
-                                                <span className="material-icons-round">add_circle</span>
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <input 
-                                                autoFocus
-                                                name="category"
-                                                className="flex-1 px-5 py-4 bg-blue-50 border-2 border-primary focus:bg-white rounded-2xl outline-none font-bold text-gray-800 transition-all"
-                                                placeholder="Nombre de categoría..."
-                                            />
-                                            <button 
-                                                type="button"
-                                                onClick={() => setIsAddingNewCategory(false)}
-                                                className="w-14 bg-gray-50 hover:bg-red-50 border-2 border-transparent hover:border-red-200 rounded-2xl flex items-center justify-center text-red-500 transition-all"
-                                                title="Cancelar"
-                                            >
-                                                <span className="material-icons-round">close</span>
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Precio (MXN)</label>
-                                <input name="price" type="number" step="0.01" defaultValue={editingItem?.price} required className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl outline-none font-bold text-gray-800 transition-all" placeholder="0.00" />
-                            </div>
-                            <div className="col-span-2">
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Descripción Corta</label>
-                                <textarea name="description" defaultValue={editingItem?.description} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl outline-none font-medium text-gray-700 transition-all h-24 resize-none" placeholder="Ingredientes principales, preparación, etc." />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Gramaje / Desglose</label>
-                                <input name="gramaje" defaultValue={editingItem?.gramaje} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl outline-none font-bold text-gray-800 transition-all" placeholder="Ej. 180g Camarón, 50g Cebolla" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Estatus</label>
-                                <select name="status" defaultValue={editingItem?.status || 'ACTIVE'} className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent focus:border-primary focus:bg-white rounded-2xl outline-none font-bold text-gray-800 transition-all appearance-none">
-                                    <option value="ACTIVE">Activo</option>
-                                    <option value="INACTIVE">Inactivo</option>
-                                </select>
-                            </div>
-                            <div className="col-span-2 mt-4 flex gap-4">
-                                <button type="button" onClick={() => setIsAddModalOpen(false)} className="flex-1 py-4 text-gray-400 font-bold uppercase tracking-widest text-xs hover:text-gray-600 transition-colors">Cancelar</button>
-                                <button type="submit" className="flex-[2] py-4 bg-primary text-white font-black uppercase tracking-widest text-xs rounded-2xl shadow-lg shadow-primary/30 hover:bg-primary-dark transition-all active:scale-95">Guardar Platillo</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            {/* Modal Layer */}
+            <AnimatePresence>
+                {isAddModalOpen && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-[#0a0a0b] border border-white/10 rounded-solaris w-full max-w-2xl overflow-hidden shadow-2xl">
+                            <form onSubmit={handleSaveItem}>
+                                <div className="p-8 md:p-12">
+                                    <div className="flex justify-between items-center mb-10">
+                                        <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">{editingItem ? 'Asset Recalibration' : 'New Menu Registry'}</h2>
+                                        <XCircle onClick={() => setIsAddModalOpen(false)} className="text-gray-700 hover:text-white cursor-pointer" size={32} />
+                                    </div>
 
-            {/* Import CSV Modal */}
-            {isImportModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white rounded-3xl shadow-2xl w-[800px] overflow-hidden transform scale-100 animate-in zoom-in-95 duration-200 border border-gray-100">
-                         <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-primary/5">
-                            <div>
-                                <h2 className="text-2xl font-black text-gray-900 tracking-tight">Carga Masiva de Menú</h2>
-                                <p className="text-[10px] text-primary/60 font-black uppercase tracking-[0.2em] mt-1">Importar desde archivo CSV</p>
-                            </div>
-                            <button onClick={() => { setIsImportModalOpen(false); setImportResult(null); }} className="w-10 h-10 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600">
-                                <span className="material-icons-round text-lg">close</span>
-                            </button>
-                        </div>
-                        <div className="px-8 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Opción 1: Pegar Texto CSV</p>
-                            <div className="flex gap-2">
-                                <input 
-                                    type="file" 
-                                    ref={importFileRef} 
-                                    onChange={handleFileUpload} 
-                                    className="hidden" 
-                                    accept=".csv,.txt" 
-                                />
-                                <button 
-                                    onClick={() => importFileRef.current?.click()}
-                                    className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/5 transition-all flex items-center gap-2"
-                                >
-                                    <span className="material-icons-round text-sm">upload_file</span>
-                                    Subir Archivo .CSV
-                                </button>
-                            </div>
-                        </div>
-                        <div className="p-8">
-                            {!importResult ? (
-                                <div className="space-y-6">
-                                    <div className="bg-blue-50 border border-blue-100 p-6 rounded-2xl">
-                                        <h3 className="font-bold text-blue-800 text-sm mb-2 flex items-center gap-2">
-                                            <span className="material-icons-round text-lg">info</span>
-                                            Formato de Columnas (Orden sugerido):
-                                        </h3>
-                                        <p className="text-blue-700 text-xs font-mono bg-white/50 p-3 rounded-lg border border-blue-100/50">
-                                            Nombre, Categoría, Precio, Descripción, Gramaje, Estatus
-                                        </p>
-                                        <p className="text-[10px] text-blue-500 mt-2 font-bold uppercase tracking-wider italic">
-                                            * El estatus puede ser 'Activo' o 'Inactivo'. Por defecto será 'Activo'.
-                                        </p>
-                                    </div>
-                                    <textarea
-                                        value={csvInput}
-                                        onChange={(e) => setCsvInput(e.target.value)}
-                                        className="w-full h-64 p-6 bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl outline-none focus:border-primary focus:bg-white font-mono text-xs transition-all"
-                                        placeholder="Ceviche Mixto, Ceviches, 220, Delicioso ceviche, 200g mixto, Activo
-Aguachile Camarón, Aguachiles, 230, Picante tradicional, 150g camaron, Activo..."
-                                    />
-                                    <button
-                                        onClick={handleImport}
-                                        disabled={!csvInput.trim()}
-                                        className="w-full py-5 bg-primary text-white font-black uppercase tracking-[0.2em] text-xs rounded-2xl shadow-xl shadow-primary/30 hover:bg-primary-dark disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <span className="material-icons-round">bolt</span>
-                                        Procesar e Importar al Menú
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="text-center py-12 space-y-4 animate-in zoom-in-95">
-                                    <div className={`w-24 h-24 rounded-full mx-auto flex items-center justify-center ${importResult.count > 0 ? 'bg-green-100' : 'bg-red-100'}`}>
-                                        <span className={`material-icons-round text-5xl ${importResult.count > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                            {importResult.count > 0 ? 'check_circle' : 'error'}
-                                        </span>
-                                    </div>
-                                    <h3 className="text-2xl font-black text-gray-900">
-                                        {importResult.count > 0 ? `¡${importResult.count} Platillos Importados!` : 'Error en la Importación'}
-                                    </h3>
-                                    {importResult.errors.length > 0 && (
-                                        <div className="max-h-40 overflow-y-auto bg-gray-50 p-4 rounded-xl border border-gray-200 text-left">
-                                            {importResult.errors.map((err, i) => (
-                                                <p key={i} className="text-red-500 text-[10px] font-bold mb-1">• {err}</p>
-                                            ))}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                        {/* Image Upload Area */}
+                                        <div className="space-y-4">
+                                            <div onClick={() => fileInputRef.current?.click()} className="group relative w-full aspect-square bg-white/[0.02] border-2 border-dashed border-white/10 rounded-solaris overflow-hidden cursor-pointer flex items-center justify-center transition-all hover:border-solaris-orange/40">
+                                                {imagePreview || editingItem?.image ? (
+                                                    <img src={imagePreview || editingItem?.image} alt="" className="w-full h-full object-cover filter contrast-125" />
+                                                ) : (
+                                                    <div className="text-center">
+                                                        <Plus className="mx-auto text-gray-700 mb-4 group-hover:text-solaris-orange transition-colors" size={40} />
+                                                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-700">Upload Visual Data</p>
+                                                    </div>
+                                                )}
+                                                <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
+                                            </div>
+                                            <p className="text-[8px] font-black uppercase text-gray-800 tracking-[0.4em] text-center italic">Image Verification Buffer</p>
                                         </div>
-                                    )}
-                                    <button 
-                                        onClick={() => setImportResult(null)}
-                                        className="px-8 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold hover:bg-gray-200 transition-all"
-                                    >
-                                        Volver a Intentar
-                                    </button>
+
+                                        {/* Form Fields */}
+                                        <div className="space-y-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Functional Name</label>
+                                                <input name="name" defaultValue={editingItem?.name} required placeholder="Asset ID" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-solaris-orange/50 transition-all font-bold" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Market Category</label>
+                                                    <input name="category" defaultValue={editingItem?.category || 'General'} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-5 text-white text-xs outline-none focus:border-solaris-orange/50 transition-all font-bold" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Asset Value ($)</label>
+                                                    <input name="price" type="number" step="0.01" defaultValue={editingItem?.price} required className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-5 text-white text-xs outline-none focus:border-solaris-orange/50 transition-all font-bold" />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Technical Specs</label>
+                                                <textarea name="description" defaultValue={editingItem?.description} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white text-xs outline-none focus:border-solaris-orange/50 transition-all font-medium h-32 resize-none" />
+                                            </div>
+                                            <button type="submit" className="w-full bg-solaris-orange text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-600 transition-all text-[11px] flex items-center justify-center gap-3">
+                                                Commit to Solaris Network
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

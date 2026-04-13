@@ -25,7 +25,7 @@ export const BillingScreen: React.FC = () => {
         setStripeModalConfig({
             isOpen: true,
             amount: 850,
-            title: 'Renovación Mensual - Culinex POS',
+            title: 'Renovación Mensual - Solaris POS',
             onPay: async () => {
                 setIsPaying(true);
                 const success = await paySubscription();
@@ -121,7 +121,7 @@ export const BillingScreen: React.FC = () => {
         <div className="p-8 bg-gray-50 h-full overflow-y-auto">
             <header className="mb-10">
                 <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2 uppercase">Gestión de Suscripción</h1>
-                <p className="text-gray-500 font-medium">Administra el acceso a tu plataforma Culinex POS.</p>
+                <p className="text-gray-500 font-medium">Administra el acceso a tu plataforma Solaris POS.</p>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
@@ -139,7 +139,7 @@ export const BillingScreen: React.FC = () => {
                                 </div>
                             </div>
                             <div className="text-right">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Culinex POS ID</span>
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Solaris POS ID</span>
                                 <span className="text-gray-900 font-mono font-bold uppercase">
                                     POS-{settings.name.substring(0, 3).toUpperCase()}-{Math.floor(100+Math.random()*899)}
                                 </span>

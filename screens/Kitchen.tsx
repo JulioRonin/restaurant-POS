@@ -1,33 +1,34 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { Order, OrderStatus, OrderSource } from '../types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GlowCard } from '../components/ui/spotlight-card';
+import { 
+  ChefHat, 
+  Timer, 
+  CheckCircle2, 
+  Truck, 
+  Utensils, 
+  AlertTriangle,
+  LayoutGrid,
+  Columns2,
+  Bell,
+  Zap,
+  Package
+} from 'lucide-react';
 
-// Simple beep sound as base64 to avoid external dependencies
-// Shortened placeholder for demo purposes
-const BEEP_SOUND = 'data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU';
-
-// Better approach: Web Audio API oscillator for a beep
 const playBeep = () => {
     try {
         const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
         if (!AudioContext) return;
-
         const ctx = new AudioContext();
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime);
         gain.gain.setValueAtTime(0.1, ctx.currentTime);
-
-        osc.start();
-        osc.stop(ctx.currentTime + 0.5); // 0.5 seconds beep
-    } catch (e) {
-        console.error("Audio play failed", e);
-    }
+        osc.start(); osc.stop(ctx.currentTime + 0.5);
+    } catch (e) { console.error("Audio play failed", e); }
 };
 
 const OrderTimer: React.FC<{ timestamp: Date }> = ({ timestamp }) => {
@@ -36,269 +37,154 @@ const OrderTimer: React.FC<{ timestamp: Date }> = ({ timestamp }) => {
 
     useEffect(() => {
         const updateTimer = () => {
-            const now = new Date();
-            const diff = now.getTime() - new Date(timestamp).getTime();
-
-            const totalSeconds = Math.floor(diff / 1000);
-            const minutes = Math.floor(totalSeconds / 60);
-            const seconds = totalSeconds % 60;
-
-            const formatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            setElapsed(formatted);
-            setIsLate(minutes >= 15);
+            const diff = Date.now() - new Date(timestamp).getTime();
+            const min = Math.floor(diff / 60000);
+            const sec = Math.floor((diff % 60000) / 1000);
+            setElapsed(`${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`);
+            setIsLate(min >= 15);
         };
-
-        updateTimer(); // Initial
+        updateTimer();
         const interval = setInterval(updateTimer, 1000);
         return () => clearInterval(interval);
     }, [timestamp]);
 
     return (
-        <span className={`px-3 py-1 rounded-lg font-mono font-bold text-lg ${isLate ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-green-100 text-green-600'}`}>
+        <span className={`px-4 py-1.5 rounded-xl font-mono text-lg font-black italic tracking-tighter ${isLate ? 'bg-red-500 text-white shadow-lg animate-pulse' : 'bg-solaris-orange/10 text-solaris-orange border border-solaris-orange/20'}`}>
             {elapsed}
         </span>
     );
 };
 
-interface TicketProps {
-    order: Order;
-    onComplete: (id: string) => void;
-}
-
-const Ticket: React.FC<TicketProps> = ({ order, onComplete }) => {
-    const startTime = new Date(order.timestamp).getTime();
-    const isLateInitial = (Date.now() - startTime) > 15 * 60 * 1000;
-
-    // Source Badge Logic
-    const getSourceConfig = (source?: OrderSource) => {
+const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ order, onComplete }) => {
+    const getSourceIcon = (source?: OrderSource) => {
         switch (source) {
-            case OrderSource.UBER_EATS: return { color: 'bg-green-500', icon: 'directions_bike', label: 'Uber Eats' };
-            case OrderSource.RAPPI: return { color: 'bg-orange-500', icon: 'delivery_dining', label: 'Rappi' };
-            case OrderSource.PICKUP: return { color: 'bg-blue-500', icon: 'local_mall', label: 'Pickup' };
-            default: return { color: 'bg-gray-100 text-gray-500', icon: 'restaurant', label: 'Dine-In' }; // Dine-in default
+            case OrderSource.UBER_EATS: return { icon: Truck, color: 'text-green-500', label: 'UBER_SYS' };
+            case OrderSource.RAPPI: return { icon: Zap, color: 'text-solaris-orange', label: 'RAPPI_GRID' };
+            default: return { icon: Utensils, color: 'text-gray-500', label: 'LOCAL_NODE' };
         }
     };
 
-    const sourceConfig = getSourceConfig(order.source || OrderSource.DINE_IN);
-    const isApp = order.source && order.source !== OrderSource.DINE_IN;
+    const config = getSourceIcon(order.source);
 
     return (
-        <div className={`bg-white rounded-xl overflow-hidden border-l-4 shadow-soft min-w-[300px] flex flex-col animate-in slide-in-from-right duration-500 ${isLateInitial ? 'border-red-500' : 'border-green-500'} relative`}>
-            {/* Source Badge */}
-            {isApp && (
-                <div className={`absolute top-0 right-0 px-3 py-1 rounded-bl-xl text-white text-xs font-bold flex items-center gap-1 ${sourceConfig.color}`}>
-                    <span className="material-icons-round text-xs">{sourceConfig.icon}</span>
-                    {sourceConfig.label}
-                </div>
-            )}
-
-            <div className="p-4 flex justify-between items-center bg-gray-50 border-b border-gray-100 pt-6">
+        <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col min-w-[320px] max-w-[320px] overflow-hidden group">
+            <div className="p-6 bg-white/[0.03] border-b border-white/5 flex justify-between items-start">
                 <div>
-                    <h3 className="font-bold text-xl text-gray-900">{order.tableId}</h3>
-                    <span className="text-xs text-gray-500">#{order.id}</span>
+                   <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">{order.tableId}</h3>
+                   <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest mt-1">PKT: {order.id.slice(0, 8)}</p>
                 </div>
                 <OrderTimer timestamp={order.timestamp} />
             </div>
-            <div className="p-4 flex-1 overflow-y-auto max-h-[300px]">
+
+            <div className="p-6 flex-1 space-y-4">
                 {order.items.map((item, idx) => (
-                    <div key={`${item.id}-${idx}`} className="flex justify-between items-start mb-3 border-b border-gray-100 pb-2 last:border-0 last:pb-0 last:mb-0">
-                        <div className="flex flex-col w-full">
-                            <div className="flex justify-between w-full">
-                                <div className="flex gap-3 items-center">
-                                    <span className="font-bold text-lg text-primary bg-primary/10 w-8 h-8 flex items-center justify-center rounded-lg">{item.quantity}</span>
-                                    <span className="text-gray-800 font-bold text-lg">{item.name}</span>
-                                </div>
+                    <div key={idx} className="space-y-2">
+                        <div className="flex justify-between items-center bg-white/[0.02] p-3 rounded-2xl border border-white/5">
+                            <div className="flex items-center gap-4">
+                                <span className="w-8 h-8 rounded-xl bg-solaris-orange/10 border border-solaris-orange/20 flex items-center justify-center font-black italic text-solaris-orange">{item.quantity}</span>
+                                <span className="font-black italic text-white uppercase tracking-tight text-sm">{item.name}</span>
                             </div>
-                            {item.notes && (
-                                <p className="text-sm text-orange-600 mt-1 font-bold bg-orange-50 p-2 rounded-lg border border-orange-100 flex items-center gap-2">
-                                    <span className="material-icons-round text-sm">warning</span>
-                                    {item.notes}
-                                </p>
-                            )}
                         </div>
+                        {item.notes && (
+                            <div className="mx-2 p-3 rounded-xl bg-red-500/5 border border-red-500/10 flex items-center gap-3">
+                                <AlertTriangle size={14} className="text-red-500" />
+                                <span className="text-[10px] font-black uppercase text-red-500/80 tracking-widest leading-relaxed">{item.notes}</span>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
-            <button
-                onClick={() => onComplete(order.id)}
-                className="m-4 mt-2 py-4 bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30 rounded-xl font-bold text-lg transition-all active:scale-95 flex items-center justify-center gap-2"
-            >
-                <span className="material-icons-round">check_circle</span>
-                Marcar Completado
-            </button>
-        </div>
+
+            <div className="p-6 bg-white/[0.01]">
+                <button 
+                   onClick={() => onComplete(order.id)}
+                   className="w-full py-5 bg-white/[0.03] border border-white/10 text-white font-black italic uppercase tracking-[0.2em] rounded-2xl hover:bg-solaris-orange hover:text-white hover:border-solaris-orange transition-all active:scale-95 flex items-center justify-center gap-4 shadow-xl"
+                >
+                    <CheckCircle2 size={18} /> Deploy Asset
+                </button>
+            </div>
+        </GlowCard>
     );
 };
 
 export const KitchenScreen: React.FC = () => {
-    const { orders, updateOrderStatus, addOrder } = useOrders();
-    const [prevOrderCount, setPrevOrderCount] = useState(0);
-    const [isSplitView, setIsSplitView] = useState(false); // New state for split view
-    const [showNewOrderAlert, setShowNewOrderAlert] = useState(false);
+    const { orders, updateOrderStatus } = useOrders();
+    const [prevCount, setPrevCount] = useState(0);
+    const [isSplit, setIsSplit] = useState(false);
+    const [alert, setAlert] = useState(false);
 
-    const pendingOrders = orders.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.COOKING);
-    const completedCount = orders.filter(o => o.status === OrderStatus.COMPLETED).length;
+    const pending = orders.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.COOKING);
+    const sorted = [...pending].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-    // Filter Logic
-    const dineInOrders = pendingOrders.filter(o => !o.source || o.source === OrderSource.DINE_IN);
-    const appOrders = pendingOrders.filter(o => o.source && o.source !== OrderSource.DINE_IN);
-
-    // Sound Alarm Effect
     useEffect(() => {
-        if (pendingOrders.length > prevOrderCount && prevOrderCount !== 0) {
-            playBeep();
-            setShowNewOrderAlert(true);
-            setTimeout(() => setShowNewOrderAlert(false), 5000);
+        if (pending.length > prevCount && prevCount !== 0) {
+            playBeep(); setAlert(true); setTimeout(() => setAlert(false), 4000);
         }
-        setPrevOrderCount(pendingOrders.length);
-    }, [pendingOrders.length, prevOrderCount]);
-
-    // Initial load sync
-    useEffect(() => {
-        setPrevOrderCount(pendingOrders.length);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    const sortOrders = (list: Order[]) => [...list].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-    const sortedDineIn = sortOrders(dineInOrders);
-    const sortedApps = sortOrders(appOrders);
-    const sortedAll = sortOrders(pendingOrders);
+        setPrevCount(pending.length);
+    }, [pending.length, prevCount]);
 
     return (
-        <div className="flex-1 bg-[#1F2937] text-gray-100 p-6 overflow-hidden flex flex-col h-full relative">
-            {/* New Order Animation Overlay */}
-            {showNewOrderAlert && (
-                <div className="absolute inset-0 z-50 pointer-events-none flex items-center justify-center overflow-hidden">
-                    <div className="bg-green-500/20 absolute inset-0 animate-pulse"></div>
-                    <div className="animate-slide-motorcycle absolute right-0 flex flex-col items-center">
-                        <span className="material-icons-round text-9xl text-green-400 drop-shadow-[0_0_15px_rgba(74,222,128,0.8)]">two_wheeler</span>
-                        <div className="bg-green-500 text-white font-black text-2xl px-6 py-2 rounded-full shadow-lg transform -skew-x-12 border-4 border-white">
-                            NEW ORDER!
+        <div className="h-full bg-solaris-black text-white p-6 md:p-10 flex flex-col overflow-hidden antialiased relative">
+            {/* New Order Alert */}
+            <AnimatePresence>
+                {alert && (
+                    <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
+                        <div className="p-16 rounded-[4rem] bg-solaris-orange text-white shadow-solaris-glow border-[10px] border-white/20 flex flex-col items-center">
+                            <Bell size={80} className="mb-6 animate-bounce" />
+                            <h2 className="text-6xl font-black italic uppercase tracking-tighter">New Asset Inbound</h2>
+                            <p className="text-[12px] font-black uppercase tracking-[0.5em] mt-2 opacity-60">Synchronizing Kitchen Cluster</p>
                         </div>
-                    </div>
-                </div>
-            )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            <style>{`
-                @keyframes slide-motorcycle {
-                    0% { transform: translateX(-120vw) scale(0.5) rotate(5deg); opacity: 0; }
-                    20% { transform: translateX(-50vw) scale(1.2) rotate(-5deg); opacity: 1; }
-                    40% { transform: translateX(-40vw) scale(1) rotate(5deg); }
-                    100% { transform: translateX(20vw) scale(1); opacity: 0; }
-                }
-                .animate-slide-motorcycle {
-                    animation: slide-motorcycle 4s ease-in-out forwards;
-                }
-            `}</style>
-
-            <header className="flex justify-between items-center mb-6 bg-[#374151] p-4 rounded-2xl shadow-lg border border-gray-700 z-10 relative">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/30">
-                        <span className="material-icons-round text-3xl">restaurant</span>
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-white">Pantalla de Cocina</h1>
-                        <p className="text-gray-400 text-sm">Cola de Pedidos en Tiempo Real</p>
-                    </div>
+            <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 mb-12">
+                <div>
+                   <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">Production Cluster</h1>
+                   <p className="text-gray-600 font-bold text-[10px] uppercase tracking-[0.4em]">Real-time Asset Manifest & Synthesis</p>
                 </div>
 
-                {/* Control Center */}
-                <div className="flex gap-4 items-center">
-                    {/* Toggle Split View */}
-                    <div className="bg-[#1F2937] p-1 rounded-xl border border-gray-700 flex">
-                        <button
-                            onClick={() => setIsSplitView(false)}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${!isSplitView ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            <span className="material-icons-round text-sm">view_agenda</span>
-                            Unified
+                <div className="flex gap-6 items-center">
+                    <div className="bg-white/[0.03] border border-white/5 p-1 rounded-2xl flex">
+                        <button onClick={() => setIsSplit(false)} className={`px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${!isSplit ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-gray-600'}`}>
+                            <LayoutGrid size={14} /> Global Stream
                         </button>
-                        <button
-                            onClick={() => setIsSplitView(true)}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${isSplitView ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                        >
-                            <span className="material-icons-round text-sm">vertical_split</span>
-                            Split View
+                        <button onClick={() => setIsSplit(true)} className={`px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${isSplit ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-gray-600'}`}>
+                            <Columns2 size={14} /> Matrix View
                         </button>
                     </div>
 
-                    <div className="h-8 w-[1px] bg-gray-600 mx-2"></div>
-
-                    <div className="bg-[#1F2937] px-6 py-2 rounded-xl border border-gray-700 text-center">
-                        <span className="block text-xs text-gray-400 font-bold uppercase tracking-wider">Completados</span>
-                        <span className="font-bold text-xl text-green-500">{completedCount}</span>
-                    </div>
-                    <div className="bg-[#1F2937] px-6 py-2 rounded-xl border border-gray-700 text-center">
-                        <span className="block text-xs text-gray-400 font-bold uppercase tracking-wider">Pendientes</span>
-                        <span className="font-bold text-xl text-primary animate-pulse">{pendingOrders.length}</span>
+                    <div className="flex gap-4">
+                         <div className="bg-white/[0.03] border border-white/5 px-6 py-3 rounded-2xl">
+                             <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest mb-1">Queue Depth</p>
+                             <p className="text-xl font-black italic text-solaris-orange leading-none">{pending.length}</p>
+                         </div>
+                         <div className="bg-white/[0.03] border border-white/5 px-6 py-3 rounded-2xl">
+                              <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest mb-1">Shift Yield</p>
+                              <p className="text-xl font-black italic text-green-500 leading-none">{orders.filter(o => o.status === OrderStatus.READY).length}</p>
+                         </div>
                     </div>
                 </div>
             </header>
 
-            {/* Main Content Area */}
-            <div className="flex-1 overflow-hidden relative">
-                {isSplitView ? (
-                    <div className="flex h-full gap-6">
-                        {/* Dine-In Column */}
-                        <div className="flex-1 flex flex-col bg-[#374151]/30 rounded-2xl border border-gray-700/50 overflow-hidden">
-                            <div className="p-4 bg-gray-700/50 border-b border-gray-600 flex justify-between items-center">
-                                <h3 className="font-bold text-lg text-white flex items-center gap-2">
-                                    <span className="material-icons-round">restaurant</span> Dine-In
-                                </h3>
-                                <span className="bg-gray-600 text-white text-xs px-2 py-1 rounded-full">{sortedDineIn.length}</span>
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                {sortedDineIn.length === 0 ? (
-                                    <div className="text-center text-gray-500 mt-20">No Dine-In orders</div>
-                                ) : (
-                                    sortedDineIn.map(order => <Ticket key={order.id} order={order} onComplete={(id) => updateOrderStatus(id, OrderStatus.READY)} />)
-                                )}
-                            </div>
+            <main className="flex-1 overflow-x-auto no-scrollbar py-4">
+                <div className={`h-full flex gap-8 ${isSplit ? 'flex-wrap' : 'min-w-max px-4'}`}>
+                    {sorted.length === 0 ? (
+                        <div className="flex-1 flex flex-col items-center justify-center opacity-20 border-2 border-dashed border-white/5 rounded-solaris">
+                            <Package size={80} className="mb-6" />
+                            <p className="text-[12px] font-black uppercase tracking-[0.4em]">Manifest Clean</p>
                         </div>
-
-                        {/* Apps Column */}
-                        <div className="flex-1 flex flex-col bg-[#374151]/30 rounded-2xl border border-gray-700/50 overflow-hidden">
-                            <div className="p-4 bg-gray-700/50 border-b border-gray-600 flex justify-between items-center">
-                                <h3 className="font-bold text-lg text-white flex items-center gap-2">
-                                    <span className="material-icons-round">delivery_dining</span> Apps & Delivery
-                                </h3>
-                                <span className="bg-orange-500/20 text-orange-400 text-xs px-2 py-1 rounded-full">{sortedApps.length}</span>
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                {sortedApps.length === 0 ? (
-                                    <div className="text-center text-gray-500 mt-20">No App orders</div>
-                                ) : (
-                                    sortedApps.map(order => <Ticket key={order.id} order={order} onComplete={(id) => updateOrderStatus(id, OrderStatus.READY)} />)
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    // Unified Horizontal Scroll View (Original)
-                    <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4 scrollbar-hide h-full">
-                        <div className="flex gap-6 h-full min-w-max px-2">
-                            {sortedAll.length === 0 ? (
-                                <div className="w-[calc(100vw-3rem)] flex flex-col items-center justify-center text-gray-500 border-2 border-dashed border-gray-700 rounded-3xl bg-[#374151]/30 h-full">
-                                    <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center mb-6">
-                                        <span className="material-icons-round text-6xl text-gray-500">check</span>
-                                    </div>
-                                    <h2 className="text-2xl font-bold text-gray-300">Todo en orden</h2>
-                                    <p className="font-medium mt-2">No hay ordenes pendientes por preparar.</p>
-                                </div>
-                            ) : (
-                                sortedAll.map(order => (
-                                    <Ticket
-                                        key={order.id}
-                                        order={order}
-                                        onComplete={(id) => updateOrderStatus(id, OrderStatus.READY)}
-                                    />
-                                ))
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
+                    ) : (
+                        sorted.map(order => (
+                            <Ticket 
+                                key={order.id} 
+                                order={order} 
+                                onComplete={(id) => updateOrderStatus(id, OrderStatus.READY)} 
+                            />
+                        ))
+                    )}
+                </div>
+            </main>
         </div>
     );
 };

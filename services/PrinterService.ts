@@ -314,7 +314,7 @@ class PrinterService {
       try {
           result = result.align('left').size('normal');
           
-          wrapCenter(settings.name || 'CULINEX').forEach(l => result = result.text(l).newline());
+          wrapCenter(settings.name || 'SOLARIS').forEach(l => result = result.text(l).newline());
           if (settings.legalName) wrapCenter(settings.legalName).forEach(l => result = result.text(l).newline());
           if (settings.address) wrapCenter(settings.address).forEach(l => result = result.text(l).newline());
           if (settings.phone) wrapCenter(settings.phone).forEach(l => result = result.text(l).newline());
@@ -500,7 +500,7 @@ class PrinterService {
         .newline()
         .text(center('--- CIERRE DE TURNO ---'))
         .newline()
-        .text(center('Culinex POS'))
+        .text(center('Solaris POS'))
         .newline()
         .text(center('Ronin Studio'))
         .newline()
@@ -611,7 +611,7 @@ class PrinterService {
         .newline()
         .text(center('--- FIN DE COMANDA ---'))
         .newline()
-        .text(center('Culinex POS'))
+        .text(center('Solaris POS'))
         .newline()
         .text(center('Ronin Studio'))
         .newline()

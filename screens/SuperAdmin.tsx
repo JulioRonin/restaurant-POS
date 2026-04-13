@@ -184,7 +184,7 @@ export default function SuperAdminScreen() {
       <div className="flex flex-col items-center justify-center h-full text-white bg-slate-900 p-8">
         <ShieldCheck className="w-20 h-20 text-red-500 mb-4 animate-pulse" />
         <h1 className="text-3xl font-bold mb-2">Acceso Restringido</h1>
-        <p className="text-slate-400">Esta área es solo para administradores de Culinex OS.</p>
+        <p className="text-slate-400">Esta área es solo para administradores de Solaris POS.</p>
       </div>
     );
   }
@@ -200,7 +200,7 @@ export default function SuperAdminScreen() {
                 <Zap className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-3xl font-black uppercase tracking-tighter text-white">
-              Culinex Control <span className="text-blue-500">Center</span>
+              Solaris Control <span className="text-blue-500">Center</span>
             </h1>
           </div>
           <p className="text-slate-500 text-sm font-medium">Gestión Global de Ecosistema Multi-Tenant</p>

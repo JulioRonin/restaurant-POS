@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { LockScreen } from './components/LockScreen';
 import { useSettings } from './contexts/SettingsContext';
@@ -21,7 +21,9 @@ import { BillingScreen } from './screens/Billing';
 import { MenuScreen } from './screens/Menu';
 import { MenuProvider } from './contexts/MenuContext';
 import { InventoryProvider } from './contexts/InventoryContext';
-import { MOCK_STAFF } from './constants';
+import { SettingsProvider } from './contexts/SettingsContext';
+import { SyncProvider } from './contexts/SyncContext';
+import { TableProvider } from './contexts/TableContext';
 
 import { AuthScreen } from './components/AuthScreen';
 import { RemoteOrderScreen } from './screens/RemoteOrder';
@@ -29,9 +31,6 @@ import SuperAdminScreen from './screens/SuperAdmin';
 import OnboardingScreen from './screens/Onboarding';
 import { BarScreen } from './screens/Bar';
 import { MyTablesScreen } from './screens/MyTables';
-import { SettingsProvider } from './contexts/SettingsContext';
-import { SyncProvider } from './contexts/SyncContext';
-import { TableProvider } from './contexts/TableContext';
 import { canAccess, getDefaultRoute } from './services/rbac';
 
 const RoleGuard: React.FC<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
@@ -44,22 +43,22 @@ const RoleGuard: React.FC<{ children: React.ReactNode; path: string }> = ({ chil
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { clearActiveEmployee } = useUser();
-  const location = window.location.hash; // Simple way to track route changes in HashRouter
+  const location = useLocation(); // Accurate location tracking for stable transitions
 
   return (
-    <div className="flex h-screen w-screen bg-solaris-black text-white font-sans overflow-hidden antialiased">
+    <div className="flex h-screen w-screen bg-[#030303] text-white font-sans overflow-hidden antialiased">
       <div className="no-print">
         <Sidebar onLock={clearActiveEmployee} />
       </div>
       <main className="flex-1 h-full overflow-hidden relative">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
-            key={location}
-            initial={{ opacity: 0, scale: 0.98, Filter: 'blur(10px)' }}
+            key={location.pathname}
+            initial={{ opacity: 0, scale: 0.99, filter: 'blur(8px)' }}
             animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
-            transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-            className="h-full w-full"
+            exit={{ opacity: 0, scale: 1.01, filter: 'blur(8px)' }}
+            transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
+            className="h-full w-full bg-[#030303]"
           >
             {children}
           </motion.div>
@@ -79,11 +78,11 @@ const AppContent: React.FC = () => {
       indigo: { primary: '#5D5FEF', secondary: '#A5A6F6', rgb: '93, 95, 239' },
       emerald: { primary: '#10B981', secondary: '#A7F3D0', rgb: '16, 185, 129' },
       ruby: { primary: '#EF4444', secondary: '#FECACA', rgb: '239, 68, 68' },
-      amber: { primary: '#F59E0B', secondary: '#FDE68A', rgb: '245, 158, 11' },
+      amber: { primary: '#f97316', secondary: '#fb923c', rgb: '249, 115, 22' },
       midnight: { primary: '#334155', secondary: '#94A3B8', rgb: '51, 65, 85' }
     } as const;
 
-    const activeTheme = themes[settings.themeId as keyof typeof themes || 'indigo'];
+    const activeTheme = themes[settings.themeId as keyof typeof themes || 'amber'];
     document.documentElement.style.setProperty('--primary-color', activeTheme.primary);
     document.documentElement.style.setProperty('--secondary-color', activeTheme.secondary);
     document.documentElement.style.setProperty('--primary-rgb', activeTheme.rgb);
@@ -91,9 +90,9 @@ const AppContent: React.FC = () => {
 
   if (isAuthenticating) {
     return (
-      <div className="fixed inset-0 bg-gray-900 flex flex-col items-center justify-center text-white">
-        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50 animate-pulse">Culinex Initializing</p>
+      <div className="fixed inset-0 bg-[#030303] flex flex-col items-center justify-center text-white">
+        <div className="w-12 h-12 border-4 border-solaris-orange/20 border-t-solaris-orange rounded-full animate-spin mb-6 shadow-solaris-glow"></div>
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-solaris-orange animate-pulse italic">Solaris OS Core Booting</p>
       </div>
     );
   }
@@ -157,7 +156,7 @@ const AppContent: React.FC = () => {
               <Route path="/my-tables" element={<RoleGuard path="/my-tables"><MyTablesScreen /></RoleGuard>} />
               
               <Route path="/onboarding" element={<OnboardingScreen />} />
-              <Route path="*" element={<div className="flex items-center justify-center h-full text-gray-500">404 - Module Not Found</div>} />
+              <Route path="*" element={<div className="flex items-center justify-center h-full text-gray-700 uppercase font-black tracking-widest italic text-xs">404 - Module Lost in Solaris</div>} />
             </Routes>
           </Layout>
         </SubscriptionGuard>

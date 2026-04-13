@@ -1,11 +1,11 @@
 {
-  "name": "Culinex Intelligent POS",
-  "short_name": "Culinex POS",
-  "description": "Sistema de Punto de Venta Inteligente - Offline First",
+  "name": "Solaris POS - Intelligent Terminal",
+  "short_name": "Solaris POS",
+  "description": "Sistema de Punto de Venta Inteligente - Solaris Design System",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F3F4F6",
-  "theme_color": "#5D5FEF",
+  "background_color": "#030303",
+  "theme_color": "#f97316",
   "orientation": "any",
   "categories": ["business", "productivity"],
   "icons": [

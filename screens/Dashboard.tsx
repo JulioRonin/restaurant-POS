@@ -175,39 +175,45 @@ export const DashboardScreen: React.FC = () => {
     const { inventory } = useInventory();
 
     return (
-        <div className="flex-1 bg-solaris-black text-white p-6 md:p-10 overflow-y-auto h-full relative font-sans antialiased">
+        <div className="flex-1 bg-[#030303] text-white p-6 md:p-10 overflow-y-auto h-full relative font-sans antialiased custom-scrollbar">
+            {/* Ambient Background Glows */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-solaris-orange/10 rounded-full blur-[120px]"></div>
+                <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-solaris-orange/5 rounded-full blur-[100px]"></div>
+            </div>
+
             {/* Header Section */}
-            <div className="flex justify-between items-center mb-12 flex-wrap gap-6 no-print-dashboard">
+            <div className="relative z-10 flex justify-between items-center mb-12 flex-wrap gap-6 no-print-dashboard">
                 <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                    <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">Solaris Core</h1>
-                    <p className="text-gray-600 font-bold text-[10px] uppercase tracking-[0.5em]">Real-time Financial Orchestration</p>
+                    <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2 text-white">Solaris Core</h1>
+                    <p className="text-white/40 font-bold text-[10px] uppercase tracking-[0.5em]">Real-time Financial Orchestration</p>
                 </motion.div>
 
                 <div className="flex gap-4 items-center flex-wrap">
-                    <div className="flex bg-white/[0.03] border border-white/5 rounded-2xl p-1 gap-1">
+                    <div className="flex bg-white/[0.03] border border-white/5 rounded-[24px] p-1 gap-1">
                         <select
                             value={timeRange}
                             onChange={(e) => setTimeRange(e.target.value as TimeRange)}
                             className="bg-transparent text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-white/[0.05] transition-all"
                         >
-                            <option value="Weekly" className="bg-solaris-black">Weekly</option>
-                            <option value="Monthly" className="bg-solaris-black">Monthly</option>
-                            <option value="SpecificDay" className="bg-solaris-black">Filter by Day</option>
+                            <option value="Weekly" className="bg-[#0a0a0b]">Weekly</option>
+                            <option value="Monthly" className="bg-[#0a0a0b]">Monthly</option>
+                            <option value="SpecificDay" className="bg-[#0a0a0b]">Filter by Day</option>
                         </select>
                         <select
                             value={selectedCategory}
                             onChange={(e) => setSelectedCategory(e.target.value)}
                             className="bg-transparent text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-white/[0.05] transition-all"
                         >
-                            {CATEGORIES.map(cat => <option key={cat} value={cat} className="bg-solaris-black">{cat}</option>)}
+                            {CATEGORIES.map(cat => <option key={cat} value={cat} className="bg-[#0a0a0b]">{cat}</option>)}
                         </select>
                     </div>
 
                     <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(249, 115, 22, 0.4)" }}
+                        whileTap={{ scale: 0.95 }}
                         onClick={() => setIsReportOpen(true)}
-                        className="flex items-center gap-3 px-6 py-3 bg-solaris-orange text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow transition-all"
+                        className="flex items-center gap-3 px-8 py-4 bg-solaris-orange text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-[24px] shadow-solaris-glow transition-all"
                     >
                         <FileText size={16} />
                         Export Master File
@@ -227,7 +233,7 @@ export const DashboardScreen: React.FC = () => {
 
             {/* Expired/Warning Banner */}
             {daysRemaining <= 3 && (
-                <GlowCard glowColor="orange" customSize className="w-full !p-0 mb-10 border border-solaris-orange/20 overflow-hidden">
+                <GlowCard glowColor="orange" customSize className="w-full !p-0 mb-10 border border-solaris-orange/20 overflow-hidden relative z-10">
                     <div className="p-6 md:p-8 flex items-center justify-between gap-6 flex-wrap">
                         <div className="flex items-center gap-6">
                             <div className="w-14 h-14 bg-solaris-orange/10 rounded-solaris flex items-center justify-center border border-solaris-orange/20 animate-pulse">
@@ -235,7 +241,7 @@ export const DashboardScreen: React.FC = () => {
                             </div>
                             <div>
                                 <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-solaris-orange mb-2 italic">Aviso de Estación</h4>
-                                <p className="text-gray-300 font-medium max-w-xl">
+                                <p className="text-white/70 font-medium max-w-xl">
                                     Licencia Solaris próxima a vencer en <span className="text-solaris-orange font-black">{daysRemaining} días</span>. Asegure la continuidad operativa renovando su membresía.
                                 </p>
                             </div>
@@ -251,25 +257,25 @@ export const DashboardScreen: React.FC = () => {
             )}
 
             {/* KPI Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-12 relative z-10">
                 {DYNAMIC_KPIS.map((kpi, idx) => (
                     <motion.div 
                         key={idx}
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.1 }}
-                        className="bg-white/[0.02] border border-white/5 p-6 rounded-solaris relative overflow-hidden group hover:border-white/20 transition-all"
+                        transition={{ delay: idx * 0.05 }}
+                        className="bg-[#0a0a0b] border border-white/5 p-6 rounded-solaris relative overflow-hidden group hover:border-white/20 transition-all shadow-2xl"
                     >
                         <div className="flex items-center justify-between mb-4 relative z-10">
                             <div className="w-10 h-10 bg-white/[0.03] rounded-xl flex items-center justify-center border border-white/5">
-                                <kpi.icon size={20} className={kpi.color === 'orange' ? 'text-solaris-orange' : 'text-gray-400'} />
+                                <kpi.icon size={20} className={kpi.color === 'orange' ? 'text-solaris-orange' : kpi.color === 'red' ? 'text-red-500' : 'text-blue-400'} />
                             </div>
                         </div>
                         <div className="relative z-10">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-600 mb-1">{kpi.label}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">{kpi.label}</p>
                             <h3 className="text-2xl font-black italic text-white tracking-tighter">{kpi.value}</h3>
                         </div>
-                        <div className="absolute -right-4 -bottom-4 opacity-[0.02] transform rotate-12 group-hover:scale-125 transition-all duration-700">
+                        <div className="absolute -right-4 -bottom-4 opacity-[0.03] transform rotate-12 group-hover:scale-125 transition-all duration-700 pointer-events-none">
                            <kpi.icon size={120} />
                         </div>
                     </motion.div>
@@ -277,11 +283,11 @@ export const DashboardScreen: React.FC = () => {
             </div>
 
             {/* Charts Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-                <div className="lg:col-span-2 bg-white/[0.02] border border-white/5 p-8 rounded-solaris">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12 relative z-10">
+                <div className="lg:col-span-2 bg-[#0a0a0b] border border-white/5 p-8 rounded-solaris shadow-2xl">
                     <div className="flex justify-between items-center mb-8">
                         <div>
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 mb-1 italic">Proyección Financiera</h3>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 mb-1 italic">Proyección Financiera</h3>
                             <p className="text-xl font-black text-white italic tracking-tight">Revenue Analytics</p>
                         </div>
                     </div>
@@ -289,31 +295,38 @@ export const DashboardScreen: React.FC = () => {
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={filteredData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff" opacity={0.03} vertical={false} />
-                                <XAxis dataKey="name" stroke="#555" tick={{ fill: '#555', fontSize: 10, fontWeight: 900 }} axisLine={false} tickLine={false} />
-                                <YAxis stroke="#555" tick={{ fill: '#555', fontSize: 10, fontWeight: 900 }} axisLine={false} tickLine={false} tickFormatter={(val) => `$${val/1000}k`} />
+                                <XAxis dataKey="name" stroke="#fff" opacity={0.3} tick={{ fill: '#fff', opacity: 0.5, fontSize: 10, fontWeight: 900 }} axisLine={false} tickLine={false} />
+                                <YAxis stroke="#fff" opacity={0.3} tick={{ fill: '#fff', opacity: 0.5, fontSize: 10, fontWeight: 900 }} axisLine={false} tickLine={false} tickFormatter={(val) => `$${val/1000}k`} />
                                 <Tooltip 
-                                    contentStyle={{ backgroundColor: '#0a0a0b', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', color: '#fff' }}
-                                    itemStyle={{ color: '#f97316' }}
+                                    contentStyle={{ backgroundColor: '#030303', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', color: '#fff' }}
+                                    itemStyle={{ color: '#f97316', fontWeight: 'bold' }}
                                 />
-                                <Bar dataKey="revenue" fill="#f97316" radius={[6, 6, 0, 0]} barSize={40} />
+                                <Bar dataKey="revenue" fill="#f97316" radius={[8, 8, 0, 0]} barSize={40}>
+                                    {filteredData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fillOpacity={0.8 + (index / filteredData.length) * 0.2} />
+                                    ))}
+                                </Bar>
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                <div className="bg-white/[0.02] border border-white/5 p-8 rounded-solaris">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 mb-1 italic">Costos de Operación</h3>
+                <div className="bg-[#0a0a0b] border border-white/5 p-8 rounded-solaris shadow-2xl">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 mb-1 italic">Costos de Operación</h3>
                     <p className="text-xl font-black text-white italic tracking-tight mb-8">Prime Cost Trend</p>
                     <div className="h-80 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={filteredData}>
                                 <defs>
                                     <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.3} />
+                                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.4} />
                                         <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <Area type="monotone" dataKey="cost" stroke="#f97316" fill="url(#colorCost)" strokeWidth={3} />
+                                <Tooltip 
+                                    contentStyle={{ backgroundColor: '#030303', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '24px', color: '#fff' }}
+                                />
+                                <Area type="monotone" dataKey="cost" stroke="#f97316" fill="url(#colorCost)" strokeWidth={4} dot={{ r: 4, fill: '#f97316', strokeWidth: 2, stroke: '#030303' }} />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
@@ -321,20 +334,20 @@ export const DashboardScreen: React.FC = () => {
             </div>
 
             {/* Inventory Alerts */}
-            <div className="bg-white/[0.02] border border-white/5 p-8 rounded-solaris">
+            <div className="bg-[#0a0a0b] border border-white/5 p-8 rounded-solaris shadow-2xl relative z-10 mb-20">
                 <div className="flex items-center gap-3 mb-8">
                    <div className="w-8 h-8 bg-solaris-orange rounded-lg flex items-center justify-center shadow-solaris-glow">
                       <AlertCircle size={16} className="text-white" />
                    </div>
                    <div>
-                      <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 italic">Gestión de Almacén</h3>
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 italic">Gestión de Almacén</h3>
                       <p className="text-xl font-black text-white italic tracking-tight">Alertas de Stock Crítico</p>
                    </div>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="text-gray-700 border-b border-white/5 text-[9px] font-black uppercase tracking-[0.3em]">
+                            <tr className="text-white/20 border-b border-white/5 text-[9px] font-black uppercase tracking-[0.3em]">
                                 <th className="py-4 px-2">Producto / Insumo</th>
                                 <th className="py-4 px-2 text-center">Nivel Actual</th>
                                 <th className="py-4 px-2 text-right">Estatus Solaris</th>
@@ -344,26 +357,27 @@ export const DashboardScreen: React.FC = () => {
                             {inventory.filter(i => i.quantity <= (i.minStock || 5)).map((item, i) => {
                                 const isCritical = item.quantity <= (item.minStock || 2);
                                 return (
-                                    <tr key={i} className="border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors group">
-                                        <td className="py-5 px-2 font-bold text-gray-300 group-hover:text-white transition-colors">{item.name}</td>
-                                        <td className="py-5 px-2 text-center font-black italic">{item.quantity} <span className="text-[10px] font-normal not-italic text-gray-600">{item.unit || 'UN'}</span></td>
+                                    <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.03] transition-colors group">
+                                        <td className="py-5 px-2 font-bold text-white/70 group-hover:text-white transition-colors">{item.name}</td>
+                                        <td className="py-5 px-2 text-center font-black italic text-white">{item.quantity} <span className="text-[10px] font-normal not-italic text-white/30">{item.unit || 'UN'}</span></td>
                                         <td className="py-5 px-2 text-right">
                                             <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${isCritical ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-solaris-orange/10 text-solaris-orange border border-solaris-orange/20'}`}>
                                                 {isCritical ? 'Critical' : 'Low Level'}
                                             </span>
                                         </td>
                                     </tr>
-                                );
-                            })}
-                            {inventory.filter(i => i.quantity <= (i.minStock || 5)).length === 0 && (
-                                <tr>
-                                    <td colSpan={3} className="py-20 text-center text-gray-600 italic font-medium uppercase tracking-[0.3em] text-[10px]">Sin detecciones críticas en el ecosistema</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                                  );
+                              })}
+                              {inventory.filter(i => i.quantity <= (i.minStock || 5)).length === 0 && (
+                                  <tr>
+                                      <td colSpan={3} className="py-20 text-center text-white/20 italic font-medium uppercase tracking-[0.3em] text-[10px]">Sin detecciones críticas en el ecosistema</td>
+                                  </tr>
+                              )}
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+          </div>
         </div>
     );
 };

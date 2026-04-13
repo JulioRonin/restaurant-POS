@@ -58,7 +58,7 @@ export const KitchenTicket: React.FC<KitchenTicketProps> = ({ order, settings })
       {/* Footer for kitchen */}
       <div className="mt-4 text-center border-t-2 border-black pt-2">
         <p className="text-[10px] font-bold">--- FIN DE COMANDA ---</p>
-        <p className="text-[9px] mt-1">Culinex POS</p>
+        <p className="text-[9px] mt-1">Solaris POS</p>
         <p className="text-[9px]">Ronin Studio</p>
       </div>
 

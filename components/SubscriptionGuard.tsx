@@ -58,7 +58,7 @@ export const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ chi
             </h2>
             <p className={`${isExpired ? 'text-red-200' : 'text-amber-200'} mb-8 font-bold uppercase text-[10px] tracking-[0.2em] opacity-70 leading-relaxed`}>
                 {isExpired 
-                    ? "Tu licencia de Culinex POS ha expirado. \n Regulariza tu pago mensual para continuar operando."
+                    ? "Tu licencia de Solaris POS ha expirado. \n Regulariza tu pago mensual para continuar operando."
                     : "Detectamos un atraso en el pago de tu hardware. \n Regulariza tu saldo para desbloquear la estación."
                 }
             </p>

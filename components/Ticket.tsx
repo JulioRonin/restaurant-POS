@@ -120,7 +120,7 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
       <div className="flex flex-col items-center text-center border-t border-black border-dashed pt-4 mt-4">
         <p className="font-bold">{settings.footerMessage}</p>
         <p className="text-[10px] font-bold">--- FIN DE COMANDA ---</p>
-        <p className="text-[9px] mt-1">Culinex POS</p>
+        <p className="text-[9px] mt-1">Solaris POS</p>
         <p className="text-[9px]">Ronin Studio</p>
         {isTest && (
           <div className="mt-4 border border-black p-1 w-full max-w-[40mm]">

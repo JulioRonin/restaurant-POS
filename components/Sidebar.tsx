@@ -29,7 +29,9 @@ import {
   LogOut, 
   ChevronLeft, 
   ChevronRight,
-  MonitorCheck
+  MonitorCheck,
+  Zap,
+  ShieldCheck
 } from 'lucide-react';
 
 const PrinterStatus = () => {
@@ -54,8 +56,8 @@ const PrinterStatus = () => {
   return (
     <button 
       onClick={handleReconnect}
-      className={`transition-all active:scale-95 ${connected ? 'text-emerald-500' : 'text-red-500 animate-pulse'}`}
-      title={connected ? 'Impresora Conectada' : 'Impresora Desconectada (Clic para reconectar)'}
+      className={`transition-all active:scale-95 ${connected ? 'text-green-500' : 'text-red-500 animate-pulse'}`}
+      title={connected ? 'Printer Active' : 'Printer Offline'}
     >
       <Printer size={18} />
     </button>
@@ -66,13 +68,13 @@ const NavItem = ({ to, icon: Icon, label, isExpanded }: { to: string; icon: any;
   <NavLink
     to={to}
     className={({ isActive }) =>
-      `flex items-center ${isExpanded ? 'px-4 gap-4 w-full mx-2' : 'justify-center w-12 mx-auto'} h-12 rounded-2xl my-1.5 transition-all duration-300 group relative ${isActive ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-gray-500 hover:bg-white/[0.05] hover:text-white'
+      `flex items-center ${isExpanded ? 'px-4 gap-4 w-full mx-2' : 'justify-center w-12 mx-auto'} h-12 rounded-solaris my-2 transition-all duration-300 group relative ${isActive ? 'bg-solaris-orange text-white shadow-solaris-glow scale-105' : 'text-gray-600 hover:bg-white/[0.05] hover:text-white'
       }`
     }
   >
     <Icon size={20} className="flex-shrink-0" />
     {isExpanded && (
-      <span className={`font-black text-[10px] uppercase tracking-[0.2em] whitespace-nowrap transition-opacity duration-300`}>
+      <span className={`font-black text-[9px] uppercase tracking-[0.3em] whitespace-nowrap transition-opacity duration-300`}>
         {label}
       </span>
     )}
@@ -87,13 +89,13 @@ const SyncBadge = () => {
     return unsubscribe;
   }, []);
 
-  const color = sync.pendingCount > 0 ? 'text-amber-500' : sync.isSyncing ? 'text-solaris-orange' : 'text-emerald-500';
+  const color = sync.pendingCount > 0 ? 'text-solaris-orange' : sync.isSyncing ? 'text-white' : 'text-green-500/40';
   const Icon = sync.pendingCount > 0 ? CloudCog : sync.isSyncing ? RefreshCw : Cloud;
   
   return (
     <span 
-      className={`${color} ${sync.isSyncing ? 'animate-spin' : ''}`}
-      title={sync.pendingCount > 0 ? `${sync.pendingCount} cambios pendientes` : 'Todo sincronizado'}
+      className={`transition-all ${color} ${sync.isSyncing ? 'animate-spin' : ''}`}
+      title={sync.pendingCount > 0 ? `${sync.pendingCount} pending packets` : 'Node Sync OK'}
     >
       <Icon size={18} />
     </span>
@@ -107,47 +109,41 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
   const { settings } = useSettings();
 
   const statusConfig = {
-    [SubscriptionStatus.ACTIVE]: { color: 'text-emerald-500 bg-emerald-500/5 border-emerald-500/20', label: 'Solaris Active' },
-    [SubscriptionStatus.WARNING]: { color: 'text-amber-500 bg-amber-500/5 border-amber-500/20', label: 'Vencimiento' },
-    [SubscriptionStatus.EXPIRED]: { color: 'text-red-500 bg-red-500/5 border-red-500/20', label: 'Vencida' },
+    [SubscriptionStatus.ACTIVE]: { color: 'text-green-500 border-green-500/20 bg-green-500/5', label: 'Solaris Active' },
+    [SubscriptionStatus.WARNING]: { color: 'text-solaris-orange border-solaris-orange/20 bg-solaris-orange/5', label: 'License Warning' },
+    [SubscriptionStatus.EXPIRED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Node Expired' },
   }[status];
 
   return (
     <aside
-      className={`${isExpanded ? 'w-64' : 'w-24'} h-full bg-solaris-black flex flex-col items-center py-6 z-50 border-r border-white/5 transition-all duration-500 ease-in-out relative`}
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
+      className={`${isExpanded ? 'w-64' : 'w-24'} h-full bg-[#030303] flex flex-col py-8 z-50 border-r border-white/5 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] relative shadow-[20px_0_50px_rgba(0,0,0,0.8)]`}
     >
-      {/* Toggle Button */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="absolute -right-3.5 top-12 bg-solaris-black border border-white/10 w-7 h-7 rounded-full flex items-center justify-center shadow-2xl text-gray-500 hover:text-solaris-orange z-50 transition-all"
-      >
-        {isExpanded ? <ChevronLeft size={14} /> : <ChevronRight size={14} />}
-      </button>
-
       {/* Brand Header */}
-      <div className={`mb-8 p-2 flex flex-col items-center ${isExpanded ? 'px-6 w-full' : 'justify-center'}`}>
-        <div className="flex items-center gap-3 mb-4">
+      <div className={`mb-12 p-2 flex flex-col items-center ${isExpanded ? 'px-8 w-full' : 'justify-center'}`}>
+        <div className="flex items-center gap-4 mb-8">
           <PrinterStatus />
           <SyncBadge />
         </div>
         
         <div className="flex items-center gap-4 w-full group/header relative">
-          <div className="w-12 h-12 min-w-[48px] bg-solaris-orange rounded-solaris flex items-center justify-center shadow-solaris-glow overflow-hidden border border-white/10">
+          <div className="w-12 h-12 min-w-[48px] bg-white/[0.03] border border-white/10 rounded-solaris flex items-center justify-center overflow-hidden transition-all group-hover/header:border-solaris-orange/50 shadow-solaris-glow">
             {settings.logoUrl ? (
-              <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+              <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover filter contrast-125" />
             ) : (
-              <ChefHat className="text-white" size={24} />
+              <Zap className="text-solaris-orange" size={24} />
             )}
           </div>
           {isExpanded && (
             <div className="flex-1 overflow-hidden">
-              <div className="flex items-center justify-between">
-                <h1 className="font-black text-white leading-tight uppercase tracking-tighter text-xs truncate italic">{settings.name}</h1>
+               <div className="flex items-center justify-between">
+                <h1 className="font-black text-white leading-tight uppercase tracking-tighter text-xs truncate italic">{settings.name || 'Solaris OS'}</h1>
                 {isSuperAdmin && (
                    <button 
                      onClick={async () => {
                        const businesses = await authService.getAllBusinesses();
-                       const selection = window.prompt("ID Negocio:", "");
+                       const selection = window.prompt("Node ID:", "");
                        if (selection) {
                           const match = businesses.find((b: any) => b.id === selection);
                           if (match) switchBusiness(match.id, match.name);
@@ -158,121 +154,106 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
                      <RefreshCw size={12} />
                    </button>
                 )}
-              </div>
-              <p className="text-[8px] text-solaris-orange font-bold uppercase tracking-[0.3em] mt-0.5">Solaris Core</p>
+               </div>
+               <p className="text-[8px] text-white/30 font-black uppercase tracking-[0.4em] mt-1 italic">Core Control</p>
             </div>
           )}
         </div>
       </div>
 
-      <nav className="flex-1 flex flex-col w-full px-3 overflow-y-auto custom-scrollbar space-y-1">
+      <nav className="flex-1 flex flex-col w-full px-3 overflow-y-auto no-scrollbar space-y-1">
         {canAccess(activeEmployee?.role, '/dashboard') && (
-          <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" isExpanded={isExpanded} />
+          <NavItem to="/dashboard" icon={LayoutDashboard} label="Network Hub" isExpanded={isExpanded} />
         )}
         
         {canAccess(activeEmployee?.role, '/pos') && (
-          <NavItem to="/pos" icon={Smartphone} label="Venta Rápida" isExpanded={isExpanded} />
+          <NavItem to="/pos" icon={Zap} label="Quantum POS" isExpanded={isExpanded} />
         )}
 
         {canAccess(activeEmployee?.role, '/my-tables') && (
-          <NavItem to="/my-tables" icon={Table2} label="Mis Mesas" isExpanded={isExpanded} />
-        )}
-
-        {(canAccess(activeEmployee?.role, '/remote-order')) && (isFeatureEnabled('remote_order') || isSuperAdmin) && (
-          <NavItem to="/remote-order" icon={Smartphone} label="Orden Móvil" isExpanded={isExpanded} />
+          <NavItem to="/my-tables" icon={Table2} label="Matrix Tables" isExpanded={isExpanded} />
         )}
 
         {canAccess(activeEmployee?.role, '/hostess') && (
-          <NavItem to="/hostess" icon={MonitorCheck} label="Anfitrión" isExpanded={isExpanded} />
+          <NavItem to="/hostess" icon={MonitorCheck} label="Host Logic" isExpanded={isExpanded} />
         )}
 
         {canAccess(activeEmployee?.role, '/cashier') && (
-          <NavItem to="/cashier" icon={Receipt} label="Modulo Caja" isExpanded={isExpanded} />
+          <NavItem to="/cashier" icon={Receipt} label="Terminal Pay" isExpanded={isExpanded} />
         )}
 
         {canAccess(activeEmployee?.role, '/kitchen') && (
-          <NavItem to="/kitchen" icon={ChefHat} label="Cocina" isExpanded={isExpanded} />
+          <NavItem to="/kitchen" icon={ChefHat} label="Kitchen Ops" isExpanded={isExpanded} />
         )}
         
         {canAccess(activeEmployee?.role, '/menu') && (
-          <NavItem to="/menu" icon={MenuSquare} label="Menú Mix" isExpanded={isExpanded} />
-        )}
-        
-        {canAccess(activeEmployee?.role, '/billing') && (
-          <NavItem to="/billing" icon={CreditCard} label="Membresía" isExpanded={isExpanded} />
+          <NavItem to="/menu" icon={MenuSquare} label="Asset Grid" isExpanded={isExpanded} />
         )}
 
-        <div className={`h-px bg-white/5 my-4 ${isExpanded ? 'w-full' : 'w-10 mx-auto'}`}></div>
+        <div className={`h-px bg-white/5 my-6 ${isExpanded ? 'w-full' : 'w-8 mx-auto'}`}></div>
 
         {canAccess(activeEmployee?.role, '/staff') && (
-          <NavItem to="/staff" icon={Users} label="Equipo" isExpanded={isExpanded} />
+          <NavItem to="/staff" icon={Users} label="Personnel" isExpanded={isExpanded} />
         )}
         
         {canAccess(activeEmployee?.role, '/inventory') && (
-          <NavItem to="/inventory" icon={Boxes} label="Almacén" isExpanded={isExpanded} />
-        )}
-
-        {canAccess(activeEmployee?.role, '/bar') && (
-          <NavItem to="/bar" icon={Wine} label="Monitor Bar" isExpanded={isExpanded} />
+          <NavItem to="/inventory" icon={Boxes} label="Supply Flow" isExpanded={isExpanded} />
         )}
 
         {isSuperAdmin && (
-          <>
-            <div className={`h-px bg-solaris-orange/20 my-4 ${isExpanded ? 'w-full' : 'w-10 mx-auto'}`}></div>
-            <NavItem to="/super-admin" icon={ShieldCheck} label="Solaris Root" isExpanded={isExpanded} />
-          </>
+          <NavItem to="/super-admin" icon={ShieldCheck} label="Solaris Root" isExpanded={isExpanded} />
         )}
 
         {isExpanded && (
-          <div className="px-3 mt-8 mb-4">
-             <div className={`p-4 rounded-3xl border ${statusConfig.color} backdrop-blur-md`}>
-                <div className="flex justify-between items-center mb-2">
-                   <span className="text-[8px] font-black uppercase tracking-widest opacity-60">Status</span>
-                   <div className="w-1.5 h-1.5 rounded-full bg-current animate-ping"></div>
+          <div className="px-4 mt-12 mb-6">
+             <div className={`p-5 rounded-solaris border ${statusConfig.color} backdrop-blur-3xl relative overflow-hidden`}>
+                <div className="relative z-10">
+                    <div className="flex justify-between items-center mb-3">
+                    <span className="text-[8px] font-black uppercase tracking-widest opacity-60 italic">Node Status</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-current animate-ping"></div>
+                    </div>
+                    <div className="text-2xl font-black italic tracking-tighter text-white">{daysRemaining}D</div>
+                    <p className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-70">{statusConfig.label}</p>
                 </div>
-                <div className="text-xl font-black italic">{daysRemaining}</div>
-                <p className="text-[9px] font-bold uppercase tracking-tighter mt-1">{statusConfig.label}</p>
+                <div className="absolute top-0 right-0 w-full h-full bg-white/[0.02] pointer-events-none"></div>
              </div>
           </div>
         )}
 
         {canAccess(activeEmployee?.role, '/settings') && (
-          <NavItem to="/settings" icon={Settings2} label="Ajustes" isExpanded={isExpanded} />
-        )}
-        
-        {authProfile?.role === 'admin' && !authProfile.onboardingCompleted && (
-          <NavItem to="/onboarding" icon={Rocket} label="Setup Solaris" isExpanded={isExpanded} />
+          <NavItem to="/settings" icon={Settings2} label="Core Adjust" isExpanded={isExpanded} />
         )}
       </nav>
 
-      {/* Network & Footer */}
-      <div className="w-full px-6 py-6 border-t border-white/5 mt-auto">
-        <div className="flex items-center justify-between group cursor-pointer" onClick={onLock}>
-           <div className="flex items-center gap-3 overflow-hidden">
-              <div className="w-10 h-10 rounded-2xl overflow-hidden border border-white/10 shadow-lg flex-shrink-0 group-hover:border-solaris-orange/50 transition-all">
-                <img src={activeEmployee?.image} alt={activeEmployee?.name} className="w-full h-full object-cover" />
+      {/* Network Operator Status */}
+      <div className="w-full px-4 py-8 border-t border-white/5 mt-auto bg-[#030303]">
+        <div 
+          className="flex items-center justify-between group cursor-pointer bg-white/[0.02] p-4 rounded-solaris border border-white/5 hover:border-solaris-orange/20 transition-all shadow-xl" 
+          onClick={onLock}
+        >
+           <div className="flex items-center gap-4 overflow-hidden">
+              <div className="w-12 h-12 rounded-2xl overflow-hidden border border-white/10 shadow-lg flex-shrink-0">
+                <img src={activeEmployee?.image} alt={activeEmployee?.name} className="w-full h-full object-cover filter contrast-125 grayscale group-hover:grayscale-0 transition-all" />
               </div>
               {isExpanded && (
                 <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase text-white truncate leading-none italic">{activeEmployee?.name}</p>
-                  <p className="text-[8px] font-bold uppercase text-solaris-orange tracking-[0.2em] mt-1.5">{activeEmployee?.role}</p>
+                  <p className="text-[10px] font-black uppercase text-white truncate italic leading-none">{activeEmployee?.name}</p>
+                  <p className="text-[8px] font-black uppercase text-solaris-orange tracking-widest mt-2">{activeEmployee?.role}</p>
                 </div>
               )}
            </div>
-           {isExpanded && <Lock size={14} className="text-gray-600 group-hover:text-solaris-orange transition-colors" />}
+           {isExpanded && <Lock size={14} className="text-white/20 group-hover:text-solaris-orange transition-colors" />}
         </div>
+        
+        {authProfile?.role === 'admin' && isExpanded && (
+            <button
+                onClick={signOut}
+                className="mt-6 flex items-center justify-center gap-3 w-full py-4 text-white/30 hover:text-red-500 transition-colors uppercase font-black text-[9px] tracking-[0.3em] border border-white/5 rounded-2xl hover:bg-red-500/5 hover:border-red-500/20"
+            >
+                <LogOut size={14} /> Exit Core
+            </button>
+        )}
       </div>
-
-      {authProfile?.role === 'admin' && isExpanded && (
-        <button
-          onClick={signOut}
-          className="flex items-center gap-3 w-full px-8 py-4 text-gray-700 hover:text-red-500 transition-colors border-t border-white/5"
-        >
-          <LogOut size={16} />
-          <span className="text-[10px] font-black uppercase tracking-[0.3em]">Root Logout</span>
-        </button>
-      )}
-
     </aside>
   );
 };

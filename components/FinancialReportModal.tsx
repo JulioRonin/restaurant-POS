@@ -278,7 +278,7 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
 
                         {/* Footer */}
                         <div className="mt-24 pt-8 border-t border-gray-100 text-center">
-                            <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Culinex POS System — Finanzas Verificadas</p>
+                            <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Solaris POS System — Finanzas Verificadas</p>
                         </div>
                     </div>
                 </div>

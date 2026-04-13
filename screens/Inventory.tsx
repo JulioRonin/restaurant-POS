@@ -3,11 +3,26 @@ import { INVENTORY_CATEGORIES } from '../constants';
 import { InventoryItem, CartItem, SupplierOrder, SupplyOrderStatus } from '../types';
 import jsPDF from 'jspdf';
 import { useInventory } from '../contexts/InventoryContext';
-import { useMenu } from '../contexts/MenuContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GlowCard } from '../components/ui/spotlight-card';
+import { 
+  Package, 
+  Truck, 
+  ShoppingCart, 
+  Plus, 
+  Edit3, 
+  Trash2, 
+  AlertTriangle, 
+  CheckCircle,
+  FileText,
+  Search,
+  ArrowRight,
+  ChevronRight,
+  X
+} from 'lucide-react';
 
 export const InventoryScreen: React.FC = () => {
-    const { inventory, orders, loading, addInventoryItem, updateInventoryItem, deleteInventoryItem, createSupplierOrder, updateSupplierOrder } = useInventory();
-    const { addItem, updateItem, menuItems } = useMenu();
+    const { inventory, orders, addInventoryItem, updateInventoryItem, deleteInventoryItem, createSupplierOrder, updateSupplierOrder } = useInventory();
     const [activeCategory, setActiveCategory] = useState('All');
     const [activeTab, setActiveTab] = useState<'stock' | 'orders'>('stock');
 
@@ -17,17 +32,15 @@ export const InventoryScreen: React.FC = () => {
 
     // Editing
     const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-    // Restock Popover State
+    // Restock
     const [restockItem, setRestockItem] = useState<InventoryItem | null>(null);
     const [restockQty, setRestockQty] = useState<number>(0);
 
     const [publishToMenu, setPublishToMenu] = useState(false);
     const [menuPrice, setMenuPrice] = useState<number>(0);
 
-    // --- Computed ---
     const filteredInventory = useMemo(() => {
         if (activeCategory === 'All') return inventory;
         return inventory.filter(item => item.category === activeCategory);
@@ -35,35 +48,32 @@ export const InventoryScreen: React.FC = () => {
 
     const cartTotal = cart.reduce((acc, item) => acc + (item.costPerUnit * item.orderQuantity), 0);
 
-    // --- Actions: Inventory ---
-    const handleSaveItem = async (item: Partial<InventoryItem>) => {
-        const fullItem = {
-            ...item,
+    const handleSaveItem = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const itemData = {
+            name: formData.get('name') as string,
+            category: formData.get('category') as string,
+            supplier: formData.get('supplier') as string,
+            quantity: Number(formData.get('quantity')),
+            unit: formData.get('unit') as string,
+            costPerUnit: Number(formData.get('cost')),
+            minStock: Number(formData.get('minStock')),
+            maxStock: Number(formData.get('maxStock')),
             publicInMenu: publishToMenu,
             price: menuPrice,
             lastRestock: editingItem?.lastRestock || new Date().toISOString()
         };
 
         if (editingItem) {
-            await updateInventoryItem(editingItem.id, fullItem);
+            await updateInventoryItem(editingItem.id, itemData);
         } else {
-            await addInventoryItem(fullItem as Omit<InventoryItem, 'id'>);
+            await addInventoryItem(itemData as Omit<InventoryItem, 'id'>);
         }
-
-        setIsEditModalOpen(false);
-        setIsAddItemModalOpen(false);
+        setIsAddModalOpen(false);
         setEditingItem(null);
-        setPublishToMenu(false);
-        setMenuPrice(0);
     };
 
-    const handleDeleteItem = async (id: string) => {
-        if (window.confirm('¿Estás seguro de que deseas eliminar este artículo?')) {
-            await deleteInventoryItem(id);
-        }
-    };
-
-    // --- Actions: Cart ---
     const addToCart = (item: InventoryItem, qty: number) => {
         const existing = cart.find(c => c.id === item.id);
         if (existing) {
@@ -75,22 +85,10 @@ export const InventoryScreen: React.FC = () => {
         setIsCartOpen(true);
     };
 
-    const removeFromCart = (id: string) => {
-        setCart(prev => prev.filter(c => c.id !== id));
-    };
-
-    const updateCartQty = (id: string, qty: number) => {
-        if (qty <= 0) {
-            removeFromCart(id);
-        } else {
-            setCart(prev => prev.map(c => c.id === id ? { ...c, orderQuantity: qty } : c));
-        }
-    };
-
     const handleCreateOrder = async () => {
         if (cart.length === 0) return;
         await createSupplierOrder({
-            supplier: 'Varios Proveedores',
+            supplier: 'Global Supply Network',
             date: new Date().toISOString(),
             status: SupplyOrderStatus.PENDING,
             items: [...cart],
@@ -101,7 +99,6 @@ export const InventoryScreen: React.FC = () => {
         setActiveTab('orders');
     };
 
-    // --- Actions: Orders ---
     const handleUpdateStatus = async (orderId: string, status: SupplyOrderStatus) => {
         if (status === SupplyOrderStatus.RECEIVED) {
             const order = orders.find(o => o.id === orderId);
@@ -120,485 +117,294 @@ export const InventoryScreen: React.FC = () => {
         await updateSupplierOrder(orderId, { status });
     };
 
-    const handleExportOrder = (order: SupplierOrder) => {
-        const doc = new jsPDF();
-
-        doc.setFontSize(20);
-        doc.text(`Purchase Order #${order.id}`, 20, 20);
-
-        doc.setFontSize(12);
-        doc.text(`Date: ${new Date(order.date).toLocaleDateString()}`, 20, 30);
-        doc.text(`Supplier: ${order.supplier}`, 20, 36);
-        doc.text(`Status: ${order.status}`, 20, 42);
-
-        let y = 60;
-        doc.setFontSize(10);
-        doc.text("Item", 20, y);
-        doc.text("Quantity", 100, y);
-        doc.text("Cost", 140, y);
-        doc.text("Total", 170, y);
-        doc.line(20, y + 2, 190, y + 2);
-
-        y += 10;
-
-        order.items.forEach(item => {
-            doc.text(item.name, 20, y);
-            doc.text(`${item.orderQuantity} ${item.unit}`, 100, y);
-            doc.text(`$${item.costPerUnit}`, 140, y);
-            doc.text(`$${(item.costPerUnit * item.orderQuantity).toFixed(2)}`, 170, y);
-            y += 8;
-        });
-
-        doc.line(20, y, 190, y);
-        y += 10;
-        doc.setFontSize(14);
-        doc.text(`Total Cost: $${order.totalCost.toFixed(2)}`, 140, y);
-
-        doc.save(`Order_${order.id}.pdf`);
-    };
-
-    // --- Helpers ---
     const getStockStatus = (qty: number, max: number, min: number) => {
-        if (qty <= min) return { color: 'bg-red-500', text: 'text-red-600', label: 'Low Stock', bg: 'bg-red-50', width: '20%' };
-        const percentage = (qty / max) * 100;
-        if (percentage < 50) return { color: 'bg-yellow-500', text: 'text-yellow-600', label: 'Medium', bg: 'bg-yellow-50', width: `${percentage}%` };
-        return { color: 'bg-green-500', text: 'text-green-600', label: 'In Stock', bg: 'bg-green-50', width: `${percentage}%` };
+        const pct = (qty / (max || 100)) * 100;
+        if (qty <= min) return { label: 'CRITICAL', color: 'text-red-500', bar: 'bg-red-500', pct };
+        if (pct < 40) return { label: 'LOW', color: 'text-solaris-orange', bar: 'bg-solaris-orange', pct };
+        return { label: 'STABLE', color: 'text-green-500', bar: 'bg-green-500', pct };
     };
-
 
     return (
-        <div className="h-full bg-[#F3F4F6] text-gray-800 p-8 overflow-y-auto relative">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Inventory Management</h1>
-                    <p className="text-gray-500 text-sm">Real-time Stock, Ordering & Procurement</p>
-                </div>
-                <div className="flex gap-3">
-                    <div className="bg-white p-1 rounded-xl flex shadow-sm border border-gray-100 mr-4">
-                        <button
-                            onClick={() => setActiveTab('stock')}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${activeTab === 'stock' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600'}`}
-                        >
-                            <span className="material-icons-round text-base">inventory_2</span>
-                            Stocks
+        <div className="h-full bg-solaris-black text-white p-6 md:p-10 overflow-y-auto antialiased">
+            <div className="max-w-7xl mx-auto w-full">
+                {/* Header */}
+                <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
+                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">Solaris Logistics</h1>
+                        <p className="text-gray-600 font-bold text-[10px] uppercase tracking-[0.4em]">Resource Flow & Inventory Architecture</p>
+                    </motion.div>
+                    
+                    <div className="flex gap-4">
+                        <div className="bg-white/[0.03] border border-white/5 p-1 rounded-2xl flex">
+                            <button onClick={() => setActiveTab('stock')} className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'stock' ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-gray-500'}`}>
+                                <Package size={14} /> Stock Matrix
+                            </button>
+                            <button onClick={() => setActiveTab('orders')} className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'orders' ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-gray-500'}`}>
+                                <Truck size={14} /> Procurement
+                            </button>
+                        </div>
+
+                        <button onClick={() => setIsCartOpen(true)} className="relative group bg-white/[0.03] border border-white/5 p-3 rounded-2xl hover:bg-white/[0.05] transition-all">
+                             <ShoppingCart size={20} className="text-gray-400 group-hover:text-white" />
+                             {cart.length > 0 && <span className="absolute -top-1 -right-1 bg-solaris-orange text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-solaris-glow">{cart.length}</span>}
                         </button>
-                        <button
-                            onClick={() => setActiveTab('orders')}
-                            className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${activeTab === 'orders' ? 'bg-primary/10 text-primary' : 'text-gray-400 hover:text-gray-600'}`}
+
+                        <button 
+                            onClick={() => { setEditingItem(null); setIsAddModalOpen(true); }}
+                            className="bg-solaris-orange text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-solaris-glow hover:scale-105 transition-all"
                         >
-                            <span className="material-icons-round text-base">local_shipping</span>
-                            Orders
-                            {orders.some(o => o.status === 'PENDING') && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>}
+                             <Plus size={16} /> Add Supply
                         </button>
                     </div>
+                </header>
 
-                    <button
-                        onClick={() => setIsCartOpen(true)}
-                        className="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors font-bold shadow-sm relative"
-                    >
-                        <span className="material-icons-round text-lg">shopping_cart</span>
-                        Cart
-                        {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full border-2 border-white">{cart.length}</span>}
-                    </button>
-                    <button
-                        onClick={() => {
-                            setEditingItem(null);
-                            setIsAddItemModalOpen(true);
-                        }}
-                        className="bg-primary hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow-lg shadow-primary/30 transition-all font-bold"
-                    >
-                        <span className="material-icons-round text-lg">add</span>
-                        Add Item
-                    </button>
-                </div>
-            </div>
+                {activeTab === 'stock' && (
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+                             <div className="md:col-span-3 bg-white/[0.02] border border-white/5 p-2 rounded-2xl flex items-center gap-2 overflow-x-auto no-scrollbar">
+                                {INVENTORY_CATEGORIES.map(cat => (
+                                    <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeCategory === cat ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-gray-500'}`}>
+                                        {cat}
+                                    </button>
+                                ))}
+                             </div>
+                             <div className="bg-white/[0.02] border border-white/5 p-4 rounded-solaris flex items-center justify-between">
+                                 <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-700">Stock Assets</p>
+                                    <p className="text-2xl font-black italic text-solaris-orange">{inventory.length}</p>
+                                 </div>
+                                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: 'linear' }} className="text-gray-800">
+                                    <Package size={28} />
+                                 </motion.div>
+                             </div>
+                        </div>
 
-            {/* TAB: STOCK */}
-            {activeTab === 'stock' && (
-                <>
-                    {/* Category Filters */}
-                    <div className="flex gap-4 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-                        {INVENTORY_CATEGORIES.map(cat => (
-                            <button
-                                key={cat}
-                                onClick={() => setActiveCategory(cat)}
-                                className={`px-6 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${activeCategory === cat
-                                        ? 'bg-primary text-white shadow-lg shadow-primary/30'
-                                        : 'bg-white text-gray-500 hover:text-primary shadow-sm'
-                                    }`}
-                            >
-                                {cat}
-                            </button>
+                        <div className="bg-white/[0.02] border border-white/5 rounded-solaris overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="border-b border-white/5 text-gray-600 text-[9px] font-black uppercase tracking-[0.3em]">
+                                        <th className="py-6 px-8">Asset Name / Category</th>
+                                        <th className="py-6 px-4">Level Indicator</th>
+                                        <th className="py-6 px-4 text-center">Unit Valuation</th>
+                                        <th className="py-6 px-4">Supplier Origin</th>
+                                        <th className="py-6 px-8 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm">
+                                    {filteredInventory.map(item => {
+                                        const status = getStockStatus(item.quantity, item.maxStock, item.minStock || 0);
+                                        return (
+                                            <tr key={item.id} className="border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors group">
+                                                <td className="py-6 px-8">
+                                                    <div className="cursor-pointer" onClick={() => { setEditingItem(item); setIsAddModalOpen(true); }}>
+                                                        <p className="font-bold text-white group-hover:text-solaris-orange transition-colors uppercase italic">{item.name}</p>
+                                                        <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest">{item.category}</p>
+                                                    </div>
+                                                </td>
+                                                <td className="py-6 px-4 min-w-[200px]">
+                                                    <div className="flex justify-between items-end mb-2">
+                                                        <p className="text-[10px] font-black italic text-white">{item.quantity} <span className="text-[8px] font-normal not-italic text-gray-600">{item.unit}</span></p>
+                                                        <p className={`text-[8px] font-black uppercase tracking-widest ${status.color}`}>{status.label}</p>
+                                                    </div>
+                                                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                                                        <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, status.pct)}%` }} className={`h-full ${status.bar} shadow-solaris-glow`}></motion.div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-6 px-4 text-center">
+                                                    <span className="text-xs font-black italic text-white">${item.costPerUnit.toFixed(2)}</span>
+                                                </td>
+                                                <td className="py-6 px-4">
+                                                    <span className="text-[10px] font-bold text-gray-500 uppercase italic opacity-60">{item.supplier}</span>
+                                                </td>
+                                                <td className="py-6 px-8 text-right">
+                                                    <div className="flex justify-end gap-3">
+                                                        <button 
+                                                            onClick={() => { setRestockItem(item); setRestockQty(Math.max(0, item.maxStock - item.quantity)); }}
+                                                            className="px-4 py-2 bg-white/[0.03] border border-white/5 text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white hover:border-white/20 transition-all rounded-xl"
+                                                        >
+                                                            Restock
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => { setEditingItem(item); setIsAddModalOpen(true); }}
+                                                            className="p-2 text-gray-700 hover:text-solaris-orange transition-colors"
+                                                        >
+                                                            <Edit3 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                )}
+
+                {activeTab === 'orders' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
+                        {orders.map(order => (
+                            <div key={order.id}>
+                                <GlowCard glowColor="orange" className={`relative border !p-8 ${order.status === 'PENDING' ? 'border-solaris-orange/20' : 'border-white/5'}`}>
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div>
+                                            <h3 className="text-xl font-black italic text-white uppercase tracking-tight mb-1">Order #{order.id.slice(0, 8)}</h3>
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-600 italic">{new Date(order.date).toLocaleDateString()} • {order.supplier}</p>
+                                        </div>
+                                        <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.3em] border ${order.status === 'RECEIVED' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-solaris-orange/10 text-solaris-orange border-solaris-orange/20'}`}>
+                                            {order.status}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3 mb-8">
+                                        {order.items.map((item, i) => (
+                                            <div key={i} className="flex justify-between items-center text-[10px]">
+                                                <span className="font-bold text-gray-400">{item.orderQuantity}x <span className="text-white uppercase italic">{item.name}</span></span>
+                                                <span className="text-gray-700 font-mono">${(item.costPerUnit * item.orderQuantity).toFixed(2)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex justify-between items-center pt-6 border-t border-white/[0.02]">
+                                        <div>
+                                            <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest mb-1">Payload Total</p>
+                                            <p className="text-2xl font-black italic text-white tracking-tighter">${order.totalCost.toFixed(2)}</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            {order.status === 'ORDERED' && (
+                                                <button 
+                                                    onClick={() => handleUpdateStatus(order.id, SupplyOrderStatus.RECEIVED)}
+                                                    className="bg-green-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-900/20"
+                                                >
+                                                    Receive
+                                                </button>
+                                            )}
+                                            {order.status === 'PENDING' && (
+                                                <button 
+                                                    onClick={() => handleUpdateStatus(order.id, SupplyOrderStatus.ORDERED)}
+                                                    className="bg-solaris-orange text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-solaris-glow"
+                                                >
+                                                    Ship
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </GlowCard>
+                            </div>
                         ))}
                     </div>
-
-                    {/* Inventory Table */}
-                    <div className="bg-white rounded-2xl shadow-soft overflow-hidden">
-                        <table className="w-full text-left border-collapse">
-                            <thead className="bg-gray-50">
-                                <tr className="text-gray-500 text-xs uppercase tracking-wider">
-                                    <th className="py-4 px-6 font-bold">Item Name</th>
-                                    <th className="py-4 px-6 font-bold">Stock Level</th>
-                                    <th className="py-4 px-6 font-bold">Reorder Point</th>
-                                    <th className="py-4 px-6 font-bold">Unit Cost</th>
-                                    <th className="py-4 px-6 font-bold">Supplier</th>
-                                    <th className="py-4 px-6 font-bold text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {filteredInventory.map(item => {
-                                    const status = getStockStatus(item.quantity, item.maxStock, item.minStock || 0);
-
-                                    return (
-                                        <tr key={item.id} className="hover:bg-gray-50 transition-colors group">
-                                            <td className="py-4 px-6">
-                                                <div className="flex flex-col cursor-pointer" onClick={() => { 
-                                                    setEditingItem(item); 
-                                                    setPublishToMenu(item.publicInMenu || false);
-                                                    setMenuPrice(item.price || 0);
-                                                    setIsEditModalOpen(true); 
-                                                }}>
-                                                    <span className="font-bold text-gray-900 hover:text-primary transition-colors">{item.name}</span>
-                                                    <span className="text-xs text-gray-500">{item.category}</span>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-6 min-w-[200px]">
-                                                <div className="flex justify-between text-xs mb-1">
-                                                    <span className="text-gray-900 font-bold">{item.quantity} {item.unit}</span>
-                                                    <span className={`${status.text} font-bold`}>{status.label}</span>
-                                                </div>
-                                                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                                                    <div
-                                                        className={`h-full rounded-full transition-all duration-500 ${status.color}`}
-                                                        style={{ width: status.width }}
-                                                    ></div>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-6 text-sm">
-                                                <span className="text-red-500 font-bold flex items-center gap-1">
-                                                    <span className="material-icons-round text-sm">arrow_downward</span>
-                                                    {item.minStock} {item.unit}
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-6 text-gray-900 font-medium">
-                                                ${item.costPerUnit.toFixed(2)} <span className="text-gray-400 text-xs">/ {item.unit}</span>
-                                            </td>
-                                            <td className="py-4 px-6 text-gray-500 text-sm">
-                                                {item.supplier}
-                                            </td>
-                                            <td className="py-4 px-6 text-right relative">
-                                                <div className="flex justify-end gap-2">
-                                                    <button
-                                                        onClick={() => { setEditingItem(item); setIsEditModalOpen(true); }}
-                                                        className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100"
-                                                    >
-                                                        <span className="material-icons-round text-lg">edit</span>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setRestockItem(item);
-                                                            setRestockQty(Math.max(0, item.maxStock - item.quantity));
-                                                        }}
-                                                        className="text-primary border border-primary/20 hover:bg-primary hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                                                    >
-                                                        Restock
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                </>
-            )}
-
-            {/* TAB: ORDERS */}
-            {activeTab === 'orders' && (
-                <div className="grid grid-cols-1 gap-4">
-                    {orders.length === 0 ? (
-                        <div className="text-center py-20 text-gray-400 bg-white rounded-3xl">
-                            <span className="material-icons-round text-6xl mb-4 text-gray-200">assignment</span>
-                            <p>No active orders</p>
-                            <button onClick={() => setActiveTab('stock')} className="text-primary font-bold mt-2">Go to Stock to create one</button>
-                        </div>
-                    ) : (
-                        orders.map(order => (
-                            <div key={order.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between gap-6">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <h3 className="text-xl font-bold">Order #{order.id}</h3>
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${order.status === 'RECEIVED' ? 'bg-green-100 text-green-600' :
-                                                order.status === 'ORDERED' ? 'bg-blue-100 text-blue-600' :
-                                                    order.status === 'CANCELLED' ? 'bg-red-100 text-red-600' :
-                                                        'bg-yellow-100 text-yellow-600'
-                                            }`}>
-                                            {order.status}
-                                        </span>
-                                    </div>
-                                    <p className="text-gray-500 text-sm mb-4">
-                                        {new Date(order.date).toLocaleDateString()} • {order.items.length} Items • {order.supplier}
-                                    </p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {order.items.slice(0, 5).map(item => (
-                                            <span key={item.id} className="px-2 py-1 bg-gray-50 border border-gray-200 rounded text-xs text-gray-600">
-                                                {item.orderQuantity}x {item.name}
-                                            </span>
-                                        ))}
-                                        {order.items.length > 5 && <span className="text-xs text-gray-400 self-center">+{order.items.length - 5} more</span>}
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col items-end gap-2 min-w-[200px]">
-                                    <span className="text-2xl font-bold text-gray-900">${order.totalCost.toFixed(2)}</span>
-
-                                    <div className="flex gap-2 w-full mt-auto">
-                                        {order.status === 'PENDING' && (
-                                            <button
-                                                onClick={() => handleUpdateStatus(order.id, SupplyOrderStatus.ORDERED)}
-                                                className="flex-1 bg-primary text-white py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:bg-blue-600"
-                                            >
-                                                Mark Ordered
-                                            </button>
-                                        )}
-                                        {order.status === 'ORDERED' && (
-                                            <button
-                                                onClick={() => handleUpdateStatus(order.id, SupplyOrderStatus.RECEIVED)}
-                                                className="flex-1 bg-green-500 text-white py-2 rounded-xl text-sm font-bold shadow-lg shadow-green-500/20 hover:bg-green-600"
-                                            >
-                                                Receive Stock
-                                            </button>
-                                        )}
-                                        <button
-                                            onClick={() => handleExportOrder(order)}
-                                            className="px-3 py-2 border border-gray-200 rounded-xl text-gray-500 hover:bg-gray-50"
-                                            title="Export PDF"
-                                        >
-                                            <span className="material-icons-round">picture_as_pdf</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            )}
-
-            {/* Quick Restock Popover (Simple implementation for now: Modal-like) */}
-            {restockItem && (
-                <div className="fixed inset-0 bg-black/20 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setRestockItem(null)}>
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl scale-100 transition-transform" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-lg font-bold mb-1">Restock {restockItem.name}</h3>
-                        <p className="text-sm text-gray-500 mb-4">Current: {restockItem.quantity} {restockItem.unit} | Max: {restockItem.maxStock} {restockItem.unit}</p>
-
-                        <div className="flex gap-4 items-center mb-6">
-                            <button onClick={() => setRestockQty(Math.max(0, restockQty - 1))} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-lg hover:bg-gray-200">-</button>
-                            <input
-                                type="number"
-                                value={restockQty}
-                                onChange={e => setRestockQty(Number(e.target.value))}
-                                className="flex-1 text-center text-2xl font-bold border-b-2 border-gray-100 focus:border-primary outline-none py-2"
-                            />
-                            <button onClick={() => setRestockQty(restockQty + 1)} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-lg hover:bg-gray-200">+</button>
-                        </div>
-
-                        <div className="flex gap-2">
-                            <button onClick={() => setRestockItem(null)} className="flex-1 py-3 text-gray-500 font-bold hover:bg-gray-50 rounded-xl">Cancel</button>
-                            <button
-                                onClick={() => addToCart(restockItem, restockQty)}
-                                className="flex-1 py-3 bg-primary text-white font-bold rounded-xl hover:bg-blue-600 shadow-lg shadow-primary/20"
-                            >
-                                Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit / Add Item Modal */}
-            {(isEditModalOpen || isAddItemModalOpen) && (
-                <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold">{editingItem ? 'Edit Item' : 'New Item'}</h2>
-                            <button onClick={() => { 
-                                setIsEditModalOpen(false); 
-                                setIsAddItemModalOpen(false); 
-                                setEditingItem(null);
-                                setPublishToMenu(false);
-                                setMenuPrice(0);
-                            }} className="text-gray-400 hover:text-gray-600">
-                                <span className="material-icons-round">close</span>
-                            </button>
-                        </div>
-
-
-                        <form onSubmit={(e) => {
-                            e.preventDefault();
-                            const formData = new FormData(e.currentTarget);
-                            const newItem = {
-                                id: editingItem?.id || '',
-                                name: formData.get('name') as string,
-                                category: formData.get('category') as string,
-                                supplier: formData.get('supplier') as string,
-                                quantity: Number(formData.get('quantity')),
-                                unit: formData.get('unit') as string,
-                                costPerUnit: Number(formData.get('cost')),
-                                minStock: Number(formData.get('minStock')),
-                                maxStock: Number(formData.get('maxStock')),
-                                lastRestock: editingItem?.lastRestock || new Date().toISOString()
-                            };
-                            handleSaveItem(newItem as InventoryItem);
-                        }} className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label>
-                                <input name="name" defaultValue={editingItem?.name} required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary font-bold" />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Category</label>
-                                    <select name="category" defaultValue={editingItem?.category || 'Abarrotes'} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary">
-                                        {INVENTORY_CATEGORIES.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Supplier</label>
-                                    <input name="supplier" defaultValue={editingItem?.supplier} required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary" />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Stock</label>
-                                    <input name="quantity" type="number" defaultValue={editingItem?.quantity || 0} required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary" />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Unit</label>
-                                    <input name="unit" defaultValue={editingItem?.unit || 'kg'} required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary" />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Cost</label>
-                                    <input name="cost" type="number" step="0.01" defaultValue={editingItem?.costPerUnit || 0} required className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 outline-none focus:border-primary" />
-                                </div>
-                            </div>
-
-                            <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 space-y-4">
-                                <div className="grid grid-cols-2 gap-4 ">
-                                    <div>
-                                        <label className="block text-xs font-bold text-yellow-700 uppercase mb-1">Min (Low)</label>
-                                        <input name="minStock" type="number" defaultValue={editingItem?.minStock || 10} required className="w-full bg-white border border-yellow-200 rounded-xl px-4 py-2 outline-none focus:border-yellow-500 text-yellow-800 font-bold" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-yellow-700 uppercase mb-1">Max (Full)</label>
-                                        <input name="maxStock" type="number" defaultValue={editingItem?.maxStock || 100} required className="w-full bg-white border border-yellow-200 rounded-xl px-4 py-2 outline-none focus:border-yellow-500 text-yellow-800 font-bold" />
-                                    </div>
-                                </div>
-                                
-                                <div className="pt-2 border-t border-yellow-200/50">
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <div className={`w-10 h-6 rounded-full transition-all relative ${publishToMenu ? 'bg-primary' : 'bg-gray-300'}`}>
-                                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${publishToMenu ? 'left-5' : 'left-1'}`}></div>
-                                        </div>
-                                        <input 
-                                            type="checkbox" 
-                                            className="hidden" 
-                                            checked={publishToMenu} 
-                                            onChange={(e) => setPublishToMenu(e.target.checked)} 
-                                        />
-                                        <span className="text-xs font-black text-gray-700 uppercase tracking-widest">Publicar en Menú</span>
-                                    </label>
-
-                                    {publishToMenu && (
-                                        <div className="mt-4 animate-in slide-in-from-top-2">
-                                            <label className="block text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-1">Venta al Público (Precio)</label>
-                                            <div className="relative">
-                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400">$</span>
-                                                <input 
-                                                    type="number" 
-                                                    step="0.01"
-                                                    value={menuPrice} 
-                                                    onChange={(e) => setMenuPrice(Number(e.target.value))}
-                                                    className="w-full bg-white border-2 border-primary/20 rounded-xl pl-8 pr-4 py-2 outline-none focus:border-primary font-black text-primary" 
-                                                    required={publishToMenu}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="flex gap-4 mt-6">
-                                {editingItem && (
-                                    <button type="button" onClick={() => handleDeleteItem(editingItem.id)} className="px-4 py-3 text-red-500 font-bold hover:bg-red-50 rounded-xl transition-colors">
-                                        Delete
-                                    </button>
-                                )}
-                                <button type="submit" className="flex-1 bg-primary text-white font-bold py-3 rounded-xl hover:bg-blue-600 shadow-lg shadow-primary/20">
-                                    {editingItem ? 'Save Changes' : 'Create Item'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Cart Drawer */}
-            <div className={`fixed inset-y-0 right-0 w-[400px] bg-white shadow-2xl transform transition-transform duration-300 z-40 flex flex-col ${isCartOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-900">Shopping Cart</h2>
-                        <p className="text-sm text-gray-500">{cart.length} items to sort</p>
-                    </div>
-                    <button onClick={() => setIsCartOpen(false)} className="text-gray-400 hover:text-gray-600">
-                        <span className="material-icons-round">close</span>
-                    </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                    {cart.length === 0 ? (
-                        <div className="text-center py-20 opacity-50">
-                            <span className="material-icons-round text-6xl mb-2">production_quantity_limits</span>
-                            <p>Cart is empty</p>
-                        </div>
-                    ) : (
-                        cart.map(item => (
-                            <div key={item.id} className="flex gap-4 items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                <div className="flex-1">
-                                    <h4 className="font-bold text-gray-800">{item.name}</h4>
-                                    <p className="text-xs text-gray-500">${item.costPerUnit} / {item.unit}</p>
-                                </div>
-                                <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
-                                    <button onClick={() => updateCartQty(item.id, item.orderQuantity - 1)} className="w-6 h-6 flex items-center justify-center hover:bg-white rounded text-gray-600">-</button>
-                                    <span className="text-sm font-bold w-6 text-center">{item.orderQuantity}</span>
-                                    <button onClick={() => updateCartQty(item.id, item.orderQuantity + 1)} className="w-6 h-6 flex items-center justify-center hover:bg-white rounded text-gray-600">+</button>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-bold text-primary">${(item.costPerUnit * item.orderQuantity).toFixed(2)}</p>
-                                    <button onClick={() => removeFromCart(item.id)} className="text-xs text-red-400 hover:text-red-600 underline">Remove</button>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-
-                <div className="p-6 border-t border-gray-100 bg-gray-50">
-                    <div className="flex justify-between items-center mb-4">
-                        <span className="text-gray-500 font-bold">Total Estimated Cost</span>
-                        <span className="text-2xl font-bold text-gray-900">${cartTotal.toFixed(2)}</span>
-                    </div>
-                    <button
-                        onClick={handleCreateOrder}
-                        disabled={cart.length === 0}
-                        className="w-full bg-primary disabled:bg-gray-300 disabled:shadow-none text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 hover:bg-blue-600 transition-all flex items-center justify-center gap-2"
-                    >
-                        <span className="material-icons-round">shopping_bag</span>
-                        Place Order
-                    </button>
-                </div>
+                )}
             </div>
+
+            {/* Modal Layer */}
+            <AnimatePresence>
+                {isAddModalOpen && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-[#0a0a0b] border border-white/10 rounded-solaris w-full max-w-lg overflow-hidden shadow-2xl">
+                             <form onSubmit={handleSaveItem} className="p-10">
+                                <div className="flex justify-between items-center mb-10">
+                                    <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Supply Registry</h2>
+                                    <X onClick={() => setIsAddModalOpen(false)} className="text-gray-700 hover:text-white cursor-pointer" size={24} />
+                                </div>
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Resource Blueprint Name</label>
+                                        <input name="name" defaultValue={editingItem?.name} required className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-solaris-orange/50 transition-all font-bold" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Node Class</label>
+                                            <select name="category" defaultValue={editingItem?.category || 'General'} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none appearance-none font-bold">
+                                                {INVENTORY_CATEGORIES.filter(c => c !== 'All').map(c => <option key={c} value={c} className="bg-[#0a0a0b]">{c}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Supplier ID</label>
+                                            <input name="supplier" defaultValue={editingItem?.supplier} required className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none font-bold" />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Critical Min</label>
+                                            <input name="minStock" type="number" defaultValue={editingItem?.minStock || 10} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-white text-center font-bold" />
+                                        </div>
+                                        <div className="space-y-2">
+                                             <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Ideal Cap</label>
+                                             <input name="maxStock" type="number" defaultValue={editingItem?.maxStock || 100} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-white text-center font-bold" />
+                                        </div>
+                                        <div className="space-y-2">
+                                             <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Unit Cost</label>
+                                             <input name="cost" type="number" step="0.01" defaultValue={editingItem?.costPerUnit} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-white text-center font-bold" />
+                                        </div>
+                                    </div>
+                                    <button type="submit" className="w-full bg-solaris-orange text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-600 transition-all text-[11px] mt-6">
+                                        Apply Data Structure
+                                    </button>
+                                </div>
+                             </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {restockItem && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
+                         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-[#0a0a0b] border border-white/10 rounded-solaris w-full max-w-sm overflow-hidden shadow-2xl">
+                             <div className="p-8">
+                                 <h3 className="text-xl font-black italic uppercase text-white mb-2">Restock Payload</h3>
+                                 <p className="text-[9px] font-black uppercase text-solaris-orange tracking-[0.3em] mb-10">{restockItem.name}</p>
+                                 
+                                 <div className="flex items-center gap-6 mb-10">
+                                     <button onClick={() => setRestockQty(Math.max(0, restockQty - 1))} className="w-14 h-14 rounded-2xl border border-white/5 flex items-center justify-center text-xl hover:bg-white/5 transition-all">-</button>
+                                     <input type="number" value={restockQty} onChange={e => setRestockQty(Number(e.target.value))} className="flex-1 bg-transparent border-b-2 border-white/10 outline-none text-4xl font-black italic text-center text-white" />
+                                     <button onClick={() => setRestockQty(restockQty + 1)} className="w-14 h-14 rounded-2xl border border-white/5 flex items-center justify-center text-xl hover:bg-white/5 transition-all">+</button>
+                                 </div>
+
+                                 <div className="flex gap-4">
+                                     <button onClick={() => setRestockItem(null)} className="flex-1 py-4 text-[10px] font-black uppercase text-gray-700 tracking-widest hover:text-white transition-colors">Abort</button>
+                                     <button onClick={() => addToCart(restockItem, restockQty)} className="flex-1 py-4 bg-solaris-orange text-white font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-solaris-glow">Add to Queue</button>
+                                 </div>
+                             </div>
+                         </motion.div>
+                    </motion.div>
+                )}
+
+                {isCartOpen && (
+                    <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed inset-y-0 right-0 w-full md:w-[450px] bg-[#0a0a0b] border-l border-white/10 shadow-2xl z-50 flex flex-col">
+                        <div className="p-10 border-b border-white/5 flex justify-between items-center">
+                            <div>
+                                <h2 className="text-2xl font-black italic text-white uppercase tracking-tight">Procurement Loop</h2>
+                                <p className="text-[9px] font-black uppercase text-solaris-orange tracking-widest mt-1">{cart.length} Assets Enqueued</p>
+                            </div>
+                            <X onClick={() => setIsCartOpen(false)} className="text-gray-700 hover:text-white cursor-pointer" size={24} />
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-10 space-y-6">
+                            {cart.map(item => (
+                                <div key={item.id} className="flex justify-between items-center bg-white/[0.02] border border-white/5 p-6 rounded-2xl">
+                                    <div>
+                                        <h4 className="font-bold text-white uppercase italic">{item.name}</h4>
+                                        <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest">${item.costPerUnit} / {item.unit}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="font-black text-solaris-orange italic">${(item.costPerUnit * item.orderQuantity).toFixed(2)}</p>
+                                        <button onClick={() => setCart(prev => prev.filter(c => c.id !== item.id))} className="text-[8px] font-black uppercase text-red-500/60 hover:text-red-500 transition-colors">Remove</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="p-10 border-t border-white/5 bg-white/[0.01]">
+                            <div className="flex justify-between items-center mb-10">
+                                <span className="text-[9px] font-black uppercase text-gray-700 tracking-widest">Aggregate Cost</span>
+                                <span className="text-3xl font-black italic text-white tracking-tighter">${cartTotal.toFixed(2)}</span>
+                            </div>
+                            <button onClick={handleCreateOrder} disabled={cart.length === 0} className="w-full bg-solaris-orange text-white font-black uppercase tracking-[0.2em] py-6 rounded-2xl shadow-solaris-glow disabled:opacity-30 flex items-center justify-center gap-3">
+                                <ShoppingCart size={20} /> Authorize Procurement
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
