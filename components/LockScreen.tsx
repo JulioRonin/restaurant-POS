@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldAlert, LogOut, RefreshCw, Smartphone, Monitor, UserCheck, Delete, LayoutDashboard } from 'lucide-react';
+import { LogOut, RefreshCw, Smartphone, UserCheck, Delete, LayoutDashboard } from 'lucide-react';
+import { GlowCard } from './ui/spotlight-card';
 
 export const LockScreen: React.FC = () => {
     const { employees, switchEmployee, setEmployeePin, signOut, authProfile, isSuperAdmin, triggerSync, refreshEmployees } = useUser();
@@ -83,7 +84,7 @@ export const LockScreen: React.FC = () => {
                             <Smartphone className="w-10 h-10 text-white" />
                         </div>
                     )}
-                    <h1 className="text-4xl font-black tracking-tighter mb-3 uppercase italic">{settings.name || 'Solaris Terminal'}</h1>
+                    <h1 className="text-4xl font-black tracking-tighter mb-3 uppercase italic text-white">{settings.name || 'Solaris Terminal'}</h1>
                     <p className="text-gray-500 font-bold text-[10px] uppercase tracking-[0.4em] mb-6">Selecciona tu perfil de acceso</p>
                     
                     <div className="flex items-center gap-3 px-6 py-2.5 bg-white/[0.03] rounded-full border border-white/5 mx-auto w-fit">
@@ -99,9 +100,15 @@ export const LockScreen: React.FC = () => {
                             onClick={() => { window.location.hash = '#/dashboard'; }}
                             className="flex flex-col items-center gap-4 transition-all duration-500 group"
                         >
-                            <div className="w-24 h-24 rounded-solaris overflow-hidden border border-solaris-orange/30 bg-solaris-orange/5 flex items-center justify-center shadow-2xl group-hover:bg-solaris-orange/20 transition-all">
-                                <LayoutDashboard className="w-10 h-10 text-solaris-orange" />
-                            </div>
+                            <GlowCard 
+                                glowColor="orange" 
+                                customSize 
+                                className={`w-24 h-24 !p-0 overflow-hidden border transition-all ${selectedUser === 'admin' ? 'border-solaris-orange shadow-solaris-glow' : 'border-white/5'}`}
+                            >
+                                <div className="w-full h-full flex items-center justify-center bg-solaris-orange/5 group-hover:bg-solaris-orange/20 transition-all">
+                                    <LayoutDashboard className="w-10 h-10 text-solaris-orange" />
+                                </div>
+                            </GlowCard>
                             <div className="text-center">
                                 <span className="block text-[10px] font-black uppercase tracking-tighter text-solaris-orange">Super Admin</span>
                                 <span className="text-[8px] font-bold text-gray-600 uppercase">Acceso Global</span>
@@ -115,7 +122,11 @@ export const LockScreen: React.FC = () => {
                             onClick={() => { setSelectedUser(user.id); setPin(''); setError(false); }}
                             className={`flex flex-col items-center gap-4 transition-all duration-500 min-w-[120px] ${selectedUser === user.id ? 'scale-110' : 'opacity-40 hover:opacity-100 hover:scale-105'}`}
                         >
-                            <div className={`w-24 h-24 rounded-solaris overflow-hidden border-2 transition-all shadow-2xl relative ${selectedUser === user.id ? 'border-solaris-orange shadow-solaris-glow' : 'border-white/5'}`}>
+                            <GlowCard 
+                                glowColor="orange" 
+                                customSize 
+                                className={`w-24 h-24 !p-0 overflow-hidden border-2 transition-all shadow-2xl relative ${selectedUser === user.id ? 'border-solaris-orange shadow-solaris-glow' : 'border-white/5'}`}
+                            >
                                 <img 
                                     src={(user.role?.toLowerCase() === 'admin' || user.role?.toLowerCase() === 'owner') ? ADMIN_AVATAR : (user.image || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200&h=200')} 
                                     alt={user.name} 
@@ -126,7 +137,7 @@ export const LockScreen: React.FC = () => {
                                         <UserCheck className="w-10 h-10 text-white" />
                                     </div>
                                 )}
-                            </div>
+                            </GlowCard>
                             <div className="text-center px-2">
                                 <span className={`block text-xs font-black uppercase tracking-tight truncate max-w-[110px] ${selectedUser === user.id ? 'text-white' : 'text-gray-500'}`}>
                                     {user.name}
@@ -138,9 +149,9 @@ export const LockScreen: React.FC = () => {
 
                     {employees.length === 0 && (
                         <div className="flex flex-col items-center gap-6 py-12">
-                            <div className="w-20 h-20 bg-white/[0.02] border border-white/5 rounded-solaris flex items-center justify-center">
+                            <GlowCard glowColor="orange" customSize className="w-20 h-20 !p-0 flex items-center justify-center border border-white/5">
                                 <RefreshCw className="w-8 h-8 text-gray-700 animate-spin-slow" />
-                            </div>
+                            </GlowCard>
                             <button 
                                 onClick={() => { triggerSync(); refreshEmployees(); }}
                                 className="px-8 py-3 bg-solaris-orange/10 hover:bg-solaris-orange text-solaris-orange hover:text-white border border-solaris-orange/20 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all"
@@ -188,7 +199,7 @@ export const LockScreen: React.FC = () => {
                                         className={`w-20 h-20 rounded-solaris flex items-center justify-center text-2xl font-black transition-all duration-150 ${isBackspace
                                                 ? 'text-red-500 bg-red-500/5 hover:bg-red-500/20 border border-red-500/10'
                                                 : 'bg-white/[0.02] hover:bg-white/[0.08] border border-white/5 hover:border-solaris-orange/30'
-                                            } ${activeKey === key ? 'bg-solaris-orange text-white border-solaris-orange shadow-solaris-glow' : ''}`}
+                                            } ${activeKey === key ? 'bg-solaris-orange text-white border-solaris-orange shadow-solaris-glow' : 'text-white'}`}
                                     >
                                         {isBackspace ? <Delete className="w-6 h-6" /> : key}
                                     </motion.button>
@@ -202,7 +213,7 @@ export const LockScreen: React.FC = () => {
                 {/* System Logout */}
                 <button 
                     onClick={signOut}
-                    className="group flex items-center gap-3 px-8 py-3 text-[10px] font-black text-gray-600 hover:text-red-500 uppercase tracking-[0.3em] transition-all"
+                    className="group flex items-center gap-3 px-8 py-3 text-[10px] font-black text-gray-700 hover:text-red-500 uppercase tracking-[0.3em] transition-all"
                 >
                     <LogOut className="w-4 h-4 opacity-50 group-hover:opacity-100 transition-opacity" />
                     Abandonar Terminal
