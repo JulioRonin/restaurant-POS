@@ -19,7 +19,7 @@ import {
   Minus, 
   ChefHat, 
   Table as TableIcon, 
-  Bag, 
+  ShoppingBag, 
   Truck,
   Zap,
   CheckCircle2,
@@ -318,7 +318,7 @@ export const POSScreen: React.FC = () => {
         <div className="p-8 bg-[#0a0a0b] border-t border-white/10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
             <div className="grid grid-cols-2 gap-4 mb-10">
                 {[
-                    { id: OrderSource.TO_GO, icon: Bag, label: 'Carry out', color: 'bg-white/5 border-white/5 text-white/40' },
+                    { id: OrderSource.TO_GO, icon: ShoppingBag, label: 'Carry out', color: 'bg-white/5 border-white/5 text-white/40' },
                     { id: OrderSource.RAPPI, icon: Truck, label: 'Grid/Rappi', color: 'bg-[#FF3C5C]/5 border-[#FF3C5C]/10 text-[#FF3C5C]/60' },
                     { id: OrderSource.UBER_EATS, icon: ChefHat, label: 'Uber System', color: 'bg-[#06C167]/5 border-[#06C167]/10 text-[#06C167]/60' },
                     { id: OrderSource.DINE_IN, icon: TableIcon, label: 'In-Node', color: 'bg-solaris-orange/10 border-solaris-orange/10 text-solaris-orange' }
