@@ -221,18 +221,18 @@ export const CashierScreen: React.FC = () => {
                     {selectedOrder ? (
                         <div className="h-full flex flex-col p-8 lg:p-12 overflow-y-auto custom-scrollbar">
                             <div className="flex-1 space-y-12 pb-12">
-                                <GlowCard glowColor="orange" className="border border-white/5 bg-white/[0.01] !p-12">
-                                    <div className="flex justify-between items-end mb-12 pb-8 border-b border-white/5">
+                                <GlowCard glowColor="orange" className="border border-white/5 bg-white/[0.01] !p-8">
+                                    <div className="flex justify-between items-end mb-8 pb-6 border-b border-white/5">
                                         <div>
-                                            <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">Asset Summary</h2>
-                                            <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.3em] mt-3">Node: {selectedOrder.tableId} • OP: {selectedOrder.waiterName}</p>
+                                            <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">Asset Summary</h2>
+                                            <p className="text-[9px] font-black uppercase text-solaris-orange/40 tracking-[0.3em] mt-2">Node: {selectedOrder.tableId} • OP: {selectedOrder.waiterName}</p>
                                         </div>
-                                        <div className="flex gap-4">
-                                             <button onClick={() => printerService.openCashDrawer()} className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white/20 hover:text-white hover:bg-white/[0.05] transition-all"><Zap size={22} /></button>
-                                             <button onClick={() => handlePrintTicket(selectedOrder)} className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white/20 hover:text-white hover:bg-white/[0.05] transition-all"><Printer size={22} /></button>
+                                        <div className="flex gap-3">
+                                             <button onClick={() => printerService.openCashDrawer()} className="p-3 bg-white/[0.03] border border-white/5 rounded-xl text-white/20 hover:text-white hover:bg-white/[0.05] transition-all"><Zap size={20} /></button>
+                                             <button onClick={() => handlePrintTicket(selectedOrder)} className="p-3 bg-white/[0.03] border border-white/5 rounded-xl text-white/20 hover:text-white hover:bg-white/[0.05] transition-all"><Printer size={20} /></button>
                                         </div>
                                     </div>
-                                    <div className="space-y-8">
+                                    <div className="space-y-4 max-h-[30vh] overflow-y-auto no-scrollbar pr-2">
                                         {(selectedOrder.items || []).map((item, idx) => (
                                             <div key={idx} className="flex justify-between items-center group">
                                                 <div className="flex items-center gap-6">
@@ -270,16 +270,16 @@ export const CashierScreen: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="sticky bottom-0 bg-[#030303] pt-6 flex gap-6 mt-auto">
+                            <div className="sticky bottom-0 bg-[#030303] pt-6 pb-2 flex gap-6 mt-auto z-20">
                                 <GlowCard glowColor="orange" className="flex-1 border border-white/10 bg-white/[0.02] !p-10 rounded-[40px] shadow-2xl">
-                                     <div className="flex justify-between items-end mb-10">
+                                     <div className="flex justify-between items-center mb-8">
                                         <div>
-                                            <p className="text-[11px] font-black uppercase text-solaris-orange/50 tracking-[0.4em] mb-3 italic">Aggregate Payload</p>
-                                            <p className="text-6xl font-black italic tracking-tighter text-white uppercase italic">${total.toFixed(2)}</p>
+                                            <p className="text-[10px] font-black uppercase text-solaris-orange/50 tracking-[0.4em] mb-2 italic">Aggregate Payload</p>
+                                            <p className="text-5xl font-black italic tracking-tighter text-white uppercase italic leading-none">${total.toFixed(2)}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.3em] mb-2">Encrypted Chain</p>
-                                            <p className="text-[11px] text-white/20 font-bold italic">Verification COMPLETE_88</p>
+                                            <p className="text-[9px] text-emerald-500 font-black uppercase tracking-[0.2em] mb-1">Encrypted Chain</p>
+                                            <p className="text-[10px] text-white/20 font-bold italic">Verification COMPLETE_88</p>
                                         </div>
                                      </div>
                                      <div className="grid grid-cols-2 gap-6 mb-8">
@@ -317,11 +317,11 @@ export const CashierScreen: React.FC = () => {
             <AnimatePresence>
                 {isPaymentModalOpen && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[600] flex items-center justify-center bg-black/95 backdrop-blur-3xl p-6">
-                        <GlowCard glowColor="orange" className="w-full max-w-2xl border border-white/10 !p-16 text-center bg-[#0a0a0b] relative rounded-[48px] shadow-2xl">
-                            <X onClick={() => setIsPaymentModalOpen(false)} className="absolute top-12 right-12 text-white/10 hover:text-white cursor-pointer transition-colors" size={32} />
+                        <GlowCard glowColor="orange" className="w-full max-w-4xl border border-white/10 !p-12 text-center bg-[#0a0a0b] relative rounded-[48px] shadow-2xl">
+                            <X onClick={() => setIsPaymentModalOpen(false)} className="absolute top-10 right-10 text-white/10 hover:text-white cursor-pointer transition-colors" size={32} />
                             
-                            <h2 className="text-5xl font-black italic tracking-tighter uppercase text-white mb-3">Authorize Payout</h2>
-                            <p className="text-[11px] font-black uppercase text-solaris-orange tracking-[0.6em] mb-16 italic">Protocol Execution Layer • Manual Override</p>
+                            <h2 className="text-5xl font-black italic tracking-tighter uppercase text-white mb-2">Authorize Payout</h2>
+                            <p className="text-[11px] font-black uppercase text-solaris-orange tracking-[0.6em] mb-12 italic">Protocol Execution Layer • Manual Override</p>
                             
                             <div className="space-y-16">
                                 <div className="space-y-6">
