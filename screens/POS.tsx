@@ -240,7 +240,7 @@ export const POSScreen: React.FC = () => {
                                     <span className="text-xs font-black italic text-solaris-orange tracking-widest">${item.price.toFixed(0)}</span>
                                 </div>
                            </div>
-                        </div>
+                        </GlowCard>
                     </motion.div>
                 ))}
             </div>
@@ -365,7 +365,7 @@ export const POSScreen: React.FC = () => {
                     </motion.div>
                     <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter mb-4">Transmission Successful</h2>
                     <p className="text-white/30 font-bold text-[11px] uppercase tracking-[0.3em] font-black">Kitchen Unit Acknowledged Packet</p>
-                </GlowCard>
+                </div>
             </motion.div>
         )}
       </AnimatePresence>
