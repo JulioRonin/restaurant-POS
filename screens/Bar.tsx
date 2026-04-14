@@ -1,136 +1,201 @@
 import React, { useEffect, useState } from 'react';
 import { useOrders } from '../contexts/OrderContext';
-import { Order, OrderStatus, OrderSource } from '../types';
+import { Order, OrderStatus } from '../types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GlowCard } from '../components/ui/spotlight-card';
+import { Wine, Timer, CheckCircle2, AlertTriangle, Package, Bell } from 'lucide-react';
 
-const OrderTimer: React.FC<{ timestamp: Date }> = ({ timestamp }) => {
+const playBeep = () => {
+    try {
+        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine'; osc.frequency.setValueAtTime(660, ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        osc.start(); osc.stop(ctx.currentTime + 0.4);
+    } catch (e) {}
+};
+
+const BarTimer: React.FC<{ timestamp: Date }> = ({ timestamp }) => {
     const [elapsed, setElapsed] = useState('');
     const [isLate, setIsLate] = useState(false);
 
     useEffect(() => {
-        const updateTimer = () => {
-            const now = new Date();
-            const diff = now.getTime() - new Date(timestamp).getTime();
-            const totalSeconds = Math.floor(diff / 1000);
-            const minutes = Math.floor(totalSeconds / 60);
-            const seconds = totalSeconds % 60;
-            const formatted = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            setElapsed(formatted);
-            setIsLate(minutes >= 10); // Drinks should be faster than food (10 min)
+        const update = () => {
+            const diff = Date.now() - new Date(timestamp).getTime();
+            const min = Math.floor(diff / 60000);
+            const sec = Math.floor((diff % 60000) / 1000);
+            setElapsed(`${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`);
+            setIsLate(min >= 10);
         };
-        updateTimer();
-        const interval = setInterval(updateTimer, 1000);
+        update();
+        const interval = setInterval(update, 1000);
         return () => clearInterval(interval);
     }, [timestamp]);
 
     return (
-        <span className={`px-3 py-1 rounded-lg font-mono font-bold text-lg ${isLate ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-blue-100 text-blue-600'}`}>
+        <span className={`px-4 py-1.5 rounded-xl font-mono text-lg font-black italic tracking-tighter ${isLate ? 'bg-red-500 text-white animate-pulse shadow-lg' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
             {elapsed}
         </span>
     );
 };
 
-const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string) => void }> = ({ order, items, onComplete }) => {
-    return (
-        <div className="bg-white rounded-xl overflow-hidden border-l-4 border-blue-500 shadow-soft min-w-[300px] flex flex-col animate-in slide-in-from-right duration-500">
-            <div className="p-4 flex justify-between items-center bg-gray-50 border-b border-gray-100 pt-6">
-                <div>
-                    <h3 className="font-bold text-xl text-gray-900">{order.tableId}</h3>
-                    <span className="text-xs text-gray-500">#{order.id}</span>
+const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string) => void }> = ({ order, items, onComplete }) => (
+    <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col min-w-[340px] max-w-[400px] overflow-hidden">
+        {/* Header */}
+        <div className="p-6 bg-white/[0.03] border-b border-white/5 flex justify-between items-start gap-4">
+            <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                    <Wine size={12} className="text-blue-400 shrink-0" />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-blue-400/60">Bar Order</span>
                 </div>
-                <OrderTimer timestamp={order.timestamp} />
+                <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-tight">
+                    {order.tableId}
+                </h3>
+                <p className="text-[9px] font-black uppercase text-white/20 tracking-widest mt-1 italic">
+                    PKT: {order.id.slice(0, 8)}
+                </p>
             </div>
-            <div className="p-4 flex-1 overflow-y-auto max-h-[300px]">
-                {items.map((item, idx) => (
-                    <div key={`${item.id}-${idx}`} className="flex justify-between items-start mb-3 border-b border-gray-100 pb-2 last:border-0 last:pb-0 last:mb-0">
-                        <div className="flex flex-col w-full">
-                            <div className="flex gap-3 items-center">
-                                <span className="font-bold text-lg text-blue-600 bg-blue-50 w-8 h-8 flex items-center justify-center rounded-lg">{item.quantity}</span>
-                                <span className="text-gray-800 font-bold text-lg">{item.name}</span>
-                            </div>
-                            {item.notes && (
-                                <p className="text-sm text-blue-600 mt-1 font-bold bg-blue-50 p-2 rounded-lg border border-blue-100 flex items-center gap-2">
-                                    <span className="material-icons-round text-sm">info</span>
-                                    {item.notes}
-                                </p>
-                            )}
-                        </div>
+            <div className="shrink-0 pt-1">
+                <BarTimer timestamp={order.timestamp} />
+            </div>
+        </div>
+
+        {/* Items */}
+        <div className="p-5 flex-1 space-y-3">
+            {items.map((item, idx) => (
+                <div key={idx} className="space-y-1">
+                    <div className="flex items-center gap-3 bg-white/[0.02] p-3 rounded-2xl border border-white/5">
+                        <span className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center font-black italic text-blue-400 text-sm shrink-0">
+                            {item.quantity}
+                        </span>
+                        <span className="font-black italic text-white uppercase tracking-tight text-sm">{item.name}</span>
                     </div>
-                ))}
-            </div>
+                    {item.notes && (
+                        <div className="mx-1 p-2.5 rounded-xl bg-red-500/5 border border-red-500/10 flex items-center gap-2">
+                            <AlertTriangle size={12} className="text-red-500 shrink-0" />
+                            <span className="text-[10px] font-black uppercase text-red-400 tracking-widest">{item.notes}</span>
+                        </div>
+                    )}
+                </div>
+            ))}
+        </div>
+
+        {/* Complete button */}
+        <div className="p-5 border-t border-white/5">
             <button
                 onClick={() => onComplete(order.id)}
-                className="m-4 mt-2 py-4 bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30 rounded-xl font-bold text-lg transition-all active:scale-95 flex items-center justify-center gap-2"
+                className="w-full py-5 bg-blue-500 text-white font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-lg shadow-blue-500/20 hover:scale-[1.02] hover:bg-blue-400 active:scale-95 transition-all flex items-center justify-center gap-3"
             >
-                <span className="material-icons-round">local_bar</span>
-                Bebidas Listas
+                <Wine size={20} /> Bebidas Listas
             </button>
         </div>
-    );
-};
+    </GlowCard>
+);
 
 export const BarScreen: React.FC = () => {
     const { orders, updateOrderStatus } = useOrders();
-    const pendingOrders = orders.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.COOKING);
+    const [prevCount, setPrevCount] = useState(0);
+    const [alert, setAlert] = useState(false);
 
-    // Filter only drinks
+    const pendingOrders = orders.filter(o =>
+        o.status === OrderStatus.PENDING || o.status === OrderStatus.COOKING
+    );
+
     const barOrders = pendingOrders.map(order => {
-        const drinkItems = order.items.filter(item => 
-            item.category.toLowerCase().includes('bebida') || 
-            item.category.toLowerCase().includes('bar') ||
-            item.category.toLowerCase().includes('vino') ||
-            item.category.toLowerCase().includes('trago') ||
-            item.category.toLowerCase().includes('cerveza')
+        const drinkItems = order.items.filter(item =>
+            item.category?.toLowerCase().includes('bebida') ||
+            item.category?.toLowerCase().includes('bar') ||
+            item.category?.toLowerCase().includes('vino') ||
+            item.category?.toLowerCase().includes('trago') ||
+            item.category?.toLowerCase().includes('cerveza') ||
+            item.category?.toLowerCase().includes('drink') ||
+            item.category?.toLowerCase().includes('cocktail')
         );
         return drinkItems.length > 0 ? { order, items: drinkItems } : null;
     }).filter((x): x is { order: Order; items: any[] } => x !== null);
 
+    useEffect(() => {
+        if (barOrders.length > prevCount && prevCount !== 0) {
+            playBeep(); setAlert(true); setTimeout(() => setAlert(false), 4000);
+        }
+        setPrevCount(barOrders.length);
+    }, [barOrders.length, prevCount]);
+
+    const handleComplete = (id: string) => updateOrderStatus(id, OrderStatus.READY);
+
     return (
-        <div className="flex-1 bg-[#111827] text-gray-100 p-6 overflow-hidden flex flex-col h-full relative">
-            <header className="flex justify-between items-center mb-6 bg-gray-800 p-4 rounded-2xl shadow-lg border border-gray-700">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
-                        <span className="material-icons-round text-3xl">local_bar</span>
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-white">Monitor de Bar</h1>
-                        <p className="text-gray-400 text-sm">Despacho de Bebidas y Tragos</p>
+        <div className="h-full bg-[#030303] text-white flex flex-col overflow-hidden antialiased relative">
+            {/* New Order Alert */}
+            <AnimatePresence>
+                {alert && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
+                    >
+                        <div className="p-16 rounded-[4rem] bg-blue-500 text-white shadow-2xl border-[10px] border-white/20 flex flex-col items-center">
+                            <Bell size={80} className="mb-6 animate-bounce" />
+                            <h2 className="text-6xl font-black italic uppercase tracking-tighter">Bar Order Incoming</h2>
+                            <p className="text-[12px] font-black uppercase tracking-[0.5em] mt-2 opacity-60">Nuevo pedido de bebidas</p>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Header */}
+            <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 px-8 pt-8 pb-6 border-b border-white/5 shrink-0">
+                <div>
+                    <div className="flex items-center gap-3 mb-1">
+                        <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                            <Wine size={20} className="text-blue-400" />
+                        </div>
+                        <div>
+                            <h1 className="text-4xl font-black italic tracking-tighter uppercase leading-none">Bar Station</h1>
+                            <p className="text-white/20 font-bold text-[10px] uppercase tracking-[0.4em]">Drinks Dispatch Monitor</p>
+                        </div>
                     </div>
                 </div>
-                <div className="flex gap-4">
-                    <div className="bg-gray-900 px-6 py-2 rounded-xl border border-gray-700 text-center">
-                        <span className="block text-xs text-gray-400 font-bold uppercase tracking-wider">Pendientes</span>
-                        <span className="font-bold text-xl text-blue-500">{barOrders.length}</span>
+
+                <div className="flex gap-3">
+                    <div className="bg-white/[0.03] border border-white/5 px-6 py-3 rounded-2xl text-center">
+                        <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">En Espera</p>
+                        <p className="text-2xl font-black italic text-blue-400 leading-none">{barOrders.length}</p>
+                    </div>
+                    <div className="bg-white/[0.03] border border-white/5 px-6 py-3 rounded-2xl text-center">
+                        <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Listos</p>
+                        <p className="text-2xl font-black italic text-green-400 leading-none">
+                            {orders.filter(o => o.status === OrderStatus.READY).length}
+                        </p>
                     </div>
                 </div>
             </header>
 
-            <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4 scrollbar-hide">
-                <div className="flex gap-6 h-full min-w-max px-2">
-                    {barOrders.length === 0 ? (
-                        <div className="w-[calc(100vw-3rem)] flex flex-col items-center justify-center text-gray-500 border-2 border-dashed border-gray-700 rounded-3xl bg-gray-800/30 h-full">
-                            <div className="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center mb-6">
-                                <span className="material-icons-round text-6xl text-gray-500">local_bar</span>
-                            </div>
-                            <h2 className="text-2xl font-bold text-gray-300">Bar Despejado</h2>
-                            <p className="font-medium mt-2">No hay bebidas por preparar ahora mismo.</p>
-                        </div>
-                    ) : (
-                        barOrders.map(({ order, items }) => (
+            {/* Main content */}
+            <main className="flex-1 overflow-x-auto no-scrollbar py-6 px-8">
+                {barOrders.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center opacity-10 border-2 border-dashed border-white/5 rounded-[32px]">
+                        <Wine size={80} className="mb-6" />
+                        <p className="text-[12px] font-black uppercase tracking-[0.4em]">Bar Despejado</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest mt-2 opacity-60">No hay bebidas por preparar</p>
+                    </div>
+                ) : (
+                    <div className="flex gap-6 min-w-max h-full">
+                        {barOrders.map(({ order, items }) => (
                             <BarTicket
                                 key={order.id}
                                 order={order}
                                 items={items}
-                                onComplete={() => {
-                                  // For simplicity, we mark the whole order as READY if it only has drinks, 
-                                  // or we'd need a sub-status per item.
-                                  // For now, let's just trigger READY status for the order.
-                                  updateOrderStatus(order.id, OrderStatus.READY);
-                                }}
+                                onComplete={handleComplete}
                             />
-                        ))
-                    )}
-                </div>
-            </div>
+                        ))}
+                    </div>
+                )}
+            </main>
         </div>
     );
 };

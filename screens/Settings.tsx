@@ -112,14 +112,16 @@ export const SettingsScreen: React.FC = () => {
                     </div>
 
                     {/* Content Area */}
-                    <GlowCard className="flex-1 border border-white/5 !p-12 min-h-[700px] relative overflow-hidden bg-[#0a0a0b] rounded-[40px] shadow-2xl">
+                    <div className="flex-1 flex flex-col border border-white/5 bg-[#0a0a0b] rounded-[40px] shadow-2xl overflow-hidden min-h-[700px]">
+                        {/* Scrollable content */}
+                        <div className="flex-1 overflow-y-auto no-scrollbar p-12">
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={activeTab}
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
-                                className="space-y-12"
+                                className="space-y-12 pb-8"
                             >
                                 {activeTab === 'general' && (
                                     <div className="space-y-10">
@@ -447,24 +449,25 @@ export const SettingsScreen: React.FC = () => {
                                 )}
                             </motion.div>
                         </AnimatePresence>
+                        </div>
 
-                        {/* Save Action Bar with Premium Blur - Increased padding and separation */}
-                        <div className="sticky bottom-0 mt-20 pt-10 pb-4 flex items-center justify-end gap-8 bg-gradient-to-t from-[#0a0a0b] via-[#0a0a0b]/95 to-transparent z-50">
+                        {/* Save Action Bar — outside scroll, always visible at bottom */}
+                        <div className="shrink-0 px-12 py-6 flex items-center justify-end gap-8 bg-[#0a0a0b] border-t border-white/5">
                             <AnimatePresence>
                                 {showsSavedMessage && (
                                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="flex items-center gap-3 text-green-500 font-black italic text-xs tracking-widest bg-green-500/5 px-6 py-3 rounded-2xl border border-green-500/20 shadow-2xl">
-                                        <CheckCircle2 size={18} /> DATA_SYNC_SUCCESS_PROTOCOL_88
+                                        <CheckCircle2 size={18} /> DATA_SYNC_SUCCESS
                                     </motion.div>
                                 )}
                             </AnimatePresence>
                             <button 
                                 onClick={handleSave}
-                                className="bg-solaris-orange text-white px-12 py-6 rounded-[28px] font-black italic uppercase tracking-[0.3em] text-base shadow-solaris-glow hover:scale-[1.05] active:scale-95 transition-all flex items-center gap-5 border border-white/10"
+                                className="bg-solaris-orange text-white px-12 py-5 rounded-[28px] font-black italic uppercase tracking-[0.3em] text-sm shadow-solaris-glow hover:scale-[1.05] active:scale-95 transition-all flex items-center gap-4 border border-white/10"
                             >
-                                <Save size={24} /> Deploy Configuration Hub
+                                <Save size={20} /> Deploy Configuration Hub
                             </button>
                         </div>
-                    </GlowCard>
+                    </div>
                 </div>
             </div>
         </div>

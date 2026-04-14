@@ -60,7 +60,7 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
     const isDineIn = !order.source || order.source === OrderSource.DINE_IN;
 
     return (
-        <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col min-w-[380px] max-w-[420px] overflow-hidden group">
+        <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col w-[360px] max-w-[380px] overflow-hidden group">
             {/* Header */}
             <div className="p-6 bg-white/[0.03] border-b border-white/5 flex justify-between items-start gap-4">
                 <div className="min-w-0 flex-1">
@@ -83,8 +83,8 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
                 </div>
             </div>
 
-            {/* Items */}
-            <div className="p-5 flex-1 space-y-3">
+            {/* Items — scrollable so button is always visible */}
+            <div className="p-5 space-y-3 overflow-y-auto no-scrollbar" style={{ maxHeight: '40vh' }}>
                 {order.items.map((item, idx) => (
                     <div key={idx} className="space-y-1">
                         <div className="flex items-center gap-3 bg-white/[0.02] p-3 rounded-2xl border border-white/5">
