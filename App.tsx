@@ -36,8 +36,14 @@ import { Activity } from 'lucide-react';
 
 const RoleGuard: React.FC<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
   const { activeEmployee } = useUser();
-  if (!canAccess(activeEmployee?.role, path)) {
-    return <Navigate to={getDefaultRoute(activeEmployee?.role)} replace />;
+  const role = activeEmployee?.role;
+  
+  console.log(`[RBAC] Checking access for role: ${role} on path: ${path}`);
+  
+  if (!canAccess(role, path)) {
+    const fallback = getDefaultRoute(role);
+    console.warn(`[RBAC] Access denied for ${role} on ${path}. Redirecting to ${fallback}`);
+    return <Navigate to={fallback} replace />;
   }
   return <>{children}</>;
 };
@@ -105,7 +111,7 @@ const AppContent: React.FC = () => {
     <OrderProvider>
       {isSuperAdmin ? (
         <Layout>
-          <Routes location={location} key="super-admin-routes">
+          <Routes>
             <Route path="/" element={<Navigate to="/super-admin" replace />} />
             <Route path="/super-admin" element={<SuperAdminScreen />} />
             <Route path="/dashboard" element={<DashboardScreen />} />
@@ -128,7 +134,7 @@ const AppContent: React.FC = () => {
       ) : (
         <SubscriptionGuard>
           <Layout>
-            <Routes location={location} key="employee-routes">
+            <Routes>
               <Route path="/" element={<Navigate to={getDefaultRoute(activeEmployee?.role)} replace />} />
               
               <Route path="/dashboard" element={<RoleGuard path="/dashboard"><DashboardScreen /></RoleGuard>} />
