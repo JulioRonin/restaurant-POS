@@ -78,64 +78,82 @@ export const MyTablesScreen: React.FC = () => {
                     <p className="text-[12px] font-black uppercase tracking-[0.4em] italic">Zero Assets Assigned</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-10 pb-20">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20">
                     {myOrders.map(order => {
                         const isRequested = order.status === OrderStatus.BILL_REQUESTED;
                         return (
-                            <GlowCard key={order.id} glowColor="orange" className={`!p-0 border relative transition-all group ${isRequested ? 'border-solaris-orange shadow-solaris-glow scale-[1.02]' : 'border-white/5'}`}>
+                            <div key={order.id} className={`flex flex-col rounded-[28px] border relative transition-all group overflow-hidden ${isRequested ? 'border-solaris-orange shadow-solaris-glow' : 'border-white/[0.07] bg-white/[0.02]'}`}>
                                 {isRequested && (
-                                    <div className="absolute top-0 right-0 bg-solaris-orange text-white px-6 py-2 text-[9px] font-black uppercase tracking-[0.3em] animate-pulse rounded-bl-2xl">
+                                    <div className="absolute top-0 right-0 bg-solaris-orange text-white px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.3em] animate-pulse rounded-bl-2xl z-10">
                                         PAYOUT_REQD
                                     </div>
                                 )}
-                                <div className="p-10 border-b border-white/5 bg-white/[0.02] flex justify-between items-start gap-4">
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-[9px] font-black text-solaris-orange/40 uppercase tracking-widest mb-2 italic">NODE_ID</p>
-                                        <h3 className="text-lg font-black italic tracking-tighter uppercase text-white leading-tight break-all opacity-90 font-mono">
-                                            {order.tableId.length > 12 ? `${order.tableId.slice(0, 8)}...${order.tableId.slice(-4)}` : order.tableId}
+
+                                {/* Header */}
+                                <div className="px-6 pt-6 pb-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center gap-4">
+                                    <div className="min-w-0">
+                                        <p className="text-[8px] font-black text-solaris-orange/40 uppercase tracking-widest mb-1 italic">NODE_ID</p>
+                                        <h3 className="text-base font-black italic tracking-tighter uppercase text-white leading-tight font-mono truncate">
+                                            {order.tableId.length > 16 ? `${order.tableId.slice(0, 10)}...${order.tableId.slice(-4)}` : order.tableId}
                                         </h3>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <p className="text-[9px] font-black text-solaris-orange/40 uppercase tracking-widest mb-2 italic">UPTIME</p>
-                                        <p className="text-sm font-black italic text-white flex items-center gap-2 justify-end uppercase"><Clock size={14} className="text-solaris-orange" /> {getElapsedTime(order.timestamp)}</p>
+                                        <p className="text-[8px] font-black text-solaris-orange/40 uppercase tracking-widest mb-1 italic">UPTIME</p>
+                                        <p className="text-xs font-black italic text-white flex items-center gap-1 justify-end"><Clock size={12} className="text-solaris-orange" /> {getElapsedTime(order.timestamp)}</p>
                                     </div>
                                 </div>
 
-                                <div className="p-10 flex-1 flex flex-col min-h-0">
-                                    <div className="bg-white/[0.01] rounded-[24px] p-6 border border-white/5 space-y-3 h-52 overflow-y-auto no-scrollbar mb-8">
+                                {/* Items list */}
+                                <div className="px-6 pt-4 pb-2 overflow-y-auto no-scrollbar" style={{maxHeight: '160px'}}>
+                                    <div className="space-y-2">
                                         {order.items.map((item, i) => (
-                                            <div key={i} className="flex justify-between items-center text-[12px] border-b border-white/[0.02] pb-2 last:border-0 last:pb-0">
-                                                <span className="text-white font-black italic uppercase tracking-tight truncate mr-2"><span className="text-solaris-orange mr-2">{item.quantity}</span> {item.name}</span>
-                                                <span className="font-black italic text-solaris-orange/60 tracking-tighter shrink-0">${(item.price * item.quantity).toFixed(0)}</span>
+                                            <div key={i} className="flex justify-between items-center text-[11px] py-1 border-b border-white/[0.03] last:border-0">
+                                                <span className="text-white font-black italic uppercase tracking-tight flex-1 truncate mr-2">
+                                                    <span className="text-solaris-orange mr-2">{item.quantity}×</span>{item.name}
+                                                </span>
+                                                <span className="font-black italic text-white/50 shrink-0">${(item.price * item.quantity).toFixed(0)}</span>
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="flex justify-between items-end px-2 mt-auto">
-                                        <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-1 italic">Accumulated Yield</p>
-                                        <p className="text-4xl font-black italic text-solaris-orange tracking-tighter leading-none">${order.total.toFixed(0)}</p>
-                                    </div>
                                 </div>
 
-                                <div className="p-10 pt-0 flex gap-4">
-                                     {!isRequested ? (
+                                {/* Total */}
+                                <div className="px-6 py-4 border-t border-white/5 flex justify-between items-center">
+                                    <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.3em] italic">Accumulated Yield</p>
+                                    <p className="text-3xl font-black italic text-solaris-orange tracking-tighter leading-none">${order.total.toFixed(0)}</p>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="px-6 pb-6 flex gap-3">
+                                    {!isRequested ? (
                                         <>
-                                            <button onClick={() => handleCancelOrder(order.id)} className="w-16 h-16 bg-white/[0.03] border border-white/5 rounded-[20px] flex items-center justify-center text-red-500/40 hover:text-red-500 hover:bg-red-500/10 hover:border-red-500/20 transition-all active:scale-90" title="Cancelar Nodo">
-                                                <Trash2 size={22} />
+                                            <button
+                                                onClick={() => handleCancelOrder(order.id)}
+                                                className="w-12 h-12 bg-white/[0.03] border border-white/5 rounded-2xl flex items-center justify-center text-red-500/30 hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-90"
+                                                title="Cancelar Nodo"
+                                            >
+                                                <Trash2 size={18} />
                                             </button>
-                                            <button onClick={() => handleOpenEdit(order)} className="w-16 h-16 bg-white/[0.03] border border-white/5 rounded-[20px] flex items-center justify-center text-solaris-orange/40 hover:text-solaris-orange hover:bg-solaris-orange/10 hover:border-solaris-orange/20 transition-all active:scale-90">
-                                                <Edit3 size={22} />
+                                            <button
+                                                onClick={() => handleOpenEdit(order)}
+                                                className="w-12 h-12 bg-white/[0.03] border border-white/5 rounded-2xl flex items-center justify-center text-solaris-orange/30 hover:text-solaris-orange hover:bg-solaris-orange/10 transition-all active:scale-90"
+                                            >
+                                                <Edit3 size={18} />
                                             </button>
-                                            <button onClick={() => updateOrderStatus(order.id, OrderStatus.BILL_REQUESTED)} className="flex-1 py-5 bg-white text-black rounded-[20px] font-black italic uppercase tracking-[0.2em] text-[11px] shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4 hover:bg-solaris-orange hover:text-white group">
-                                                 Settle Account <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                            <button
+                                                onClick={() => updateOrderStatus(order.id, OrderStatus.BILL_REQUESTED)}
+                                                className="flex-1 py-3 bg-white text-black rounded-2xl font-black italic uppercase tracking-[0.15em] text-[10px] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 hover:bg-solaris-orange hover:text-white"
+                                            >
+                                                Settle Account <ChevronRight size={16} />
                                             </button>
                                         </>
-                                     ) : (
-                                        <div className="w-full py-6 bg-solaris-orange/10 border border-solaris-orange/20 text-solaris-orange font-black italic uppercase tracking-[0.4em] text-[11px] rounded-[20px] flex items-center justify-center gap-4 animate-pulse">
+                                    ) : (
+                                        <div className="w-full py-4 bg-solaris-orange/10 border border-solaris-orange/20 text-solaris-orange font-black italic uppercase tracking-[0.3em] text-[10px] rounded-2xl flex items-center justify-center gap-3 animate-pulse">
                                             Awaiting Reception Hub...
                                         </div>
-                                     )}
+                                    )}
                                 </div>
-                            </GlowCard>
+                            </div>
                         );
                     })}
                 </div>

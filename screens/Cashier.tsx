@@ -316,49 +316,110 @@ export const CashierScreen: React.FC = () => {
                 </div>
             </div>
 
-            {/* Payment Modal Redesign */}
+            {/* Payment Modal — Full Redesign */}
             <AnimatePresence>
                 {isPaymentModalOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[600] flex items-center justify-center bg-black/95 backdrop-blur-3xl p-6">
-                        <GlowCard glowColor="orange" className="w-full max-w-4xl border border-white/10 !p-12 text-center bg-[#0a0a0b] relative rounded-[48px] shadow-2xl">
-                            <X onClick={() => setIsPaymentModalOpen(false)} className="absolute top-10 right-10 text-white/10 hover:text-white cursor-pointer transition-colors" size={32} />
-                            
-                            <h2 className="text-5xl font-black italic tracking-tighter uppercase text-white mb-2">Authorize Payout</h2>
-                            <p className="text-[11px] font-black uppercase text-solaris-orange tracking-[0.6em] mb-12 italic">Protocol Execution Layer • Manual Override</p>
-                            
-                            <div className="space-y-16">
-                                <div className="space-y-6">
-                                    <p className="text-[11px] font-black uppercase text-solaris-orange/40 tracking-widest text-center italic">Inbound Asset Value Injection</p>
-                                    <input 
-                                        type="number" 
-                                        autoFocus
-                                        value={cashReceived}
-                                        onChange={e => setCashReceived(e.target.value)}
-                                        placeholder={(total/splitCount).toString()}
-                                        className="w-full bg-transparent border-none text-8xl font-black italic tracking-tighter text-white text-center outline-none placeholder:text-white/5"
-                                    />
-                                    <div className="h-px bg-white/5 w-full shadow-lg" />
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[600] flex items-center justify-center bg-black/95 backdrop-blur-3xl p-4"
+                    >
+                        <div className="w-full max-w-5xl bg-[#0d0d0e] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden">
+                            {/* Modal Header */}
+                            <div className="flex justify-between items-center px-10 py-7 border-b border-white/5 bg-white/[0.01]">
+                                <div>
+                                    <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white">Authorize Payout</h2>
+                                    <p className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.4em] mt-1 italic">Table: {selectedOrder?.tableId} • Amount due: ${(total / splitCount).toFixed(2)}</p>
                                 </div>
-
-                                <div className="grid grid-cols-2 gap-8 text-left">
-                                    <div className="bg-white/[0.02] p-8 rounded-[32px] border border-white/5 shadow-inner">
-                                        <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-widest mb-2 italic">Target Payout</p>
-                                        <p className="text-3xl font-black italic text-white">${(total/splitCount).toFixed(2)}</p>
-                                    </div>
-                                    <div className="bg-white/[0.02] p-8 rounded-[32px] border border-white/5 shadow-inner">
-                                        <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-widest mb-2 italic">Return Payload</p>
-                                        <p className="text-3xl font-black italic text-solaris-orange animate-pulse">${Math.max(0, (parseFloat(cashReceived)||0) - (total/splitCount)).toFixed(2)}</p>
-                                    </div>
-                                </div>
-
-                                <button 
-                                    onClick={handleProcessPayment}
-                                    className="w-full py-10 bg-solaris-orange text-white font-black italic uppercase tracking-[0.4em] text-2xl rounded-[32px] shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-6"
+                                <button
+                                    onClick={() => setIsPaymentModalOpen(false)}
+                                    className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 transition-all"
                                 >
-                                    Confirm Transmission <CheckCircle2 size={32} />
+                                    <X size={22} />
                                 </button>
                             </div>
-                        </GlowCard>
+
+                            {/* Modal Body */}
+                            <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] min-h-[420px]">
+                                {/* Left — Cash Input */}
+                                <div className="flex flex-col items-center justify-center p-12 border-r border-white/5">
+                                    <p className="text-[10px] font-black uppercase text-white/20 tracking-[0.5em] mb-8 italic">Cash Received</p>
+                                    <div className="relative w-full flex items-center justify-center">
+                                        <span className="text-5xl font-black italic text-white/30 mr-3 leading-none">$</span>
+                                        <input
+                                            type="number"
+                                            autoFocus
+                                            value={cashReceived}
+                                            onChange={e => setCashReceived(e.target.value)}
+                                            placeholder="0.00"
+                                            className="bg-transparent border-none text-7xl font-black italic tracking-tighter text-white outline-none placeholder:text-white/10 w-full text-left leading-none"
+                                            style={{maxWidth: '280px'}}
+                                        />
+                                    </div>
+                                    <div className="w-full h-px bg-white/10 mt-6 mb-10" />
+
+                                    {/* Quick amount buttons */}
+                                    <div className="grid grid-cols-3 gap-3 w-full">
+                                        {[50, 100, 200, 500].map(amt => (
+                                            <button
+                                                key={amt}
+                                                onClick={() => setCashReceived(amt.toString())}
+                                                className="py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white/40 hover:text-white hover:bg-white/[0.08] font-black italic text-sm transition-all"
+                                            >
+                                                ${amt}
+                                            </button>
+                                        ))}
+                                        <button
+                                            onClick={() => setCashReceived((total / splitCount).toFixed(2))}
+                                            className="py-4 rounded-2xl bg-solaris-orange/10 border border-solaris-orange/20 text-solaris-orange hover:bg-solaris-orange/20 font-black italic text-[10px] uppercase tracking-widest transition-all col-span-2"
+                                        >
+                                            Exact Amount
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Right — Summary & Confirm */}
+                                <div className="flex flex-col p-10 gap-6 bg-white/[0.01]">
+                                    <div className="flex-1 space-y-4">
+                                        <div className="bg-white/[0.03] rounded-2xl p-6 border border-white/5">
+                                            <p className="text-[9px] font-black uppercase text-white/30 tracking-widest mb-2 italic">To Pay</p>
+                                            <p className="text-4xl font-black italic text-white tracking-tighter leading-none">${(total / splitCount).toFixed(2)}</p>
+                                        </div>
+
+                                        <div className="bg-solaris-orange/5 rounded-2xl p-6 border border-solaris-orange/10">
+                                            <p className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-widest mb-2 italic">Change</p>
+                                            <p className="text-4xl font-black italic text-solaris-orange tracking-tighter leading-none">
+                                                ${Math.max(0, (parseFloat(cashReceived) || 0) - (total / splitCount)).toFixed(2)}
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-3 pt-2">
+                                            <p className="text-[9px] font-black uppercase text-white/20 tracking-widest italic">Payment Method</p>
+                                            <button
+                                                onClick={() => setPaymentMethod(PaymentMethod.CASH)}
+                                                className={`w-full py-4 rounded-2xl flex items-center justify-center gap-3 border-2 font-black italic uppercase text-[11px] tracking-widest transition-all ${paymentMethod === PaymentMethod.CASH ? 'bg-white text-black border-white' : 'bg-transparent border-white/5 text-white/30'}`}
+                                            >
+                                                <Wallet size={18} /> Liquid Asset
+                                            </button>
+                                            <button
+                                                onClick={() => setPaymentMethod(PaymentMethod.CARD)}
+                                                className={`w-full py-4 rounded-2xl flex items-center justify-center gap-3 border-2 font-black italic uppercase text-[11px] tracking-widest transition-all ${paymentMethod === PaymentMethod.CARD ? 'bg-white text-black border-white' : 'bg-transparent border-white/5 text-white/30'}`}
+                                            >
+                                                <CreditCard size={18} /> Spectral Card
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={handleProcessPayment}
+                                        className="w-full py-7 bg-solaris-orange text-white font-black italic uppercase tracking-[0.3em] text-lg rounded-2xl shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4"
+                                    >
+                                        <CheckCircle2 size={24} /> Confirm Transmission
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
