@@ -60,6 +60,8 @@ export interface Order {
   receivedAmount?: number;
   changeAmount?: number;
   paidSplits?: number;
+  isKitchenReady?: boolean;
+  isBarReady?: boolean;
   businessId?: string;
   locationId?: string;
 }

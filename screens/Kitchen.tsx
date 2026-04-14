@@ -140,7 +140,23 @@ export const KitchenScreen: React.FC = () => {
     const [isSplit, setIsSplit] = useState(false);
     const [alert, setAlert] = useState(false);
 
-    const pending = orders.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.COOKING);
+    const isDrink = (item: any) => 
+        item.category?.toLowerCase().includes('bebida') ||
+        item.category?.toLowerCase().includes('bar') ||
+        item.category?.toLowerCase().includes('vino') ||
+        item.category?.toLowerCase().includes('trago') ||
+        item.category?.toLowerCase().includes('cerveza') ||
+        item.category?.toLowerCase().includes('drink') ||
+        item.category?.toLowerCase().includes('cocktail');
+
+    const hasFood = (order: Order) => order.items.some(i => !isDrink(i));
+    const hasDrinks = (order: Order) => order.items.some(i => isDrink(i));
+
+    const pending = orders.filter(o => 
+        !o.isKitchenReady && 
+        hasFood(o) &&
+        (o.status === OrderStatus.PENDING || o.status === OrderStatus.COOKING || o.status === OrderStatus.READY)
+    );
     const sorted = [...pending].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
     // Split by source
@@ -154,7 +170,17 @@ export const KitchenScreen: React.FC = () => {
         setPrevCount(pending.length);
     }, [pending.length, prevCount]);
 
-    const handleComplete = (id: string) => updateOrderStatus(id, OrderStatus.READY);
+    const handleComplete = (id: string) => {
+        const order = orders.find(o => o.id === id);
+        if (!order) return;
+
+        const isFullyReady = !hasDrinks(order) || order.isBarReady;
+        
+        updateOrderStatus(id, isFullyReady ? OrderStatus.READY : order.status, {
+            ...order,
+            isKitchenReady: true
+        });
+    };
 
     return (
         <div className="h-full bg-solaris-black text-white flex flex-col overflow-hidden antialiased relative">

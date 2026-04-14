@@ -110,22 +110,28 @@ export const BarScreen: React.FC = () => {
     const [prevCount, setPrevCount] = useState(0);
     const [alert, setAlert] = useState(false);
 
+    const isDrink = (item: any) => 
+        item.category?.toLowerCase().includes('bebida') ||
+        item.category?.toLowerCase().includes('bar') ||
+        item.category?.toLowerCase().includes('vino') ||
+        item.category?.toLowerCase().includes('trago') ||
+        item.category?.toLowerCase().includes('cerveza') ||
+        item.category?.toLowerCase().includes('drink') ||
+        item.category?.toLowerCase().includes('cocktail');
+
+    const hasFood = (order: Order) => order.items.some(i => !isDrink(i));
+    const hasDrinks = (order: Order) => order.items.some(i => isDrink(i));
+
     const pendingOrders = orders.filter(o =>
-        o.status === OrderStatus.PENDING || o.status === OrderStatus.COOKING
+        !o.isBarReady &&
+        hasDrinks(o) &&
+        (o.status === OrderStatus.PENDING || o.status === OrderStatus.COOKING || o.status === OrderStatus.READY)
     );
 
     const barOrders = pendingOrders.map(order => {
-        const drinkItems = order.items.filter(item =>
-            item.category?.toLowerCase().includes('bebida') ||
-            item.category?.toLowerCase().includes('bar') ||
-            item.category?.toLowerCase().includes('vino') ||
-            item.category?.toLowerCase().includes('trago') ||
-            item.category?.toLowerCase().includes('cerveza') ||
-            item.category?.toLowerCase().includes('drink') ||
-            item.category?.toLowerCase().includes('cocktail')
-        );
-        return drinkItems.length > 0 ? { order, items: drinkItems } : null;
-    }).filter((x): x is { order: Order; items: any[] } => x !== null);
+        const drinkItems = order.items.filter(isDrink);
+        return { order, items: drinkItems };
+    });
 
     useEffect(() => {
         if (barOrders.length > prevCount && prevCount !== 0) {
@@ -134,7 +140,17 @@ export const BarScreen: React.FC = () => {
         setPrevCount(barOrders.length);
     }, [barOrders.length, prevCount]);
 
-    const handleComplete = (id: string) => updateOrderStatus(id, OrderStatus.READY);
+    const handleComplete = (id: string) => {
+        const order = orders.find(o => o.id === id);
+        if (!order) return;
+
+        const isFullyReady = !hasFood(order) || order.isKitchenReady;
+        
+        updateOrderStatus(id, isFullyReady ? OrderStatus.READY : order.status, {
+            ...order,
+            isBarReady: true
+        });
+    };
 
     return (
         <div className="h-full bg-[#030303] text-white flex flex-col overflow-hidden antialiased relative">
