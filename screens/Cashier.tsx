@@ -266,153 +266,154 @@ export const CashierScreen: React.FC = () => {
                         )}
 
 
-                        {activeTab === 'history' && (() => {
-                            const completedOrders = filteredByDateOrders.filter(o => o.status === 'COMPLETED');
-                            const totalRevenue = completedOrders.reduce((s, o) => s + (o.total || 0), 0);
-                            const cashSales = completedOrders.filter(o => o.paymentMethod === PaymentMethod.CASH).reduce((s, o) => s + (o.total || 0), 0);
-                            const cardSales = completedOrders.filter(o => o.paymentMethod === PaymentMethod.CARD).reduce((s, o) => s + (o.total || 0), 0);
-                            const ivaTotal = totalRevenue * 0.16;
-                            const avgTicket = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
-                            const totalExpensesDay = expenses.filter(e => e.date === selectedDate).reduce((s, e) => s + e.amount, 0);
-                            const netRevenue = totalRevenue - totalExpensesDay;
-
-                            const handleDownloadCSV = () => {
-                                const rows = [
-                                    ['ID', 'Mesa', 'Método', 'Total', 'Status', 'Hora'],
-                                    ...filteredByDateOrders.map(o => [
-                                        o.id.slice(0, 8),
-                                        o.tableId,
-                                        o.paymentMethod || 'N/A',
-                                        o.total.toFixed(2),
-                                        o.status,
-                                        new Date(o.timestamp).toLocaleTimeString('es-MX')
-                                    ])
-                                ].map(r => r.join(',')).join('\n');
-                                const blob = new Blob([rows], { type: 'text/csv' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a'); a.href = url;
-                                a.download = `reporte-${selectedDate}.csv`; a.click();
-                                URL.revokeObjectURL(url);
-                            };
-
-                            const handlePrintReport = () => {
-                                setCashCutToPrint({
-                                    date: selectedDate,
-                                    totalRevenue,
-                                    cashSales,
-                                    cardSales,
-                                    totalExpenses: totalExpensesDay,
-                                    netRevenue,
-                                    orderCount: completedOrders.length,
-                                    operatorName: authProfile?.name || 'Admin'
-                                });
-                                setTimeout(() => { window.print(); setCashCutToPrint(null); }, 500);
-                            };
-
-                            return (
-                                <div className="space-y-4">
-                                    {/* Date picker */}
-                                    <input
-                                        type="date"
-                                        value={selectedDate}
-                                        onChange={e => setSelectedDate(e.target.value)}
-                                        className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-2.5 px-4 text-white text-xs font-bold outline-none focus:border-solaris-orange/40"
-                                    />
-
-                                    {/* Action buttons */}
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <button
-                                            onClick={handlePrintReport}
-                                            className="flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-white/60 hover:text-white hover:border-white/20 transition-all font-black text-[9px] uppercase tracking-widest"
-                                        >
-                                            <Printer size={14} /> Imprimir
-                                        </button>
-                                        <button
-                                            onClick={handleDownloadCSV}
-                                            className="flex items-center justify-center gap-2 py-3 bg-solaris-orange/10 border border-solaris-orange/20 rounded-xl text-solaris-orange hover:bg-solaris-orange/20 transition-all font-black text-[9px] uppercase tracking-widest"
-                                        >
-                                            <Download size={14} /> CSV
-                                        </button>
+                        {activeTab === 'history' && (
+                            <div className="space-y-6">
+                                {/* Control Hub for Logs */}
+                                <div className="bg-white/[0.02] border border-white/5 rounded-[32px] p-6 space-y-6">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase text-white/20 tracking-widest mb-3 italic">Temporal Range</p>
+                                        <input
+                                            type="date"
+                                            value={selectedDate}
+                                            onChange={e => setSelectedDate(e.target.value)}
+                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-5 text-white text-xs font-bold outline-none focus:border-solaris-orange/40"
+                                        />
                                     </div>
 
-                                    {/* KPI Grid */}
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div className="bg-solaris-orange/5 border border-solaris-orange/20 rounded-xl p-3 col-span-2">
-                                            <p className="text-[8px] font-black uppercase text-solaris-orange/60 tracking-widest">Venta Total</p>
-                                            <p className="text-2xl font-black italic text-solaris-orange">${totalRevenue.toFixed(2)}</p>
-                                        </div>
-                                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
-                                            <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Efectivo</p>
-                                            <p className="text-base font-black italic text-green-400">${cashSales.toFixed(2)}</p>
-                                        </div>
-                                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
-                                            <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Tarjeta</p>
-                                            <p className="text-base font-black italic text-blue-400">${cardSales.toFixed(2)}</p>
-                                        </div>
-                                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
-                                            <p className="text-[8px] font-black uppercase text-white/20 tracking-widest"># Órdenes</p>
-                                            <p className="text-base font-black italic text-white">{completedOrders.length}</p>
-                                        </div>
-                                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
-                                            <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Ticket Prom.</p>
-                                            <p className="text-base font-black italic text-white">${avgTicket.toFixed(2)}</p>
-                                        </div>
-                                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
-                                            <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">IVA (16%)</p>
-                                            <p className="text-base font-black italic text-yellow-400">${ivaTotal.toFixed(2)}</p>
-                                        </div>
-                                        <div className={`border rounded-xl p-3 ${netRevenue >= 0 ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
-                                            <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Neto (- Gastos)</p>
-                                            <p className={`text-base font-black italic ${netRevenue >= 0 ? 'text-green-400' : 'text-red-400'}`}>${netRevenue.toFixed(2)}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* All orders list */}
-                                    <div className="space-y-2 pt-2">
-                                        <p className="text-[8px] font-black uppercase text-white/20 tracking-widest px-1">Todas las órdenes del día</p>
-                                        {filteredByDateOrders.length === 0 && (
-                                            <p className="text-center text-white/10 text-xs font-black italic py-8 uppercase">Sin registros</p>
-                                        )}
-                                        {filteredByDateOrders.map(order => (
-                                            <div
-                                                key={order.id}
-                                                className="flex justify-between items-center p-3 bg-white/[0.02] border border-white/5 rounded-xl group hover:border-white/10 transition-all"
-                                            >
-                                                <div>
-                                                    <p className="text-xs font-black italic text-white/80 uppercase tracking-tight leading-none">{order.tableId}</p>
-                                                    <p className="text-[8px] font-black uppercase text-white/20 tracking-widest mt-0.5">
-                                                        {new Date(order.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
-                                                        {' • '}
-                                                        <span className={order.paymentMethod === PaymentMethod.CASH ? 'text-green-400/60' : 'text-blue-400/60'}>
-                                                            {order.paymentMethod || 'N/A'}
-                                                        </span>
-                                                    </p>
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`font-black italic text-sm ${order.status === 'COMPLETED' ? 'text-green-400' : 'text-white/30'}`}>
-                                                        ${order.total.toFixed(2)}
-                                                    </span>
-                                                    <button
-                                                        onClick={() => handlePrintTicket(order)}
-                                                        className="p-1.5 rounded-lg text-white/10 hover:text-white/50 hover:bg-white/5 transition-all opacity-0 group-hover:opacity-100"
-                                                    >
-                                                        <Printer size={12} />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
+                                    <div className="space-y-3">
+                                        <p className="text-[10px] font-black uppercase text-white/20 tracking-widest italic">Data Export</p>
+                                        <button
+                                            onClick={() => {
+                                                const completedOrders = filteredByDateOrders.filter(o => o.status === 'COMPLETED');
+                                                const totalRevenue = completedOrders.reduce((s, o) => s + (o.total || 0), 0);
+                                                const cashSales = completedOrders.filter(o => o.paymentMethod === PaymentMethod.CASH).reduce((s, o) => s + (o.total || 0), 0);
+                                                const cardSales = completedOrders.filter(o => o.paymentMethod === PaymentMethod.CARD).reduce((s, o) => s + (o.total || 0), 0);
+                                                const totalExpensesDay = expenses.filter(e => e.date === selectedDate).reduce((s, e) => s + e.amount, 0);
+                                                const netRevenue = totalRevenue - totalExpensesDay;
+                                                
+                                                setCashCutToPrint({
+                                                    date: selectedDate,
+                                                    totalRevenue,
+                                                    cashSales,
+                                                    cardSales,
+                                                    totalExpenses: totalExpensesDay,
+                                                    netRevenue,
+                                                    orderCount: completedOrders.length,
+                                                    operatorName: authProfile?.name || 'Admin'
+                                                });
+                                                setTimeout(() => { window.print(); setCashCutToPrint(null); }, 500);
+                                            }}
+                                            className="w-full flex items-center justify-center gap-3 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white/60 hover:text-white hover:border-white/20 transition-all font-black text-[10px] uppercase tracking-widest"
+                                        >
+                                            <Printer size={16} /> Asset Hardcopy
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                const rows = [['ID', 'Node', 'Method', 'Total', 'Status', 'Hora'], ...filteredByDateOrders.map(o => [o.id.slice(0, 8), o.tableId, o.paymentMethod || 'N/A', o.total.toFixed(2), o.status, new Date(o.timestamp).toLocaleTimeString('es-MX')])].map(r => r.join(',')).join('\n');
+                                                const blob = new Blob([rows], { type: 'text/csv' });
+                                                const url = URL.createObjectURL(blob);
+                                                const a = document.createElement('a'); a.href = url; a.download = `reporte-${selectedDate}.csv`; a.click();
+                                                URL.revokeObjectURL(url);
+                                            }}
+                                            className="w-full flex items-center justify-center gap-3 py-4 bg-solaris-orange text-white rounded-2xl shadow-solaris-glow hover:scale-[1.02] transition-all font-black text-[10px] uppercase tracking-widest"
+                                        >
+                                            <Download size={16} /> Data Payload (CSV)
+                                        </button>
                                     </div>
                                 </div>
-                            );
-                        })()}
+                                <div className="p-4 bg-solaris-orange/5 border border-solaris-orange/10 rounded-2xl">
+                                    <p className="text-[9px] font-black italic text-solaris-orange uppercase tracking-widest text-center">Select history mode in main cluster for full metrics view</p>
+                                </div>
+                            </div>
+                        )}
 
                     </div>
                 </div>
 
                 {/* Main Content Area */}
                 <div className="flex-1 flex flex-col bg-[#030303] no-print relative">
-                    {selectedOrder ? (
-                        <div className="h-full flex p-8 gap-8 overflow-hidden">
+                    {activeTab === 'history' ? (
+                        <div className="h-full flex flex-col p-10 gap-10 overflow-hidden">
+                            {/* Logs Panoramic View */}
+                            <div className="flex justify-between items-center">
+                                <div>
+                                    <h2 className="text-5xl font-black italic tracking-tighter uppercase text-white">Network Sales Manifest</h2>
+                                    <p className="text-[12px] font-black uppercase text-solaris-orange/60 tracking-[0.5em] mt-3 italic">Temporal Node: {selectedDate} • Sync Sequence Active</p>
+                                </div>
+                                <div className="flex gap-4">
+                                    <div className="px-6 py-3 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center gap-4">
+                                        <div className={`w-3 h-3 rounded-full ${navigator.onLine ? 'bg-green-500 shadow-[0_0_10px_green]' : 'bg-red-500 animate-pulse'}`} />
+                                        <span className="text-[10px] font-black uppercase text-white/40 tracking-widest">{navigator.onLine ? 'Uplink Stable' : 'Offline Mode'}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* KPI Metrics Matrix */}
+                            <div className="grid grid-cols-4 gap-6 shrink-0">
+                                {[
+                                    { label: 'Aggregated Revenue', value: salesMetrics.totalRevenue, color: 'text-white', icon: DollarSign, glow: 'orange' },
+                                    { label: 'Liquid Assets (Cash)', value: salesMetrics.cashSales, color: 'text-green-400', icon: Wallet, glow: 'green' },
+                                    { label: 'Spectral Assets (Card)', value: salesMetrics.cardSales, color: 'text-blue-400', icon: CreditCard, glow: 'blue' },
+                                    { label: 'Net Synthesis', value: salesMetrics.totalRevenue - expenses.filter(e => e.date === selectedDate).reduce((s, e) => s + e.amount, 0), color: 'text-solaris-orange', icon: TrendingUp, glow: 'orange' }
+                                ].map((kpi, i) => (
+                                    <GlowCard key={i} glowColor={kpi.glow as any} customSize className="w-full !p-8 bg-white/[0.01] border-white/5 rounded-[32px]">
+                                        <div className="flex items-center gap-4 mb-3 opacity-30">
+                                            <kpi.icon size={16} />
+                                            <p className="text-[9px] font-black uppercase tracking-widest">{kpi.label}</p>
+                                        </div>
+                                        <p className={`text-4xl font-black italic tracking-tighter ${kpi.color}`}>${kpi.value.toFixed(2)}</p>
+                                    </GlowCard>
+                                ))}
+                            </div>
+
+                            {/* Detailed Transaction Ledger */}
+                            <div className="flex-1 flex flex-col min-h-0">
+                                <GlowCard customSize glowColor="orange" className="w-full h-full !p-0 bg-white/[0.01] border-white/5 rounded-[40px] flex flex-col overflow-hidden">
+                                     <div className="px-10 py-6 border-b border-white/5 bg-white/[0.02] flex justify-between items-center shrink-0">
+                                        <p className="text-[10px] font-black uppercase text-white/30 tracking-widest italic font-mono">Detailed Transaction Ledger</p>
+                                        <p className="text-[10px] font-black uppercase text-white/30 tracking-widest italic font-mono">Count: {filteredByDateOrders.length} Events</p>
+                                     </div>
+                                     <div className="flex-1 overflow-y-auto no-scrollbar p-10">
+                                        <table className="w-full text-left border-separate border-spacing-y-4">
+                                            <thead>
+                                                <tr className="text-[9px] font-black uppercase text-solaris-orange tracking-widest italic">
+                                                    <th className="px-6 pb-2">TX Sequence</th>
+                                                    <th className="px-6 pb-2">Temporal Node</th>
+                                                    <th className="px-6 pb-2">Origin Node</th>
+                                                    <th className="px-6 pb-2">Method</th>
+                                                    <th className="px-6 pb-2">Status</th>
+                                                    <th className="px-6 pb-2 text-right">Value (USD)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {filteredByDateOrders.map(order => (
+                                                    <tr key={order.id} className="group hover:bg-white/[0.02] transition-all">
+                                                        <td className="px-6 py-5 bg-white/[0.02] rounded-l-[24px] border-y border-l border-white/5 font-mono text-[11px] text-white/60">TX-{order.id.slice(0, 8).toUpperCase()}</td>
+                                                        <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5 text-[11px] font-black italic text-white/40">{new Date(order.timestamp).toLocaleTimeString('es-MX')}</td>
+                                                        <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5 text-[13px] font-black uppercase italic tracking-tight">{order.tableId}</td>
+                                                        <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5">
+                                                            <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${order.paymentMethod === PaymentMethod.CASH ? 'border-green-500/20 text-green-400 bg-green-500/5' : 'border-blue-500/20 text-blue-400 bg-blue-500/5'}`}>
+                                                                {order.paymentMethod || 'PENDING'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5">
+                                                            <span className={`text-[10px] font-black uppercase tracking-tighter ${order.status === 'COMPLETED' ? 'text-solaris-orange' : 'text-white/20'}`}>
+                                                                {order.status}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-6 py-5 bg-white/[0.02] rounded-r-[24px] border-y border-r border-white/5 text-right font-black italic text-xl">
+                                                            ${order.total.toFixed(2)}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                     </div>
+                                </GlowCard>
+                            </div>
+                        </div>
+                    ) : selectedOrder ? (
+                         <div className="h-full flex p-8 gap-8 overflow-hidden">
 
                             {/* ── CENTER CONSOLE: The Asset & Adjustment Hub ── */}
                             <div className="flex-[6] flex flex-col gap-6 min-h-0">
