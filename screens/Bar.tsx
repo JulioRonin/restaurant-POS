@@ -52,7 +52,7 @@ const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string)
             : order.tableId;
 
     return (
-    <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col min-w-[320px] max-w-[360px] overflow-hidden">
+    <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col min-w-[320px] max-w-[360px] h-[550px] overflow-hidden">
         {/* Header */}
         <div className="p-5 bg-white/[0.03] border-b border-white/5 flex justify-between items-start gap-4">
             <div className="min-w-0 flex-1">
@@ -72,8 +72,8 @@ const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string)
             </div>
         </div>
 
-        {/* Items */}
-        <div className="p-4 space-y-2.5 overflow-y-auto no-scrollbar" style={{ maxHeight: '38vh' }}>
+        {/* Items — scrollable area */}
+        <div className="flex-1 p-4 space-y-2.5 overflow-y-auto no-scrollbar">
             {items.map((item, idx) => (
                 <div key={idx} className="space-y-1">
                     <div className="flex items-center gap-3 bg-white/[0.02] p-3 rounded-2xl border border-white/5">
@@ -92,8 +92,8 @@ const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string)
             ))}
         </div>
 
-        {/* Complete button */}
-        <div className="p-4 border-t border-white/5 mt-auto">
+        {/* Complete button — locked at bottom */}
+        <div className="p-4 border-t border-white/5 bg-white/[0.01]">
             <button
                 onClick={() => onComplete(order.id)}
                 className="w-full py-4 bg-blue-500 text-white font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-lg shadow-blue-500/20 hover:scale-[1.02] hover:bg-blue-400 active:scale-95 transition-all flex items-center justify-center gap-3"

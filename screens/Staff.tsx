@@ -43,9 +43,15 @@ export const StaffScreen: React.FC = () => {
 
     const handleProfileClick = (employee: Employee) => {
         setSelectedEmployee(employee);
-        setEditingEmployee(employee);
+        setEditingEmployee({ ...employee });
         setIsEditing(false);
         setActiveModal('profile');
+    };
+
+    const handleScheduleClick = (employee: Employee) => {
+        setSelectedEmployee(employee);
+        setEditingEmployee({ ...employee });
+        setActiveModal('schedule');
     };
 
     const handleSaveEmployee = () => {
@@ -149,6 +155,7 @@ export const StaffScreen: React.FC = () => {
                 </div>
             </div>
 
+            <div ref={printRef} className="space-y-12 pb-20">
             {filteredStaff.length === 0 ? (
                 <div className="bg-white/[0.01] rounded-solaris p-20 flex flex-col items-center justify-center text-center border border-white/5 border-dashed">
                     <Search size={64} className="text-white/5 mb-6" />
@@ -187,7 +194,7 @@ export const StaffScreen: React.FC = () => {
                                     <div className="flex gap-2 w-full">
                                         <button onClick={() => handleProfileClick(emp)} className="flex-1 py-3 px-4 rounded-xl bg-white/[0.03] border border-white/10 text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-white hover:bg-white/10 transition-all">Profile</button>
                                         {(activeEmployee?.role?.toLowerCase() === 'admin' || isSuperAdmin) && (
-                                            <button onClick={() => setActiveModal('schedule')} className="flex-1 py-3 px-4 rounded-xl bg-white/[0.03] border border-white/10 text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-white hover:bg-white/10 transition-all">Tasking</button>
+                                            <button onClick={() => handleScheduleClick(emp)} className="flex-1 py-3 px-4 rounded-xl bg-white/[0.03] border border-white/10 text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-white hover:bg-white/10 transition-all">Tasking</button>
                                         )}
                                     </div>
                                 </div>
@@ -225,13 +232,24 @@ export const StaffScreen: React.FC = () => {
                                                 </div>
                                             </div>
                                         </td>
-                                        {Array.from({ length: 7 }).map((_, idx) => (
-                                            <td key={idx} className="py-6 px-4 text-center">
-                                                <div className="w-16 h-8 mx-auto rounded-lg bg-white/[0.02] border border-white/5 flex items-center justify-center">
-                                                   <div className="w-1.5 h-1.5 rounded-full bg-solaris-orange/20"></div>
-                                                </div>
-                                            </td>
-                                        ))}
+                                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
+                                            const shift = emp.schedule?.find(s => s.day === day);
+                                            return (
+                                                <td key={day} className="py-6 px-4 text-center">
+                                                    <div className={`min-w-[80px] h-10 mx-auto rounded-xl flex items-center justify-center transition-all ${shift ? 'bg-solaris-orange/10 border border-solaris-orange/30 animate-pulse' : 'bg-white/[0.01] border border-white/5 opacity-20'}`}>
+                                                       {shift ? (
+                                                            <div className="text-center">
+                                                                <p className="text-[8px] font-bold text-white leading-none">{shift.start}</p>
+                                                                <div className="w-1 h-1 rounded-full bg-solaris-orange my-1 mx-auto"></div>
+                                                                <p className="text-[8px] font-bold text-white leading-none">{shift.end}</p>
+                                                            </div>
+                                                       ) : (
+                                                            <div className="w-1 h-1 rounded-full bg-white/10"></div>
+                                                       )}
+                                                    </div>
+                                                </td>
+                                            );
+                                        })}
                                         <td className="py-6 px-8 text-right font-black italic text-solaris-orange">{emp.hoursWorked}h</td>
                                     </tr>
                                 ))}
@@ -240,6 +258,7 @@ export const StaffScreen: React.FC = () => {
                     </div>
                 </div>
             )}
+            </div>
 
             {/* Modal Layer */}
             <AnimatePresence>
@@ -285,26 +304,148 @@ export const StaffScreen: React.FC = () => {
                                     </form>
                                 )}
 
-                                {activeModal === 'profile' && selectedEmployee && (
+                                 {activeModal === 'profile' && selectedEmployee && (
                                     <div className="space-y-8">
                                         <div className="flex items-center gap-8 mb-10">
                                             <img src={selectedEmployee.image} className="w-24 h-24 rounded-solaris border border-white/10" alt="" />
-                                            <div>
-                                                <h3 className="text-2xl font-black italic text-white uppercase">{selectedEmployee.name}</h3>
-                                                <p className="text-solaris-orange text-[9px] font-black uppercase tracking-widest">{selectedEmployee.role}</p>
+                                            <div className="flex-1">
+                                                {!isEditing ? (
+                                                    <>
+                                                        <h3 className="text-2xl font-black italic text-white uppercase">{selectedEmployee.name}</h3>
+                                                        <p className="text-solaris-orange text-[9px] font-black uppercase tracking-widest">{selectedEmployee.role}</p>
+                                                    </>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        <input 
+                                                            value={editingEmployee.name} 
+                                                            onChange={e => setEditingEmployee({...editingEmployee, name: e.target.value})}
+                                                            className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-2 px-4 text-white text-sm font-black italic uppercase"
+                                                        />
+                                                        <input 
+                                                            value={editingEmployee.role} 
+                                                            onChange={e => setEditingEmployee({...editingEmployee, role: e.target.value})}
+                                                            className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-2 px-4 text-solaris-orange text-[10px] font-black uppercase"
+                                                        />
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
+                                        
                                         <div className="grid grid-cols-2 gap-4">
+                                            <div className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl text-center">
+                                                <p className="text-[8px] font-black text-solaris-orange/40 uppercase mb-1">Sector node</p>
+                                                {isEditing ? (
+                                                    <select 
+                                                        value={editingEmployee.area} 
+                                                        onChange={e => setEditingEmployee({...editingEmployee, area: e.target.value as any})}
+                                                        className="bg-transparent text-[10px] font-black text-white outline-none"
+                                                    >
+                                                        {areas.filter(a => a !== 'All').map(a => <option key={a} value={a} className="bg-[#0a0a0b]">{a}</option>)}
+                                                    </select>
+                                                ) : (
+                                                    <p className="text-[10px] font-black text-white italic">{selectedEmployee.area}</p>
+                                                )}
+                                            </div>
                                             <div className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl text-center">
                                                 <p className="text-[8px] font-black text-solaris-orange/40 uppercase mb-1">Status</p>
                                                 <p className="text-[10px] font-black text-white italic">{selectedEmployee.status}</p>
                                             </div>
-                                            <div className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl text-center">
-                                                <p className="text-[8px] font-black text-solaris-orange/40 uppercase mb-1">Node Security</p>
-                                                <p className="text-[10px] font-black text-solaris-orange italic">Tier 5 Encryption</p>
+                                        </div>
+
+                                        {!isEditing ? (
+                                            <button 
+                                                onClick={() => setIsEditing(true)}
+                                                className="w-full bg-solaris-orange text-white font-black uppercase py-5 rounded-2xl text-[11px] tracking-widest shadow-solaris-glow hover:scale-[1.02] transition-all"
+                                            >
+                                                Edit Operator Intel
+                                            </button>
+                                        ) : (
+                                            <div className="flex gap-4">
+                                                <button onClick={() => setIsEditing(false)} className="flex-1 bg-white/[0.03] border border-white/10 text-white/40 font-black uppercase py-4 rounded-xl text-[10px] tracking-widest">Cancel</button>
+                                                <button onClick={handleSaveEmployee} className="flex-1 bg-solaris-orange text-white font-black uppercase py-4 rounded-xl text-[10px] tracking-widest shadow-solaris-glow">Save Changes</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeModal === 'schedule' && selectedEmployee && (
+                                    <div className="space-y-8 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
+                                        <div className="flex items-center gap-6 mb-8 border-b border-white/5 pb-6">
+                                            <img src={selectedEmployee.image} className="w-16 h-16 rounded-2xl grayscale brightness-75 border border-white/10" alt="" />
+                                            <div>
+                                                <h3 className="text-xl font-black italic text-white uppercase tracking-tight">{selectedEmployee.name}</h3>
+                                                <p className="text-solaris-orange text-[8px] font-black uppercase tracking-widest">Temporal Tasking Matrix</p>
                                             </div>
                                         </div>
-                                        <button className="w-full bg-white/[0.03] border border-white/10 text-white/20 font-black uppercase py-4 rounded-2xl text-[10px] tracking-widest cursor-not-allowed italic">Access Blocked • Auth Level 1 Required</button>
+
+                                        {/* Current Shifts */}
+                                        <div className="space-y-3">
+                                            <label className="text-[9px] font-black uppercase text-white/20 tracking-widest italic ml-1">Active Time-Nodes</label>
+                                            {(editingEmployee.schedule || []).length === 0 ? (
+                                                <div className="p-8 rounded-2xl border border-dashed border-white/5 text-center">
+                                                    <p className="text-[9px] font-black uppercase tracking-widest text-white/10">No tasks assigned</p>
+                                                </div>
+                                            ) : (
+                                                editingEmployee.schedule?.map((shift, idx) => (
+                                                    <div key={idx} className="flex items-center justify-between bg-white/[0.02] border border-white/5 p-4 rounded-2xl animate-in fade-in slide-in-from-right-2">
+                                                        <div>
+                                                            <p className="text-[10px] font-black text-solaris-orange uppercase tracking-widest">{shift.day}</p>
+                                                            <p className="text-[12px] font-black text-white italic">{shift.start} — {shift.end}</p>
+                                                        </div>
+                                                        <button 
+                                                            onClick={() => {
+                                                                const newSched = [...(editingEmployee.schedule || [])];
+                                                                newSched.splice(idx, 1);
+                                                                setEditingEmployee({...editingEmployee, schedule: newSched});
+                                                            }}
+                                                            className="p-2 text-red-500/20 hover:text-red-500 transition-colors"
+                                                        >
+                                                            <X size={16} />
+                                                        </button>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+
+                                        {/* Add New Shift */}
+                                        <div className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl space-y-6">
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40 italic">New Temporal Allocation</h4>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="col-span-2">
+                                                    <label className="text-[8px] font-black uppercase text-white/10 mb-2 block">Day</label>
+                                                    <select id="new-shift-day" className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white text-xs font-black appearance-none outline-none focus:border-solaris-orange/50 transition-all">
+                                                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => <option key={d} value={d} className="bg-[#0a0a0b]">{d}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="text-[8px] font-black uppercase text-white/10 mb-2 block">Start</label>
+                                                    <input id="new-shift-start" type="time" defaultValue="09:00" className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white text-xs font-black outline-none focus:border-solaris-orange/50 transition-all" />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[8px] font-black uppercase text-white/10 mb-2 block">End</label>
+                                                    <input id="new-shift-end" type="time" defaultValue="17:00" className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white text-xs font-black outline-none focus:border-solaris-orange/50 transition-all" />
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => {
+                                                    const day = (document.getElementById('new-shift-day') as HTMLSelectElement).value;
+                                                    const start = (document.getElementById('new-shift-start') as HTMLInputElement).value;
+                                                    const end = (document.getElementById('new-shift-end') as HTMLInputElement).value;
+                                                    const newSched = [...(editingEmployee.schedule || []), { day, start, end }];
+                                                    setEditingEmployee({...editingEmployee, schedule: newSched});
+                                                }}
+                                                className="w-full bg-white/[0.04] border border-solaris-orange/20 text-solaris-orange font-black uppercase py-4 rounded-xl text-[9px] tracking-widest hover:bg-solaris-orange hover:text-white transition-all shadow-lg hover:shadow-solaris-glow"
+                                            >
+                                                Inject Shift Data
+                                            </button>
+                                        </div>
+
+                                        <button 
+                                            onClick={handleSaveEmployee}
+                                            className="w-full bg-solaris-orange text-white font-black uppercase py-5 rounded-2xl text-[11px] tracking-widest shadow-solaris-glow mt-8"
+                                        >
+                                            Save Scheduling Matrix
+                                        </button>
                                     </div>
                                 )}
                             </div>

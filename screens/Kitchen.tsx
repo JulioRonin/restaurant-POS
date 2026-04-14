@@ -68,7 +68,7 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
             : order.tableId;
 
     return (
-        <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col min-w-[320px] max-w-[360px] overflow-hidden group">
+        <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col min-w-[320px] max-w-[360px] h-[550px] overflow-hidden group">
             {/* Header */}
             <div className="p-5 bg-white/[0.03] border-b border-white/5 flex justify-between items-start gap-4">
                 <div className="min-w-0 flex-1">
@@ -93,8 +93,8 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
                 </div>
             </div>
 
-            {/* Items — scrollable with bounded height so button stays visible */}
-            <div className="p-4 space-y-2.5 overflow-y-auto no-scrollbar" style={{ maxHeight: '38vh' }}>
+            {/* Items — scrollable area that takes all remaining middle space */}
+            <div className="flex-1 p-4 space-y-2.5 overflow-y-auto no-scrollbar">
                 {order.items.map((item, idx) => (
                     <div key={idx} className="space-y-1">
                         <div className="flex items-center gap-3 bg-white/[0.02] p-3 rounded-2xl border border-white/5">
@@ -113,8 +113,8 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
                 ))}
             </div>
 
-            {/* Complete button — always visible at bottom */}
-            <div className="p-4 border-t border-white/5 mt-auto">
+            {/* Complete button — always locked at bottom */}
+            <div className="p-4 border-t border-white/5 bg-white/[0.01]">
                 <button
                     onClick={() => onComplete(order.id)}
                     className="w-full py-4 bg-solaris-orange text-white font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] hover:bg-orange-500 active:scale-95 transition-all flex items-center justify-center gap-3"

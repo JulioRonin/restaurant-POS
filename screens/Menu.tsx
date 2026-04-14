@@ -32,6 +32,7 @@ export const MenuScreen: React.FC = () => {
     const [importResult, setImportResult] = useState<{ count: number; errors: string[] } | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const csvFileInputRef = useRef<HTMLInputElement>(null);
 
     // Form state
     const [formCategory, setFormCategory] = useState('General');
@@ -122,6 +123,18 @@ export const MenuScreen: React.FC = () => {
         if (result.success) {
             setCsvInput('');
             setTimeout(() => setIsImportModalOpen(false), 2000);
+        }
+    };
+
+    const handleCsvFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const text = event.target?.result as string;
+                setCsvInput(text);
+            };
+            reader.readAsText(file);
         }
     };
 
@@ -456,7 +469,24 @@ export const MenuScreen: React.FC = () => {
                                 </button>
                             </div>
                             <div className="p-10 space-y-6">
-                                <p className="text-[10px] text-white/30 font-black uppercase tracking-widest">Format: <span className="text-solaris-orange">name, category, price, description</span> (one per line)</p>
+                                <div className="flex justify-between items-center">
+                                    <p className="text-[10px] text-white/30 font-black uppercase tracking-widest">
+                                        Format: <span className="text-solaris-orange">name, category, price, description</span>
+                                    </p>
+                                    <button
+                                        onClick={() => csvFileInputRef.current?.click()}
+                                        className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/10 text-white/60 text-[8px] font-black uppercase tracking-widest rounded-xl hover:bg-white/10 hover:text-white transition-all transition-colors"
+                                    >
+                                        <Upload size={12} /> Upload CSV File
+                                    </button>
+                                    <input
+                                        type="file"
+                                        ref={csvFileInputRef}
+                                        onChange={handleCsvFileUpload}
+                                        className="hidden"
+                                        accept=".csv,.txt"
+                                    />
+                                </div>
                                 <textarea
                                     value={csvInput}
                                     onChange={e => setCsvInput(e.target.value)}
