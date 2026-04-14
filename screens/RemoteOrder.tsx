@@ -86,7 +86,9 @@ export const RemoteOrderScreen: React.FC = () => {
             waiterName: currentUser?.name || 'Remoto'
         };
         addOrder(newOrder);
-        if (settings.isDirectPrintingEnabled) await printerService.printOrder(newOrder, settings);
+        if (printerService.isConnected() || (settings.connectedDeviceName && settings.connectedDeviceName !== 'None')) {
+            await printerService.printOrder(newOrder, settings);
+        }
         setCart([]);
         setShowSuccessModal(true);
         setTimeout(() => setShowSuccessModal(false), 3000);

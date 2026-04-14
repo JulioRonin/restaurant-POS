@@ -102,7 +102,8 @@ export const POSScreen: React.FC = () => {
         await addOrder(newOrder);
         if (settings.isKitchenPrintingEnabled) {
           let printSuccess = false;
-          if (settings.isDirectPrintingEnabled) {
+          // Always attempt direct printing if a device is configured
+          if (printerService.isConnected() || (settings.connectedDeviceName && settings.connectedDeviceName !== 'None')) {
             try {
                 printSuccess = await printerService.printKitchenTicket(newOrder, settings);
             } catch (err) { printSuccess = false; }

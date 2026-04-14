@@ -390,8 +390,13 @@ class PrinterService {
     }
   }
 
-  async openCashDrawer(): Promise<boolean> {
-    if (!this.device) {
+  async openCashDrawer(settings?: any): Promise<boolean> {
+    // Proactively attempt to reconnect
+    if (!this.isConnected() && settings?.connectedDeviceName && settings.connectedDeviceName !== 'None') {
+        await this.autoConnect(settings.connectedDeviceName);
+    }
+
+    if (!this.isConnected()) {
        console.warn('[PrinterService] No direct printer connected to open drawer.');
        return false;
     }
@@ -421,8 +426,13 @@ class PrinterService {
   }
 
   async printCashCut(data: any, settings: any): Promise<boolean> {
-    if (!this.device) {
-       console.warn('No direct printer connected for cash cut.');
+    // Proactively attempt to reconnect if we have a saved device name
+    if (!this.isConnected() && settings.connectedDeviceName && settings.connectedDeviceName !== 'None') {
+        await this.autoConnect(settings.connectedDeviceName);
+    }
+
+    if (!this.isConnected()) {
+       console.warn('[PrinterService] No direct printer connected for cash cut.');
        return false;
     }
 

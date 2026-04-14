@@ -109,7 +109,7 @@ export const CashierScreen: React.FC = () => {
         updateOrderStatus(selectedOrder.id, updatedOrder.status, updatedOrder);
         
         if ((paymentMethod === PaymentMethod.CASH || paymentMethod === PaymentMethod.MIXED) && settings.isCashDrawerEnabled) {
-            await printerService.openCashDrawer();
+            await printerService.openCashDrawer(settings);
         }
 
         // Print ticket with the breakdown for the CURRENT payment
@@ -307,7 +307,7 @@ export const CashierScreen: React.FC = () => {
                                     <div className="space-y-3">
                                         <p className="text-[10px] font-black uppercase text-white/20 tracking-widest italic">Data Export</p>
                                         <button
-                                            onClick={() => {
+                                            onClick={async () => {
                                                 const completedOrders = filteredByDateOrders.filter(o => o.status === 'COMPLETED');
                                                 const totalRevenue = completedOrders.reduce((s, o) => s + (o.total || 0), 0);
                                                 const cashSales = completedOrders.filter(o => o.paymentMethod === PaymentMethod.CASH).reduce((s, o) => s + (o.total || 0), 0);
@@ -315,7 +315,7 @@ export const CashierScreen: React.FC = () => {
                                                 const totalExpensesDay = expenses.filter(e => e.date === selectedDate).reduce((s, e) => s + e.amount, 0);
                                                 const netRevenue = totalRevenue - totalExpensesDay;
                                                 
-                                                setCashCutToPrint({
+                                                const cutData = {
                                                     date: selectedDate,
                                                     totalRevenue,
                                                     cashSales,
@@ -323,9 +323,23 @@ export const CashierScreen: React.FC = () => {
                                                     totalExpenses: totalExpensesDay,
                                                     netRevenue,
                                                     orderCount: completedOrders.length,
-                                                    operatorName: authProfile?.name || 'Admin'
-                                                });
-                                                setTimeout(() => { window.print(); setCashCutToPrint(null); }, 500);
+                                                    operatorName: authProfile?.name || 'Admin',
+                                                    orders: completedOrders,
+                                                    metrics: { totalRevenue, cashSales, cardSales }
+                                                };
+
+                                                // Try direct thermal printing first
+                                                let printed = false;
+                                                if (printerService.isConnected() || (settings.connectedDeviceName && settings.connectedDeviceName !== 'None')) {
+                                                    try { printed = await printerService.printCashCut(cutData, settings); } catch(e) {}
+                                                }
+                                                // Fallback to browser print
+                                                if (!printed) {
+                                                    setCashCutToPrint(cutData);
+                                                    setTimeout(() => { window.print(); setCashCutToPrint(null); }, 500);
+                                                } else {
+                                                    setSuccessMessage('CASH_CUT_PRINTED'); setTimeout(() => setSuccessMessage(null), 2000);
+                                                }
                                             }}
                                             className="w-full flex items-center justify-center gap-3 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-white/60 hover:text-white hover:border-white/20 transition-all font-black text-[10px] uppercase tracking-widest"
                                         >
@@ -450,7 +464,7 @@ export const CashierScreen: React.FC = () => {
                                                 <p className="text-[11px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] mt-2">Node: {selectedOrder.tableId} • Local TX Sequence</p>
                                             </div>
                                             <div className="flex gap-3">
-                                                <button onClick={() => printerService.openCashDrawer()} className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white/40 hover:text-white hover:bg-white/[0.08] transition-all"><Zap size={22} /></button>
+                                                <button onClick={() => printerService.openCashDrawer(settings)} className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white/40 hover:text-white hover:bg-white/[0.08] transition-all"><Zap size={22} /></button>
                                                 <button onClick={() => handlePrintTicket(selectedOrder)} className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white/40 hover:text-white hover:bg-white/[0.08] transition-all"><Printer size={22} /></button>
                                             </div>
                                         </div>
@@ -681,6 +695,25 @@ export const CashierScreen: React.FC = () => {
                                     </GlowButton>
                                 </div>
                             </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Success Notification Toast */}
+            <AnimatePresence>
+                {successMessage && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        className="fixed bottom-8 right-8 z-[800] no-print"
+                    >
+                        <div className="flex items-center gap-4 bg-[#0d0d0e] border border-green-500/30 px-8 py-5 rounded-[28px] shadow-2xl shadow-green-500/10">
+                            <div className="w-10 h-10 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-center">
+                                <CheckCircle2 size={20} className="text-green-500" />
+                            </div>
+                            <span className="text-green-400 font-black italic text-xs uppercase tracking-widest">{successMessage}</span>
                         </div>
                     </motion.div>
                 )}
