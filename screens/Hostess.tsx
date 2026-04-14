@@ -719,17 +719,21 @@ export const HostessScreen: React.FC = () => {
 
             {/* Modals Container */}
             <AnimatePresence>
-                {/* Add Table Modal */}
                 {isAddTableModalOpen && (
-                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100]">
-                        <motion.div 
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100] p-6">
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="bg-[#0a0a0b] border border-white/10 rounded-solaris p-10 w-[450px] shadow-[0_50px_100px_rgba(0,0,0,0.8)] relative overflow-hidden"
+                            className="bg-[#0a0a0b] border border-white/10 rounded-[32px] p-10 w-full max-w-[420px] shadow-2xl relative overflow-hidden"
                         >
                             <div className="absolute top-0 left-0 w-full h-1 bg-solaris-orange"></div>
-                            <h2 className="text-2xl font-black italic text-white mb-10 uppercase tracking-tighter">Desplegar Nuevo Nodo</h2>
+                            <div className="flex justify-between items-center mb-10">
+                                <h2 className="text-2xl font-black italic text-white uppercase tracking-tighter">Desplegar Nuevo Nodo</h2>
+                                <button onClick={() => setIsAddTableModalOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 transition-all">
+                                    <span className="text-lg font-black">✕</span>
+                                </button>
+                            </div>
                             <div className="space-y-8">
                                 <div>
                                     <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] block mb-3">Identificador de Mesa</label>
@@ -745,127 +749,71 @@ export const HostessScreen: React.FC = () => {
                                 <div className="bg-white/[0.02] p-8 rounded-2xl border border-white/5">
                                     <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] block mb-6 text-center">Capacidad Máxima PAX</label>
                                     <div className="flex items-center justify-center gap-10">
-                                        <button
-                                            onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))}
-                                            className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-white transition-all border border-white/5"
-                                        >
-                                            -
-                                        </button>
+                                        <button onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-white transition-all border border-white/5">-</button>
                                         <span className="font-black italic text-5xl text-solaris-orange w-16 text-center">{newTableSeats}</span>
-                                        <button
-                                            onClick={() => setNewTableSeats(newTableSeats + 1)}
-                                            className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-white transition-all border border-white/5"
-                                        >
-                                            +
-                                        </button>
+                                        <button onClick={() => setNewTableSeats(newTableSeats + 1)} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-white transition-all border border-white/5">+</button>
                                     </div>
                                 </div>
                                 <div className="flex gap-4 mt-10">
-                                    <button
-                                        onClick={() => setIsAddTableModalOpen(false)}
-                                        className="flex-1 py-5 bg-white/5 text-white/20 rounded-[20px] font-black italic uppercase text-[10px] tracking-widest hover:text-white transition-all"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        onClick={handleAddTable}
-                                        disabled={!newTableName}
-                                        className="flex-1 py-5 bg-solaris-orange text-white rounded-[20px] font-black italic uppercase text-[10px] tracking-widest shadow-solaris-glow hover:scale-[1.05] transition-all disabled:opacity-20"
-                                    >
-                                        Confirmar Nodo
-                                    </button>
+                                    <button onClick={() => setIsAddTableModalOpen(false)} className="flex-1 py-5 bg-white/5 text-white/20 rounded-[20px] font-black italic uppercase text-[10px] tracking-widest hover:text-white transition-all">Cancelar</button>
+                                    <button onClick={handleAddTable} disabled={!newTableName} className="flex-1 py-5 bg-solaris-orange text-white rounded-[20px] font-black italic uppercase text-[10px] tracking-widest shadow-solaris-glow hover:scale-[1.05] transition-all disabled:opacity-20">Confirmar Nodo</button>
                                 </div>
                             </div>
                         </motion.div>
                     </div>
                 )}
 
-                {/* Edit Table Modal */}
                 {isEditModalOpen && (
-                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100]">
-                        <motion.div 
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100] p-6">
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="bg-[#0a0a0b] border border-white/10 rounded-solaris p-10 w-[450px] shadow-2xl relative overflow-hidden"
+                            className="bg-[#0a0a0b] border border-white/10 rounded-[32px] p-10 w-full max-w-[420px] shadow-2xl relative overflow-hidden"
                         >
                             <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
-                            <h2 className="text-2xl font-black italic text-white mb-10 uppercase tracking-tighter">Ajuste de Nodo</h2>
+                            <div className="flex justify-between items-center mb-10">
+                                <h2 className="text-2xl font-black italic text-white uppercase tracking-tighter">Ajuste de Nodo</h2>
+                                <button onClick={() => setIsEditModalOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 transition-all">
+                                    <span className="text-lg font-black">✕</span>
+                                </button>
+                            </div>
                             <div className="space-y-8">
                                 <div>
                                     <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] block mb-3">Identificador</label>
-                                    <input
-                                        type="text"
-                                        value={newTableName}
-                                        onChange={(e) => setNewTableName(e.target.value)}
-                                        className="w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl outline-none focus:border-blue-500 font-black italic text-white transition-all text-lg placeholder:text-white/5 uppercase tracking-tight"
-                                        autoFocus
-                                    />
+                                    <input type="text" value={newTableName} onChange={(e) => setNewTableName(e.target.value)} className="w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl outline-none focus:border-blue-500 font-black italic text-white transition-all text-lg placeholder:text-white/5 uppercase tracking-tight" autoFocus />
                                 </div>
                                 <div className="bg-white/[0.02] p-8 rounded-2xl border border-white/5">
                                     <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] block mb-6 text-center">Protocolo Pax</label>
                                     <div className="flex items-center justify-center gap-10">
-                                        <button
-                                            onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))}
-                                            className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-white transition-all border border-white/5"
-                                        >
-                                            -
-                                        </button>
+                                        <button onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-white transition-all border border-white/5">-</button>
                                         <span className="font-black italic text-5xl text-blue-500 w-16 text-center">{newTableSeats}</span>
-                                        <button
-                                            onClick={() => setNewTableSeats(newTableSeats + 1)}
-                                            className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-white transition-all border border-white/5"
-                                        >
-                                            +
-                                        </button>
+                                        <button onClick={() => setNewTableSeats(newTableSeats + 1)} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-white transition-all border border-white/5">+</button>
                                     </div>
                                 </div>
                                 <div className="flex gap-4 mt-10">
-                                    <button
-                                        onClick={() => setIsEditModalOpen(false)}
-                                        className="flex-1 py-5 bg-white/5 text-white/20 rounded-[20px] font-black italic uppercase text-[10px] tracking-widest hover:text-white transition-all"
-                                    >
-                                        Descartar
-                                    </button>
-                                    <button
-                                        onClick={handleUpdateTable}
-                                        disabled={!newTableName}
-                                        className="flex-1 py-5 bg-blue-600 text-white rounded-[20px] font-black italic uppercase text-[10px] tracking-widest shadow-lg shadow-blue-500/20 hover:scale-[1.05] transition-all"
-                                    >
-                                        Guardar Cambios
-                                    </button>
+                                    <button onClick={() => setIsEditModalOpen(false)} className="flex-1 py-5 bg-white/5 text-white/20 rounded-[20px] font-black italic uppercase text-[10px] tracking-widest hover:text-white transition-all">Descartar</button>
+                                    <button onClick={handleUpdateTable} disabled={!newTableName} className="flex-1 py-5 bg-blue-600 text-white rounded-[20px] font-black italic uppercase text-[10px] tracking-widest shadow-lg shadow-blue-500/20 hover:scale-[1.05] transition-all">Guardar Cambios</button>
                                 </div>
                             </div>
                         </motion.div>
                     </div>
                 )}
 
-                {/* Delete Confirmation Modal */}
                 {isDeleteConfirmOpen && (
-                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[110]">
-                        <motion.div 
+                    <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[110] p-6">
+                        <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
-                            className="bg-[#0a0a0b] border border-red-500/20 rounded-solaris p-10 w-[400px] shadow-2xl text-center"
+                            className="bg-[#0a0a0b] border border-red-500/20 rounded-[32px] p-10 w-full max-w-[380px] shadow-2xl text-center"
                         >
-                            <AlertTriangle size={64} className="text-red-500 mx-auto mb-6 drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]" />
+                            <AlertTriangle size={52} className="text-red-500 mx-auto mb-6" />
                             <h2 className="text-2xl font-black italic text-white mb-2 uppercase tracking-tighter">¿Purgar Nodo?</h2>
                             <p className="text-white/40 mb-10 font-bold text-[10px] uppercase tracking-[0.2em] leading-relaxed px-4">Esta acción eliminará la mesa <b className="text-white">{selectedTable?.name}</b> permanentemente del ecosistema Solaris.</p>
-                            
                             <div className="flex flex-col gap-4">
-                                <button
-                                    onClick={handleDeleteTableAction}
-                                    className="w-full py-5 bg-red-600 text-white rounded-[24px] font-black italic uppercase text-[11px] tracking-[0.3em] shadow-[0_15px_30px_rgba(220,38,38,0.3)] hover:scale-[1.05] transition-all"
-                                >
-                                    Confirmar Purga
-                                </button>
-                                <button
-                                    onClick={() => setIsDeleteConfirmOpen(false)}
-                                    className="w-full py-4 bg-white/5 text-white/20 rounded-xl font-black italic uppercase text-[10px] tracking-widest hover:text-white transition-all"
-                                >
-                                    Abortar Procedimiento
-                                </button>
+                                <button onClick={handleDeleteTableAction} className="w-full py-5 bg-red-600 text-white rounded-[24px] font-black italic uppercase text-[11px] tracking-[0.3em] shadow-[0_15px_30px_rgba(220,38,38,0.3)] hover:scale-[1.05] transition-all">Confirmar Purga</button>
+                                <button onClick={() => setIsDeleteConfirmOpen(false)} className="w-full py-4 bg-white/5 text-white/20 rounded-xl font-black italic uppercase text-[10px] tracking-widest hover:text-white transition-all">Abortar Procedimiento</button>
                             </div>
                         </motion.div>
                     </div>
