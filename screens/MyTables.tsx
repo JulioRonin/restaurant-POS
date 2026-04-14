@@ -91,7 +91,9 @@ export const MyTablesScreen: React.FC = () => {
                                 <div className="p-10 border-b border-white/5 bg-white/[0.02] flex justify-between items-start gap-4">
                                     <div className="min-w-0 flex-1">
                                         <p className="text-[9px] font-black text-solaris-orange/40 uppercase tracking-widest mb-2 italic">NODE_ID</p>
-                                        <h3 className="text-2xl font-black italic tracking-tighter uppercase text-white leading-tight break-all">{order.tableId}</h3>
+                                        <h3 className="text-lg font-black italic tracking-tighter uppercase text-white leading-tight break-all opacity-90 font-mono">
+                                            {order.tableId.length > 12 ? `${order.tableId.slice(0, 8)}...${order.tableId.slice(-4)}` : order.tableId}
+                                        </h3>
                                     </div>
                                     <div className="text-right shrink-0">
                                         <p className="text-[9px] font-black text-solaris-orange/40 uppercase tracking-widest mb-2 italic">UPTIME</p>
@@ -143,7 +145,7 @@ export const MyTablesScreen: React.FC = () => {
             <AnimatePresence>
                 {editingOrder && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[600] flex items-center justify-center bg-[#030303]/95 backdrop-blur-3xl p-6">
-                        <GlowCard glowColor="orange" className="w-full max-w-[700px] border border-white/10 !p-0 bg-[#0a0a0b] overflow-hidden flex flex-col max-h-[92vh] shadow-[0_0_100px_rgba(0,0,0,1)]">
+                        <GlowCard glowColor="orange" className="w-full max-w-5xl border border-white/10 !p-0 bg-[#0a0a0b] overflow-hidden flex flex-col max-h-[92vh] shadow-[0_0_100px_rgba(0,0,0,1)]">
                             <div className="p-10 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                                 <div>
                                     <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white">Modify Manifest</h2>
@@ -155,9 +157,12 @@ export const MyTablesScreen: React.FC = () => {
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-10 space-y-8 no-scrollbar">
-                                <div className="flex justify-between items-center bg-solaris-orange/5 p-4 rounded-2xl border border-solaris-orange/10">
-                                    <span className="text-[11px] font-black uppercase text-solaris-orange tracking-[0.3em] italic">Active Packet Stream</span>
-                                    <button onClick={() => setShowItemPicker(true)} className="px-8 py-3 bg-solaris-orange rounded-xl text-[10px] font-black uppercase text-white shadow-solaris-glow hover:scale-105 active:scale-95 transition-all">+ Add Asset</button>
+                                <div className="flex justify-between items-center bg-solaris-orange/5 p-6 rounded-2xl border border-solaris-orange/10">
+                                    <div className="flex flex-col">
+                                        <span className="text-[11px] font-black uppercase text-solaris-orange tracking-[0.3em] italic">Active Packet Stream</span>
+                                        <p className="text-[10px] text-white/20 font-mono mt-1">{tempItems.length} modules loaded</p>
+                                    </div>
+                                    <button onClick={() => setShowItemPicker(true)} className="px-10 py-4 bg-solaris-orange rounded-xl text-[11px] font-black uppercase text-white shadow-solaris-glow hover:scale-105 active:scale-95 transition-all">+ Add Asset</button>
                                 </div>
 
                                 <div className="space-y-4">
