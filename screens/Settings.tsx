@@ -34,6 +34,9 @@ export const SettingsScreen: React.FC = () => {
     const [localSettings, setLocalSettings] = useState<BusinessSettings>(settings);
     const [testOrderToPrint, setTestOrderToPrint] = useState<any>(null);
     const [showsSavedMessage, setShowsSavedMessage] = useState(false);
+    const [showUserModal, setShowUserModal] = useState(false);
+    const [editingUser, setEditingUser] = useState<any | null>(null);
+    const [userForm, setUserForm] = useState({ name: '', role: 'mesero', pin: '1111', area: 'Service' });
 
     useEffect(() => { setLocalSettings(settings); }, [settings]);
 
@@ -268,53 +271,151 @@ export const SettingsScreen: React.FC = () => {
                                 )}
 
                                 {activeTab === 'users' && (
-                                     <div className="space-y-12">
-                                         <div className="flex justify-between items-center mb-4">
+                                     <div className="space-y-8">
+                                         <div className="flex justify-between items-center">
                                              <div className="flex items-center gap-4">
                                                  <div className="w-1.5 h-1.5 bg-solaris-orange rounded-full animate-pulse shadow-solaris-glow" />
                                                  <h2 className="text-3xl font-black italic uppercase text-white">Personnel Gateway</h2>
                                              </div>
-                                             <button 
-                                                 onClick={() => {
-                                                     const name = window.prompt("Operator Designation:");
-                                                     const role = window.prompt("Functional Role (mesero/cocina/admin):");
-                                                     if (name && role && authProfile) {
-                                                         addUser({
-                                                             name,
-                                                             role: role.charAt(0).toUpperCase() + role.slice(1),
-                                                             area: role.toLowerCase() === 'cocina' ? 'Kitchen' : 'Service',
-                                                             status: 'OFF_SHIFT',
-                                                             pin: '1111',
-                                                             image: `https://ui-avatars.com/api/?name=${name}&background=f97316&color=fff`,
-                                                             rating: 5,
-                                                             hoursWorked: 0,
-                                                             schedule: [],
-                                                             businessId: authProfile.businessId
-                                                         });
-                                                     }
-                                                 }}
+                                             <button
+                                                 onClick={() => { setEditingUser(null); setUserForm({ name: '', role: 'mesero', pin: '1111', area: 'Service' }); setShowUserModal(true); }}
                                                  className="px-6 py-2.5 bg-solaris-orange/10 border border-solaris-orange/20 rounded-xl text-[10px] font-black text-solaris-orange uppercase tracking-widest hover:bg-solaris-orange/20 transition-all flex items-center gap-2"
                                              >
                                                  <Plus size={14} /> Onboard New Unit
                                              </button>
                                          </div>
 
-                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                         {/* User cards */}
+                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                              {users.map(user => (
-                                                 <div key={user.id} className="p-6 bg-white/[0.02] border border-white/5 rounded-[28px] flex items-center gap-6 group hover:bg-white/[0.04] transition-all">
-                                                     <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 group-hover:border-solaris-orange/40 transition-all flex-shrink-0">
-                                                         <img src={user.image} className="w-full h-full object-cover" />
+                                                 <div key={user.id} className="p-6 bg-white/[0.02] border border-white/5 rounded-[28px] flex items-center gap-5 group hover:bg-white/[0.04] hover:border-white/10 transition-all">
+                                                     <div className="w-14 h-14 rounded-2xl overflow-hidden border border-white/10 group-hover:border-solaris-orange/40 transition-all flex-shrink-0">
+                                                         <img src={user.image} className="w-full h-full object-cover" alt={user.name} />
                                                      </div>
-                                                     <div className="flex-1">
-                                                         <p className="text-lg font-black italic text-white uppercase tracking-tight">{user.name}</p>
-                                                         <p className="text-[10px] font-black text-solaris-orange uppercase tracking-widest">{user.role} • PIN: {user.pin}</p>
+                                                     <div className="flex-1 min-w-0">
+                                                         <p className="text-base font-black italic text-white uppercase tracking-tight truncate">{user.name}</p>
+                                                         <p className="text-[10px] font-black text-solaris-orange uppercase tracking-widest mt-0.5">{user.role}</p>
+                                                         <p className="text-[9px] font-black text-white/20 uppercase tracking-widest">PIN: {user.pin} • {user.area}</p>
                                                      </div>
-                                                     <div className="flex gap-2">
-                                                         <button onClick={() => deleteUser(user.id)} className="p-3 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-all opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
+                                                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                                         <button
+                                                             onClick={() => {
+                                                                 setEditingUser(user);
+                                                                 setUserForm({ name: user.name, role: user.role?.toLowerCase() || 'mesero', pin: user.pin || '1111', area: user.area || 'Service' });
+                                                                 setShowUserModal(true);
+                                                             }}
+                                                             className="p-2.5 bg-white/[0.04] text-white/40 rounded-xl hover:bg-white/10 hover:text-white transition-all"
+                                                         >
+                                                             <Save size={14} />
+                                                         </button>
+                                                         <button onClick={() => deleteUser(user.id)} className="p-2.5 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500/20 transition-all">
+                                                             <Trash2 size={14} />
+                                                         </button>
                                                      </div>
                                                  </div>
                                              ))}
                                          </div>
+
+                                         {/* Add / Edit User Modal */}
+                                         <AnimatePresence>
+                                             {showUserModal && (
+                                                 <motion.div
+                                                     initial={{ opacity: 0 }}
+                                                     animate={{ opacity: 1 }}
+                                                     exit={{ opacity: 0 }}
+                                                     className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6"
+                                                 >
+                                                     <motion.div
+                                                         initial={{ scale: 0.9, y: 20 }}
+                                                         animate={{ scale: 1, y: 0 }}
+                                                         className="w-full max-w-lg bg-[#0d0d0e] border border-white/10 rounded-[40px] p-10 shadow-2xl"
+                                                     >
+                                                         <div className="flex justify-between items-center mb-8">
+                                                             <h3 className="text-2xl font-black italic uppercase text-white tracking-tighter">
+                                                                 {editingUser ? 'Edit Operator' : 'New Operator'}
+                                                             </h3>
+                                                             <button onClick={() => setShowUserModal(false)} className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center text-white/30 hover:text-white transition-all">
+                                                                 <X size={18} />
+                                                             </button>
+                                                         </div>
+
+                                                         <div className="space-y-5">
+                                                             <div>
+                                                                 <label className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-1 italic">Nombre</label>
+                                                                 <input
+                                                                     value={userForm.name}
+                                                                     onChange={e => setUserForm(p => ({ ...p, name: e.target.value }))}
+                                                                     placeholder="Nombre completo"
+                                                                     className="mt-2 w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-solaris-orange/40 font-bold italic transition-all"
+                                                                 />
+                                                             </div>
+                                                             <div className="grid grid-cols-2 gap-4">
+                                                                 <div>
+                                                                     <label className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-1 italic">Rol</label>
+                                                                     <select
+                                                                         value={userForm.role}
+                                                                         onChange={e => setUserForm(p => ({ ...p, role: e.target.value, area: ['cocina', 'chef'].includes(e.target.value) ? 'Kitchen' : e.target.value === 'bar' ? 'Bar' : 'Service' }))}
+                                                                         className="mt-2 w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-solaris-orange/40 font-bold italic transition-all appearance-none"
+                                                                     >
+                                                                         <option value="mesero" className="bg-[#0d0d0e]">Mesero</option>
+                                                                         <option value="cajero" className="bg-[#0d0d0e]">Cajero</option>
+                                                                         <option value="cocina" className="bg-[#0d0d0e]">Cocina</option>
+                                                                         <option value="chef" className="bg-[#0d0d0e]">Chef</option>
+                                                                         <option value="bar" className="bg-[#0d0d0e]">Bar</option>
+                                                                         <option value="hostess" className="bg-[#0d0d0e]">Hostess</option>
+                                                                         <option value="gerente" className="bg-[#0d0d0e]">Gerente</option>
+                                                                         <option value="admin" className="bg-[#0d0d0e]">Admin</option>
+                                                                     </select>
+                                                                 </div>
+                                                                 <div>
+                                                                     <label className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-1 italic">PIN acceso</label>
+                                                                     <input
+                                                                         value={userForm.pin}
+                                                                         onChange={e => setUserForm(p => ({ ...p, pin: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
+                                                                         type="text"
+                                                                         maxLength={6}
+                                                                         placeholder="1234"
+                                                                         className="mt-2 w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-solaris-orange/40 font-bold italic tracking-[0.4em] transition-all"
+                                                                     />
+                                                                 </div>
+                                                             </div>
+                                                         </div>
+
+                                                         <div className="flex gap-3 mt-8">
+                                                             <button
+                                                                 onClick={() => setShowUserModal(false)}
+                                                                 className="flex-1 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white/40 font-black uppercase text-[10px] tracking-widest hover:text-white transition-all"
+                                                             >
+                                                                 Cancel
+                                                             </button>
+                                                             <button
+                                                                 onClick={() => {
+                                                                     if (!userForm.name) return;
+                                                                     const payload = {
+                                                                         name: userForm.name,
+                                                                         role: userForm.role.charAt(0).toUpperCase() + userForm.role.slice(1),
+                                                                         area: userForm.area,
+                                                                         pin: userForm.pin || '1111',
+                                                                         status: 'OFF_SHIFT',
+                                                                         image: `https://ui-avatars.com/api/?name=${encodeURIComponent(userForm.name)}&background=f97316&color=fff`,
+                                                                         rating: 5,
+                                                                         hoursWorked: 0,
+                                                                         schedule: [],
+                                                                         businessId: currentUser?.businessId || ''
+                                                                     };
+                                                                     if (editingUser) { updateUser(editingUser.id, payload); }
+                                                                     else { addUser(payload as any); }
+                                                                     setShowUserModal(false);
+                                                                 }}
+                                                                 className="flex-1 py-4 bg-solaris-orange text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all"
+                                                             >
+                                                                 {editingUser ? 'Save Changes' : 'Deploy Unit'}
+                                                             </button>
+                                                         </div>
+                                                     </motion.div>
+                                                 </motion.div>
+                                             )}
+                                         </AnimatePresence>
                                      </div>
                                 )}
 

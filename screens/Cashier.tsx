@@ -265,37 +265,147 @@ export const CashierScreen: React.FC = () => {
                             </div>
                         )}
 
-                        {activeTab === 'history' && (
-                            <div className="space-y-3">
-                                <div className="mb-2">
-                                    <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-2 px-4 text-white text-xs font-bold outline-none focus:border-solaris-orange/40" />
-                                </div>
-                                {/* Metrics */}
-                                <div className="grid grid-cols-3 gap-2 mb-3">
-                                    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 text-center">
-                                        <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Total</p>
-                                        <p className="text-sm font-black italic text-solaris-orange">${salesMetrics.totalRevenue.toFixed(0)}</p>
+
+                        {activeTab === 'history' && (() => {
+                            const completedOrders = filteredByDateOrders.filter(o => o.status === 'COMPLETED');
+                            const totalRevenue = completedOrders.reduce((s, o) => s + (o.total || 0), 0);
+                            const cashSales = completedOrders.filter(o => o.paymentMethod === PaymentMethod.CASH).reduce((s, o) => s + (o.total || 0), 0);
+                            const cardSales = completedOrders.filter(o => o.paymentMethod === PaymentMethod.CARD).reduce((s, o) => s + (o.total || 0), 0);
+                            const ivaTotal = totalRevenue * 0.16;
+                            const avgTicket = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
+                            const totalExpensesDay = expenses.filter(e => e.date === selectedDate).reduce((s, e) => s + e.amount, 0);
+                            const netRevenue = totalRevenue - totalExpensesDay;
+
+                            const handleDownloadCSV = () => {
+                                const rows = [
+                                    ['ID', 'Mesa', 'Método', 'Total', 'Status', 'Hora'],
+                                    ...filteredByDateOrders.map(o => [
+                                        o.id.slice(0, 8),
+                                        o.tableId,
+                                        o.paymentMethod || 'N/A',
+                                        o.total.toFixed(2),
+                                        o.status,
+                                        new Date(o.timestamp).toLocaleTimeString('es-MX')
+                                    ])
+                                ].map(r => r.join(',')).join('\n');
+                                const blob = new Blob([rows], { type: 'text/csv' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a'); a.href = url;
+                                a.download = `reporte-${selectedDate}.csv`; a.click();
+                                URL.revokeObjectURL(url);
+                            };
+
+                            const handlePrintReport = () => {
+                                setCashCutToPrint({
+                                    date: selectedDate,
+                                    totalRevenue,
+                                    cashSales,
+                                    cardSales,
+                                    totalExpenses: totalExpensesDay,
+                                    netRevenue,
+                                    orderCount: completedOrders.length,
+                                    operatorName: authProfile?.name || 'Admin'
+                                });
+                                setTimeout(() => { window.print(); setCashCutToPrint(null); }, 500);
+                            };
+
+                            return (
+                                <div className="space-y-4">
+                                    {/* Date picker */}
+                                    <input
+                                        type="date"
+                                        value={selectedDate}
+                                        onChange={e => setSelectedDate(e.target.value)}
+                                        className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-2.5 px-4 text-white text-xs font-bold outline-none focus:border-solaris-orange/40"
+                                    />
+
+                                    {/* Action buttons */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <button
+                                            onClick={handlePrintReport}
+                                            className="flex items-center justify-center gap-2 py-3 bg-white/[0.03] border border-white/10 rounded-xl text-white/60 hover:text-white hover:border-white/20 transition-all font-black text-[9px] uppercase tracking-widest"
+                                        >
+                                            <Printer size={14} /> Imprimir
+                                        </button>
+                                        <button
+                                            onClick={handleDownloadCSV}
+                                            className="flex items-center justify-center gap-2 py-3 bg-solaris-orange/10 border border-solaris-orange/20 rounded-xl text-solaris-orange hover:bg-solaris-orange/20 transition-all font-black text-[9px] uppercase tracking-widest"
+                                        >
+                                            <Download size={14} /> CSV
+                                        </button>
                                     </div>
-                                    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 text-center">
-                                        <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Efectivo</p>
-                                        <p className="text-sm font-black italic text-green-400">${salesMetrics.cashSales.toFixed(0)}</p>
-                                    </div>
-                                    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 text-center">
-                                        <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Tarjeta</p>
-                                        <p className="text-sm font-black italic text-blue-400">${salesMetrics.cardSales.toFixed(0)}</p>
-                                    </div>
-                                </div>
-                                {filteredByDateOrders.map(order => (
-                                    <div key={order.id} className="flex justify-between items-center p-4 bg-white/[0.02] border border-white/5 rounded-xl">
-                                        <div>
-                                            <p className="text-xs font-black italic text-white/80 uppercase tracking-tight">{order.tableId}</p>
-                                            <p className="text-[9px] font-black uppercase text-white/20 tracking-widest">{order.paymentMethod || 'N/A'} • {order.status}</p>
+
+                                    {/* KPI Grid */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div className="bg-solaris-orange/5 border border-solaris-orange/20 rounded-xl p-3 col-span-2">
+                                            <p className="text-[8px] font-black uppercase text-solaris-orange/60 tracking-widest">Venta Total</p>
+                                            <p className="text-2xl font-black italic text-solaris-orange">${totalRevenue.toFixed(2)}</p>
                                         </div>
-                                        <span className={`font-black italic text-sm ${order.status === 'COMPLETED' ? 'text-green-400' : 'text-white/40'}`}>${order.total.toFixed(2)}</span>
+                                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
+                                            <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Efectivo</p>
+                                            <p className="text-base font-black italic text-green-400">${cashSales.toFixed(2)}</p>
+                                        </div>
+                                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
+                                            <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Tarjeta</p>
+                                            <p className="text-base font-black italic text-blue-400">${cardSales.toFixed(2)}</p>
+                                        </div>
+                                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
+                                            <p className="text-[8px] font-black uppercase text-white/20 tracking-widest"># Órdenes</p>
+                                            <p className="text-base font-black italic text-white">{completedOrders.length}</p>
+                                        </div>
+                                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
+                                            <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Ticket Prom.</p>
+                                            <p className="text-base font-black italic text-white">${avgTicket.toFixed(2)}</p>
+                                        </div>
+                                        <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3">
+                                            <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">IVA (16%)</p>
+                                            <p className="text-base font-black italic text-yellow-400">${ivaTotal.toFixed(2)}</p>
+                                        </div>
+                                        <div className={`border rounded-xl p-3 ${netRevenue >= 0 ? 'bg-green-500/5 border-green-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                                            <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Neto (- Gastos)</p>
+                                            <p className={`text-base font-black italic ${netRevenue >= 0 ? 'text-green-400' : 'text-red-400'}`}>${netRevenue.toFixed(2)}</p>
+                                        </div>
                                     </div>
-                                ))}
-                            </div>
-                        )}
+
+                                    {/* All orders list */}
+                                    <div className="space-y-2 pt-2">
+                                        <p className="text-[8px] font-black uppercase text-white/20 tracking-widest px-1">Todas las órdenes del día</p>
+                                        {filteredByDateOrders.length === 0 && (
+                                            <p className="text-center text-white/10 text-xs font-black italic py-8 uppercase">Sin registros</p>
+                                        )}
+                                        {filteredByDateOrders.map(order => (
+                                            <div
+                                                key={order.id}
+                                                className="flex justify-between items-center p-3 bg-white/[0.02] border border-white/5 rounded-xl group hover:border-white/10 transition-all"
+                                            >
+                                                <div>
+                                                    <p className="text-xs font-black italic text-white/80 uppercase tracking-tight leading-none">{order.tableId}</p>
+                                                    <p className="text-[8px] font-black uppercase text-white/20 tracking-widest mt-0.5">
+                                                        {new Date(order.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                                        {' • '}
+                                                        <span className={order.paymentMethod === PaymentMethod.CASH ? 'text-green-400/60' : 'text-blue-400/60'}>
+                                                            {order.paymentMethod || 'N/A'}
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`font-black italic text-sm ${order.status === 'COMPLETED' ? 'text-green-400' : 'text-white/30'}`}>
+                                                        ${order.total.toFixed(2)}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => handlePrintTicket(order)}
+                                                        className="p-1.5 rounded-lg text-white/10 hover:text-white/50 hover:bg-white/5 transition-all opacity-0 group-hover:opacity-100"
+                                                    >
+                                                        <Printer size={12} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                     </div>
                 </div>
 

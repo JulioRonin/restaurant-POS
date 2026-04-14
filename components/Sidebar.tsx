@@ -185,6 +185,14 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
         {canAccess(activeEmployee?.role, '/kitchen') && (
           <NavItem to="/kitchen" icon={ChefHat} label="Kitchen Ops" isExpanded={isExpanded} />
         )}
+
+        {canAccess(activeEmployee?.role, '/bar') && (
+          <NavItem to="/bar" icon={Wine} label="Bar System" isExpanded={isExpanded} />
+        )}
+
+        {canAccess(activeEmployee?.role, '/remote-order') && (
+          <NavItem to="/remote-order" icon={Smartphone} label="Remote Order" isExpanded={isExpanded} />
+        )}
         
         {canAccess(activeEmployee?.role, '/menu') && (
           <NavItem to="/menu" icon={MenuSquare} label="Asset Grid" isExpanded={isExpanded} />
