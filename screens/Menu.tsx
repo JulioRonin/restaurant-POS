@@ -3,19 +3,23 @@ import { useMenu } from '../contexts/MenuContext';
 import { MenuItem } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowCard } from '../components/ui/spotlight-card';
-import { 
-  Utensils, 
-  Plus, 
-  Upload, 
-  Search, 
-  Edit3, 
-  Trash2, 
-  CheckCircle, 
+import {
+  Utensils,
+  Plus,
+  Upload,
+  Search,
+  Edit3,
+  Trash2,
+  CheckCircle,
   XCircle,
   ChevronRight,
-  Coffee,
+  ToggleLeft,
+  ToggleRight,
+  Tag,
   Circle
 } from 'lucide-react';
+
+const BASE_CATEGORIES = ['Entradas', 'Plato Fuerte', 'Bebidas', 'Postres', 'Extras', 'Tacos', 'Tortas', 'General'];
 
 export const MenuScreen: React.FC = () => {
     const { menuItems, addItem, updateItem, deleteItem, toggleStatus, importCSV } = useMenu();
@@ -28,14 +32,20 @@ export const MenuScreen: React.FC = () => {
     const [importResult, setImportResult] = useState<{ count: number; errors: string[] } | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const importFileRef = useRef<HTMLInputElement>(null);
-    const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
 
-    const dynamicCategories = useMemo(() => {
-        const existing = Array.from(new Set(menuItems.map(item => item.category)));
-        const base = ['Entradas', 'Plato Fuerte', 'Bebidas', 'Postres', 'Extras', 'Tacos', 'Tortas'];
-        return Array.from(new Set(['All', ...base, ...existing]));
-    }, [menuItems]);
+    // Form state
+    const [formCategory, setFormCategory] = useState('General');
+    const [formStatus, setFormStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
+    const [isAddingNewCategory, setIsAddingNewCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [customCategories, setCustomCategories] = useState<string[]>([]);
+
+    const allCategories = useMemo(() => {
+        const fromItems = Array.from(new Set(menuItems.map(i => i.category).filter(Boolean)));
+        return Array.from(new Set([...BASE_CATEGORIES, ...customCategories, ...fromItems]));
+    }, [menuItems, customCategories]);
+
+    const dynamicCategories = useMemo(() => ['All', ...allCategories], [allCategories]);
 
     const filteredItems = useMemo(() => {
         return menuItems.filter(item => {
@@ -46,6 +56,26 @@ export const MenuScreen: React.FC = () => {
         });
     }, [menuItems, activeCategory, searchQuery]);
 
+    const handleOpenAdd = () => {
+        setEditingItem(null);
+        setImagePreview(null);
+        setFormCategory('General');
+        setFormStatus('ACTIVE');
+        setIsAddingNewCategory(false);
+        setNewCategoryName('');
+        setIsAddModalOpen(true);
+    };
+
+    const handleOpenEdit = (item: MenuItem) => {
+        setEditingItem(item);
+        setImagePreview(item.image || null);
+        setFormCategory(item.category || 'General');
+        setFormStatus((item.status as 'ACTIVE' | 'INACTIVE') || 'ACTIVE');
+        setIsAddingNewCategory(false);
+        setNewCategoryName('');
+        setIsAddModalOpen(true);
+    };
+
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -53,6 +83,37 @@ export const MenuScreen: React.FC = () => {
             reader.onloadend = () => setImagePreview(reader.result as string);
             reader.readAsDataURL(file);
         }
+    };
+
+    const handleSaveItem = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const formData = new FormData(e.currentTarget);
+        const finalCategory = isAddingNewCategory && newCategoryName.trim()
+            ? newCategoryName.trim()
+            : formCategory;
+
+        if (isAddingNewCategory && newCategoryName.trim() && !allCategories.includes(newCategoryName.trim())) {
+            setCustomCategories(prev => [...prev, newCategoryName.trim()]);
+        }
+
+        const data: Omit<MenuItem, 'id'> = {
+            name: formData.get('name') as string,
+            category: finalCategory,
+            price: parseFloat(formData.get('price') as string),
+            description: formData.get('description') as string,
+            gramaje: formData.get('gramaje') as string,
+            status: formStatus,
+            image: imagePreview || editingItem?.image || `https://picsum.photos/seed/${formData.get('name')}/400/300`,
+            inventoryLevel: 4
+        };
+
+        if (editingItem) {
+            updateItem(editingItem.id, data as Partial<MenuItem>);
+        } else {
+            addItem(data);
+        }
+        setIsAddModalOpen(false);
+        setEditingItem(null);
     };
 
     const handleImport = async () => {
@@ -64,195 +125,355 @@ export const MenuScreen: React.FC = () => {
         }
     };
 
-    const handleSaveItem = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-        const data = {
-            name: formData.get('name') as string,
-            category: formData.get('category') as string,
-            price: parseFloat(formData.get('price') as string),
-            description: formData.get('description') as string,
-            gramaje: formData.get('gramaje') as string,
-            status: (formData.get('status') as string) === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
-            image: imagePreview || (editingItem?.image) || `https://picsum.photos/seed/${formData.get('name')}/200`,
-            inventoryLevel: 4
-        };
-
-        if (editingItem) {
-            updateItem(editingItem.id, data as Partial<MenuItem>);
-        } else {
-            addItem(data as Omit<MenuItem, 'id'>);
-        }
-        setIsAddModalOpen(false);
-        setEditingItem(null);
-        setIsAddingNewCategory(false);
-    };
-
     return (
-        <div className="h-full w-full bg-solaris-black text-white p-6 md:p-10 overflow-y-auto antialiased">
-            <div className="max-w-7xl mx-auto w-full">
-                {/* Header */}
-                <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
-                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">Solaris Menu</h1>
-                        <p className="text-gray-600 font-bold text-[10px] uppercase tracking-[0.4em]">Gastronomical Asset Registry & Pricing Logic</p>
-                    </motion.div>
-                    <div className="flex gap-4">
-                        <button
-                            onClick={() => setIsImportModalOpen(true)}
-                            className="flex items-center gap-3 px-6 py-3 bg-white/[0.03] border border-white/5 text-gray-400 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/[0.05] transition-all"
-                        >
-                            <Upload size={16} /> Bulk Import
-                        </button>
-                        <button
-                            onClick={() => { setEditingItem(null); setImagePreview(null); setIsAddModalOpen(true); }}
-                            className="flex items-center gap-3 px-8 py-3 bg-solaris-orange text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-105 transition-all"
-                        >
-                            <Plus size={16} /> Register Asset
-                        </button>
-                    </div>
-                </header>
+        <div className="h-full w-full bg-solaris-black text-white flex flex-col overflow-hidden antialiased">
+            {/* Header */}
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center px-8 pt-8 pb-6 gap-4 shrink-0 border-b border-white/5">
+                <div>
+                    <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-1">Solaris Menu</h1>
+                    <p className="text-white/20 font-bold text-[10px] uppercase tracking-[0.4em]">Gastronomical Asset Registry & Pricing Logic</p>
+                </div>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="flex items-center gap-2 px-5 py-3 bg-white/[0.03] border border-white/5 text-white/30 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/[0.06] transition-all"
+                    >
+                        <Upload size={15} /> Bulk Import
+                    </button>
+                    <button
+                        onClick={handleOpenAdd}
+                        className="flex items-center gap-2 px-6 py-3 bg-solaris-orange text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-105 transition-all"
+                    >
+                        <Plus size={15} /> Register Asset
+                    </button>
+                </div>
+            </header>
 
-                {/* Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-                    <div className="md:col-span-3 bg-white/[0.02] border border-white/5 p-2 rounded-solaris flex items-center gap-4">
-                        <div className="flex-1 flex items-center gap-4 px-6 border-r border-white/5">
-                            <Search className="text-gray-600" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Search by name or technical spec..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-transparent border-none outline-none font-bold text-white text-sm"
-                            />
-                        </div>
-                        <div className="flex gap-1 overflow-x-auto p-1 max-w-full no-scrollbar">
-                            {dynamicCategories.map(cat => (
-                                <button
-                                    key={cat}
-                                    onClick={() => setActiveCategory(cat)}
-                                    className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeCategory === cat ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-gray-600 hover:text-gray-400'}`}
-                                >
-                                    {cat}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="bg-white/[0.02] border border-white/5 p-4 rounded-solaris flex items-center justify-between">
-                        <div>
-                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-700">Total Registry</p>
-                            <p className="text-2xl font-black italic text-solaris-orange">{menuItems.length}</p>
-                        </div>
-                        <Utensils className="text-gray-800" size={32} />
-                    </div>
+            {/* Filters Bar */}
+            <div className="px-8 py-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center shrink-0 border-b border-white/5">
+                {/* Search */}
+                <div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-2xl px-5 py-3 flex-1 max-w-sm">
+                    <Search className="text-white/20 shrink-0" size={16} />
+                    <input
+                        type="text"
+                        placeholder="Search by name..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className="bg-transparent outline-none text-white text-sm font-bold w-full placeholder:text-white/10"
+                    />
                 </div>
 
-                {/* Grid of Items (Replacing Table for better visual) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
-                    {filteredItems.map(item => (
-                        <motion.div key={item.id} layout>
-                            <GlowCard glowColor="orange" className={`relative group border !p-0 overflow-hidden ${item.status === 'ACTIVE' ? 'border-white/5' : 'border-red-500/10 opacity-60'}`}>
-                                <div className="h-48 overflow-hidden relative">
-                                    <img src={item.image} alt="" className="w-full h-full object-cover filter contrast-125 transition-transform duration-700 group-hover:scale-110" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
-                                    <div className="absolute top-4 right-4">
-                                        <button 
-                                            onClick={() => toggleStatus(item.id)}
-                                            className={`px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-2 border ${item.status === 'ACTIVE' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-red-500/10 text-red-500 border-red-500/20'}`}
-                                        >
-                                            <Circle size={8} fill="currentColor" /> {item.status}
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="p-6">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="text-lg font-black italic tracking-tight text-white uppercase">{item.name}</h3>
-                                        <span className="text-solaris-orange font-black italic text-lg">${item.price.toFixed(0)}</span>
-                                    </div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-6">{item.category}</p>
-                                    
-                                    <div className="bg-white/[0.03] border border-white/5 p-4 rounded-2xl mb-6">
-                                        <p className="text-[10px] text-gray-400 line-clamp-2 italic font-medium">"{item.description || 'No data recorded for this asset.'}"</p>
-                                    </div>
-
-                                    <div className="flex gap-2">
-                                        <button 
-                                            onClick={() => { setEditingItem(item); setImagePreview(item.image); setIsAddModalOpen(true); }}
-                                            className="flex-1 py-3 px-4 bg-white/[0.03] border border-white/5 text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2"
-                                        >
-                                            <Edit3 size={12} /> Mod.
-                                        </button>
-                                        <button 
-                                            onClick={() => { if(confirm('Erase asset from network?')) deleteItem(item.id); }}
-                                            className="px-4 bg-red-500/5 border border-red-500/10 text-red-500/60 hover:text-red-500 transition-all flex items-center justify-center rounded-xl"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </GlowCard>
-                        </motion.div>
+                {/* Category Pills */}
+                <div className="flex gap-2 overflow-x-auto no-scrollbar flex-wrap">
+                    {dynamicCategories.map(cat => (
+                        <button
+                            key={cat}
+                            onClick={() => setActiveCategory(cat)}
+                            className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
+                                activeCategory === cat
+                                    ? 'bg-solaris-orange text-white border-solaris-orange shadow-solaris-glow'
+                                    : 'bg-white/[0.03] text-white/30 border-white/5 hover:text-white hover:border-white/20'
+                            }`}
+                        >
+                            {cat}
+                        </button>
                     ))}
+                </div>
+
+                {/* Counter */}
+                <div className="shrink-0 ml-auto text-right">
+                    <p className="text-[9px] font-black uppercase text-white/20 tracking-widest">Total Registry</p>
+                    <p className="text-2xl font-black italic text-solaris-orange leading-tight">{menuItems.length}</p>
                 </div>
             </div>
 
-            {/* Modal Layer */}
-            <AnimatePresence>
-                {isAddModalOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-[#0a0a0b] border border-white/10 rounded-solaris w-full max-w-2xl overflow-hidden shadow-2xl">
-                            <form onSubmit={handleSaveItem}>
-                                <div className="p-8 md:p-12">
-                                    <div className="flex justify-between items-center mb-10">
-                                        <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">{editingItem ? 'Asset Recalibration' : 'New Menu Registry'}</h2>
-                                        <XCircle onClick={() => setIsAddModalOpen(false)} className="text-gray-700 hover:text-white cursor-pointer" size={32} />
+            {/* Items Grid */}
+            <div className="flex-1 overflow-y-auto no-scrollbar px-8 py-8">
+                {filteredItems.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-64 opacity-10">
+                        <Utensils size={64} className="mb-4" />
+                        <p className="text-[11px] font-black uppercase tracking-widest">No assets in registry</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-8">
+                        {filteredItems.map(item => (
+                            <motion.div key={item.id} layout>
+                                <div className={`group relative rounded-[28px] border overflow-hidden flex flex-col bg-[#0d0d0e] transition-all ${item.status === 'ACTIVE' ? 'border-white/[0.07]' : 'border-red-500/10 opacity-60'}`}>
+                                    {/* Image */}
+                                    <div className="h-44 relative overflow-hidden shrink-0">
+                                        <img
+                                            src={item.image}
+                                            alt={item.name}
+                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0e] via-transparent to-transparent" />
+                                        {/* Status toggle */}
+                                        <button
+                                            onClick={() => toggleStatus(item.id)}
+                                            className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 border transition-all ${
+                                                item.status === 'ACTIVE'
+                                                    ? 'bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30'
+                                                    : 'bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30'
+                                            }`}
+                                        >
+                                            <Circle size={7} fill="currentColor" />
+                                            {item.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                                        </button>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                        {/* Image Upload Area */}
-                                        <div className="space-y-4">
-                                            <div onClick={() => fileInputRef.current?.click()} className="group relative w-full aspect-square bg-white/[0.02] border-2 border-dashed border-white/10 rounded-solaris overflow-hidden cursor-pointer flex items-center justify-center transition-all hover:border-solaris-orange/40">
-                                                {imagePreview || editingItem?.image ? (
-                                                    <img src={imagePreview || editingItem?.image} alt="" className="w-full h-full object-cover filter contrast-125" />
-                                                ) : (
-                                                    <div className="text-center">
-                                                        <Plus className="mx-auto text-gray-700 mb-4 group-hover:text-solaris-orange transition-colors" size={40} />
-                                                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-gray-700">Upload Visual Data</p>
-                                                    </div>
-                                                )}
-                                                <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
-                                            </div>
-                                            <p className="text-[8px] font-black uppercase text-gray-800 tracking-[0.4em] text-center italic">Image Verification Buffer</p>
+                                    {/* Content */}
+                                    <div className="p-5 flex flex-col flex-1">
+                                        <div className="flex justify-between items-start mb-1">
+                                            <h3 className="font-black italic text-white uppercase tracking-tight text-base leading-tight flex-1 mr-2 truncate">{item.name}</h3>
+                                            <span className="text-solaris-orange font-black italic text-lg shrink-0">${item.price.toFixed(0)}</span>
                                         </div>
-
-                                        {/* Form Fields */}
-                                        <div className="space-y-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Functional Name</label>
-                                                <input name="name" defaultValue={editingItem?.name} required placeholder="Asset ID" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-solaris-orange/50 transition-all font-bold" />
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="space-y-2">
-                                                    <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Market Category</label>
-                                                    <input name="category" defaultValue={editingItem?.category || 'General'} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-5 text-white text-xs outline-none focus:border-solaris-orange/50 transition-all font-bold" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Asset Value ($)</label>
-                                                    <input name="price" type="number" step="0.01" defaultValue={editingItem?.price} required className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-5 text-white text-xs outline-none focus:border-solaris-orange/50 transition-all font-bold" />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Technical Specs</label>
-                                                <textarea name="description" defaultValue={editingItem?.description} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white text-xs outline-none focus:border-solaris-orange/50 transition-all font-medium h-32 resize-none" />
-                                            </div>
-                                            <button type="submit" className="w-full bg-solaris-orange text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-600 transition-all text-[11px] flex items-center justify-center gap-3">
-                                                Commit to Solaris Network
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-white/20 mb-4 flex items-center gap-1.5">
+                                            <Tag size={9} /> {item.category}
+                                        </p>
+                                        <div className="bg-white/[0.02] border border-white/5 p-3 rounded-2xl mb-4 flex-1">
+                                            <p className="text-[10px] text-white/30 line-clamp-2 italic font-medium leading-relaxed">
+                                                {item.description || 'No description recorded.'}
+                                            </p>
+                                        </div>
+                                        {/* Actions */}
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleOpenEdit(item)}
+                                                className="flex-1 py-2.5 bg-white/[0.04] border border-white/5 text-[9px] font-black uppercase tracking-widest text-white/30 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 rounded-xl"
+                                            >
+                                                <Edit3 size={12} /> Edit
+                                            </button>
+                                            <button
+                                                onClick={() => { if (confirm('Remove asset from registry?')) deleteItem(item.id); }}
+                                                className="px-4 bg-red-500/5 border border-red-500/10 text-red-500/40 hover:text-red-500 hover:bg-red-500/10 transition-all flex items-center justify-center rounded-xl"
+                                            >
+                                                <Trash2 size={14} />
                                             </button>
                                         </div>
                                     </div>
                                 </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* ── ADD / EDIT MODAL ── */}
+            <AnimatePresence>
+                {isAddModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[600] flex items-center justify-center bg-black/90 backdrop-blur-3xl p-4"
+                    >
+                        <div className="w-full max-w-3xl bg-[#0d0d0e] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: '92vh' }}>
+                            {/* Modal Header */}
+                            <div className="flex justify-between items-center px-10 py-7 border-b border-white/5 shrink-0">
+                                <div>
+                                    <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">
+                                        {editingItem ? 'Edit Asset' : 'New Menu Registry'}
+                                    </h2>
+                                    <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] mt-1 italic">
+                                        {editingItem ? `Recalibrating: ${editingItem.name}` : 'Register new gastronomical asset'}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setIsAddModalOpen(false)}
+                                    className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 transition-all"
+                                >
+                                    <XCircle size={22} />
+                                </button>
+                            </div>
+
+                            {/* Modal Body */}
+                            <form onSubmit={handleSaveItem} className="flex-1 overflow-y-auto no-scrollbar">
+                                <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-0">
+                                    {/* Left: Image upload */}
+                                    <div className="p-8 border-r border-white/5 flex flex-col items-center gap-4">
+                                        <div
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="w-full aspect-square bg-white/[0.02] border-2 border-dashed border-white/10 rounded-3xl overflow-hidden cursor-pointer flex items-center justify-center transition-all hover:border-solaris-orange/40 relative group"
+                                        >
+                                            {imagePreview ? (
+                                                <img src={imagePreview} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="text-center">
+                                                    <Plus className="mx-auto text-white/10 mb-3 group-hover:text-solaris-orange transition-colors" size={36} />
+                                                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/10 group-hover:text-white/30 transition-colors">Upload Image</p>
+                                                </div>
+                                            )}
+                                            <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
+                                        </div>
+                                        <p className="text-[8px] font-black uppercase text-white/10 tracking-[0.3em] text-center italic">Image Verification Buffer</p>
+
+                                        {/* Active/Inactive Toggle */}
+                                        <div className="w-full bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                                            <p className="text-[9px] font-black uppercase text-white/20 tracking-widest mb-3 italic">Status on POS</p>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormStatus('ACTIVE')}
+                                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-1.5 ${formStatus === 'ACTIVE' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-white/[0.02] text-white/20 border-white/5'}`}
+                                                >
+                                                    <Circle size={7} fill="currentColor" /> Active
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormStatus('INACTIVE')}
+                                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-1.5 ${formStatus === 'INACTIVE' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-white/[0.02] text-white/20 border-white/5'}`}
+                                                >
+                                                    <Circle size={7} fill="currentColor" /> Inactive
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Right: Form Fields */}
+                                    <div className="p-8 space-y-5">
+                                        {/* Name */}
+                                        <div>
+                                            <label className="text-[9px] font-black uppercase text-white/20 tracking-widest block mb-2">Dish Name *</label>
+                                            <input
+                                                name="name"
+                                                defaultValue={editingItem?.name}
+                                                required
+                                                placeholder="e.g. Corte New York"
+                                                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-white outline-none focus:border-solaris-orange/50 transition-all font-bold text-sm"
+                                            />
+                                        </div>
+
+                                        {/* Price + Gramaje */}
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[9px] font-black uppercase text-white/20 tracking-widest block mb-2">Price (MXN) *</label>
+                                                <input
+                                                    name="price"
+                                                    type="number"
+                                                    step="0.01"
+                                                    defaultValue={editingItem?.price}
+                                                    required
+                                                    placeholder="0.00"
+                                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-white text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-[9px] font-black uppercase text-white/20 tracking-widest block mb-2">Gramaje / Portion</label>
+                                                <input
+                                                    name="gramaje"
+                                                    defaultValue={editingItem?.gramaje}
+                                                    placeholder="e.g. 300g"
+                                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-white text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Category */}
+                                        <div>
+                                            <label className="text-[9px] font-black uppercase text-white/20 tracking-widest block mb-2">Category</label>
+                                            {!isAddingNewCategory ? (
+                                                <div className="flex gap-2">
+                                                    <select
+                                                        value={formCategory}
+                                                        onChange={e => setFormCategory(e.target.value)}
+                                                        className="flex-1 bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-white text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold appearance-none cursor-pointer"
+                                                    >
+                                                        {allCategories.map(cat => (
+                                                            <option key={cat} value={cat} className="bg-[#0d0d0e]">{cat}</option>
+                                                        ))}
+                                                    </select>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsAddingNewCategory(true)}
+                                                        className="px-4 bg-solaris-orange/10 border border-solaris-orange/20 text-solaris-orange rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-solaris-orange/20 transition-all whitespace-nowrap"
+                                                    >
+                                                        + New
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={newCategoryName}
+                                                        onChange={e => setNewCategoryName(e.target.value)}
+                                                        placeholder="New category name..."
+                                                        autoFocus
+                                                        className="flex-1 bg-white/[0.03] border border-solaris-orange/40 rounded-2xl py-4 px-5 text-white text-sm outline-none font-bold"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setIsAddingNewCategory(false)}
+                                                        className="px-4 bg-white/[0.03] border border-white/10 text-white/30 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:text-white transition-all"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Description */}
+                                        <div>
+                                            <label className="text-[9px] font-black uppercase text-white/20 tracking-widest block mb-2">Description</label>
+                                            <textarea
+                                                name="description"
+                                                defaultValue={editingItem?.description}
+                                                placeholder="Describe ingredients, preparation, allergens..."
+                                                rows={4}
+                                                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-white text-sm outline-none focus:border-solaris-orange/50 transition-all font-medium resize-none"
+                                            />
+                                        </div>
+
+                                        {/* Submit */}
+                                        <button
+                                            type="submit"
+                                            className="w-full bg-solaris-orange text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-500 active:scale-95 transition-all text-[11px] flex items-center justify-center gap-3"
+                                        >
+                                            <CheckCircle size={18} />
+                                            {editingItem ? 'Save Changes' : 'Add to Menu'}
+                                        </button>
+                                    </div>
+                                </div>
                             </form>
-                        </motion.div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* ── BULK IMPORT MODAL ── */}
+            <AnimatePresence>
+                {isImportModalOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[600] flex items-center justify-center bg-black/90 backdrop-blur-3xl p-4"
+                    >
+                        <div className="w-full max-w-2xl bg-[#0d0d0e] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden">
+                            <div className="flex justify-between items-center px-10 py-7 border-b border-white/5">
+                                <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Bulk Import CSV</h2>
+                                <button onClick={() => setIsImportModalOpen(false)} className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 transition-all">
+                                    <XCircle size={22} />
+                                </button>
+                            </div>
+                            <div className="p-10 space-y-6">
+                                <p className="text-[10px] text-white/30 font-black uppercase tracking-widest">Format: <span className="text-solaris-orange">name, category, price, description</span> (one per line)</p>
+                                <textarea
+                                    value={csvInput}
+                                    onChange={e => setCsvInput(e.target.value)}
+                                    placeholder={"Tacos de Carne, Tacos, 75, Tacos de carne asada\nEnsalada César, Entradas, 120, Lechuga romana, aderezo"}
+                                    rows={8}
+                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-white text-sm outline-none focus:border-solaris-orange/50 transition-all font-mono resize-none"
+                                />
+                                {importResult && (
+                                    <div className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest ${importResult.errors.length ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
+                                        {importResult.errors.length ? importResult.errors.join(', ') : `${importResult.count} assets imported successfully`}
+                                    </div>
+                                )}
+                                <button onClick={handleImport} className="w-full py-5 bg-solaris-orange text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all text-[11px]">
+                                    Execute Import
+                                </button>
+                            </div>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>

@@ -127,26 +127,38 @@ export const CashierScreen: React.FC = () => {
                 {orderToPrint && <Ticket order={orderToPrint} settings={settings} />}
                 {cashCutToPrint && <CashCutTicket {...cashCutToPrint} settings={settings} />}
             </div>
-
             <style>{`@media print { .no-print { display: none !important; } }`}</style>
 
+            {/* Bill Request Alert — integrated top banner, not fixed overlay */}
             <AnimatePresence>
                 {activeRequests.length > 0 && (
-                    <motion.div initial={{ y: -100 }} animate={{ y: 0 }} exit={{ y: -100 }} className="fixed top-6 left-1/2 -translate-x-1/2 z-[500] w-full max-w-xl px-4 no-print">
-                        <div 
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="no-print shrink-0 overflow-hidden"
+                    >
+                        <div
                             onClick={() => { setSelectedTableId(activeRequests[0].tableId); setActiveTab('tables'); }}
-                            className="bg-solaris-orange p-6 rounded-[28px] shadow-solaris-glow border border-white/20 flex items-center justify-between cursor-pointer group scale-100 hover:scale-[1.02] active:scale-95 transition-all"
+                            className="bg-solaris-orange px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-orange-500 transition-colors"
                         >
                             <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center animate-pulse"><Bell size={24} /></div>
+                                <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center animate-pulse shrink-0">
+                                    <Bell size={18} />
+                                </div>
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white">Bill Request Pipeline • Active Alert</p>
-                                    <p className="text-xl font-black italic uppercase italic tracking-tighter text-white">
-                                        NODE: {activeRequests.map(o => o.tableId).join(', ')}
+                                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/80">Bill Request Pipeline • Active Alert</p>
+                                    <p className="text-sm font-black italic uppercase tracking-tight text-white leading-tight">
+                                        Node: {activeRequests.map(o => o.tableId).join(', ')} — Cuenta solicitada
                                     </p>
                                 </div>
                             </div>
-                            <X onClick={(e) => { e.stopPropagation(); setDismissedBillRequests(prev => [...prev, ...activeRequests.map(r => r.id)]); }} size={24} className="text-white hover:scale-110 transition-transform" />
+                            <button
+                                onClick={e => { e.stopPropagation(); setDismissedBillRequests(prev => [...prev, ...activeRequests.map(r => r.id)]); }}
+                                className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center hover:bg-white/30 transition-all shrink-0"
+                            >
+                                <X size={18} />
+                            </button>
                         </div>
                     </motion.div>
                 )}
@@ -175,35 +187,35 @@ export const CashierScreen: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto px-8 pb-8 space-y-4">
+                    <div className="flex-1 overflow-y-auto px-8 pb-8 space-y-3 no-scrollbar">
                         {activeTab === 'tables' && TABLES.map(table => {
                              const order = orders.find(o => o.tableId === table.id && o.status !== 'COMPLETED');
                              const isRequested = order?.status === OrderStatus.BILL_REQUESTED;
                              const isSelected = selectedTableId === table.id;
                              return (
-                                <motion.div 
+                                <motion.div
                                     key={table.id}
                                     onClick={() => order && setSelectedTableId(table.id)}
-                                    className={`p-6 rounded-solaris border transition-all cursor-pointer group relative overflow-hidden ${isSelected ? 'bg-solaris-orange/10 border-solaris-orange shadow-solaris-glow' : order ? 'bg-white/[0.03] border-white/10 hover:border-white/20' : 'bg-transparent border-dashed border-white/5 opacity-30 cursor-default'}`}
+                                    className={`p-5 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden ${isSelected ? 'bg-solaris-orange/10 border-solaris-orange shadow-solaris-glow' : order ? 'bg-white/[0.03] border-white/10 hover:border-white/20' : 'bg-transparent border-dashed border-white/5 opacity-30 cursor-default'}`}
                                 >
                                     {isRequested && (
-                                        <div className="absolute top-0 right-0 bg-solaris-orange text-white px-4 py-1.5 text-[9px] font-black tracking-widest uppercase animate-pulse shadow-lg italic">
-                                            REQ_BILL_V2
+                                        <div className="absolute top-0 right-0 bg-solaris-orange text-white px-3 py-1 text-[8px] font-black tracking-widest uppercase animate-pulse italic">
+                                            REQ_BILL
                                         </div>
                                     )}
                                     <div className="flex justify-between items-end">
                                         <div>
-                                            <p className="text-xl font-black italic uppercase tracking-tighter text-white">{table.name}</p>
-                                            <p className="text-[8px] font-black uppercase text-solaris-orange/40 tracking-widest mt-1">{order ? `TX_ID: ${order.id.slice(0,6)}` : 'Node Idle'}</p>
+                                            <p className="text-lg font-black italic uppercase tracking-tighter text-white">{table.name}</p>
+                                            <p className="text-[8px] font-black uppercase text-solaris-orange/40 tracking-widest mt-0.5">{order ? `TX: ${order.id.slice(0,6)}` : 'Node Idle'}</p>
                                         </div>
-                                        {order && <p className="text-xl font-black italic text-solaris-orange tracking-tighter">${order.total.toFixed(0)}</p>}
+                                        {order && <p className="text-lg font-black italic text-solaris-orange tracking-tighter">${order.total.toFixed(0)}</p>}
                                     </div>
                                 </motion.div>
                              );
                         })}
-                        
+
                         {activeTab === 'delivery' && orders.filter(o => o.source && o.source !== OrderSource.DINE_IN && o.status !== 'COMPLETED').map(order => (
-                             <GlowCard key={order.id} onClick={() => setSelectedTableId(order.id)} className={`border cursor-pointer transition-all ${selectedTableId === order.id ? 'border-solaris-orange border-2' : 'border-white/5'}`}>
+                             <div key={order.id} onClick={() => setSelectedTableId(order.id)} className={`p-5 rounded-2xl border cursor-pointer transition-all ${selectedTableId === order.id ? 'border-solaris-orange bg-solaris-orange/10' : 'border-white/5 bg-white/[0.03] hover:border-white/20'}`}>
                                  <div className="flex justify-between items-start">
                                      <div>
                                          <p className="text-[10px] font-black uppercase text-solaris-orange tracking-widest mb-1 italic">{order.source}</p>
@@ -211,8 +223,79 @@ export const CashierScreen: React.FC = () => {
                                      </div>
                                      <p className="text-xl font-black italic text-white tracking-tighter">${order.total.toFixed(0)}</p>
                                  </div>
-                             </GlowCard>
+                             </div>
                         ))}
+
+                        {activeTab === 'expenses' && (
+                            <div className="space-y-4">
+                                {/* Add expense form */}
+                                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-3">
+                                    <p className="text-[9px] font-black uppercase text-solaris-orange/40 tracking-widest italic">Register Expense</p>
+                                    <input value={newExpenseDesc} onChange={e => setNewExpenseDesc(e.target.value)} placeholder="Description..." className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 px-4 text-white text-xs font-bold outline-none focus:border-solaris-orange/40" />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <input value={newExpenseAmount} onChange={e => setNewExpenseAmount(e.target.value)} type="number" placeholder="$0.00" className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 px-4 text-white text-xs font-bold outline-none focus:border-solaris-orange/40" />
+                                        <select value={newExpenseCategory} onChange={e => setNewExpenseCategory(e.target.value as any)} className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 px-4 text-white text-xs font-bold outline-none focus:border-solaris-orange/40 appearance-none">
+                                            {['Insumos','Renta','Servicios','Nómina','Mantenimiento','Otros'].map(c => <option key={c} value={c} className="bg-[#0d0d0e]">{c}</option>)}
+                                        </select>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            if (!newExpenseDesc || !newExpenseAmount) return;
+                                            addExpense({ description: newExpenseDesc, amount: parseFloat(newExpenseAmount), category: newExpenseCategory, date: newExpenseDate });
+                                            setNewExpenseDesc(''); setNewExpenseAmount('');
+                                        }}
+                                        className="w-full py-3 bg-solaris-orange text-white font-black uppercase tracking-widest text-[9px] rounded-xl shadow-solaris-glow hover:scale-[1.02] transition-all"
+                                    >
+                                        + Add Expense
+                                    </button>
+                                </div>
+                                {/* Expense list */}
+                                {expenses.map(exp => (
+                                    <div key={exp.id} className="flex justify-between items-center p-4 bg-white/[0.02] border border-white/5 rounded-xl group">
+                                        <div>
+                                            <p className="text-xs font-black italic text-white/80 uppercase tracking-tight">{exp.description}</p>
+                                            <p className="text-[9px] font-black uppercase text-white/20 tracking-widest">{exp.category}</p>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-black italic text-red-400 text-sm">${exp.amount.toFixed(2)}</span>
+                                            <button onClick={() => deleteExpense(exp.id)} className="text-red-500/20 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"><X size={14} /></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {activeTab === 'history' && (
+                            <div className="space-y-3">
+                                <div className="mb-2">
+                                    <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-2 px-4 text-white text-xs font-bold outline-none focus:border-solaris-orange/40" />
+                                </div>
+                                {/* Metrics */}
+                                <div className="grid grid-cols-3 gap-2 mb-3">
+                                    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 text-center">
+                                        <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Total</p>
+                                        <p className="text-sm font-black italic text-solaris-orange">${salesMetrics.totalRevenue.toFixed(0)}</p>
+                                    </div>
+                                    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 text-center">
+                                        <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Efectivo</p>
+                                        <p className="text-sm font-black italic text-green-400">${salesMetrics.cashSales.toFixed(0)}</p>
+                                    </div>
+                                    <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 text-center">
+                                        <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Tarjeta</p>
+                                        <p className="text-sm font-black italic text-blue-400">${salesMetrics.cardSales.toFixed(0)}</p>
+                                    </div>
+                                </div>
+                                {filteredByDateOrders.map(order => (
+                                    <div key={order.id} className="flex justify-between items-center p-4 bg-white/[0.02] border border-white/5 rounded-xl">
+                                        <div>
+                                            <p className="text-xs font-black italic text-white/80 uppercase tracking-tight">{order.tableId}</p>
+                                            <p className="text-[9px] font-black uppercase text-white/20 tracking-widest">{order.paymentMethod || 'N/A'} • {order.status}</p>
+                                        </div>
+                                        <span className={`font-black italic text-sm ${order.status === 'COMPLETED' ? 'text-green-400' : 'text-white/40'}`}>${order.total.toFixed(2)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
