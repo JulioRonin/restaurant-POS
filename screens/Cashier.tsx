@@ -219,86 +219,89 @@ export const CashierScreen: React.FC = () => {
                 {/* Main Content Area */}
                 <div className="flex-1 flex flex-col bg-[#030303] no-print relative">
                     {selectedOrder ? (
-                        <div className="h-full flex flex-col p-8 lg:p-12 overflow-y-auto custom-scrollbar">
-                            <div className="flex-1 space-y-12 pb-12">
-                                <GlowCard glowColor="orange" className="border border-white/5 bg-white/[0.01] !p-8">
-                                    <div className="flex justify-between items-end mb-8 pb-6 border-b border-white/5">
-                                        <div>
-                                            <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">Asset Summary</h2>
-                                            <p className="text-[9px] font-black uppercase text-solaris-orange/40 tracking-[0.3em] mt-2">Node: {selectedOrder.tableId} • OP: {selectedOrder.waiterName}</p>
-                                        </div>
-                                        <div className="flex gap-3">
-                                             <button onClick={() => printerService.openCashDrawer()} className="p-3 bg-white/[0.03] border border-white/5 rounded-xl text-white/20 hover:text-white hover:bg-white/[0.05] transition-all"><Zap size={20} /></button>
-                                             <button onClick={() => handlePrintTicket(selectedOrder)} className="p-3 bg-white/[0.03] border border-white/5 rounded-xl text-white/20 hover:text-white hover:bg-white/[0.05] transition-all"><Printer size={20} /></button>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4 max-h-[30vh] overflow-y-auto no-scrollbar pr-2">
-                                        {(selectedOrder.items || []).map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-center group">
-                                                <div className="flex items-center gap-6">
-                                                    <span className="w-10 h-10 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-[11px] font-black text-solaris-orange italic">{item.quantity}</span>
-                                                    <span className="font-black italic text-white/80 uppercase tracking-tight text-base group-hover:text-white transition-colors">{item.name}</span>
-                                                </div>
-                                                <span className="text-base font-black italic text-white/60 tracking-tighter">${(item.price * item.quantity).toFixed(0)}</span>
+                        <div className="h-full flex flex-col p-8 lg:p-10 overflow-hidden">
+                            <div className="flex-1 flex flex-col xl:flex-row gap-8 lg:gap-12 min-h-0 overflow-hidden">
+                                {/* Details Column */}
+                                <div className="flex-[4] flex flex-col gap-8 min-h-0">
+                                    <GlowCard glowColor="orange" className="border border-white/5 bg-white/[0.01] !p-8 flex flex-col min-h-0">
+                                        <div className="flex justify-between items-end mb-8 pb-6 border-b border-white/5 shrink-0">
+                                            <div>
+                                                <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">Asset Summary</h2>
+                                                <p className="text-[9px] font-black uppercase text-solaris-orange/40 tracking-[0.3em] mt-2">Node: {selectedOrder.tableId} • OP: {selectedOrder.waiterName}</p>
                                             </div>
-                                        ))}
-                                    </div>
-                                </GlowCard>
-
-                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-                                    <GlowCard className="bg-white/[0.01] border border-white/5 !p-10">
-                                        <h3 className="text-[11px] font-black uppercase text-solaris-orange/40 tracking-widest mb-8 px-2 italic">Quantum Split Protocol</h3>
-                                        <div className="flex flex-wrap gap-3 mb-10">
-                                            {[1, 2, 3, 4, 5, 6].map(num => (
-                                                <button key={num} onClick={() => setSplitCount(num)} className={`w-14 h-14 rounded-2xl font-black italic text-base transition-all ${splitCount === num ? 'bg-solaris-orange text-white shadow-solaris-glow scale-110' : 'bg-white/[0.03] text-white/20 border border-white/5 hover:text-white'}`}>{num}</button>
+                                            <div className="flex gap-3">
+                                                <button onClick={() => printerService.openCashDrawer()} className="p-3 bg-white/[0.03] border border-white/5 rounded-xl text-white/20 hover:text-white hover:bg-white/[0.05] transition-all"><Zap size={20} /></button>
+                                                <button onClick={() => handlePrintTicket(selectedOrder)} className="p-3 bg-white/[0.03] border border-white/5 rounded-xl text-white/20 hover:text-white hover:bg-white/[0.05] transition-all"><Printer size={20} /></button>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto no-scrollbar pr-2 space-y-4">
+                                            {(selectedOrder.items || []).map((item, idx) => (
+                                                <div key={idx} className="flex justify-between items-center group">
+                                                    <div className="flex items-center gap-6">
+                                                        <span className="w-10 h-10 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-[11px] font-black text-solaris-orange italic">{item.quantity}</span>
+                                                        <span className="font-black italic text-white/80 uppercase tracking-tight text-base group-hover:text-white transition-colors">{item.name}</span>
+                                                    </div>
+                                                    <span className="text-base font-black italic text-white/60 tracking-tighter">${(item.price * item.quantity).toFixed(0)}</span>
+                                                </div>
                                             ))}
                                         </div>
-                                        <p className="text-[9px] font-black uppercase text-solaris-orange/40 tracking-[0.3em] mb-2 italic">Per Packet Value</p>
-                                        <p className="text-4xl font-black italic text-white tracking-tighter">${(total / splitCount).toFixed(2)}</p>
                                     </GlowCard>
 
-                                    <GlowCard className="bg-white/[0.01] border border-white/5 !p-10">
-                                        <h3 className="text-[11px] font-black uppercase text-solaris-orange/40 tracking-widest mb-8 px-2 italic">Operator Gratuity</h3>
-                                        <div className="flex gap-3 mb-10">
-                                            {[10, 15, 20].map(pct => (
-                                                <button key={pct} onClick={() => setTipAmount(subtotal * (pct/100))} className={`flex-1 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${Math.abs(tipAmount - subtotal*(pct/100)) < 1 ? 'bg-white text-black' : 'bg-white/[0.03] text-white/20 border border-white/5'}`}>{pct}%</button>
-                                            ))}
+                                    <div className="grid grid-cols-2 gap-8 shrink-0">
+                                        <GlowCard className="bg-white/[0.01] border border-white/5 !p-8">
+                                            <h3 className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-widest mb-6 italic">Quantum Split</h3>
+                                            <div className="flex flex-wrap gap-2 mb-6">
+                                                {[1, 2, 3, 4].map(num => (
+                                                    <button key={num} onClick={() => setSplitCount(num)} className={`w-12 h-12 rounded-xl font-black italic text-sm transition-all ${splitCount === num ? 'bg-solaris-orange text-white' : 'bg-white/[0.03] text-white/20 border border-white/5 hover:text-white'}`}>{num}</button>
+                                                ))}
+                                            </div>
+                                            <p className="text-3xl font-black italic text-white tracking-tighter">${(total / splitCount).toFixed(2)}</p>
+                                        </GlowCard>
+
+                                        <GlowCard className="bg-white/[0.01] border border-white/5 !p-8">
+                                            <h3 className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-widest mb-6 italic">Operator Gratuity</h3>
+                                            <div className="flex gap-2 mb-6">
+                                                {[10, 15].map(pct => (
+                                                    <button key={pct} onClick={() => setTipAmount(subtotal * (pct/100))} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${Math.abs(tipAmount - subtotal*(pct/100)) < 1 ? 'bg-white text-black' : 'bg-white/[0.03] text-white/20 border border-white/5'}`}>{pct}%</button>
+                                                ))}
+                                            </div>
+                                            <p className="text-3xl font-black italic text-white tracking-tighter">${tipAmount.toFixed(2)}</p>
+                                        </GlowCard>
+                                    </div>
+                                </div>
+
+                                {/* Payout Column */}
+                                <div className="flex-[3] flex flex-col gap-8 shrink-0">
+                                    <GlowCard glowColor="orange" className="h-full border border-white/10 bg-white/[0.02] !p-10 rounded-[40px] shadow-2xl flex flex-col">
+                                        <div className="flex flex-col gap-6 mb-auto">
+                                            <div className="border-b border-white/5 pb-8">
+                                                <p className="text-[10px] font-black uppercase text-solaris-orange/50 tracking-[0.4em] mb-3 italic">Aggregate Payload</p>
+                                                <p className="text-7xl font-black italic tracking-tighter text-white uppercase italic leading-none">${total.toFixed(2)}</p>
+                                            </div>
+                                            
+                                            <div className="space-y-4">
+                                                <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-widest italic px-2">Injection Method</p>
+                                                <div className="space-y-4">
+                                                    <button onClick={() => setPaymentMethod(PaymentMethod.CASH)} className={`w-full py-6 rounded-3xl flex items-center justify-center gap-4 transition-all border-2 ${paymentMethod === PaymentMethod.CASH ? 'bg-white text-black border-white shadow-xl' : 'bg-transparent border-white/5 text-white/20'}`}>
+                                                        <Wallet size={20} /> <span className="text-[11px] font-black uppercase tracking-widest">Liquid Asset</span>
+                                                    </button>
+                                                    <button onClick={() => setPaymentMethod(PaymentMethod.CARD)} className={`w-full py-6 rounded-3xl flex items-center justify-center gap-4 transition-all border-2 ${paymentMethod === PaymentMethod.CARD ? 'bg-white text-black border-white shadow-xl' : 'bg-transparent border-white/5 text-white/20'}`}>
+                                                        <CreditCard size={20} /> <span className="text-[11px] font-black uppercase tracking-widest">Spectral Card</span>
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <p className="text-[9px] font-black uppercase text-solaris-orange/40 tracking-[0.3em] mb-2 italic">Gratuity Asset</p>
-                                        <p className="text-4xl font-black italic text-white tracking-tighter">${tipAmount.toFixed(2)}</p>
+
+                                        <div className="space-y-4 mt-8">
+                                            <button onClick={() => handlePrintTicket(selectedOrder)} className="w-full py-6 bg-white/[0.03] border border-white/10 text-white font-black italic uppercase tracking-[0.3em] text-lg rounded-[28px] hover:bg-white/[0.05] transition-all flex items-center justify-center gap-4">
+                                                <Printer size={24} /> Print Bill
+                                            </button>
+                                            <button onClick={() => setIsPaymentModalOpen(true)} className="w-full py-10 bg-solaris-orange text-white rounded-[28px] font-black italic uppercase tracking-[0.4em] text-2xl shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-6">
+                                                Settle Account <ArrowRight size={32} />
+                                            </button>
+                                        </div>
                                     </GlowCard>
                                 </div>
-                            </div>
-
-                            <div className="sticky bottom-0 bg-[#030303] pt-6 pb-2 flex gap-6 mt-auto z-20">
-                                <GlowCard glowColor="orange" className="flex-1 border border-white/10 bg-white/[0.02] !p-10 rounded-[40px] shadow-2xl">
-                                     <div className="flex justify-between items-center mb-8">
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase text-solaris-orange/50 tracking-[0.4em] mb-2 italic">Aggregate Payload</p>
-                                            <p className="text-5xl font-black italic tracking-tighter text-white uppercase italic leading-none">${total.toFixed(2)}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-[9px] text-emerald-500 font-black uppercase tracking-[0.2em] mb-1">Encrypted Chain</p>
-                                            <p className="text-[10px] text-white/20 font-bold italic">Verification COMPLETE_88</p>
-                                        </div>
-                                     </div>
-                                     <div className="grid grid-cols-2 gap-6 mb-8">
-                                         <button onClick={() => setPaymentMethod(PaymentMethod.CASH)} className={`py-6 rounded-3xl flex items-center justify-center gap-4 transition-all border-2 ${paymentMethod === PaymentMethod.CASH ? 'bg-white text-black border-white shadow-xl scale-[1.02]' : 'bg-transparent border-white/5 text-white/20'}`}>
-                                            <Wallet size={20} /> <span className="text-[11px] font-black uppercase tracking-widest">Liquid Asset</span>
-                                         </button>
-                                         <button onClick={() => setPaymentMethod(PaymentMethod.CARD)} className={`py-6 rounded-3xl flex items-center justify-center gap-4 transition-all border-2 ${paymentMethod === PaymentMethod.CARD ? 'bg-white text-black border-white shadow-xl scale-[1.02]' : 'bg-transparent border-white/5 text-white/20'}`}>
-                                            <CreditCard size={20} /> <span className="text-[11px] font-black uppercase tracking-widest">Spectral Card</span>
-                                         </button>
-                                     </div>
-                                     <div className="flex gap-4">
-                                         <button onClick={() => handlePrintTicket(selectedOrder)} className="flex-1 py-8 bg-white/[0.03] border border-white/10 text-white font-black italic uppercase tracking-[0.3em] text-lg rounded-[28px] hover:bg-white/[0.05] transition-all flex items-center justify-center gap-4">
-                                             <Printer size={24} /> Print Bill
-                                         </button>
-                                         <button onClick={() => setIsPaymentModalOpen(true)} className="flex-[2] py-8 bg-solaris-orange text-white rounded-[28px] font-black italic uppercase tracking-[0.4em] text-2xl shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-6">
-                                             Settle Account <ArrowRight size={32} />
-                                         </button>
-                                     </div>
-                                </GlowCard>
                             </div>
                         </div>
                     ) : (

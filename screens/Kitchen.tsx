@@ -67,13 +67,17 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
     const config = getSourceIcon(order.source);
 
     return (
-        <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col min-w-[320px] max-w-[320px] overflow-hidden group">
-            <div className="p-6 bg-white/[0.03] border-b border-white/5 flex justify-between items-start">
-                <div>
-                   <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white">{order.tableId}</h3>
-                   <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest mt-1">PKT: {order.id.slice(0, 8)}</p>
+        <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col min-w-[420px] max-w-[420px] overflow-hidden group">
+            <div className="p-8 bg-white/[0.03] border-b border-white/5 flex justify-between items-start gap-4">
+                <div className="min-w-0 flex-1">
+                   <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-tight break-all">
+                        {order.tableId.length > 15 ? `${order.tableId.slice(0, 10)}...` : order.tableId}
+                   </h3>
+                   <p className="text-[9px] font-black uppercase text-gray-700 tracking-widest mt-2 italic">PKT: {order.id.slice(0, 8)}</p>
                 </div>
-                <OrderTimer timestamp={order.timestamp} />
+                <div className="shrink-0 pt-1">
+                    <OrderTimer timestamp={order.timestamp} />
+                </div>
             </div>
 
             <div className="p-6 flex-1 space-y-4">

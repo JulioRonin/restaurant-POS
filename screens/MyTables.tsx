@@ -101,16 +101,16 @@ export const MyTablesScreen: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="p-10 flex-1 space-y-8">
-                                    <div className="bg-white/[0.01] rounded-[24px] p-6 border border-white/5 space-y-3 max-h-[180px] overflow-y-auto no-scrollbar">
+                                <div className="p-10 flex-1 flex flex-col min-h-0">
+                                    <div className="bg-white/[0.01] rounded-[24px] p-6 border border-white/5 space-y-3 h-52 overflow-y-auto no-scrollbar mb-8">
                                         {order.items.map((item, i) => (
                                             <div key={i} className="flex justify-between items-center text-[12px] border-b border-white/[0.02] pb-2 last:border-0 last:pb-0">
-                                                <span className="text-white font-black italic uppercase tracking-tight"><span className="text-solaris-orange mr-2">{item.quantity}</span> {item.name}</span>
-                                                <span className="font-black italic text-solaris-orange/60 tracking-tighter">${(item.price * item.quantity).toFixed(0)}</span>
+                                                <span className="text-white font-black italic uppercase tracking-tight truncate mr-2"><span className="text-solaris-orange mr-2">{item.quantity}</span> {item.name}</span>
+                                                <span className="font-black italic text-solaris-orange/60 tracking-tighter shrink-0">${(item.price * item.quantity).toFixed(0)}</span>
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="flex justify-between items-end px-2">
+                                    <div className="flex justify-between items-end px-2 mt-auto">
                                         <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-1 italic">Accumulated Yield</p>
                                         <p className="text-4xl font-black italic text-solaris-orange tracking-tighter leading-none">${order.total.toFixed(0)}</p>
                                     </div>
