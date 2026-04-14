@@ -416,7 +416,7 @@ export const CashierScreen: React.FC = () => {
 
                             {/* ── CENTER CONSOLE: The Asset & Adjustment Hub ── */}
                             <div className="flex-[6] flex flex-col gap-6 min-h-0">
-                                <GlowCard glowColor="orange" className="flex-1 border border-white/10 bg-white/[0.01] !p-0 rounded-[40px] shadow-2xl flex flex-col overflow-hidden">
+                                <GlowCard glowColor="orange" customSize className="w-full h-full border border-white/10 bg-white/[0.01] !p-0 rounded-[40px] shadow-2xl flex flex-col overflow-hidden">
                                     {/* Console Header: Title & Adjustments Unified */}
                                     <div className="px-10 py-8 border-b border-white/5 bg-white/[0.01] shrink-0">
                                         <div className="flex justify-between items-center mb-10">
@@ -495,7 +495,7 @@ export const CashierScreen: React.FC = () => {
 
                             {/* ── RIGHT COLUMN: The Settlement Panel ── */}
                             <div className="flex-[4] flex flex-col min-h-0">
-                                <GlowCard glowColor="orange" className="flex-1 border border-white/10 bg-white/[0.02] !p-10 rounded-[48px] shadow-solaris-glow flex flex-col overflow-hidden">
+                                <GlowCard glowColor="orange" customSize className="w-full h-full border border-white/10 bg-white/[0.02] !p-10 rounded-[48px] shadow-solaris-glow flex flex-col overflow-hidden">
                                     <div className="flex-1 flex flex-col min-h-0">
                                         {/* Payload Display */}
                                         <div className="mb-12">
