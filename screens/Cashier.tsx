@@ -165,8 +165,8 @@ export const CashierScreen: React.FC = () => {
             </AnimatePresence>
 
             <div className="flex-1 flex overflow-hidden">
-                {/* Left Navigation Panel */}
-                <div className="w-1/3 border-r border-white/5 flex flex-col no-print bg-[#030303]/50">
+                {/* Left Navigation Panel — Reduced width for more workspace */}
+                <div className="w-80 border-r border-white/5 flex flex-col no-print bg-[#030303]/50 shrink-0">
                     <div className="p-8 space-y-8">
                         <div>
                            <h1 className="text-3xl font-black italic tracking-tighter uppercase mb-2">Terminal Ops</h1>
@@ -415,7 +415,7 @@ export const CashierScreen: React.FC = () => {
                         <div className="h-full flex p-8 gap-8 overflow-hidden">
 
                             {/* ── CENTER CONSOLE: The Asset & Adjustment Hub ── */}
-                            <div className="flex-[6.5] flex flex-col gap-6 min-h-0">
+                            <div className="flex-[6] flex flex-col gap-6 min-h-0">
                                 <GlowCard glowColor="orange" className="flex-1 border border-white/10 bg-white/[0.01] !p-0 rounded-[40px] shadow-2xl flex flex-col overflow-hidden">
                                     {/* Console Header: Title & Adjustments Unified */}
                                     <div className="px-10 py-8 border-b border-white/5 bg-white/[0.01] shrink-0">
@@ -459,13 +459,16 @@ export const CashierScreen: React.FC = () => {
                                     <div className="flex-1 overflow-y-auto no-scrollbar p-10 space-y-4">
                                         <p className="text-[10px] font-black uppercase text-solaris-orange tracking-[0.5em] mb-6 italic">Verified Items Manifest</p>
                                         {(selectedOrder.items || []).map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-center py-6 px-8 bg-white/[0.015] rounded-[24px] border border-white/5 group hover:border-solaris-orange/20 hover:bg-white/[0.03] transition-all">
-                                                <div className="flex items-center gap-6">
-                                                    <span className="text-2xl font-black italic text-solaris-orange/40 group-hover:text-solaris-orange transition-colors">{item.quantity}</span>
+                                            <div key={idx} className="flex justify-between items-center py-6 px-10 bg-white/[0.015] rounded-[32px] border border-white/5 group hover:border-solaris-orange/20 hover:bg-white/[0.03] transition-all">
+                                                <div className="flex items-center gap-8 flex-1">
+                                                    <span className="text-2xl font-black italic text-solaris-orange/40 group-hover:text-solaris-orange transition-colors min-w-[1.5em]">{item.quantity}</span>
                                                     <div className="w-px h-8 bg-white/10" />
-                                                    <span className="font-black italic text-white/90 uppercase tracking-tight text-xl">{item.name}</span>
+                                                    <span className="font-black italic text-white/90 uppercase tracking-tight text-xl truncate pr-4">{item.name}</span>
                                                 </div>
-                                                <span className="text-xl font-black italic text-white/40 tracking-tighter">${(item.price * item.quantity).toFixed(0)}</span>
+                                                <div className="flex items-end flex-col">
+                                                    <p className="text-[9px] font-black uppercase text-white/10 tracking-[0.3em] mb-1">Asset Value</p>
+                                                    <span className="text-2xl font-black italic text-white/40 tracking-tighter">${(item.price * item.quantity).toFixed(0)}</span>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -491,7 +494,7 @@ export const CashierScreen: React.FC = () => {
                             </div>
 
                             {/* ── RIGHT COLUMN: The Settlement Panel ── */}
-                            <div className="flex-[3.5] flex flex-col min-h-0">
+                            <div className="flex-[4] flex flex-col min-h-0">
                                 <GlowCard glowColor="orange" className="flex-1 border border-white/10 bg-white/[0.02] !p-10 rounded-[48px] shadow-solaris-glow flex flex-col overflow-hidden">
                                     <div className="flex-1 flex flex-col min-h-0">
                                         {/* Payload Display */}
