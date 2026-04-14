@@ -12,6 +12,7 @@ import { printerService } from '../services/PrinterService';
 import { bluetoothTerminalService } from '../services/BluetoothTerminalService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowCard } from '../components/ui/spotlight-card';
+import { GlowButton } from '../components/ui/glow-button';
 import { 
   CreditCard, 
   Wallet, 
@@ -530,30 +531,33 @@ export const CashierScreen: React.FC = () => {
                                             )}
                                         </div>
 
-                                        {/* Injection Selection */}
                                         <div className="flex-1 space-y-4">
                                             <p className="text-[10px] font-black uppercase text-white/20 tracking-widest italic mb-6">Execution Method</p>
-                                            <button onClick={() => setPaymentMethod(PaymentMethod.CASH)}
-                                                className={`w-full py-8 rounded-[32px] flex items-center justify-center gap-6 transition-all border-2 ${paymentMethod === PaymentMethod.CASH ? 'bg-white text-black border-white shadow-2xl scale-[1.02]' : 'bg-transparent border-white/5 text-white/20 hover:border-white/20 hover:text-white/40'}`}
+                                            <GlowButton 
+                                                onClick={() => setPaymentMethod(PaymentMethod.CASH)}
+                                                variant={paymentMethod === PaymentMethod.CASH ? 'primary' : 'secondary'}
+                                                className="w-full py-8 rounded-[32px] flex items-center justify-center gap-6"
                                             >
                                                 <Wallet size={28} /> <span className="text-sm font-black uppercase tracking-widest">Liquid Asset</span>
-                                            </button>
-                                            <button onClick={() => setPaymentMethod(PaymentMethod.CARD)}
-                                                className={`w-full py-8 rounded-[32px] flex items-center justify-center gap-6 transition-all border-2 ${paymentMethod === PaymentMethod.CARD ? 'bg-white text-black border-white shadow-2xl scale-[1.02]' : 'bg-transparent border-white/5 text-white/20 hover:border-white/20 hover:text-white/40'}`}
+                                            </GlowButton>
+                                            <GlowButton 
+                                                onClick={() => setPaymentMethod(PaymentMethod.CARD)}
+                                                variant={paymentMethod === PaymentMethod.CARD ? 'primary' : 'secondary'}
+                                                className="w-full py-8 rounded-[32px] flex items-center justify-center gap-6"
                                             >
                                                 <CreditCard size={28} /> <span className="text-sm font-black uppercase tracking-widest">Spectral Card</span>
-                                            </button>
+                                            </GlowButton>
                                         </div>
                                     </div>
 
                                     {/* Action Vector */}
                                     <div className="space-y-4 pt-10 border-t border-white/5">
-                                        <button
+                                        <GlowButton
                                             onClick={() => setIsPaymentModalOpen(true)}
-                                            className="w-full py-12 bg-solaris-orange text-white rounded-[40px] font-black italic uppercase tracking-[0.4em] text-3xl shadow-solaris-glow hover:scale-[1.03] active:scale-95 transition-all flex items-center justify-center gap-8 group"
+                                            className="w-full py-12 rounded-[40px] tracking-[0.4em] text-3xl flex items-center justify-center gap-8 group"
                                         >
                                             Execute <ArrowRight size={40} className="group-hover:translate-x-2 transition-transform" />
-                                        </button>
+                                        </GlowButton>
                                     </div>
                                 </GlowCard>
                             </div>
@@ -651,32 +655,30 @@ export const CashierScreen: React.FC = () => {
 
                                         <div className="space-y-3 pt-2">
                                             <p className="text-[9px] font-black uppercase text-white/20 tracking-widest italic">Payment Method</p>
-                                            <button
+                                            <GlowButton
                                                 onClick={() => setPaymentMethod(PaymentMethod.CASH)}
-                                                className={`w-full py-4 rounded-2xl flex items-center justify-center gap-3 border-2 font-black italic uppercase text-[11px] tracking-widest transition-all ${paymentMethod === PaymentMethod.CASH ? 'bg-white text-black border-white' : 'bg-transparent border-white/5 text-white/30'}`}
+                                                variant={paymentMethod === PaymentMethod.CASH ? 'primary' : 'secondary'}
+                                                className="w-full"
                                             >
                                                 <Wallet size={18} /> Liquid Asset
-                                            </button>
-                                            <button
+                                            </GlowButton>
+                                            <GlowButton
                                                 onClick={() => setPaymentMethod(PaymentMethod.CARD)}
-                                                className={`w-full py-4 rounded-2xl flex items-center justify-center gap-3 border-2 font-black italic uppercase text-[11px] tracking-widest transition-all ${paymentMethod === PaymentMethod.CARD ? 'bg-white text-black border-white' : 'bg-transparent border-white/5 text-white/30'}`}
+                                                variant={paymentMethod === PaymentMethod.CARD ? 'primary' : 'secondary'}
+                                                className="w-full"
                                             >
                                                 <CreditCard size={18} /> Spectral Card
-                                            </button>
+                                            </GlowButton>
                                         </div>
                                     </div>
 
-                                    <button
+                                    <GlowButton
                                         onClick={handleProcessPayment}
                                         disabled={paymentMethod === PaymentMethod.CASH && (parseFloat(cashReceived) || 0) < (total / splitCount)}
-                                        className={`w-full py-7 font-black italic uppercase tracking-[0.3em] text-lg rounded-2xl shadow-solaris-glow transition-all flex items-center justify-center gap-4 ${
-                                            paymentMethod === PaymentMethod.CASH && (parseFloat(cashReceived) || 0) < (total / splitCount)
-                                            ? 'bg-white/5 text-white/10 cursor-not-allowed shadow-none'
-                                            : 'bg-solaris-orange text-white hover:scale-[1.02] active:scale-95'
-                                        }`}
+                                        className="w-full py-7 tracking-[0.3em] text-lg"
                                     >
                                         <CheckCircle2 size={24} /> Confirm Transmission
-                                    </button>
+                                    </GlowButton>
                                 </div>
                             </div>
                         </div>
