@@ -75,28 +75,51 @@ export const CashierScreen: React.FC = () => {
 
     const handleProcessPayment = async () => {
         if (!selectedOrder) return;
+        
+        const splitAmount = total / splitCount;
+        const actualCash = parseFloat(cashReceived) || splitAmount;
+        
+        // Prevent processing if cash received is less than amount due for this split
+        if (paymentMethod === PaymentMethod.CASH && actualCash < splitAmount) {
+            alert("El monto recibido no puede ser menor al total a pagar.");
+            return;
+        }
+
         if (paymentMethod === PaymentMethod.CARD && settings.isTerminalEnabled) {
             setIsProcessingTerminal(true);
-            await bluetoothTerminalService.simulateTransaction(total / splitCount, (step) => setTerminalStep(step));
+            await bluetoothTerminalService.simulateTransaction(splitAmount, (step) => setTerminalStep(step));
             setIsProcessingTerminal(false);
         }
-        const splitAmount = total / splitCount;
+
         const currentPaidSplits = (selectedOrder.paidSplits || 0) + 1;
         const isFullyPaid = currentPaidSplits >= splitCount;
+        
         const updatedOrder: Order = {
             ...selectedOrder,
             status: isFullyPaid ? OrderStatus.COMPLETED : OrderStatus.PENDING,
             paymentStatus: isFullyPaid ? PaymentStatus.PAID : PaymentStatus.PARTIAL,
             paymentMethod,
-            receivedAmount: (selectedOrder.receivedAmount || 0) + splitAmount,
+            receivedAmount: actualCash, // Store what was actually given
+            changeAmount: paymentMethod === PaymentMethod.CASH ? actualCash - splitAmount : 0, 
             paidSplits: currentPaidSplits,
             timestamp: new Date()
         };
+
         updateOrderStatus(selectedOrder.id, updatedOrder.status, updatedOrder);
-        if ((paymentMethod === PaymentMethod.CASH || paymentMethod === PaymentMethod.MIXED) && settings.isCashDrawerEnabled) await printerService.openCashDrawer();
+        
+        if ((paymentMethod === PaymentMethod.CASH || paymentMethod === PaymentMethod.MIXED) && settings.isCashDrawerEnabled) {
+            await printerService.openCashDrawer();
+        }
+
+        // Print ticket with the breakdown for the CURRENT payment
         await handlePrintTicket({ ...updatedOrder, total: splitAmount } as Order);
+        
         setSuccessMessage(isFullyPaid ? "TRANSACTION_COMPLETE" : "PARTIAL_PAYMENT_LOGGED");
-        setTimeout(() => { setSuccessMessage(null); if (isFullyPaid) setSelectedTableId(null); }, 3000);
+        setTimeout(() => { 
+            setSuccessMessage(null); 
+            if (isFullyPaid) setSelectedTableId(null); 
+        }, 3000);
+        
         setIsPaymentModalOpen(false);
         setCashReceived('');
     };
@@ -645,7 +668,12 @@ export const CashierScreen: React.FC = () => {
 
                                     <button
                                         onClick={handleProcessPayment}
-                                        className="w-full py-7 bg-solaris-orange text-white font-black italic uppercase tracking-[0.3em] text-lg rounded-2xl shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-4"
+                                        disabled={paymentMethod === PaymentMethod.CASH && (parseFloat(cashReceived) || 0) < (total / splitCount)}
+                                        className={`w-full py-7 font-black italic uppercase tracking-[0.3em] text-lg rounded-2xl shadow-solaris-glow transition-all flex items-center justify-center gap-4 ${
+                                            paymentMethod === PaymentMethod.CASH && (parseFloat(cashReceived) || 0) < (total / splitCount)
+                                            ? 'bg-white/5 text-white/10 cursor-not-allowed shadow-none'
+                                            : 'bg-solaris-orange text-white hover:scale-[1.02] active:scale-95'
+                                        }`}
                                     >
                                         <CheckCircle2 size={24} /> Confirm Transmission
                                     </button>
