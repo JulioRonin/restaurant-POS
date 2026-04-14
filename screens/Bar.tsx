@@ -43,20 +43,28 @@ const BarTimer: React.FC<{ timestamp: Date }> = ({ timestamp }) => {
     );
 };
 
-const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string) => void }> = ({ order, items, onComplete }) => (
-    <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col min-w-[340px] max-w-[400px] overflow-hidden">
+const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string) => void }> = ({ order, items, onComplete }) => {
+    const isUUID = /^[0-9a-f]{8}-/i.test(order.tableId);
+    const tableLabel = isUUID
+        ? `Mesa #${order.id.slice(0, 6).toUpperCase()}`
+        : order.tableId.length > 14
+            ? `${order.tableId.slice(0, 12)}…`
+            : order.tableId;
+
+    return (
+    <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col min-w-[320px] max-w-[360px] overflow-hidden">
         {/* Header */}
-        <div className="p-6 bg-white/[0.03] border-b border-white/5 flex justify-between items-start gap-4">
+        <div className="p-5 bg-white/[0.03] border-b border-white/5 flex justify-between items-start gap-4">
             <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1">
                     <Wine size={12} className="text-blue-400 shrink-0" />
                     <span className="text-[9px] font-black uppercase tracking-widest text-blue-400/60">Bar Order</span>
                 </div>
-                <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-tight">
-                    {order.tableId}
+                <h3 className="text-xl font-black italic uppercase tracking-tighter text-white leading-tight">
+                    {tableLabel}
                 </h3>
                 <p className="text-[9px] font-black uppercase text-white/20 tracking-widest mt-1 italic">
-                    PKT: {order.id.slice(0, 8)}
+                    PKT: {order.id.slice(0, 8).toUpperCase()}
                 </p>
             </div>
             <div className="shrink-0 pt-1">
@@ -65,7 +73,7 @@ const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string)
         </div>
 
         {/* Items */}
-        <div className="p-5 flex-1 space-y-3">
+        <div className="p-4 space-y-2.5 overflow-y-auto no-scrollbar" style={{ maxHeight: '38vh' }}>
             {items.map((item, idx) => (
                 <div key={idx} className="space-y-1">
                     <div className="flex items-center gap-3 bg-white/[0.02] p-3 rounded-2xl border border-white/5">
@@ -85,16 +93,17 @@ const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string)
         </div>
 
         {/* Complete button */}
-        <div className="p-5 border-t border-white/5">
+        <div className="p-4 border-t border-white/5 mt-auto">
             <button
                 onClick={() => onComplete(order.id)}
-                className="w-full py-5 bg-blue-500 text-white font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-lg shadow-blue-500/20 hover:scale-[1.02] hover:bg-blue-400 active:scale-95 transition-all flex items-center justify-center gap-3"
+                className="w-full py-4 bg-blue-500 text-white font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-lg shadow-blue-500/20 hover:scale-[1.02] hover:bg-blue-400 active:scale-95 transition-all flex items-center justify-center gap-3"
             >
-                <Wine size={20} /> Bebidas Listas
+                <Wine size={18} /> Bebidas Listas
             </button>
         </div>
     </GlowCard>
-);
+    );
+};
 
 export const BarScreen: React.FC = () => {
     const { orders, updateOrderStatus } = useOrders();

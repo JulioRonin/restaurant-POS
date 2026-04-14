@@ -59,10 +59,18 @@ const OrderTimer: React.FC<{ timestamp: Date }> = ({ timestamp }) => {
 const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ order, onComplete }) => {
     const isDineIn = !order.source || order.source === OrderSource.DINE_IN;
 
+    // Smart table label: if tableId looks like a UUID, shorten it
+    const isUUID = /^[0-9a-f]{8}-/i.test(order.tableId);
+    const tableLabel = isUUID
+        ? `Mesa #${order.id.slice(0, 6).toUpperCase()}`
+        : order.tableId.length > 14
+            ? `${order.tableId.slice(0, 12)}…`
+            : order.tableId;
+
     return (
-        <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col w-[360px] max-w-[380px] overflow-hidden group">
+        <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col min-w-[320px] max-w-[360px] overflow-hidden group">
             {/* Header */}
-            <div className="p-6 bg-white/[0.03] border-b border-white/5 flex justify-between items-start gap-4">
+            <div className="p-5 bg-white/[0.03] border-b border-white/5 flex justify-between items-start gap-4">
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
                         {isDineIn
@@ -73,18 +81,20 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
                             {isDineIn ? 'Comedor' : (order.source || 'Delivery')}
                         </span>
                     </div>
-                    <h3 className="text-2xl font-black italic uppercase tracking-tighter text-white leading-tight break-all">
-                        {order.tableId.length > 15 ? `${order.tableId.slice(0, 12)}...` : order.tableId}
+                    <h3 className="text-xl font-black italic uppercase tracking-tighter text-white leading-tight">
+                        {tableLabel}
                     </h3>
-                    <p className="text-[9px] font-black uppercase text-white/20 tracking-widest mt-1 italic">PKT: {order.id.slice(0, 8)}</p>
+                    <p className="text-[9px] font-black uppercase text-white/20 tracking-widest mt-1 italic">
+                        PKT: {order.id.slice(0, 8).toUpperCase()}
+                    </p>
                 </div>
                 <div className="shrink-0 pt-1">
                     <OrderTimer timestamp={order.timestamp} />
                 </div>
             </div>
 
-            {/* Items — scrollable so button is always visible */}
-            <div className="p-5 space-y-3 overflow-y-auto no-scrollbar" style={{ maxHeight: '40vh' }}>
+            {/* Items — scrollable with bounded height so button stays visible */}
+            <div className="p-4 space-y-2.5 overflow-y-auto no-scrollbar" style={{ maxHeight: '38vh' }}>
                 {order.items.map((item, idx) => (
                     <div key={idx} className="space-y-1">
                         <div className="flex items-center gap-3 bg-white/[0.02] p-3 rounded-2xl border border-white/5">
@@ -103,13 +113,13 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
                 ))}
             </div>
 
-            {/* Complete button — always visible and prominent */}
-            <div className="p-5 border-t border-white/5">
+            {/* Complete button — always visible at bottom */}
+            <div className="p-4 border-t border-white/5 mt-auto">
                 <button
                     onClick={() => onComplete(order.id)}
-                    className="w-full py-5 bg-solaris-orange text-white font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] hover:bg-orange-500 active:scale-95 transition-all flex items-center justify-center gap-3"
+                    className="w-full py-4 bg-solaris-orange text-white font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] hover:bg-orange-500 active:scale-95 transition-all flex items-center justify-center gap-3"
                 >
-                    <CheckCircle2 size={20} /> Pedido Listo
+                    <CheckCircle2 size={18} /> Pedido Listo
                 </button>
             </div>
         </GlowCard>
