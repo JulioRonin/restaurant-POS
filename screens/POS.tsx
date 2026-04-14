@@ -240,7 +240,7 @@ export const POSScreen: React.FC = () => {
                                     <span className="text-xs font-black italic text-solaris-orange tracking-widest">${item.price.toFixed(0)}</span>
                                 </div>
                            </div>
-                        </GlowCard>
+                        </div>
                     </motion.div>
                 ))}
             </div>
@@ -359,7 +359,7 @@ export const POSScreen: React.FC = () => {
       <AnimatePresence>
         {showSuccessModal && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-xl">
-                <GlowCard glowColor="orange" className="!p-16 flex flex-col items-center text-center bg-[#0a0a0b] border border-white/10 rounded-solaris shadow-2xl">
+                <div className="w-full max-w-md bg-[#0a0a0b] border border-white/10 rounded-[40px] p-16 flex flex-col items-center text-center shadow-2xl">
                     <motion.div animate={{ scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] }} transition={{ duration: 0.5 }} className="w-28 h-28 bg-solaris-orange rounded-full flex items-center justify-center mb-10 shadow-solaris-glow">
                         <CheckCircle2 size={56} className="text-white" />
                     </motion.div>
