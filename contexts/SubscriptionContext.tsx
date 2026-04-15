@@ -57,7 +57,9 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
       if (!fError) {
         const activeKeys = featureData
           .filter((bf: any) => bf.enabled)
-          .map((bf: any) => bf.features.key);
+          .map((bf: any) => bf.features?.key)
+          .filter(Boolean);
+        console.log('[SubscriptionContext] Active Features:', activeKeys);
         setEnabledFeatures(activeKeys);
       }
 

@@ -198,8 +198,17 @@ export const DashboardScreen: React.FC = () => {
                         >
                             <option value="Weekly" className="bg-[#0a0a0b]">Weekly</option>
                             <option value="Monthly" className="bg-[#0a0a0b]">Monthly</option>
-                            <option value="SpecificDay" className="bg-[#0a0a0b]">Filter by Day</option>
+                            <option value="SpecificDay" className="bg-[#0a0a0b]">Specific Day</option>
+                            <option value="SpecificMonth" className="bg-[#0a0a0b]">Specific Month</option>
                         </select>
+                        {(timeRange === 'SpecificDay' || timeRange === 'SpecificMonth') && (
+                            <input 
+                                type={timeRange === 'SpecificDay' ? 'date' : 'month'}
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                className="bg-white/5 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer hover:bg-white/[0.08] transition-all"
+                            />
+                        )}
                         <select
                             value={selectedCategory}
                             onChange={(e) => setSelectedCategory(e.target.value)}

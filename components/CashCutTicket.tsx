@@ -78,39 +78,41 @@ export const CashCutTicket: React.FC<CashCutTicketProps> = ({
         </div>
       </div>
 
-      {/* Detailed Orders List */}
+      {/* Consolidated Items Summary (Ventas por Platillo) */}
       <div className="mb-6">
-        <div className="text-center font-bold mb-2 p-1 bg-gray-100 uppercase text-[10px]">Detalle de Ventas</div>
+        <div className="text-center font-bold mb-2 p-1 bg-gray-100 uppercase text-[10px]">Resumen de Platillos Vendidos</div>
         <div className="flex font-bold border-b border-black mb-1 text-[10px] uppercase">
-          <span className="w-12 shrink-0">ID</span>
-          <span className="flex-1 px-1">MESA/REF</span>
+          <span className="w-8 shrink-0">CANT</span>
+          <span className="flex-1 px-1">PLATILLO</span>
           <span className="w-16 shrink-0 text-right">MONTO</span>
         </div>
-        {orders.map((order, idx) => (
-          <div key={idx} className="flex flex-col border-b border-gray-100 py-2 mb-1">
-            <div className="flex items-start">
-                <span className="w-12 shrink-0 font-bold uppercase">#{order.id.slice(-4)}</span>
-                <span className="flex-1 px-1 uppercase font-bold break-words text-[10px] leading-tight flex-wrap">
-                    {order.tableId || 'VENTA'}
-                </span>
-                <span className="w-16 shrink-0 text-right font-bold">${order.total.toFixed(2)}</span>
+        {(() => {
+          // Consolidate items across all orders
+          const consolidated: Record<string, { quantity: number; amount: number }> = {};
+          orders.forEach(order => {
+            if (order.status === 'COMPLETED' || order.status === 'PAID') {
+              (order.items || []).forEach(item => {
+                if (!consolidated[item.name]) consolidated[item.name] = { quantity: 0, amount: 0 };
+                consolidated[item.name].quantity += item.quantity;
+                consolidated[item.name].amount += item.quantity * item.price;
+              });
+            }
+          });
+
+          return Object.entries(consolidated).sort((a, b) => b[1].quantity - a[1].quantity).map(([name, data], idx) => (
+            <div key={idx} className="flex items-start py-1 border-b border-gray-50 text-[10px]">
+              <span className="w-8 shrink-0 font-bold">{data.quantity}x</span>
+              <span className="flex-1 px-1 uppercase leading-tight">{name}</span>
+              <span className="w-16 shrink-0 text-right font-bold">${data.amount.toFixed(2)}</span>
             </div>
-            <div className="flex flex-col text-[8px] pl-1 mt-1 opacity-80 break-words">
-                {(order.items || []).map((item, idxx) => (
-                    <span key={idxx} className="w-full break-words leading-tight">- {item.quantity}x {item.name}</span>
-                ))}
-            </div>
-            <div className="text-[8px] font-bold text-right opacity-60 mt-1 uppercase">
-                Pago: {order.paymentMethod} {order.source && order.source !== 'DINE_IN' ? `(${order.source.replace('_', ' ')})` : ''}
-            </div>
-          </div>
-        ))}
+          ));
+        })()}
         {/* Orders Total Summation */}
         <div className="flex justify-between font-black mt-2 pt-2 border-t-2 border-black">
           <span>SUMA TOTAL:</span>
           <span>${metrics.totalRevenue.toFixed(2)}</span>
         </div>
-        <p className="text-[8px] text-center mt-1 opacity-50 italic">Total acumulado de órdenes finalizadas</p>
+        <p className="text-[8px] text-center mt-1 opacity-50 italic">Resumen de productos en órdenes finalizadas</p>
       </div>
 
       {/* Expenses Summary (Optional if long list) */}

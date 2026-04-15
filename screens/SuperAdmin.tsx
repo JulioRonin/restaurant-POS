@@ -37,6 +37,7 @@ interface Feature {
 }
 
 export default function SuperAdminScreen() {
+  console.log('[SuperAdminScreen] Component Mounted');
   const { isSuperAdmin, signOut } = useUser();
   const { refreshFeatures } = useSubscription();
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -316,45 +317,37 @@ export default function SuperAdminScreen() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 {/* Subscription & Plans */}
-                <div className="space-y-6">
-                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-emerald-400" />
-                        Plan de Suscripción
+                <div className="space-y-4">
+                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <CreditCard className="w-3 h-3 text-emerald-400" />
+                        Plan Solaris
                     </h3>
 
-                    <div className="grid grid-cols-1 gap-3">
+                    <div className="grid grid-cols-1 gap-2">
                         {(['basic', 'premium', 'enterprise'] as const).map((p) => {
                             const isSelected = selectedBusiness.plan === p;
                             const label = p === 'premium' ? 'Pro' : p.charAt(0).toUpperCase() + p.slice(1);
-                            const price = p === 'basic' ? '850' : p === 'premium' ? '1,000' : 'Cotización';
-
                             return (
                                 <button
                                     key={p}
                                     onClick={() => updateBusinessPlan(p)}
                                     disabled={saving}
-                                    className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                                    className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
                                         isSelected 
-                                        ? 'bg-blue-600/20 border-blue-500 ring-1 ring-blue-500/50' 
+                                        ? 'bg-blue-600/20 border-blue-500' 
                                         : 'bg-slate-800/30 border-slate-700 hover:border-slate-600'
                                     }`}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-500'}`}>
-                                            <Zap className="w-4 h-4" />
+                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-500'}`}>
+                                            <Zap className="w-3.5 h-3.5" />
                                         </div>
-                                        <div>
-                                            <div className={`font-bold capitalize leading-none ${isSelected ? 'text-white' : 'text-slate-400'}`}>
-                                                {label} {p === 'enterprise' ? '✨' : ''}
-                                            </div>
-                                            <div className="text-[10px] text-slate-500 font-medium mt-1">
-                                                {p === 'enterprise' ? 'Precios personalizados' : `$${price} MXN / mes`}
-                                            </div>
+                                        <div className="text-left">
+                                            <div className={`text-xs font-bold leading-none ${isSelected ? 'text-white' : 'text-slate-400'}`}>{label}</div>
+                                            <div className="text-[9px] text-slate-500 mt-1">{p === 'enterprise' ? 'Custom' : '$850 - $1,000 MXN'}</div>
                                         </div>
                                     </div>
-                                    {isSelected && (
-                                        <CheckCircle2 className="w-5 h-5 text-blue-500" />
-                                    )}
+                                    {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
                                 </button>
                             );
                         })}
@@ -362,38 +355,122 @@ export default function SuperAdminScreen() {
                 </div>
 
                 {/* Feature Toggles */}
-                <div className="space-y-6">
-                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
-                        <LayoutGrid className="w-4 h-4 text-indigo-400" />
-                        Módulos Habilitados
-                    </h3>
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <LayoutGrid className="w-3 h-3 text-indigo-400" />
+                            Módulos Habilitados
+                        </h3>
+                        <div className="flex gap-4">
+                            <button 
+                                onClick={async () => {
+                                   const supabase = getSupabase();
+                                   if (!supabase) return;
+                                   const { data: existing } = await supabase.from('features').select('key');
+                                   const existingKeys = (existing || []).map(f => f.key);
+                                   const defaultFeatures = [
+                                       { key: 'dashboard', name: 'Dashboard', description: 'Métricas y resumen' },
+                                       { key: 'pos', name: 'Punto de Venta', description: 'Toma de pedidos' },
+                                       { key: 'tables', name: 'Gestión de Mesas', description: 'Mapa y estados' },
+                                       { key: 'hostess', name: 'Hostess / Reservas', description: 'Recepción' },
+                                       { key: 'cashier', name: 'Caja y Gastos', description: 'Cortes y egresos' },
+                                       { key: 'kitchen', name: 'Monitor Cocina', description: 'Área de producción' },
+                                       { key: 'bar', name: 'Monitor Barra', description: 'Área de bebidas' },
+                                       { key: 'remote_order', name: 'Comandero Tablet', description: 'Meseros' },
+                                       { key: 'inventory', name: 'Inventarios', description: 'Stock' },
+                                       { key: 'staff', name: 'Personal', description: 'Empleados' },
+                                       { key: 'menu_admin', name: 'Catálogo de Menú', description: 'Edición' }
+                                   ].filter(f => !existingKeys.includes(f.key));
+                                   
+                                   if (defaultFeatures.length > 0) {
+                                       await supabase.from('features').insert(defaultFeatures);
+                                       alert(`${defaultFeatures.length} nuevos módulos añadidos.`);
+                                   } else {
+                                       alert('Todos los módulos ya están registrados.');
+                                   }
+                                   loadData();
+                                }}
+                                className="text-[9px] font-bold text-slate-500 hover:text-white uppercase tracking-wider"
+                            >
+                                Sincronizar Catálogo
+                            </button>
 
-                    <div className="space-y-3">
-                    {features.map(feature => {
+                            {features.length > 0 && (
+                                <button 
+                                    onClick={async () => {
+                                        if (!selectedBusiness) return;
+                                        const supabase = getSupabase();
+                                        if (!supabase) return;
+                                        const updates = features.map(f => ({
+                                            business_id: selectedBusiness.id,
+                                            feature_id: f.id,
+                                            enabled: true
+                                        }));
+                                        await supabase.from('business_features').upsert(updates, { onConflict: 'business_id,feature_id' });
+                                        loadBusinessFeatures(selectedBusiness.id);
+                                        await refreshFeatures();
+                                        alert('Todos los módulos habilitados para este cliente.');
+                                    }}
+                                    className="text-[9px] font-bold text-blue-500 hover:text-blue-400 uppercase tracking-wider"
+                                >
+                                    Habilitar Todos
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                    {features.length === 0 ? (
+                        <div className="p-4 text-center border border-dashed border-slate-800 rounded-xl">
+                            <p className="text-[10px] text-slate-600 mb-2">No se detectaron módulos.</p>
+                            <button 
+                                onClick={async () => {
+                                   const supabase = getSupabase();
+                                   if (!supabase) return;
+                                   const { data: existing } = await supabase.from('features').select('key');
+                                   const existingKeys = (existing || []).map(f => f.key);
+                                   const defaultFeatures = [
+                                       { key: 'dashboard', name: 'Dashboard', description: 'Panel de métricas y resumen de ventas' },
+                                       { key: 'pos', name: 'Punto de Venta (POS)', description: 'Toma de pedidos principal' },
+                                       { key: 'tables', name: 'Gestión de Mesas', description: 'Mapa de mesas y estados' },
+                                       { key: 'hostess', name: 'Hostess / Reservas', description: 'Gestión de reservaciones y recepción' },
+                                       { key: 'cashier', name: 'Caja y Gastos', description: 'Cortes de caja y egresos' },
+                                       { key: 'kitchen', name: 'Monitor de Cocina', description: 'Pedidos para el área de cocina' },
+                                       { key: 'bar', name: 'Monitor de Barra', description: 'Pedidos para el área de barra' },
+                                       { key: 'remote_order', name: 'Comandero (Remote)', description: 'Tablets para meseros' },
+                                       { key: 'inventory', name: 'Inventarios', description: 'Control de stock e insumos' },
+                                       { key: 'staff', name: 'Personal', description: 'Gestión de empleados y roles' },
+                                       { key: 'menu_admin', name: 'Administrador de Menú', description: 'Edición de platillos y precios' }
+                                   ].filter(f => !existingKeys.includes(f.key));
+                                   if (defaultFeatures.length > 0) await supabase.from('features').insert(defaultFeatures);
+                                   loadData();
+                                }}
+                                className="text-[10px] bg-blue-600 text-white px-3 py-1.5 rounded-lg"
+                            >
+                                Iniciar Módulos
+                            </button>
+                        </div>
+                    ) : features.map(feature => {
                         const isEnabled = businessFeatures[feature.id] || false;
                         return (
                         <div 
                             key={feature.id}
-                            className={`p-4 rounded-2xl border transition-all group ${
-                            isEnabled 
-                                ? 'bg-slate-800/50 border-slate-700' 
-                                : 'bg-slate-900/20 border-slate-800 opacity-50'
+                            className={`p-3 rounded-xl border transition-all ${
+                            isEnabled ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-900/40 border-slate-800 opacity-40'
                             }`}
                         >
-                            <div className="flex items-center justify-between mb-1">
-                            <span className={`text-sm font-bold ${isEnabled ? 'text-white' : 'text-slate-500'}`}>
-                                {feature.name}
-                            </span>
-                            <button 
-                                onClick={() => toggleFeature(feature.id, isEnabled)}
-                                className={`w-10 h-5 rounded-full relative transition-colors ${isEnabled ? 'bg-blue-500' : 'bg-slate-700'}`}
-                            >
-                                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all shadow-sm ${isEnabled ? 'left-6' : 'left-1'}`} />
-                            </button>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <span className={`text-[11px] font-bold block ${isEnabled ? 'text-white' : 'text-slate-500'}`}>{feature.name}</span>
+                                    <span className="text-[8px] text-slate-600 block">{feature.key}</span>
+                                </div>
+                                <button 
+                                    onClick={() => toggleFeature(feature.id, isEnabled)}
+                                    className={`w-8 h-4 rounded-full relative transition-colors ${isEnabled ? 'bg-blue-500' : 'bg-slate-700'}`}
+                                >
+                                    <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${isEnabled ? 'left-4.5' : 'left-0.5'}`} />
+                                </button>
                             </div>
-                            <p className="text-[10px] text-slate-500 leading-tight">
-                            {feature.description}
-                            </p>
                         </div>
                         );
                     })}

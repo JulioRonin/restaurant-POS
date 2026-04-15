@@ -175,6 +175,19 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 }
             }
 
+            // Ensure we have a locationId (SaaS multi-location hardening)
+            let locationId = profile.locationId;
+            if (!locationId && supabase) {
+                const { data: locData } = await supabase
+                    .from('locations')
+                    .select('id')
+                    .eq('business_id', profile.businessId)
+                    .limit(1);
+                if (locData && locData.length > 0) {
+                    locationId = locData[0].id;
+                }
+            }
+
             // Create the Admin employee
             const adminEmployee = {
                 id: crypto.randomUUID(),
@@ -188,19 +201,29 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 schedule: [],
                 pin: '0000',
                 businessId: profile.businessId,
-                locationId: profile.locationId || undefined,
+                locationId: locationId || undefined,
             };
+
+            if (!locationId) {
+                console.error('[UserContext] Critical: No location found for admin employee creation.');
+                // We should still try to insert but it might fail DB constraints. 
+                // However, without a location, POS can't function properly.
+            }
 
             // Save to IndexedDB
             await idbPut('employees', {
                 ...adminEmployee,
                 business_id: profile.businessId,
+                location_id: locationId,
                 synced: false,
                 updated_at: new Date().toISOString(),
             } as any);
 
             // Queue sync to Supabase
-            await tc('employees', 'INSERT', adminEmployee.id, adminEmployee);
+            await tc('employees', 'INSERT', adminEmployee.id, {
+                ...adminEmployee,
+                location_id: locationId // Explicit mapping to ensure sync handles it
+            });
 
             console.log('[UserContext] Admin employee created for:', profile.fullName);
         } catch (err) {
@@ -341,46 +364,102 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // 5. Staff Management
     const addEmployee = async (userData: Omit<Employee, 'id'>) => {
         if (!authProfile) return;
+        
+        // Ensure we have a locationId (SaaS multi-location hardening)
+        let locationId = userData.locationId || authProfile.locationId;
+        
+        if (!locationId) {
+            try {
+                const supabase = (await import('../services/auth')).getSupabase();
+                if (supabase) {
+                    const { data } = await supabase
+                        .from('locations')
+                        .select('id')
+                        .eq('business_id', authProfile.businessId)
+                        .limit(1);
+                    if (data && data.length > 0) {
+                        locationId = data[0].id;
+                    }
+                }
+            } catch (err) {
+                console.error('[UserContext] Failed to fallback location:', err);
+            }
+        }
+
         const newEmp: Employee = {
             ...userData,
             id: crypto.randomUUID(),
             businessId: authProfile.businessId,
-            locationId: authProfile.locationId,
+            locationId: locationId || undefined,
             status: 'OFF_SHIFT',
             hoursWorked: 0,
             rating: 5,
             schedule: [],
-            pin: (userData as any).pin || null
+            pin: (userData as any).pin || (Math.floor(1000 + Math.random() * 9000)).toString()
+        };
+
+        const finalEmp = {
+            ...newEmp,
+            location_id: locationId // Double inclusion for sync mapping
         };
 
         const idbRecord = {
-            ...newEmp,
+            ...finalEmp,
+            business_id: authProfile.businessId,
+            location_id: locationId,
             synced: false,
             updated_at: new Date().toISOString()
         };
 
         await put('employees', idbRecord as any);
-        await trackChange('employees', 'INSERT', newEmp.id, newEmp);
+        await trackChange('employees', 'INSERT', finalEmp.id, finalEmp);
         setEmployees(prev => [...prev, newEmp]);
     };
 
     const updateEmployee = async (id: string, updates: Partial<Employee>) => {
-        const updatedEmployees = employees.map(e => 
-            e.id === id ? { ...e, ...updates } : e
-        );
-        const target = updatedEmployees.find(e => e.id === id);
-        
+        if (!authProfile) return;
+        const target = employees.find(e => e.id === id);
         if (target) {
+            // Ensure locationId is preserved or fallback (SaaS multi-location hardening)
+            let locationId = updates.locationId || target.locationId || authProfile.locationId;
+            
+            if (!locationId) {
+                try {
+                    const supabase = (await import('../services/auth')).getSupabase();
+                    if (supabase) {
+                        const { data } = await supabase
+                            .from('locations')
+                            .select('id')
+                            .eq('business_id', authProfile.businessId)
+                            .limit(1);
+                        if (data && data.length > 0) {
+                            locationId = data[0].id;
+                        }
+                    }
+                } catch (err) {
+                    console.error('[UserContext] Failed to fallback location in update:', err);
+                }
+            }
+
+            const updated = { 
+                ...target, 
+                ...updates,
+                locationId: locationId || target.locationId,
+                location_id: locationId || target.locationId // Sync robustness
+            };
+
             const idbRecord = {
-                ...target,
+                ...updated,
+                business_id: authProfile.businessId,
+                location_id: updated.locationId,
                 synced: false,
                 updated_at: new Date().toISOString()
             };
             await put('employees', idbRecord as any);
-            await trackChange('employees', 'UPDATE', id, target);
-            setEmployees(updatedEmployees);
+            await trackChange('employees', 'UPDATE', id, updated);
+            setEmployees(prev => prev.map(e => e.id === id ? updated : e));
             if (activeEmployee?.id === id) {
-                setActiveEmployee(target);
+                setActiveEmployee(updated);
             }
         }
     };

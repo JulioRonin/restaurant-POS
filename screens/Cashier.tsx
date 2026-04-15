@@ -262,10 +262,26 @@ export const CashierScreen: React.FC = () => {
                                             {['Insumos','Renta','Servicios','Nómina','Mantenimiento','Otros'].map(c => <option key={c} value={c} className="bg-[#0d0d0e]">{c}</option>)}
                                         </select>
                                     </div>
+                                    <div className="flex flex-col gap-1">
+                                        <p className="text-[8px] font-black uppercase text-white/20 tracking-widest pl-1">Expsense Date</p>
+                                        <input 
+                                            type="date" 
+                                            value={newExpenseDate} 
+                                            onChange={e => setNewExpenseDate(e.target.value)} 
+                                            className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-2 px-4 text-white text-xs font-bold outline-none focus:border-solaris-orange/40" 
+                                        />
+                                    </div>
                                     <button
                                         onClick={() => {
                                             if (!newExpenseDesc || !newExpenseAmount) return;
-                                            addExpense({ description: newExpenseDesc, amount: parseFloat(newExpenseAmount), category: newExpenseCategory, date: newExpenseDate });
+                                            // FIX: addExpense takes positional arguments, NOT an object
+                                            addExpense(
+                                                newExpenseDesc, 
+                                                parseFloat(newExpenseAmount), 
+                                                newExpenseCategory, 
+                                                authProfile?.name || 'Admin', 
+                                                newExpenseDate
+                                            );
                                             setNewExpenseDesc(''); setNewExpenseAmount('');
                                         }}
                                         className="w-full py-3 bg-solaris-orange text-white font-black uppercase tracking-widest text-[9px] rounded-xl shadow-solaris-glow hover:scale-[1.02] transition-all"

@@ -130,74 +130,74 @@ export const POSScreen: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col p-6 md:p-10 overflow-hidden relative z-10">
+      <div className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden relative z-10">
         
         {/* Header Section */}
-        <div className="flex flex-col xl:flex-row gap-6 mb-10 items-stretch">
-          <GlowCard glowColor="orange" className="xl:w-[350px] border border-white/5 bg-[#0a0a0b] flex flex-col justify-center rounded-solaris shadow-2xl">
-            <div className="flex items-center gap-3 mb-2 opacity-40">
-                <Zap size={14} className="text-solaris-orange" />
-                <span className="text-[10px] font-black tracking-[0.3em] uppercase">{authProfile?.businessName || 'SOLARIS CORE'}</span>
+        <div className="flex flex-col xl:flex-row gap-4 mb-6 items-stretch">
+          <GlowCard glowColor="orange" className="xl:w-[280px] border border-white/5 bg-[#0a0a0b] flex flex-col justify-center rounded-solaris shadow-2xl !p-6">
+            <div className="flex items-center gap-3 mb-1 opacity-40">
+                <Zap size={12} className="text-solaris-orange" />
+                <span className="text-[9px] font-black tracking-[0.3em] uppercase">{authProfile?.businessName || 'SOLARIS CORE'}</span>
             </div>
-            <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white mb-2 leading-none">Command Center</h2>
-            <div className="flex items-center gap-2 text-[9px] font-black uppercase text-solaris-orange/60 tracking-widest italic">
+            <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white mb-1 leading-none">Command Center</h2>
+            <div className="flex items-center gap-2 text-[8px] font-black uppercase text-solaris-orange/60 tracking-widest italic">
                 <div className="w-1.5 h-1.5 rounded-full bg-solaris-orange animate-pulse" />
                 Synchronized Node Online
             </div>
           </GlowCard>
 
-          <GlowCard className="flex-1 border border-white/5 bg-[#0a0a0b] !p-8 flex flex-col justify-between rounded-solaris shadow-2xl">
-            <div className="flex flex-wrap justify-between items-center gap-6">
-                <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-[24px]">
+          <GlowCard className="flex-1 border border-white/5 bg-[#0a0a0b] !p-6 flex flex-col justify-between rounded-solaris shadow-2xl">
+            <div className="flex flex-wrap justify-between items-center gap-4">
+                <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-[20px]">
                     {['A la carte', 'Bebidas', 'Rappi/Uber'].map(menu => (
                         <button
                             key={menu}
                             onClick={() => setActiveMenu(menu)}
-                            className={`px-5 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${activeMenu === menu ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-white/30 hover:text-white hover:bg-white/5'}`}
+                            className={`px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${activeMenu === menu ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-white/30 hover:text-white hover:bg-white/5'}`}
                         >
                             {menu}
                         </button>
                     ))}
                 </div>
 
-                <div className="flex items-center gap-8">
+                <div className="flex items-center gap-6">
                     {activeEmployee && (
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
                             <div className="text-right">
-                                <p className="text-[9px] font-black text-white/30 uppercase tracking-widest leading-none mb-2">Active Operator</p>
-                                <p className="text-sm font-black text-white italic">{activeEmployee.name}</p>
+                                <p className="text-[8px] font-black text-white/30 uppercase tracking-widest leading-none mb-1">Active Operator</p>
+                                <p className="text-xs font-black text-white italic">{activeEmployee.name}</p>
                             </div>
-                            <img src={activeEmployee.image} className="w-14 h-14 rounded-[20px] object-cover border border-white/10 shadow-lg" alt="" />
+                            <img src={activeEmployee.image} className="w-10 h-10 rounded-[15px] object-cover border border-white/10 shadow-lg" alt="" />
                         </div>
                     )}
                     {settings.isDirectPrintingEnabled && (
                         <button 
-                            className={`flex items-center gap-3 px-6 py-4 rounded-2xl text-[9px] font-black uppercase tracking-widest border transition-all ${printerReady ? 'bg-green-500/10 text-green-500 border-green-500/20 shadow-green-900/10 shadow-lg' : 'bg-red-500/10 text-red-500 border-red-500/20 animate-pulse'}`}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest border transition-all ${printerReady ? 'bg-green-500/10 text-green-500 border-green-500/20 shadow-green-900/10 shadow-lg' : 'bg-red-500/10 text-red-500 border-red-500/20 animate-pulse'}`}
                         >
-                            <Printer size={16} /> {printerReady ? 'PRNT_READY' : 'PRNT_ERR'}
+                            <Printer size={14} /> {printerReady ? 'PRNT_READY' : 'PRNT_ERR'}
                         </button>
                     )}
                 </div>
             </div>
 
-            <div className="mt-8 relative group">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-solaris-orange transition-colors" size={20} />
+            <div className="mt-4 relative group">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-solaris-orange transition-colors" size={16} />
                 <input 
                     type="text" 
                     placeholder="Search biological or physical menu assets..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-16 pr-6 py-5 bg-white/[0.03] border border-white/5 rounded-[24px] text-white font-bold outline-none focus:border-solaris-orange/40 focus:bg-white/[0.05] shadow-inner transition-all text-sm placeholder:text-white/20"
+                    className="w-full pl-12 pr-6 py-3.5 bg-white/[0.03] border border-white/5 rounded-[20px] text-white font-bold outline-none focus:border-solaris-orange/40 focus:bg-white/[0.05] shadow-inner transition-all text-xs placeholder:text-white/20"
                 />
             </div>
           </GlowCard>
         </div>
 
         {/* Categories */}
-        <div className="mb-10 flex gap-4 overflow-x-auto no-scrollbar pb-2">
+        <div className="mb-6 flex gap-3 overflow-x-auto no-scrollbar pb-1">
             <button
                 onClick={() => setActiveCategory('All')}
-                className={`px-8 py-4 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all ${activeCategory === 'All' ? 'bg-solaris-orange text-white shadow-solaris-glow scale-105' : 'bg-white/[0.03] text-white/40 border border-white/5 hover:bg-white/5'}`}
+                className={`px-6 py-3 rounded-[18px] text-[9px] font-black uppercase tracking-widest transition-all ${activeCategory === 'All' ? 'bg-solaris-orange text-white shadow-solaris-glow scale-105' : 'bg-white/[0.03] text-white/40 border border-white/5 hover:bg-white/5'}`}
             >
                 Global
             </button>
@@ -205,7 +205,7 @@ export const POSScreen: React.FC = () => {
                 <button
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
-                    className={`px-8 py-4 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all ${activeCategory === cat ? 'bg-solaris-orange text-white shadow-solaris-glow scale-105' : 'bg-white/[0.03] text-white/40 border border-white/5 hover:bg-white/5'}`}
+                    className={`px-6 py-3 rounded-[18px] text-[9px] font-black uppercase tracking-widest transition-all ${activeCategory === cat ? 'bg-solaris-orange text-white shadow-solaris-glow scale-105' : 'bg-white/[0.03] text-white/40 border border-white/5 hover:bg-white/5'}`}
                 >
                     {cat}
                 </button>
