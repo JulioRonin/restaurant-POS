@@ -47,25 +47,25 @@ export const AuthScreen: React.FC = () => {
                 className="relative z-10 w-full max-w-xl px-6"
             >
                 {/* Branding */}
-                <div className="text-center mb-12">
+                <div className="text-center mb-8 md:mb-12">
                     <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: 0.2 }}
-                        className="inline-flex items-center justify-center w-24 h-24 rounded-solaris bg-white/[0.03] border border-white/10 mb-8 shadow-solaris-glow"
+                        className="inline-flex items-center justify-center w-16 h-16 md:w-24 md:h-24 rounded-solaris bg-white/[0.03] border border-white/10 mb-4 md:mb-8 shadow-solaris-glow"
                     >
-                        <Zap className="text-solaris-orange" size={48} />
+                        <Zap className="text-solaris-orange" size={32} />
                     </motion.div>
-                    <h1 className="text-6xl font-black italic tracking-tighter text-white uppercase mb-4">Solaris Core</h1>
-                    <p className="text-white/20 font-bold text-[10px] uppercase tracking-[0.6em] italic">Ultimate OS Control Terminal</p>
+                    <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter text-white uppercase mb-2 md:mb-4">Solaris Core</h1>
+                    <p className="text-white/20 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.6em] italic">Ultimate OS Control Terminal</p>
                 </div>
 
                 <GlowCard glowColor="orange" customSize className="w-full !p-0 overflow-hidden border border-white/5 backdrop-blur-3xl bg-white/[0.02] rounded-solaris shadow-2xl">
-                    <div className="p-10 md:p-14">
-                        <div className="flex gap-10 mb-12 border-b border-white/5">
+                    <div className="p-6 md:p-14">
+                        <div className="flex gap-6 md:gap-10 mb-8 md:mb-12 border-b border-white/5 overflow-x-auto no-scrollbar">
                             <button 
                                 onClick={() => setIsLogin(true)}
-                                className={`pb-6 text-[11px] font-black uppercase tracking-[0.3em] transition-all relative ${isLogin ? 'text-solaris-orange' : 'text-white/20 hover:text-white/40'}`}
+                                className={`pb-4 md:pb-6 text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] transition-all relative whitespace-nowrap ${isLogin ? 'text-solaris-orange' : 'text-white/20 hover:text-white/40'}`}
                             >
                                 Iniciar Sesión
                                 {isLogin && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-solaris-orange shadow-solaris-glow" />}

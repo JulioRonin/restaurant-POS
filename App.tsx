@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
+import { MobileNavbar } from './components/MobileNavbar';
 import { LockScreen } from './components/LockScreen';
 import { useSettings } from './contexts/SettingsContext';
 import { POSScreen } from './screens/POS';
@@ -54,11 +55,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="flex h-screen w-screen bg-[#030303] text-white font-sans overflow-hidden antialiased selection:bg-solaris-orange selection:text-white">
-      <div className="no-print">
+      <div className="no-print hidden lg:block">
         <Sidebar onLock={clearActiveEmployee} />
       </div>
-      <main className="flex-1 h-full overflow-hidden relative bg-[#030303]">
+      <main className="flex-1 h-full overflow-hidden relative bg-[#030303] pb-24 lg:pb-0">
         {children}
+        <MobileNavbar />
       </main>
     </div>
   );
