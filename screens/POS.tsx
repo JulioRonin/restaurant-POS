@@ -120,84 +120,87 @@ export const POSScreen: React.FC = () => {
     } catch (err) { alert('Error sending order.'); }
   };
 
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="flex h-full w-full bg-[#030303] text-white overflow-hidden relative antialiased">
+    <div className="flex flex-col lg:flex-row h-full w-full bg-[#030303] text-white overflow-hidden relative antialiased">
       {/* Hidden print root */}
       <div className="hidden print:block absolute inset-0 z-[9999] bg-white">
           {kitchenOrderToPrint && <KitchenTicket order={kitchenOrderToPrint} settings={settings} />}
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden relative z-10">
+      <div className="flex-1 flex flex-col p-3 md:p-6 overflow-hidden relative z-10 w-full">
         
-        {/* Header Section */}
-        <div className="flex flex-col xl:flex-row gap-4 mb-6 items-stretch">
-          <GlowCard glowColor="orange" className="xl:w-[280px] border border-white/5 bg-[#0a0a0b] flex flex-col justify-center rounded-solaris shadow-2xl !p-6">
-            <div className="flex items-center gap-3 mb-1 opacity-40">
-                <Zap size={12} className="text-solaris-orange" />
-                <span className="text-[9px] font-black tracking-[0.3em] uppercase">{authProfile?.businessName || 'SOLARIS CORE'}</span>
+        {/* Compact Header Section */}
+        <div className="flex flex-col md:flex-row gap-3 mb-4 items-stretch">
+          <GlowCard glowColor="orange" className="md:w-auto lg:min-w-[220px] lg:w-[260px] border border-white/5 bg-[#0a0a0b] flex flex-col justify-center rounded-solaris shadow-2xl !p-4">
+            <div className="flex items-center gap-2 mb-1 opacity-40">
+                <Zap size={10} className="text-solaris-orange" />
+                <span className="text-[8px] font-black tracking-[0.3em] uppercase">{authProfile?.businessName || 'SOLARIS CORE'}</span>
             </div>
-            <h2 className="text-2xl font-black italic tracking-tighter uppercase text-white mb-1 leading-none">Command Center</h2>
-            <div className="flex items-center gap-2 text-[8px] font-black uppercase text-solaris-orange/60 tracking-widest italic">
+            <h2 className="text-xl lg:text-2xl font-black italic tracking-tighter uppercase text-white mb-1 leading-none">Command Center</h2>
+            <div className="flex items-center gap-2 text-[7px] font-black uppercase text-solaris-orange/60 tracking-widest italic">
                 <div className="w-1.5 h-1.5 rounded-full bg-solaris-orange animate-pulse" />
-                Synchronized Node Online
+                Node Online
             </div>
           </GlowCard>
 
-          <GlowCard className="flex-1 border border-white/5 bg-[#0a0a0b] !p-6 flex flex-col justify-between rounded-solaris shadow-2xl">
-            <div className="flex flex-wrap justify-between items-center gap-4">
-                <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-[20px]">
+          <GlowCard className="flex-1 border border-white/5 bg-[#0a0a0b] !p-4 flex flex-col justify-center rounded-solaris shadow-2xl">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-xl w-full sm:w-auto">
                     {['A la carte', 'Bebidas', 'Rappi/Uber'].map(menu => (
                         <button
                             key={menu}
                             onClick={() => setActiveMenu(menu)}
-                            className={`px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${activeMenu === menu ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-white/30 hover:text-white hover:bg-white/5'}`}
+                            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[7px] lg:text-[8px] font-black uppercase tracking-widest transition-all ${activeMenu === menu ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-white/30 hover:text-white hover:bg-white/5'}`}
                         >
                             {menu}
                         </button>
                     ))}
                 </div>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
                     {activeEmployee && (
-                        <div className="flex items-center gap-3">
-                            <div className="text-right">
-                                <p className="text-[8px] font-black text-white/30 uppercase tracking-widest leading-none mb-1">Active Operator</p>
-                                <p className="text-xs font-black text-white italic">{activeEmployee.name}</p>
+                        <div className="flex items-center gap-2">
+                            <div className="text-right hidden xs:block">
+                                <p className="text-[7px] font-black text-white/30 uppercase tracking-widest leading-none mb-0.5">Operator</p>
+                                <p className="text-[10px] font-black text-white italic">{activeEmployee.name}</p>
                             </div>
-                            <img src={activeEmployee.image} className="w-10 h-10 rounded-[15px] object-cover border border-white/10 shadow-lg" alt="" />
+                            <img src={activeEmployee.image} className="w-8 h-8 lg:w-9 lg:h-9 rounded-xl object-cover border border-white/10 shadow-lg" alt="" />
                         </div>
                     )}
                     {settings.isDirectPrintingEnabled && (
                         <button 
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[8px] font-black uppercase tracking-widest border transition-all ${printerReady ? 'bg-green-500/10 text-green-500 border-green-500/20 shadow-green-900/10 shadow-lg' : 'bg-red-500/10 text-red-500 border-red-500/20 animate-pulse'}`}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest border transition-all ${printerReady ? 'bg-green-500/10 text-green-500 border-green-500/20 shadow-green-900/10 shadow-lg' : 'bg-red-500/10 text-red-500 border-red-500/20 animate-pulse'}`}
                         >
-                            <Printer size={14} /> {printerReady ? 'PRNT_READY' : 'PRNT_ERR'}
+                            <Printer size={12} /> {printerReady ? 'ONLINE' : 'ERROR'}
                         </button>
                     )}
                 </div>
             </div>
 
-            <div className="mt-4 relative group">
-                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-solaris-orange transition-colors" size={16} />
+            <div className="mt-3 relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-solaris-orange transition-colors" size={14} />
                 <input 
                     type="text" 
-                    placeholder="Search biological or physical menu assets..." 
+                    placeholder="Search biological or physical assets..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-6 py-3.5 bg-white/[0.03] border border-white/5 rounded-[20px] text-white font-bold outline-none focus:border-solaris-orange/40 focus:bg-white/[0.05] shadow-inner transition-all text-xs placeholder:text-white/20"
+                    className="w-full pl-10 pr-4 py-2 bg-white/[0.03] border border-white/5 rounded-xl text-white font-bold outline-none focus:border-solaris-orange/40 focus:bg-white/[0.05] shadow-inner transition-all text-[11px] placeholder:text-white/20"
                 />
             </div>
           </GlowCard>
         </div>
 
-        {/* Categories */}
-        <div className="mb-6 flex gap-3 overflow-x-auto no-scrollbar pb-1">
+        {/* Categories (Responsive scrolling) */}
+        <div className="mb-4 flex gap-2 overflow-x-auto no-scrollbar pb-1">
             <button
                 onClick={() => setActiveCategory('All')}
-                className={`px-6 py-3 rounded-[18px] text-[9px] font-black uppercase tracking-widest transition-all ${activeCategory === 'All' ? 'bg-solaris-orange text-white shadow-solaris-glow scale-105' : 'bg-white/[0.03] text-white/40 border border-white/5 hover:bg-white/5'}`}
+                className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${activeCategory === 'All' ? 'bg-solaris-orange text-white shadow-solaris-glow scale-105' : 'bg-white/[0.03] text-white/40 border border-white/5 hover:bg-white/5'}`}
             >
                 Global
             </button>
@@ -205,40 +208,40 @@ export const POSScreen: React.FC = () => {
                 <button
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
-                    className={`px-6 py-3 rounded-[18px] text-[9px] font-black uppercase tracking-widest transition-all ${activeCategory === cat ? 'bg-solaris-orange text-white shadow-solaris-glow scale-105' : 'bg-white/[0.03] text-white/40 border border-white/5 hover:bg-white/5'}`}
+                    className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${activeCategory === cat ? 'bg-solaris-orange text-white shadow-solaris-glow scale-105' : 'bg-white/[0.03] text-white/40 border border-white/5 hover:bg-white/5'}`}
                 >
                     {cat}
                 </button>
             ))}
         </div>
 
-        {/* Grid */}
-        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xxl:grid-cols-5 gap-8 pb-10">
+        {/* Grid Responsive Columns */}
+        <div className="flex-1 overflow-y-auto pr-1 md:pr-2 custom-scrollbar">
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xxl:grid-cols-5 gap-3 sm:gap-6 pb-16 lg:pb-10">
                 {filteredItems.map(item => (
                     <motion.div 
                         key={item.id} 
                         layout 
-                        whileHover={{ y: -5 }}
-                        whileTap={{ scale: 0.95 }}
+                        whileHover={{ y: -3 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => addToCart(item)}
-                        className="cursor-pointer"
+                        className="cursor-pointer h-full"
                     >
-                        <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-[#0a0a0b] overflow-hidden group shadow-2xl rounded-solaris">
-                           <div className="relative h-48 overflow-hidden">
+                        <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-[#0a0a0b] overflow-hidden group shadow-2xl rounded-solaris h-full">
+                           <div className="relative h-32 xs:h-40 sm:h-48 overflow-hidden">
                                 <img src={item.image} className="w-full h-full object-cover filter contrast-125 transition-transform duration-700 group-hover:scale-110" alt="" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0b] via-transparent to-transparent opacity-80" />
-                                <div className="absolute bottom-5 left-5 right-5 flex justify-between items-end">
+                                <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
                                     <div>
-                                        <h3 className="text-sm font-black uppercase italic text-white tracking-tighter leading-tight mb-1">{item.name}</h3>
-                                        <p className="text-[9px] font-black uppercase text-white/40 tracking-widest">{item.category}</p>
+                                        <h3 className="text-[11px] sm:text-[13px] font-black uppercase italic text-white tracking-tighter leading-tight mb-0.5">{item.name}</h3>
+                                        <p className="text-[8px] font-black uppercase text-white/40 tracking-widest">{item.category}</p>
                                     </div>
-                                    <div className="bg-solaris-orange text-white p-2.5 rounded-xl shadow-solaris-glow group-hover:scale-110 transition-transform">
-                                        <Plus size={18} />
+                                    <div className="bg-solaris-orange text-white p-2 rounded-lg shadow-solaris-glow group-hover:scale-110 transition-transform">
+                                        <Plus size={14} />
                                     </div>
                                 </div>
-                                <div className="absolute top-5 right-5 bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
-                                    <span className="text-xs font-black italic text-solaris-orange tracking-widest">${item.price.toFixed(0)}</span>
+                                <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10">
+                                    <span className="text-[10px] sm:text-xs font-black italic text-solaris-orange tracking-widest">${item.price.toFixed(0)}</span>
                                 </div>
                            </div>
                         </GlowCard>
@@ -246,33 +249,61 @@ export const POSScreen: React.FC = () => {
                 ))}
             </div>
         </div>
+
+        {/* Floating Cart Button (Mobile Only) */}
+        <div className="lg:hidden fixed bottom-6 right-6 z-50">
+            <button 
+                onClick={() => setIsCartOpen(!isCartOpen)}
+                className="w-14 h-14 bg-solaris-orange text-white rounded-full flex items-center justify-center shadow-solaris-glow relative"
+            >
+                <ShoppingCart size={24} />
+                {cartItemCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-white text-solaris-orange w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] shadow-lg border-2 border-solaris-orange">
+                        {cartItemCount}
+                    </span>
+                )}
+            </button>
+        </div>
       </div>
 
-      {/* Cart Sidebar */}
-      <div className="w-[450px] bg-[#030303] border-l border-white/10 flex flex-col z-10 shadow-[-30px_0_60px_rgba(0,0,0,0.8)]">
-        <div className="p-8 border-b border-white/5">
+      {/* Cart Sidebar (Responsive: Visible on large, Sidebar on mobile) */}
+      <div className={`
+        ${isCartOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0
+        fixed lg:relative inset-y-0 right-0 w-full xs:w-[380px] sm:w-[420px] lg:w-[450px] 
+        bg-[#030303] border-l border-white/10 flex flex-col z-[60] lg:z-10 
+        shadow-[-30px_0_60px_rgba(0,0,0,0.8)] transition-transform duration-300 ease-in-out
+      `}>
+        {/* Mobile Header for Cart */}
+        <div className="lg:hidden flex items-center justify-between p-4 border-b border-white/10">
+            <h3 className="text-xl font-black italic uppercase tracking-tighter text-white">Order Queue</h3>
+            <button onClick={() => setIsCartOpen(false)} className="p-2 text-white/40 hover:text-white">
+                <X size={24} />
+            </button>
+        </div>
+
+        <div className="p-4 md:p-8 border-b border-white/5">
             <div 
-                className="flex items-center justify-between cursor-pointer group p-6 bg-white/[0.02] rounded-solaris border border-white/5 hover:border-solaris-orange/20 transition-all shadow-xl"
+                className="flex items-center justify-between cursor-pointer group p-4 md:p-6 bg-white/[0.02] rounded-solaris border border-white/5 hover:border-solaris-orange/20 transition-all shadow-xl"
                 onClick={() => setShowTableModal(true)}
             >
-                <div>
-                   <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white group-hover:text-solaris-orange transition-colors">
+                <div className="flex-1 min-w-0 pr-4">
+                   <h2 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter text-white group-hover:text-solaris-orange transition-colors truncate">
                         {selectedTable ? selectedTable.name : 'Select Node'}
                    </h2>
-                   <p className="text-[9px] font-black uppercase text-white/20 tracking-widest mt-2 overflow-hidden whitespace-nowrap">Protocol Stream 88-XN</p>
+                   <p className="text-[8px] font-black uppercase text-white/20 tracking-widest mt-1">Terminal Secure Protocol</p>
                 </div>
-                <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-white/20 group-hover:text-solaris-orange transition-all shadow-inner">
-                    <TableIcon size={28} />
+                <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-white/20 group-hover:text-solaris-orange transition-all shadow-inner shrink-0">
+                    <TableIcon size={20} className="md:w-7 md:h-7" />
                 </div>
             </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 md:space-y-6 custom-scrollbar">
             <AnimatePresence>
                 {cart.length === 0 ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col items-center justify-center text-white/5">
-                        <ShoppingCart size={80} className="mb-8 opacity-20" />
-                        <p className="text-[10px] font-black uppercase tracking-[0.5em] italic">Queue Empty</p>
+                        <ShoppingCart size={60} className="mb-6 opacity-20" />
+                        <p className="text-[9px] font-black uppercase tracking-[0.5em] italic">Queue Empty</p>
                     </motion.div>
                 ) : (
                     cart.map((item, idx) => (
@@ -280,35 +311,35 @@ export const POSScreen: React.FC = () => {
                             key={`${item.id}-${idx}`}
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className="bg-[#0a0a0b] border border-white/5 p-6 rounded-solaris relative group overflow-hidden shadow-2xl"
+                            className="bg-[#0a0a0b] border border-white/5 p-4 md:p-6 rounded-solaris relative group overflow-hidden shadow-2xl"
                         >
-                             <div className="flex justify-between items-start mb-5">
-                                <div className="flex gap-4">
-                                    <div className="w-12 h-12 rounded-[18px] bg-solaris-orange/10 border border-solaris-orange/20 flex items-center justify-center text-solaris-orange font-black italic text-lg shadow-inner">
+                             <div className="flex justify-between items-start mb-4">
+                                <div className="flex gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-solaris-orange/10 border border-solaris-orange/20 flex items-center justify-center text-solaris-orange font-black italic text-base shadow-inner">
                                         {item.quantity}
                                     </div>
-                                    <div>
-                                        <h4 className="font-black italic text-white uppercase tracking-tight text-sm mb-1 leading-tight">{item.name}</h4>
-                                        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">Unit Val: ${item.price}</p>
+                                    <div className="flex-1">
+                                        <h4 className="font-black italic text-white uppercase tracking-tight text-[13px] mb-0.5 leading-tight">{item.name}</h4>
+                                        <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Val: ${item.price}</p>
                                     </div>
                                 </div>
-                                <span className="text-base font-black italic text-white tracking-widest">${(item.price * item.quantity).toFixed(0)}</span>
+                                <span className="text-sm font-black italic text-white tracking-widest">${(item.price * item.quantity).toFixed(0)}</span>
                              </div>
 
                              <input 
                                 type="text"
-                                placeholder="Add technical instruction..."
+                                placeholder="Add instruction..."
                                 value={item.notes || ''}
                                 onChange={(e) => {
                                     setCart(prev => prev.map(i => i.id === item.id ? { ...i, notes: e.target.value } : i));
                                 }}
-                                className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-[10px] placeholder:text-white/10 text-white/60 font-medium focus:outline-none focus:border-solaris-orange/20 italic transition-all"
+                                className="w-full bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2 text-[9px] placeholder:text-white/10 text-white/60 font-medium focus:outline-none focus:border-solaris-orange/20 italic transition-all"
                              />
 
-                             <div className="mt-8 flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => updateQuantity(item.id, -1)} className="w-10 h-10 bg-white/5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center"><Minus size={16} /></button>
-                                <button onClick={() => updateQuantity(item.id, 1)} className="w-10 h-10 bg-white/5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center"><Plus size={16} /></button>
-                                <button onClick={() => setCart(prev => prev.filter(i => i.id !== item.id))} className="w-10 h-10 bg-red-500/10 rounded-xl text-red-500/40 hover:text-red-500 hover:bg-red-500/20 transition-all flex items-center justify-center"><Trash2 size={16} /></button>
+                             <div className="mt-4 flex justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 bg-white/5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center"><Minus size={14} /></button>
+                                <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 bg-white/5 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center"><Plus size={14} /></button>
+                                <button onClick={() => setCart(prev => prev.filter(i => i.id !== item.id))} className="w-8 h-8 bg-red-500/10 rounded-lg text-red-500/40 hover:text-red-500 hover:bg-red-500/20 transition-all flex items-center justify-center"><Trash2 size={14} /></button>
                              </div>
                         </motion.div>
                     ))
@@ -316,56 +347,59 @@ export const POSScreen: React.FC = () => {
             </AnimatePresence>
         </div>
 
-        <div className="p-8 bg-[#0a0a0b] border-t border-white/10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
-            <div className="grid grid-cols-2 gap-4 mb-10">
+        <div className="p-4 md:p-8 bg-[#0a0a0b] border-t border-white/10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
+            <div className="grid grid-cols-2 gap-2 md:gap-4 mb-6 md:mb-10">
                 {[
                     { id: OrderSource.TO_GO, icon: ShoppingBag, label: 'Carry out', color: 'bg-white/5 border-white/5 text-white/40' },
                     { id: OrderSource.RAPPI, icon: Truck, label: 'Grid/Rappi', color: 'bg-[#FF3C5C]/5 border-[#FF3C5C]/10 text-[#FF3C5C]/60' },
-                    { id: OrderSource.UBER_EATS, icon: ChefHat, label: 'Uber System', color: 'bg-[#06C167]/5 border-[#06C167]/10 text-[#06C167]/60' },
+                    { id: OrderSource.UBER_EATS, icon: ChefHat, label: 'Uber Sys', color: 'bg-[#06C167]/5 border-[#06C167]/10 text-[#06C167]/60' },
                     { id: OrderSource.DINE_IN, icon: TableIcon, label: 'In-Node', color: 'bg-solaris-orange/10 border-solaris-orange/10 text-solaris-orange' }
                 ].map(src => (
                     <button 
                         key={src.id}
                         onClick={() => setSelectedSource(src.id)}
-                        className={`py-4 rounded-[22px] flex items-center justify-center gap-3 transition-all border ${selectedSource === src.id ? 'bg-solaris-orange text-white border-solaris-orange shadow-solaris-glow scale-[1.02]' : `${src.color} hover:bg-white/5`}`}
+                        className={`py-3 md:py-4 rounded-xl md:rounded-[22px] flex items-center justify-center gap-2 md:gap-3 transition-all border ${selectedSource === src.id ? 'bg-solaris-orange text-white border-solaris-orange shadow-solaris-glow scale-[1.02]' : `${src.color} hover:bg-white/5`}`}
                     >
-                        <src.icon size={18} />
-                        <span className="text-[9px] font-black uppercase tracking-widest">{src.label}</span>
+                        <src.icon size={14} className="md:w-4 md:h-4" />
+                        <span className="text-[8px] font-black uppercase tracking-widest">{src.label}</span>
                     </button>
                 ))}
             </div>
 
-            <div className="flex justify-between items-end mb-10 px-2">
+            <div className="flex justify-between items-end mb-6 md:mb-10 px-2">
                 <div>
-                    <p className="text-[9px] font-black uppercase text-white/20 tracking-[0.4em] mb-2 font-black">Payload Valuation</p>
-                    <p className="text-4xl font-black italic tracking-tighter text-white uppercase italic">${total.toFixed(2)}</p>
+                    <p className="text-[8px] font-black uppercase text-white/20 tracking-[0.4em] mb-1">Payload Value</p>
+                    <p className="text-2xl md:text-4xl font-black italic tracking-tighter text-white uppercase italic">${total.toFixed(2)}</p>
                 </div>
-                <div className="text-right">
-                    <p className="text-[9px] font-black text-solaris-orange uppercase tracking-widest mb-1 shadow-solaris-glow underline underline-offset-4">Protocol Secured</p>
-                    <p className="text-[10px] text-white/20 font-bold italic">Net Node Output</p>
+                <div className="text-right hidden sm:block">
+                    <p className="text-[8px] font-black text-solaris-orange uppercase tracking-widest mb-1 shadow-solaris-glow">Protocol Secured</p>
+                    <p className="text-[9px] text-white/20 font-bold italic">Node Output</p>
                 </div>
             </div>
 
             <button
                 onClick={handleSendOrder}
                 disabled={cart.length === 0}
-                className="w-full py-6 bg-solaris-orange text-white font-black italic tracking-[0.2em] uppercase text-xl rounded-[28px] shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-20 flex items-center justify-center gap-4"
+                className="w-full py-4 md:py-6 bg-solaris-orange text-white font-black italic tracking-[0.2em] uppercase text-lg md:text-xl rounded-2xl md:rounded-[28px] shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-20 flex items-center justify-center gap-3 md:gap-4"
             >
-                Authorize Transmission <Zap size={28} />
+                Authorize <Zap size={20} className="md:w-7 md:h-7" />
             </button>
         </div>
       </div>
+
+      {/* Table Selection Modal Overlay */}
+      {isCartOpen && <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50" onClick={() => setIsCartOpen(false)} />}
 
       {/* Success Modal */}
       <AnimatePresence>
         {showSuccessModal && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-xl">
-                <div className="w-full max-w-md bg-[#0a0a0b] border border-white/10 rounded-[40px] p-16 flex flex-col items-center text-center shadow-2xl">
-                    <motion.div animate={{ scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] }} transition={{ duration: 0.5 }} className="w-28 h-28 bg-solaris-orange rounded-full flex items-center justify-center mb-10 shadow-solaris-glow">
-                        <CheckCircle2 size={56} className="text-white" />
+                <div className="w-full max-w-sm sm:max-w-md bg-[#0a0a0b] border border-white/10 rounded-[32px] sm:rounded-[40px] p-10 sm:p-16 flex flex-col items-center text-center shadow-2xl mx-4">
+                    <motion.div animate={{ scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] }} transition={{ duration: 0.5 }} className="w-20 h-20 sm:w-28 sm:h-28 bg-solaris-orange rounded-full flex items-center justify-center mb-6 sm:mb-10 shadow-solaris-glow">
+                        <CheckCircle2 size={40} className="text-white sm:w-14 sm:h-14" />
                     </motion.div>
-                    <h2 className="text-4xl font-black italic text-white uppercase tracking-tighter mb-4">Transmission Successful</h2>
-                    <p className="text-white/30 font-bold text-[11px] uppercase tracking-[0.3em] font-black">Kitchen Unit Acknowledged Packet</p>
+                    <h2 className="text-2xl sm:text-4xl font-black italic text-white uppercase tracking-tighter mb-4 leading-tight">Transmission Successful</h2>
+                    <p className="text-white/30 font-bold text-[9px] sm:text-[11px] uppercase tracking-[0.3em]">Kitchen Unit Acknowledged Packet</p>
                 </div>
             </motion.div>
         )}
@@ -374,36 +408,33 @@ export const POSScreen: React.FC = () => {
       {/* Table Modal */}
       <AnimatePresence>
         {showTableModal && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-2xl p-6">
-                <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-[#0a0a0b] border border-white/10 rounded-[40px] w-full max-w-3xl p-12 shadow-2xl relative overflow-hidden">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-2xl p-4 sm:p-6">
+                <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-[#0a0a0b] border border-white/10 rounded-[32px] sm:rounded-[40px] w-full max-w-3xl p-6 sm:p-12 shadow-2xl relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-solaris-orange/50 to-transparent"></div>
-                    <div className="flex justify-between items-center mb-12">
+                    <div className="flex justify-between items-center mb-8 sm:mb-12">
                         <div>
-                            <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white font-black">Node Grid Matrix</h2>
-                            <p className="text-[10px] text-white/20 font-black uppercase tracking-[0.4em] mt-1 italic">Select Terminal Assignment</p>
+                            <h2 className="text-2xl sm:text-3xl font-black italic uppercase tracking-tighter text-white">Node Grid Matrix</h2>
+                            <p className="text-[9px] text-white/20 font-black uppercase tracking-[0.4em] mt-1 italic">Select Terminal Assignment</p>
                         </div>
-                        <button onClick={() => setShowTableModal(false)} className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 text-white/30 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center"><X size={32} /></button>
+                        <button onClick={() => setShowTableModal(false)} className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/5 border border-white/10 text-white/30 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center"><X size={24} /></button>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-8 max-h-[60vh] overflow-y-auto no-scrollbar pr-4">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-8 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
                         {TABLES.map(table => (
                             <button
                                 key={table.id}
                                 onClick={() => { setSelectedTable(table); setShowTableModal(false); }}
-                                className={`p-10 rounded-solaris border-2 flex flex-col items-center gap-6 transition-all group ${selectedTable?.id === table.id ? 'border-solaris-orange bg-solaris-orange/10 text-solaris-orange shadow-solaris-glow scale-105' : 'border-white/5 text-white/20 hover:text-white hover:border-white/20 hover:bg-white/5'}`}
+                                className={`p-4 sm:p-10 rounded-solaris border-2 flex flex-col items-center gap-3 sm:gap-6 transition-all group ${selectedTable?.id === table.id ? 'border-solaris-orange bg-solaris-orange/10 text-solaris-orange shadow-solaris-glow scale-[1.02]' : 'border-white/5 text-white/20 hover:text-white hover:border-white/20 hover:bg-white/5'}`}
                             >
-                                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${selectedTable?.id === table.id ? 'bg-solaris-orange text-white' : 'bg-white/5 text-white/20'}`}>
-                                    <TableIcon size={40} />
+                                <div className={`w-10 h-10 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center transition-all ${selectedTable?.id === table.id ? 'bg-solaris-orange text-white' : 'bg-white/5 text-white/20'}`}>
+                                    <TableIcon size={24} className="sm:w-10 sm:h-10" />
                                 </div>
-                                <div className="text-center">
-                                    <span className="font-black text-2xl italic uppercase font-black block leading-none mb-2">{table.name}</span>
-                                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">{table.seats} PERSONS</span>
+                                <div className="text-center min-w-0 w-full">
+                                    <span className="font-black text-lg sm:text-2xl italic uppercase block leading-none mb-1 sm:mb-2 truncate">{table.name}</span>
+                                    <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest opacity-40">{table.seats} PERSONS</span>
                                 </div>
                             </button>
                         ))}
-                    </div>
-                    <div className="mt-12 flex justify-center">
-                        <p className="text-[10px] font-black text-white/10 uppercase tracking-[0.5em] italic">Authorized Selection Only</p>
                     </div>
                 </motion.div>
             </motion.div>
