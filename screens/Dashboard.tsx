@@ -40,6 +40,18 @@ export const DashboardScreen: React.FC = () => {
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]); 
     const [isReportOpen, setIsReportOpen] = useState(false);
 
+    // Helper to get local date string YYYY-MM-DD or YYYY-MM
+    const getLocalDatePart = (dateVal: any, part: 'date' | 'month' = 'date') => {
+        try {
+            const d = new Date(dateVal);
+            if (isNaN(d.getTime())) return '';
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return part === 'date' ? `${yyyy}-${mm}-${dd}` : `${yyyy}-${mm}`;
+        } catch { return ''; }
+    };
+
     // Filtered data based on time range and category
     const activeOrders = useMemo(() => {
         return orders.filter(o => {
@@ -48,24 +60,22 @@ export const DashboardScreen: React.FC = () => {
                 const d = new Date(dateVal);
                 if (isNaN(d.getTime())) return false;
                 
-                const localD = new Date(d);
-                localD.setMinutes(localD.getMinutes() - localD.getTimezoneOffset());
-                const dateStr = localD.toISOString().split('T')[0];
+                const orderDateStr = getLocalDatePart(d, 'date');
+                const orderMonthStr = getLocalDatePart(d, 'month');
 
                 if (timeRange === 'SpecificDay') {
-                    if (dateStr !== selectedDate) return false;
+                    if (orderDateStr !== selectedDate) return false;
                 } else if (timeRange === 'SpecificMonth') {
-                    if (!dateStr.startsWith(selectedDate.substring(0, 7))) return false;
+                    // selectedDate from "month" input is usually YYYY-MM
+                    if (orderMonthStr !== selectedDate) return false;
                 } else if (timeRange === 'Weekly') {
-                   // Last 7 days
-                   const sevenDaysAgo = new Date();
-                   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                   if (d < sevenDaysAgo) return false;
+                    const diffTime = Math.abs(new Date().getTime() - d.getTime());
+                    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+                    if (diffDays > 7) return false;
                 } else if (timeRange === 'Monthly') {
-                   // Last 30 days
-                   const thirtyDaysAgo = new Date();
-                   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                   if (d < thirtyDaysAgo) return false;
+                    const diffTime = Math.abs(new Date().getTime() - d.getTime());
+                    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+                    if (diffDays > 30) return false;
                 }
 
                 // Category filter
@@ -88,22 +98,21 @@ export const DashboardScreen: React.FC = () => {
                 const d = new Date(dateVal);
                 if (isNaN(d.getTime())) return false;
                 
-                const localD = new Date(d);
-                localD.setMinutes(localD.getMinutes() - localD.getTimezoneOffset());
-                const dateStr = localD.toISOString().split('T')[0];
+                const expDateStr = getLocalDatePart(d, 'date');
+                const expMonthStr = getLocalDatePart(d, 'month');
 
                 if (timeRange === 'SpecificDay') {
-                    if (dateStr !== selectedDate) return false;
+                    if (expDateStr !== selectedDate) return false;
                 } else if (timeRange === 'SpecificMonth') {
-                    if (!dateStr.startsWith(selectedDate.substring(0, 7))) return false;
+                    if (expMonthStr !== selectedDate) return false;
                 } else if (timeRange === 'Weekly') {
-                   const sevenDaysAgo = new Date();
-                   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                   if (d < sevenDaysAgo) return false;
+                    const diffTime = Math.abs(new Date().getTime() - d.getTime());
+                    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+                    if (diffDays > 7) return false;
                 } else if (timeRange === 'Monthly') {
-                   const thirtyDaysAgo = new Date();
-                   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                   if (d < thirtyDaysAgo) return false;
+                    const diffTime = Math.abs(new Date().getTime() - d.getTime());
+                    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+                    if (diffDays > 30) return false;
                 }
                 
                 return true;
@@ -120,7 +129,7 @@ export const DashboardScreen: React.FC = () => {
         activeOrders.forEach(o => {
             if (o.status !== 'CANCELLED') {
                 const d = new Date(o.timestamp || Date.now());
-                const key = timeRange === 'SpecificDay' ? `${d.getHours()}:00` : d.toISOString().split('T')[0];
+                const key = timeRange === 'SpecificDay' ? `${String(d.getHours()).padStart(2, '0')}:00` : getLocalDatePart(d, 'date');
                 if (!aggr[key]) aggr[key] = { name: key, revenue: 0, cost: 0 };
                 aggr[key].revenue += (o.total || 0);
             }
@@ -128,7 +137,7 @@ export const DashboardScreen: React.FC = () => {
 
         activeExpenses.forEach(e => {
             const d = new Date(e.date || Date.now());
-            const key = timeRange === 'SpecificDay' ? `${d.getHours()}:00` : d.toISOString().split('T')[0];
+            const key = timeRange === 'SpecificDay' ? `${String(d.getHours()).padStart(2, '0')}:00` : getLocalDatePart(d, 'date');
             if (!aggr[key]) aggr[key] = { name: key, revenue: 0, cost: 0 };
             aggr[key].cost += e.amount;
         });
