@@ -369,24 +369,28 @@ export default function SuperAdminScreen() {
                                     placeholder="850 (Default)"
                                     className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 pl-6 pr-3 text-xs text-white outline-none focus:border-blue-500"
                                     value={selectedBusiness.custom_price || ''}
-                                    onChange={async (e) => {
+                                    onChange={(e) => {
                                         const val = e.target.value ? Number(e.target.value) : null;
-                                        
-                                        // 1. Actualizar estado local del seleccionado
-                                        const updated = { ...selectedBusiness, custom_price: val };
-                                        setSelectedBusiness(updated);
-                                        
-                                        // 2. Actualizar lista global para persistencia en navegación
-                                        setBusinesses(prev => prev.map(b => b.id === selectedBusiness.id ? { ...b, custom_price: val } : b));
-                                        
-                                        // 3. Sincronizar con DB
-                                        const supabase = getSupabase();
-                                        if (supabase) {
-                                            await supabase.from('businesses').update({ custom_price: val }).eq('id', selectedBusiness.id);
-                                        }
+                                        setSelectedBusiness({ ...selectedBusiness, custom_price: val });
                                     }}
                                 />
                              </div>
+                             <button
+                                onClick={async () => {
+                                    setSaving(true);
+                                    const supabase = getSupabase();
+                                    if (supabase) {
+                                        await supabase.from('businesses').update({ custom_price: selectedBusiness.custom_price }).eq('id', selectedBusiness.id);
+                                        setBusinesses(prev => prev.map(b => b.id === selectedBusiness.id ? { ...b, custom_price: selectedBusiness.custom_price } : b));
+                                        alert('Precio de cliente actualizado correctamente.');
+                                    }
+                                    setSaving(false);
+                                }}
+                                disabled={saving}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+                             >
+                                {saving ? 'Sincronizando...' : 'Guardar Precio'}
+                             </button>
                         </div>
                         <p className="text-[8px] text-slate-600 mt-2 italic">Si está vacío, se aplicará el precio global del sistema.</p>
                     </div>
