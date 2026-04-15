@@ -4,7 +4,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { SubscriptionStatus } from '../types';
 
 export const BillingScreen: React.FC = () => {
-    const { daysRemaining, status, expiryDate, paymentHistory, paySubscription, payEquipment, posStatus } = useSubscription();
+    const { daysRemaining, status, expiryDate, paymentHistory, paySubscription, payEquipment, posStatus, membershipPrice } = useSubscription();
     const { settings } = useSettings();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEquipmentModalOpen, setIsEquipmentModalOpen] = useState(false);
@@ -21,24 +21,11 @@ export const BillingScreen: React.FC = () => {
         { name: '8 Meses', price: 625.00, label: 'Mensual' },
     ];
 
-    const handleRenovar = () => {
-        setStripeModalConfig({
-            isOpen: true,
-            amount: 850,
-            title: 'Renovación Mensual - Solaris POS',
-            onPay: async () => {
-                setIsPaying(true);
-                const success = await paySubscription();
-                if (success) {
-                    setIsPaying(false);
-                    setStripeModalConfig(null);
-                    setShowSuccess(true);
-                    setTimeout(() => setShowSuccess(false), 5000);
-                } else {
-                    setIsPaying(false);
-                }
-            }
-        });
+    const handleRenovar = async () => {
+        setIsPaying(true);
+        const success = await paySubscription();
+        if (!success) setIsPaying(false);
+        // Page will redirect to Stripe url if success
     };
 
     const handlePayment = async () => {
@@ -162,10 +149,11 @@ export const BillingScreen: React.FC = () => {
                     <div className="relative z-10 flex flex-wrap gap-4">
                         <button 
                             onClick={handleRenovar}
-                            className="flex-1 min-w-[240px] py-4 bg-primary hover:bg-blue-600 text-white rounded-2xl font-black transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 text-lg"
+                            className="flex-1 min-w-[240px] py-4 bg-primary hover:bg-blue-600 text-white rounded-2xl font-black transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 text-lg disabled:opacity-50"
+                            disabled={isPaying}
                         >
-                            <span className="material-icons-round">refresh</span>
-                            RENOVAR AHORA - $850.00
+                            <span className="material-icons-round">{isPaying ? 'sync' : 'refresh'}</span>
+                            {isPaying ? 'PROCESANDO...' : `RENOVAR AHORA - $${membershipPrice.toLocaleString()}.00`}
                         </button>
                         <button 
                             onClick={handleEquipmentButtonClick}

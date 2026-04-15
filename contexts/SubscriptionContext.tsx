@@ -25,6 +25,8 @@ interface SubscriptionContextType {
   saasStatus: 'ACTIVE' | 'WARNING' | 'SUSPENDED' | 'DEBT_BLOCKED';
   refreshFeatures: () => Promise<void>;
   extendSubscription: (days: number) => Promise<boolean>;
+  membershipPrice: number;
+  updateMembershipPrice: (price: number) => Promise<void>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -40,6 +42,23 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     amountPaid: 0,
     isFullyPaid: false
   });
+  const [membershipPrice, setMembershipPrice] = useState(850);
+
+  // Fetch Global Config (Price)
+  const fetchGlobalConfig = async () => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    try {
+      const { data } = await supabase.from('app_config').select('value').eq('key', 'membership_monthly_price').single();
+      if (data) setMembershipPrice(Number(data.value));
+    } catch (e) {
+      console.log('Using default price (app_config table may not exist yet)');
+    }
+  };
+
+  useEffect(() => {
+    fetchGlobalConfig();
+  }, []);
 
   const fetchSubscriptionData = async () => {
     if (!authProfile?.businessId) return;
@@ -185,26 +204,32 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const paySubscription = async () => {
-    return new Promise<boolean>((resolve) => {
-      setTimeout(() => {
-        const newExpiry = new Date();
-        newExpiry.setDate(newExpiry.getDate() + 30);
-        
-        const newRecord: PaymentRecord = {
-          id: `PAY-${Date.now()}`,
-          date: new Date().toISOString(),
-          amount: 850,
-          method: 'Tarjeta de Crédito',
-          transactionId: `TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
-        };
+    if (!authProfile?.businessId) return false;
+    
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessId: authProfile.businessId,
+          businessName: authProfile.full_name,
+          amount: membershipPrice,
+          type: 'SUBSCRIPTION',
+          planName: 'Solaris POS - Renovación Mensual'
+        }),
+      });
 
-        const updatedHistory = [newRecord, ...paymentHistory];
-        setExpiryDate(newExpiry);
-        setPaymentHistory(updatedHistory);
-        saveData(newExpiry, updatedHistory, posStatus);
-        resolve(true);
-      }, 2000);
-    });
+      const { url, error } = await response.json();
+      if (error) throw new Error(error);
+      
+      // Redirect to Stripe
+      window.location.href = url;
+      return true;
+    } catch (err) {
+      console.error('Stripe Error:', err);
+      alert('Error al conectar con la pasarela de pagos.');
+      return false;
+    }
   };
 
   const payEquipment = async (amount: number, planName: string) => {
@@ -377,7 +402,14 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
       isDebtBlocked,
       saasStatus,
       refreshFeatures: fetchSubscriptionData,
-      extendSubscription
+      extendSubscription,
+      membershipPrice,
+      updateMembershipPrice: async (price: number) => {
+        const supabase = getSupabase();
+        if (!supabase) return;
+        await supabase.from('app_config').upsert({ key: 'membership_monthly_price', value: price.toString() }, { onConflict: 'key' });
+        setMembershipPrice(price);
+      }
     }}>
       {children}
     </SubscriptionContext.Provider>

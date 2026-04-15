@@ -230,6 +230,11 @@ export default function SuperAdminScreen() {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Global Strategy Section */}
+        <div className="lg:col-span-12 mb-4">
+            <GlobalConfigPanel />
+        </div>
+
         {/* Business List */}
         <div className="lg:col-span-4 space-y-4">
           <h2 className="text-xs font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
@@ -508,6 +513,57 @@ export default function SuperAdminScreen() {
     </div>
   );
 }
+
+const GlobalConfigPanel = () => {
+    const { membershipPrice, updateMembershipPrice } = useSubscription();
+    const [price, setPrice] = useState(membershipPrice);
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            await updateMembershipPrice(price);
+            alert('Configuración global actualizada.');
+        } catch (e) {
+            alert('Error al guardar. Asegúrate de que la tabla app_config exista.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500">
+                    <CreditCard size={24} />
+                </div>
+                <div>
+                    <h3 className="text-lg font-black uppercase tracking-tight text-white italic">Estrategia de Precios</h3>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Costo de Membresía Mensual (Global)</p>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-4 w-full md:w-auto">
+                <div className="relative flex-1 md:flex-none">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-black">$</span>
+                    <input 
+                        type="number"
+                        value={price}
+                        onChange={(e) => setPrice(Number(e.target.value))}
+                        className="pl-8 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white font-black w-full md:w-32 focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                </div>
+                <button 
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-lg shadow-emerald-500/10 active:scale-95 disabled:opacity-50"
+                >
+                    {saving ? 'Guardando...' : 'Aplicar Cambio'}
+                </button>
+            </div>
+        </div>
+    );
+};
 
 function BoxIcon(props: any) {
   return (
