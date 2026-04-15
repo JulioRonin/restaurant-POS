@@ -92,8 +92,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .eq('id', businessId);
 
       if (updateError) throw updateError;
+
+      // 3. Crear Registro de Pago en el Historial
+      const { error: historyError } = await supabase
+        .from('subscription_payments')
+        .insert({
+          business_id: businessId,
+          amount: session.amount_total ? session.amount_total / 100 : 850,
+          method: 'stripe',
+          status: 'PAID',
+          payment_type: session.metadata?.paymentType || 'SUBSCRIPTION',
+          stripe_link: session.id, // Guardamos el ID de sesión de Stripe como referencia
+          period_start: now.toISOString(),
+          period_end: baseDate.toISOString()
+        });
+
+      if (historyError) {
+        console.warn('⚠️ Pago aplicado pero fallo el registro en el historial:', historyError.message);
+      }
       
-      console.log(`✅ Pago Aplicado. Negocio: ${businessId}. Vence: ${baseDate.toISOString()}`);
+      console.log(`✅ Pago Aplicado y Registrado. Negocio: ${businessId}. Vence: ${baseDate.toISOString()}`);
     } catch (err: any) {
       console.error('❌ Error de BD al aplicar pago:', err.message);
       // Responder 200 a Stripe para evitar reintentos infinitos si fue error nuestro en BD
