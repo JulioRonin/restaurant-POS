@@ -217,7 +217,7 @@ export const POSScreen: React.FC = () => {
 
         {/* Grid Responsive Columns */}
         <div className="flex-1 overflow-y-auto pr-1 md:pr-2 custom-scrollbar">
-            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xxl:grid-cols-5 gap-3 sm:gap-6 pb-16 lg:pb-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xxl:grid-cols-5 gap-3 sm:gap-6 pb-16 lg:pb-10">
                 {filteredItems.map(item => (
                     <motion.div 
                         key={item.id} 
@@ -228,12 +228,12 @@ export const POSScreen: React.FC = () => {
                         className="cursor-pointer h-full"
                     >
                         <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-[#0a0a0b] overflow-hidden group shadow-2xl rounded-solaris h-full">
-                           <div className="relative h-32 xs:h-40 sm:h-48 overflow-hidden">
+                           <div className="relative h-40 sm:h-48 overflow-hidden">
                                 <img src={item.image} className="w-full h-full object-cover filter contrast-125 transition-transform duration-700 group-hover:scale-110" alt="" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0b] via-transparent to-transparent opacity-80" />
                                 <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
                                     <div>
-                                        <h3 className="text-[11px] sm:text-[13px] font-black uppercase italic text-white tracking-tighter leading-tight mb-0.5">{item.name}</h3>
+                                        <h3 className="text-[12px] sm:text-[13px] font-black uppercase italic text-white tracking-tighter leading-tight mb-0.5">{item.name}</h3>
                                         <p className="text-[8px] font-black uppercase text-white/40 tracking-widest">{item.category}</p>
                                     </div>
                                     <div className="bg-solaris-orange text-white p-2 rounded-lg shadow-solaris-glow group-hover:scale-110 transition-transform">
