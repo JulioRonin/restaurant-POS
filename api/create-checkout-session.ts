@@ -1,22 +1,47 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   apiVersion: '2023-10-16' as any,
 });
+
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { businessId, businessName, amount, type = 'SUBSCRIPTION', planName = 'Solaris POS Premium' } = req.body;
+  const { businessId, businessName, type = 'SUBSCRIPTION', planName = 'Solaris POS Premium' } = req.body;
 
   if (!businessId) {
     return res.status(400).json({ error: 'Missing businessId' });
   }
 
   try {
+    // 1. Buscar precio personalizado para este negocio
+    const { data: business } = await supabase
+      .from('businesses')
+      .select('custom_price')
+      .eq('id', businessId)
+      .single();
+
+    let finalAmount = req.body.amount || 850;
+
+    if (business && business.custom_price) {
+        finalAmount = business.custom_price;
+    } else {
+        // Fallback al precio global si no hay personalizado
+        const { data: globalConfig } = await supabase
+          .from('app_config')
+          .select('value')
+          .eq('key', 'membership_monthly_price')
+          .single();
+        if (globalConfig) finalAmount = Number(globalConfig.value);
+    }
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -27,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               name: `${planName}`,
               description: type === 'SUBSCRIPTION' ? 'Renovación de Licencia Solaris POS (30 días)' : 'Pago de Equipo/Hardware Solaris POS',
             },
-            unit_amount: Math.round(amount * 100), // Stripe expects cents
+            unit_amount: Math.round(finalAmount * 100), // Stripe expects cents
           },
           quantity: 1,
         },

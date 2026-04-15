@@ -26,6 +26,7 @@ interface Business {
   plan: 'basic' | 'premium' | 'enterprise';
   is_active: boolean;
   created_at: string;
+  custom_price?: number | null;
   profiles?: any[];
 }
 
@@ -356,6 +357,32 @@ export default function SuperAdminScreen() {
                                 </button>
                             );
                         })}
+                    </div>
+
+                    <div className="pt-4 mt-4 border-t border-slate-800">
+                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Precio Personalizado (MXN / Mensual)</label>
+                        <div className="flex gap-2">
+                             <div className="relative flex-1">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs">$</span>
+                                <input 
+                                    type="number"
+                                    placeholder="850 (Default)"
+                                    className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 pl-6 pr-3 text-xs text-white outline-none focus:border-blue-500"
+                                    value={selectedBusiness.custom_price || ''}
+                                    onChange={async (e) => {
+                                        const val = e.target.value ? Number(e.target.value) : null;
+                                        const updated = { ...selectedBusiness, custom_price: val };
+                                        setSelectedBusiness(updated);
+                                        
+                                        const supabase = getSupabase();
+                                        if (supabase) {
+                                            await supabase.from('businesses').update({ custom_price: val }).eq('id', selectedBusiness.id);
+                                        }
+                                    }}
+                                />
+                             </div>
+                        </div>
+                        <p className="text-[8px] text-slate-600 mt-2 italic">Si está vacío, se aplicará el precio global del sistema.</p>
                     </div>
                 </div>
 
