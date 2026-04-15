@@ -85,7 +85,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
       // 2. Fetch Subscription & Debt Status
       const { data: bizData, error: bError } = await supabase
         .from('businesses')
-        .select('subscription_expiry, equipment_total_debt, equipment_balance, plan')
+        .select('subscription_expiry, equipment_total_debt, equipment_balance, plan, custom_price')
         .eq('id', authProfile.businessId)
         .single();
 
@@ -110,6 +110,13 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
       setPaymentHistory(history);
 
       if (bizData) {
+        // Actualizar precio basado en si es personalizado o global
+        if (bizData.custom_price) {
+            setMembershipPrice(bizData.custom_price);
+        } else {
+            await fetchGlobalConfig();
+        }
+
         const expiry = bizData.subscription_expiry ? new Date(bizData.subscription_expiry) : null;
         setExpiryDate(expiry);
         
