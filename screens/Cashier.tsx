@@ -188,13 +188,13 @@ export const CashierScreen: React.FC = () => {
                 )}
             </AnimatePresence>
 
-            <div className="flex-1 flex overflow-hidden flex-col lg:flex-row relative">
+            <div className="flex-1 flex overflow-hidden">
                 {/* Left Navigation Panel — Reduced width for more workspace */}
-                <div className={`${selectedOrder ? 'hidden lg:flex' : 'flex'} w-full lg:w-80 border-r border-white/5 flex-col no-print bg-[#030303]/50 shrink-0 h-full`}>
-                    <div className="p-6 md:p-8 space-y-6 md:space-y-8">
+                <div className="w-80 border-r border-white/5 flex flex-col no-print bg-[#030303]/50 shrink-0">
+                    <div className="p-8 space-y-8">
                         <div>
-                           <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase mb-2">Terminal Ops</h1>
-                           <p className="text-solaris-orange/40 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.4em]">Transaction Settlement & Assets</p>
+                           <h1 className="text-3xl font-black italic tracking-tighter uppercase mb-2">Terminal Ops</h1>
+                           <p className="text-solaris-orange/40 font-bold text-[10px] uppercase tracking-[0.4em]">Transaction Settlement & Assets</p>
                         </div>
                         <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-2xl">
                              {[
@@ -470,47 +470,39 @@ export const CashierScreen: React.FC = () => {
                          <div className="h-full flex p-8 gap-8 overflow-hidden">
 
                             {/* ── CENTER CONSOLE: The Asset & Adjustment Hub ── */}
-                            <div className="flex-[6] flex flex-col gap-4 md:gap-6 min-h-0 overflow-y-auto lg:overflow-visible pb-32 lg:pb-0">
-                                <GlowCard glowColor="orange" customSize className="w-full h-auto lg:h-full border border-white/10 bg-white/[0.01] !p-0 rounded-solaris lg:rounded-[40px] shadow-2xl flex flex-col">
+                            <div className="flex-[6] flex flex-col gap-6 min-h-0">
+                                <GlowCard glowColor="orange" customSize className="w-full h-full border border-white/10 bg-white/[0.01] !p-0 rounded-[40px] shadow-2xl flex flex-col overflow-hidden">
                                     {/* Console Header: Title & Adjustments Unified */}
-                                    <div className="px-6 md:px-10 py-6 md:py-8 border-b border-white/5 bg-white/[0.01] shrink-0">
-                                        <div className="flex justify-between items-start mb-6 md:mb-10">
-                                            <div className="flex items-center gap-4">
-                                                <button 
-                                                    onClick={() => setSelectedTableId(null)}
-                                                    className="lg:hidden p-3 bg-white/5 rounded-xl text-white/40 active:text-white transition-all"
-                                                >
-                                                    <X size={20} />
-                                                </button>
-                                                <div>
-                                                    <h2 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter text-white">Asset Console</h2>
-                                                    <p className="text-[9px] md:text-[11px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] mt-1 md:mt-2">Node: {selectedOrder.tableId} • Local TX Sequence</p>
-                                                </div>
+                                    <div className="px-10 py-8 border-b border-white/5 bg-white/[0.01] shrink-0">
+                                        <div className="flex justify-between items-center mb-10">
+                                            <div>
+                                                <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">Asset Console</h2>
+                                                <p className="text-[11px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] mt-2">Node: {selectedOrder.tableId} • Local TX Sequence</p>
                                             </div>
-                                            <div className="flex gap-2 md:gap-3">
-                                                <button onClick={() => printerService.openCashDrawer(settings)} className="p-3 md:p-4 bg-white/[0.03] border border-white/5 rounded-xl md:rounded-2xl text-white/40 hover:text-white hover:bg-white/[0.08] transition-all"><Zap size={18} /></button>
-                                                <button onClick={() => handlePrintTicket(selectedOrder)} className="p-3 md:p-4 bg-white/[0.03] border border-white/5 rounded-xl md:rounded-2xl text-white/40 hover:text-white hover:bg-white/[0.08] transition-all"><Printer size={18} /></button>
+                                            <div className="flex gap-3">
+                                                <button onClick={() => printerService.openCashDrawer(settings)} className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white/40 hover:text-white hover:bg-white/[0.08] transition-all"><Zap size={22} /></button>
+                                                <button onClick={() => handlePrintTicket(selectedOrder)} className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white/40 hover:text-white hover:bg-white/[0.08] transition-all"><Printer size={22} /></button>
                                             </div>
                                         </div>
 
                                         {/* Adjustment Layer: Split & Tip side-by-side */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+                                        <div className="grid grid-cols-2 gap-10">
                                             <div>
-                                                <h3 className="text-[9px] md:text-[10px] font-black uppercase text-white/20 tracking-widest mb-3 md:mb-4 italic">Quantum Split</h3>
-                                                <div className="flex gap-1.5 md:gap-2">
+                                                <h3 className="text-[10px] font-black uppercase text-white/20 tracking-widest mb-4 italic">Quantum Split</h3>
+                                                <div className="flex gap-2">
                                                     {[1, 2, 3, 4].map(num => (
                                                         <button key={num} onClick={() => setSplitCount(num)}
-                                                            className={`flex-1 py-2 md:py-3 rounded-xl md:rounded-2xl font-black italic text-sm md:text-base transition-all ${splitCount === num ? 'bg-solaris-orange text-white' : 'bg-white/[0.03] text-white/20 border border-white/5 hover:text-white'}`}
+                                                            className={`flex-1 py-3 rounded-2xl font-black italic text-base transition-all ${splitCount === num ? 'bg-solaris-orange text-white' : 'bg-white/[0.03] text-white/20 border border-white/5 hover:text-white'}`}
                                                         >{num}</button>
                                                     ))}
                                                 </div>
                                             </div>
                                             <div>
-                                                <h3 className="text-[9px] md:text-[10px] font-black uppercase text-white/20 tracking-widest mb-3 md:mb-4 italic">Operator Gratuity</h3>
-                                                <div className="flex gap-1.5 md:gap-2">
+                                                <h3 className="text-[10px] font-black uppercase text-white/20 tracking-widest mb-4 italic">Operator Gratuity</h3>
+                                                <div className="flex gap-2">
                                                     {[0, 10, 15, 20].map(pct => (
                                                         <button key={pct} onClick={() => setTipAmount(subtotal * (pct/100))}
-                                                            className={`flex-1 py-2 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-widest transition-all ${Math.abs(tipAmount - subtotal*(pct/100)) < 1 ? 'bg-white text-black' : 'bg-white/[0.03] text-white/20 border border-white/5'}`}
+                                                            className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${Math.abs(tipAmount - subtotal*(pct/100)) < 1 ? 'bg-white text-black' : 'bg-white/[0.03] text-white/20 border border-white/5'}`}
                                                         >{pct}%</button>
                                                     ))}
                                                 </div>
@@ -554,49 +546,47 @@ export const CashierScreen: React.FC = () => {
                                         </div>
                                     </div>
                                 </GlowCard>
-                                        <div className="h-full flex flex-col lg:flex-row p-4 md:p-8 gap-6 md:gap-8 overflow-y-auto no-scrollbar">
-
-                            {/* ... Console is already modified ... */}
+                            </div>
 
                             {/* ── RIGHT COLUMN: The Settlement Panel ── */}
-                            <div className="w-full lg:flex-[4] flex flex-col min-h-0 pb-24 md:pb-0">
-                                <GlowCard glowColor="orange" customSize className="w-full h-auto lg:h-full border border-white/10 bg-white/[0.02] !p-6 md:!p-10 rounded-[32px] md:rounded-[48px] shadow-solaris-glow flex flex-col">
+                            <div className="flex-[4] flex flex-col min-h-0">
+                                <GlowCard glowColor="orange" customSize className="w-full h-full border border-white/10 bg-white/[0.02] !p-10 rounded-[48px] shadow-solaris-glow flex flex-col overflow-hidden">
                                     <div className="flex-1 flex flex-col min-h-0">
                                         {/* Payload Display */}
-                                        <div className="mb-8 md:mb-12">
-                                            <p className="text-[9px] md:text-[11px] font-black uppercase text-solaris-orange/60 tracking-[0.4em] mb-2 md:mb-4 italic">Aggregate Payload</p>
-                                            <p className="text-5xl md:text-8xl font-black italic tracking-tighter text-white leading-none">${total.toFixed(2)}</p>
+                                        <div className="mb-12">
+                                            <p className="text-[11px] font-black uppercase text-solaris-orange/60 tracking-[0.5em] mb-4 italic">Aggregate Payload</p>
+                                            <p className="text-8xl font-black italic tracking-tighter text-white leading-none">${total.toFixed(2)}</p>
                                             {tipAmount > 0 && (
-                                                <p className="text-[9px] md:text-[10px] font-black uppercase text-white/20 tracking-widest mt-4 md:mt-6 italic">Includes ${tipAmount.toFixed(2)} network gratuity</p>
+                                                <p className="text-[10px] font-black uppercase text-white/20 tracking-widest mt-6 italic">Includes ${tipAmount.toFixed(2)} network gratuity</p>
                                             )}
                                         </div>
 
-                                        <div className="flex-1 space-y-3 md:space-y-4">
-                                            <p className="text-[9px] md:text-[10px] font-black uppercase text-white/20 tracking-widest italic mb-4 md:mb-6">Execution Method</p>
+                                        <div className="flex-1 space-y-4">
+                                            <p className="text-[10px] font-black uppercase text-white/20 tracking-widest italic mb-6">Execution Method</p>
                                             <GlowButton 
                                                 onClick={() => setPaymentMethod(PaymentMethod.CASH)}
                                                 variant={paymentMethod === PaymentMethod.CASH ? 'primary' : 'secondary'}
-                                                className="w-full py-6 md:py-8 rounded-[24px] md:rounded-[32px] flex items-center justify-center gap-4 md:gap-6"
+                                                className="w-full py-8 rounded-[32px] flex items-center justify-center gap-6"
                                             >
-                                                <Wallet size={20} className="md:w-7 md:h-7" /> <span className="text-[11px] md:text-sm font-black uppercase tracking-widest">Liquid Asset</span>
+                                                <Wallet size={28} /> <span className="text-sm font-black uppercase tracking-widest">Liquid Asset</span>
                                             </GlowButton>
                                             <GlowButton 
                                                 onClick={() => setPaymentMethod(PaymentMethod.CARD)}
                                                 variant={paymentMethod === PaymentMethod.CARD ? 'primary' : 'secondary'}
-                                                className="w-full py-6 md:py-8 rounded-[24px] md:rounded-[32px] flex items-center justify-center gap-4 md:gap-6"
+                                                className="w-full py-8 rounded-[32px] flex items-center justify-center gap-6"
                                             >
-                                                <CreditCard size={20} className="md:w-7 md:h-7" /> <span className="text-[11px] md:text-sm font-black uppercase tracking-widest">Spectral Card</span>
+                                                <CreditCard size={28} /> <span className="text-sm font-black uppercase tracking-widest">Spectral Card</span>
                                             </GlowButton>
                                         </div>
                                     </div>
 
                                     {/* Action Vector */}
-                                    <div className="space-y-4 pt-8 md:pt-10 border-t border-white/5">
+                                    <div className="space-y-4 pt-10 border-t border-white/5">
                                         <GlowButton
                                             onClick={() => setIsPaymentModalOpen(true)}
-                                            className="w-full py-8 md:py-12 rounded-[28px] md:rounded-[40px] tracking-[0.2em] md:tracking-[0.4em] text-xl md:text-3xl flex items-center justify-center gap-4 md:gap-8 group"
+                                            className="w-full py-12 rounded-[40px] tracking-[0.4em] text-3xl flex items-center justify-center gap-8 group"
                                         >
-                                            Execute <ArrowRight size={24} className="md:w-10 md:h-10 group-hover:translate-x-2 transition-transform" />
+                                            Execute <ArrowRight size={40} className="group-hover:translate-x-2 transition-transform" />
                                         </GlowButton>
                                     </div>
                                 </GlowCard>
@@ -604,12 +594,12 @@ export const CashierScreen: React.FC = () => {
 
                         </div>
                     ) : (
-                        <div className="h-full flex flex-col items-center justify-center opacity-20 p-6 text-center">
+                        <div className="h-full flex flex-col items-center justify-center opacity-20 group">
                              <div className="relative">
-                                <Zap size={80} className="md:w-[140px] md:h-[140px] text-white" />
-                                <div className="absolute inset-0 bg-solaris-orange blur-3xl opacity-20" />
+                                <Zap size={140} className="text-white group-hover:scale-110 transition-transform duration-700" />
+                                <div className="absolute inset-0 bg-solaris-orange blur-3xl opacity-20 group-hover:opacity-40 transition-opacity" />
                              </div>
-                             <p className="text-[10px] md:text-[14px] font-black uppercase text-white tracking-[0.4em] md:tracking-[0.8em] mt-8 md:mt-12 animate-pulse font-mono">Awaiting Node Selection</p>
+                             <p className="text-[14px] font-black uppercase text-white tracking-[0.8em] mt-12 animate-pulse">Awaiting Node Selection</p>
                         </div>
                     )}
                 </div>
@@ -624,54 +614,54 @@ export const CashierScreen: React.FC = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[600] flex items-center justify-center bg-black/95 backdrop-blur-3xl p-4"
                     >
-                        <div className="w-full max-w-5xl bg-[#0d0d0e] border border-white/10 rounded-solaris md:rounded-[40px] shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
+                        <div className="w-full max-w-5xl bg-[#0d0d0e] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden">
                             {/* Modal Header */}
-                            <div className="flex justify-between items-center px-6 md:px-10 py-5 md:py-7 border-b border-white/5 bg-white/[0.01] shrink-0">
+                            <div className="flex justify-between items-center px-10 py-7 border-b border-white/5 bg-white/[0.01]">
                                 <div>
-                                    <h2 className="text-xl md:text-3xl font-black italic tracking-tighter uppercase text-white">Authorize Payout</h2>
-                                    <p className="text-[8px] md:text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.4em] mt-1 italic">Table: {selectedOrder?.tableId} • Amount due: ${(total / splitCount).toFixed(2)}</p>
+                                    <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white">Authorize Payout</h2>
+                                    <p className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.4em] mt-1 italic">Table: {selectedOrder?.tableId} • Amount due: ${(total / splitCount).toFixed(2)}</p>
                                 </div>
                                 <button
                                     onClick={() => setIsPaymentModalOpen(false)}
-                                    className="w-10 h-10 md:w-12 md:h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 transition-all"
+                                    className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 transition-all"
                                 >
-                                    <X size={20} />
+                                    <X size={22} />
                                 </button>
                             </div>
 
                             {/* Modal Body */}
-                            <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] flex-1 overflow-y-auto custom-scrollbar">
+                            <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] min-h-[420px]">
                                 {/* Left — Cash Input */}
-                                <div className="flex flex-col items-center justify-center p-8 md:p-12 border-b xl:border-b-0 xl:border-r border-white/5">
-                                    <p className="text-[9px] md:text-[10px] font-black uppercase text-white/20 tracking-[0.5em] mb-6 md:mb-8 italic">Cash Received</p>
+                                <div className="flex flex-col items-center justify-center p-12 border-r border-white/5">
+                                    <p className="text-[10px] font-black uppercase text-white/20 tracking-[0.5em] mb-8 italic">Cash Received</p>
                                     <div className="relative w-full flex items-center justify-center">
-                                        <span className="text-3xl md:text-5xl font-black italic text-white/30 mr-2 md:mr-3 leading-none">$</span>
+                                        <span className="text-5xl font-black italic text-white/30 mr-3 leading-none">$</span>
                                         <input
                                             type="number"
                                             autoFocus
                                             value={cashReceived}
                                             onChange={e => setCashReceived(e.target.value)}
                                             placeholder="0.00"
-                                            className="bg-transparent border-none text-5xl md:text-7xl font-black italic tracking-tighter text-white outline-none placeholder:text-white/10 w-full text-left leading-none"
-                                            style={{maxWidth: '220px'}}
+                                            className="bg-transparent border-none text-7xl font-black italic tracking-tighter text-white outline-none placeholder:text-white/10 w-full text-left leading-none"
+                                            style={{maxWidth: '280px'}}
                                         />
                                     </div>
-                                    <div className="w-full h-px bg-white/10 mt-6 mb-8 md:mb-10" />
+                                    <div className="w-full h-px bg-white/10 mt-6 mb-10" />
 
                                     {/* Quick amount buttons */}
-                                    <div className="grid grid-cols-3 gap-2 md:gap-3 w-full max-w-sm">
+                                    <div className="grid grid-cols-3 gap-3 w-full">
                                         {[50, 100, 200, 500].map(amt => (
                                             <button
                                                 key={amt}
                                                 onClick={() => setCashReceived(amt.toString())}
-                                                className="py-3 md:py-4 rounded-xl md:rounded-2xl bg-white/[0.03] border border-white/5 text-white/40 hover:text-white hover:bg-white/[0.08] font-black italic text-xs md:text-sm transition-all"
+                                                className="py-4 rounded-2xl bg-white/[0.03] border border-white/5 text-white/40 hover:text-white hover:bg-white/[0.08] font-black italic text-sm transition-all"
                                             >
                                                 ${amt}
                                             </button>
                                         ))}
                                         <button
                                             onClick={() => setCashReceived((total / splitCount).toFixed(2))}
-                                            className="py-3 md:py-4 rounded-xl md:rounded-2xl bg-solaris-orange/10 border border-solaris-orange/20 text-solaris-orange hover:bg-solaris-orange/20 font-black italic text-[9px] md:text-[10px] uppercase tracking-widest transition-all col-span-2"
+                                            className="py-4 rounded-2xl bg-solaris-orange/10 border border-solaris-orange/20 text-solaris-orange hover:bg-solaris-orange/20 font-black italic text-[10px] uppercase tracking-widest transition-all col-span-2"
                                         >
                                             Exact Amount
                                         </button>
@@ -679,49 +669,45 @@ export const CashierScreen: React.FC = () => {
                                 </div>
 
                                 {/* Right — Summary & Confirm */}
-                                <div className="flex flex-col p-8 md:p-10 gap-6 bg-white/[0.01]">
+                                <div className="flex flex-col p-10 gap-6 bg-white/[0.01]">
                                     <div className="flex-1 space-y-4">
-                                        <div className="grid grid-cols-2 xl:grid-cols-1 gap-4">
-                                            <div className="bg-white/[0.03] rounded-xl md:rounded-2xl p-4 md:p-6 border border-white/5">
-                                                <p className="text-[8px] md:text-[9px] font-black uppercase text-white/30 tracking-widest mb-1 md:mb-2 italic">To Pay</p>
-                                                <p className="text-2xl md:text-4xl font-black italic text-white tracking-tighter leading-none">${(total / splitCount).toFixed(2)}</p>
-                                            </div>
-
-                                            <div className="bg-solaris-orange/5 rounded-xl md:rounded-2xl p-4 md:p-6 border border-solaris-orange/10">
-                                                <p className="text-[8px] md:text-[9px] font-black uppercase text-solaris-orange/60 tracking-widest mb-1 md:mb-2 italic">Change</p>
-                                                <p className="text-2xl md:text-4xl font-black italic text-solaris-orange tracking-tighter leading-none">
-                                                    ${Math.max(0, (parseFloat(cashReceived) || 0) - (total / splitCount)).toFixed(2)}
-                                                </p>
-                                            </div>
+                                        <div className="bg-white/[0.03] rounded-2xl p-6 border border-white/5">
+                                            <p className="text-[9px] font-black uppercase text-white/30 tracking-widest mb-2 italic">To Pay</p>
+                                            <p className="text-4xl font-black italic text-white tracking-tighter leading-none">${(total / splitCount).toFixed(2)}</p>
                                         </div>
 
-                                        <div className="space-y-2 md:space-y-3 pt-2">
-                                            <p className="text-[8px] md:text-[9px] font-black uppercase text-white/20 tracking-widest italic">Payment Method</p>
-                                            <div className="grid grid-cols-2 xl:grid-cols-1 gap-2">
-                                                <GlowButton
-                                                    onClick={() => setPaymentMethod(PaymentMethod.CASH)}
-                                                    variant={paymentMethod === PaymentMethod.CASH ? 'primary' : 'secondary'}
-                                                    className="w-full text-[10px] py-4"
-                                                >
-                                                    <Wallet size={16} /> <span className="hidden xs:inline">Liquid Asset</span>
-                                                </GlowButton>
-                                                <GlowButton
-                                                    onClick={() => setPaymentMethod(PaymentMethod.CARD)}
-                                                    variant={paymentMethod === PaymentMethod.CARD ? 'primary' : 'secondary'}
-                                                    className="w-full text-[10px] py-4"
-                                                >
-                                                    <CreditCard size={16} /> <span className="hidden xs:inline">Spectral Card</span>
-                                                </GlowButton>
-                                            </div>
+                                        <div className="bg-solaris-orange/5 rounded-2xl p-6 border border-solaris-orange/10">
+                                            <p className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-widest mb-2 italic">Change</p>
+                                            <p className="text-4xl font-black italic text-solaris-orange tracking-tighter leading-none">
+                                                ${Math.max(0, (parseFloat(cashReceived) || 0) - (total / splitCount)).toFixed(2)}
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-3 pt-2">
+                                            <p className="text-[9px] font-black uppercase text-white/20 tracking-widest italic">Payment Method</p>
+                                            <GlowButton
+                                                onClick={() => setPaymentMethod(PaymentMethod.CASH)}
+                                                variant={paymentMethod === PaymentMethod.CASH ? 'primary' : 'secondary'}
+                                                className="w-full"
+                                            >
+                                                <Wallet size={18} /> Liquid Asset
+                                            </GlowButton>
+                                            <GlowButton
+                                                onClick={() => setPaymentMethod(PaymentMethod.CARD)}
+                                                variant={paymentMethod === PaymentMethod.CARD ? 'primary' : 'secondary'}
+                                                className="w-full"
+                                            >
+                                                <CreditCard size={18} /> Spectral Card
+                                            </GlowButton>
                                         </div>
                                     </div>
 
                                     <GlowButton
                                         onClick={handleProcessPayment}
                                         disabled={paymentMethod === PaymentMethod.CASH && (parseFloat(cashReceived) || 0) < (total / splitCount)}
-                                        className="w-full py-5 md:py-7 tracking-[0.2em] md:tracking-[0.3em] text-base md:text-lg mb-4 md:mb-0"
+                                        className="w-full py-7 tracking-[0.3em] text-lg"
                                     >
-                                        <CheckCircle2 size={20} className="md:w-6 md:h-6" /> Confirm Transmission
+                                        <CheckCircle2 size={24} /> Confirm Transmission
                                     </GlowButton>
                                 </div>
                             </div>
