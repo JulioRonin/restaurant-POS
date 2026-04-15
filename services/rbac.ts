@@ -36,7 +36,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, string[]> = {
     '/cashier',
     '/kitchen',
     '/menu',
-    '/inventory'
+    '/inventory',
+    '/billing'
   ],
   [ROLES.CASHIER]: [
     '/cashier',

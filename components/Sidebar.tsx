@@ -208,23 +208,30 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
           <NavItem to="/inventory" icon={Boxes} label="Supply Flow" isExpanded={isExpanded} />
         )}
 
+        {canAccess(activeEmployee?.role, '/billing') && (
+          <NavItem to="/billing" icon={CreditCard} label="Membership" isExpanded={isExpanded} />
+        )}
+
         {isSuperAdmin && (
           <NavItem to="/super-admin" icon={ShieldCheck} label="Solaris Root" isExpanded={isExpanded} />
         )}
 
         {isExpanded && (
           <div className="px-4 mt-12 mb-6">
-             <div className={`p-5 rounded-solaris border ${statusConfig.color} backdrop-blur-3xl relative overflow-hidden`}>
+             <NavLink to="/billing" className={`block p-5 rounded-solaris border ${statusConfig.color} backdrop-blur-3xl relative overflow-hidden hover:scale-[1.02] transition-all cursor-pointer group/sub`}>
                 <div className="relative z-10">
                     <div className="flex justify-between items-center mb-3">
                     <span className="text-[8px] font-black uppercase tracking-widest opacity-60 italic">Node Status</span>
                     <div className="w-1.5 h-1.5 rounded-full bg-current animate-ping"></div>
                     </div>
                     <div className="text-2xl font-black italic tracking-tighter text-white">{daysRemaining}D</div>
-                    <p className="text-[9px] font-black uppercase tracking-widest mt-1 opacity-70">{statusConfig.label}</p>
+                    <div className="flex items-center justify-between mt-1">
+                        <p className="text-[9px] font-black uppercase tracking-widest opacity-70">{statusConfig.label}</p>
+                        <CreditCard size={12} className="opacity-0 group-hover/sub:opacity-100 transition-opacity" />
+                    </div>
                 </div>
                 <div className="absolute top-0 right-0 w-full h-full bg-white/[0.02] pointer-events-none"></div>
-             </div>
+             </NavLink>
           </div>
         )}
 
