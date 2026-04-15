@@ -179,16 +179,16 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
   }, [authProfile?.businessId]);
 
   const initializeDefault = () => {
-    const nextMonth = new Date();
-    nextMonth.setDate(nextMonth.getDate() + 30);
-    setExpiryDate(nextMonth);
+    // Default to expired/today to force sync with Supabase before granting access
+    const today = new Date();
+    setExpiryDate(today);
     const initialPos = { plan: null, totalAmount: 5000, amountPaid: 0, isFullyPaid: false };
     setPosStatus(initialPos);
     
     if (authProfile?.businessId) {
         const key = `culinex_subscription_${authProfile.businessId}`;
         localStorage.setItem(key, JSON.stringify({
-            expiry: nextMonth.toISOString(),
+            expiry: today.toISOString(),
             history: [],
             posStatus: initialPos
         }));
