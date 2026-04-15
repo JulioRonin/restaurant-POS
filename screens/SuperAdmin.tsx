@@ -371,9 +371,15 @@ export default function SuperAdminScreen() {
                                     value={selectedBusiness.custom_price || ''}
                                     onChange={async (e) => {
                                         const val = e.target.value ? Number(e.target.value) : null;
+                                        
+                                        // 1. Actualizar estado local del seleccionado
                                         const updated = { ...selectedBusiness, custom_price: val };
                                         setSelectedBusiness(updated);
                                         
+                                        // 2. Actualizar lista global para persistencia en navegación
+                                        setBusinesses(prev => prev.map(b => b.id === selectedBusiness.id ? { ...b, custom_price: val } : b));
+                                        
+                                        // 3. Sincronizar con DB
                                         const supabase = getSupabase();
                                         if (supabase) {
                                             await supabase.from('businesses').update({ custom_price: val }).eq('id', selectedBusiness.id);
