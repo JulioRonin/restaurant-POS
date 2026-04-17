@@ -83,7 +83,7 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
             description,
             amount,
             category,
-            date: date ? new Date(date).toISOString() : new Date().toISOString(),
+            date: date ? new Date(date + 'T00:00:00').toISOString() : new Date().toISOString(),
             user,
             // Tag with businessId for multi-tenant isolation
             ...(authProfile?.businessId ? { businessId: authProfile.businessId } : {})

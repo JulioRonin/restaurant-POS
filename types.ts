@@ -156,7 +156,7 @@ export interface SupplierOrder {
   totalCost: number;
 }
 
-export type ExpenseCategory = 'Insumos' | 'Mantenimiento' | 'Nomina' | 'Servicios' | 'Otros';
+export type ExpenseCategory = 'Insumos' | 'Renta' | 'Servicios' | 'Nómina' | 'Mantenimiento' | 'Otros';
 
 export interface Expense {
   id: string;
