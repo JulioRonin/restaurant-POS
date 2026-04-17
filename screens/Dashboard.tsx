@@ -37,7 +37,13 @@ export const DashboardScreen: React.FC = () => {
     
     const [timeRange, setTimeRange] = useState<TimeRange>('Weekly');
     const [selectedCategory, setSelectedCategory] = useState<string>('All');
-    const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]); 
+    const [selectedDate, setSelectedDate] = useState<string>(() => {
+        const d = new Date();
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }); 
     const [isReportOpen, setIsReportOpen] = useState(false);
 
     // Helper to get local date string YYYY-MM-DD or YYYY-MM
@@ -102,9 +108,12 @@ export const DashboardScreen: React.FC = () => {
                 const expMonthStr = getLocalDatePart(d, 'month');
 
                 if (timeRange === 'SpecificDay') {
-                    if (expDateStr !== selectedDate) return false;
+                    // Check local date OR UTC date to be extra resilient to shift issues
+                    const expUTCDateStr = d.toISOString().split('T')[0];
+                    if (expDateStr !== selectedDate && expUTCDateStr !== selectedDate) return false;
                 } else if (timeRange === 'SpecificMonth') {
-                    if (expMonthStr !== selectedDate) return false;
+                    const expUTCMonthStr = d.toISOString().split('T')[0].substring(0, 7);
+                    if (expMonthStr !== selectedDate && expUTCMonthStr !== selectedDate) return false;
                 } else if (timeRange === 'Weekly') {
                     const diffTime = Math.abs(new Date().getTime() - d.getTime());
                     const diffDays = diffTime / (1000 * 60 * 60 * 24);

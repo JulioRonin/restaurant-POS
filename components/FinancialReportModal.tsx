@@ -182,6 +182,43 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
                             </table>
                         </div>
 
+                        {/* Expenses Detail Section */}
+                        {expenses.length > 0 && (
+                           <div className="mb-16 print:break-inside-avoid">
+                               <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Detalle de Gastos Operativos</h3>
+                               <table className="w-full border-collapse border border-gray-100 rounded-2xl overflow-hidden">
+                                   <thead>
+                                       <tr className="bg-gray-50 border-b border-gray-100">
+                                           <th className="text-left py-3 px-6 text-[9px] font-black text-gray-400 uppercase">Concepto / Descripción</th>
+                                           <th className="text-left py-3 px-6 text-[9px] font-black text-gray-400 uppercase">Categoría</th>
+                                           <th className="text-right py-3 px-6 text-[9px] font-black text-gray-400 uppercase">Monto Total</th>
+                                       </tr>
+                                   </thead>
+                                   <tbody>
+                                       {expenses.map((exp, idx) => (
+                                           <tr key={exp.id || idx} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                                               <td className="py-4 px-6 text-sm font-bold text-gray-800">{exp.description}</td>
+                                               <td className="py-4 px-6">
+                                                   <span className="text-[10px] font-black uppercase px-2 py-1 bg-gray-100 text-gray-500 rounded-md">
+                                                       {exp.category}
+                                                   </span>
+                                               </td>
+                                               <td className="py-4 px-6 text-right font-black text-red-500 text-sm">
+                                                   -${exp.amount.toLocaleString()}
+                                               </td>
+                                           </tr>
+                                       ))}
+                                       <tr className="bg-red-50/30">
+                                           <td colSpan={2} className="py-4 px-6 text-right text-[10px] font-black text-gray-400 uppercase">Total Gastos en Período</td>
+                                           <td className="py-4 px-6 text-right font-black text-red-600 text-lg">
+                                               -${totalExpenses.toLocaleString()}
+                                           </td>
+                                       </tr>
+                                   </tbody>
+                               </table>
+                           </div>
+                        )}
+
                         {/* Cashflow Map (Recharts) */}
                         <div className="mb-16 print:break-inside-avoid shadow-sm border border-gray-100 rounded-3xl p-8 bg-white">
                             <div className="flex justify-between items-end mb-8">
