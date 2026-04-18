@@ -413,6 +413,7 @@ export const DashboardScreen: React.FC = () => {
                             </div>
                         </GlowCard>
                     </div>
+                    </div>
                 </div>
             </div>
 

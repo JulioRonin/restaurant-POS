@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Order, Expense } from '../types';
 import { useSettings } from '../contexts/SettingsContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
@@ -62,13 +63,15 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
         window.print();
     };
 
-    return (
+    if (!isOpen) return null;
+
+    const modalContent = (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 print-manifest-container print:relative print:block print:h-auto print:inset-auto print:p-0">
             <style>{`
                 @media print {
                     body { background: white !important; }
-                    .no-print, aside, nav, .lg\\:block, .relative.z-10.no-print { display: none !important; }
-                    #root > div:not(.print-manifest-container) { display: none !important; }
+                    #root { display: none !important; }
+                    .no-print { display: none !important; }
                     .print-manifest-container { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: auto !important; padding: 0 !important; margin: 0 !important; display: block !important; }
                     .printable-content { width: 100% !important; margin: 0 !important; padding: 0 !important; }
                 }
@@ -329,6 +332,7 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
