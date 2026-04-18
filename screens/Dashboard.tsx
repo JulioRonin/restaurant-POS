@@ -222,10 +222,11 @@ export const DashboardScreen: React.FC = () => {
     }, [inventory, activeExpenses]);
 
     return (
-        <div className="flex-1 bg-[#030303] text-white p-6 md:p-10 overflow-y-auto h-full relative font-sans antialiased custom-scrollbar">
-            <SolarisShader />
+        <div className="h-full w-full relative">
+            <div className="flex-1 bg-[#030303] text-white p-6 md:p-10 overflow-y-auto h-full relative font-sans antialiased custom-scrollbar no-print">
+                <SolarisShader />
 
-            <div className="relative z-10">
+                <div className="relative z-10">
                 {/* Header Section */}
                 <div className="flex justify-between items-center mb-12 flex-wrap gap-6 no-print-dashboard">
                     <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>

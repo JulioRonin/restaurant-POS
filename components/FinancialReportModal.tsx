@@ -63,7 +63,16 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 print-container print:relative print:block print:h-auto print:inset-auto print:p-0">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 print-manifest-container print:relative print:block print:h-auto print:inset-auto print:p-0">
+            <style>{`
+                @media print {
+                    body { background: white !important; }
+                    .no-print, aside, nav, .lg\\:block, .relative.z-10.no-print { display: none !important; }
+                    #root > div:not(.print-manifest-container) { display: none !important; }
+                    .print-manifest-container { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: auto !important; padding: 0 !important; margin: 0 !important; display: block !important; }
+                    .printable-content { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+                }
+            `}</style>
             {/* Backdrop - Manual backdrop instead of no-print on parent to avoid hiding everything in print */}
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm no-print" onClick={onClose} />
             
