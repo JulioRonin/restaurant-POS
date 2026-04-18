@@ -65,7 +65,7 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
 
     if (!isOpen) return null;
 
-    const modalContent = (
+    return createPortal(
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 print-manifest-container print:relative print:block print:h-auto print:inset-auto print:p-0">
             <style>{`
                 @media print {
