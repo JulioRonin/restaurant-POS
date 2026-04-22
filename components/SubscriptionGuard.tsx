@@ -52,6 +52,7 @@ export const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ chi
             <span className="material-icons-round text-5xl">{isEquipmentDebt ? 'credit_card_off' : 'lock'}</span>
           </div>
 
+          <div>
             <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter">
                 {isDemoExpired ? 'Demo Finalizada' : isExpired ? 'Suscripción Vencida' : 'Adeudo de Equipo'}
             </h2>
