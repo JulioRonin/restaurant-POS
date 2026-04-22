@@ -43,6 +43,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     isFullyPaid: false
   });
   const [membershipPrice, setMembershipPrice] = useState(850);
+  const [demoUntil, setDemoUntil] = useState<Date | null>(null);
 
   // Fetch Global Config (Price)
   const fetchGlobalConfig = async () => {
@@ -84,8 +85,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
 
       // 2. Fetch Subscription & Debt Status
       const { data: bizData, error: bError } = await supabase
-        .from('businesses')
-        .select('subscription_expiry, equipment_total_debt, equipment_balance, plan, custom_price')
+        .select('subscription_expiry, equipment_total_debt, equipment_balance, plan, custom_price, demo_until')
         .eq('id', authProfile.businessId)
         .single();
 
@@ -109,7 +109,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
 
       setPaymentHistory(history);
 
-      if (bizData) {
+        if (bizData) {
         // Actualizar precio basado en si es personalizado o global
         if (bizData.custom_price) {
             setMembershipPrice(bizData.custom_price);
@@ -120,6 +120,10 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
         const expiry = bizData.subscription_expiry ? new Date(bizData.subscription_expiry) : null;
         setExpiryDate(expiry);
         
+        // Demo Logic
+        const dUntil = bizData.demo_until ? new Date(bizData.demo_until) : null;
+        setDemoUntil(dUntil);
+
         const newPosStatus: PosStatus = {
           plan: bizData.plan as any,
           totalAmount: bizData.equipment_total_debt || 0,
@@ -129,7 +133,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
         setPosStatus(newPosStatus);
 
         // Cache for offline
-        saveData(expiry || new Date(), history, newPosStatus);
+        saveData(expiry || new Date(), history, newPosStatus, demoUntil);
       }
     } catch (err) {
       console.error('[SubscriptionContext] Sync Error:', err);
@@ -143,10 +147,11 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     const key = `culinex_subscription_${authProfile.businessId}`;
     const saved = localStorage.getItem(key);
     if (saved) {
-      const { expiry, history, posStatus: savedPos } = JSON.parse(saved);
+      const { expiry, history, posStatus: savedPos, demoUntil: savedDemo } = JSON.parse(saved);
       setExpiryDate(new Date(expiry));
       setPaymentHistory(history || []);
       if (savedPos) setPosStatus(savedPos);
+      if (savedDemo) setDemoUntil(new Date(savedDemo));
     }
   };
 
@@ -165,10 +170,11 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     const saved = localStorage.getItem(key);
     if (saved) {
       try {
-        const { expiry, history, posStatus: savedPos } = JSON.parse(saved);
+        const { expiry, history, posStatus: savedPos, demoUntil: savedDemo } = JSON.parse(saved);
         setExpiryDate(new Date(expiry));
         setPaymentHistory(history || []);
         if (savedPos) setPosStatus(savedPos);
+        if (savedDemo) setDemoUntil(new Date(savedDemo));
       } catch (e) {
         console.error('Error parsing subscription data:', e);
         initializeDefault();
@@ -195,13 +201,14 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     }
   };
 
-  const saveData = (expiry: Date, history: PaymentRecord[], pos: PosStatus) => {
+  const saveData = (expiry: Date, history: PaymentRecord[], pos: PosStatus, demoUntil?: Date | null) => {
     if (!authProfile?.businessId) return;
     const key = `culinex_subscription_${authProfile.businessId}`;
     localStorage.setItem(key, JSON.stringify({
       expiry: expiry.toISOString(),
       history,
-      posStatus: pos
+      posStatus: pos,
+      demoUntil: demoUntil?.toISOString()
     }));
   };
 
@@ -303,31 +310,46 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const now = new Date();
+  
+  // Expiry for standard plans
   const diffTime = expiryDate ? expiryDate.getTime() - now.getTime() : 0;
   const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
   
-  const isExpired = daysRemaining <= 0;
+  const isExpired = daysRemaining <= 0 && posStatus.plan !== 'demo';
   
   // New SaaS Hardening Logic: Block if debt exceeds 2500 (threshold) or plan is active but unpaid
   const isDebtBlocked = posStatus.plan !== null && 
+                       posStatus.plan !== 'demo' &&
                        !posStatus.isFullyPaid && 
                        (posStatus.totalAmount - posStatus.amountPaid > 2500); 
 
-  const saasStatus = isExpired 
-    ? 'SUSPENDED' 
-    : isDebtBlocked
-      ? 'DEBT_BLOCKED'
-      : daysRemaining <= 3 
-        ? 'WARNING' 
-        : 'ACTIVE';
+  // Demo Status Logic
+  const isDemoActive = posStatus.plan === 'demo';
+  const isDemoExpired = isDemoActive && demoUntil && now > demoUntil;
 
-  const status = isExpired 
-    ? SubscriptionStatus.EXPIRED 
-    : isDebtBlocked
-      ? SubscriptionStatus.DEBT_BLOCKED
-      : daysRemaining <= 3 
-        ? SubscriptionStatus.WARNING 
-        : SubscriptionStatus.ACTIVE;
+  const saasStatus = isDemoExpired
+    ? 'SUSPENDED'
+    : isDemoActive
+      ? 'ACTIVE'
+      : isExpired 
+        ? 'SUSPENDED' 
+        : isDebtBlocked
+          ? 'DEBT_BLOCKED'
+          : daysRemaining <= 3 
+            ? 'WARNING' 
+            : 'ACTIVE';
+
+  const status = isDemoExpired
+    ? SubscriptionStatus.DEMO_EXPIRED
+    : isDemoActive
+      ? SubscriptionStatus.DEMO
+      : isExpired 
+        ? SubscriptionStatus.EXPIRED 
+        : isDebtBlocked
+          ? SubscriptionStatus.DEBT_BLOCKED
+          : daysRemaining <= 3 
+            ? SubscriptionStatus.WARNING 
+            : SubscriptionStatus.ACTIVE;
 
   const extendSubscription = async (days: number) => {
     console.log('[SubscriptionContext] Starting manual extension for Business:', authProfile?.businessId);

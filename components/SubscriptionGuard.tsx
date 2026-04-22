@@ -32,9 +32,10 @@ export const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  if (status === 'ACTIVE') return <>{children}</>;
+  if (status === 'ACTIVE' || status === 'DEMO') return <>{children}</>;
 
-  const isExpired = status === 'EXPIRED';
+  const isExpired = status === 'EXPIRED' || status === 'DEMO_EXPIRED';
+  const isDemoExpired = status === 'DEMO_EXPIRED';
   const isEquipmentDebt = status === 'DEBT_BLOCKED';
 
   return (
@@ -51,14 +52,15 @@ export const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ chi
             <span className="material-icons-round text-5xl">{isEquipmentDebt ? 'credit_card_off' : 'lock'}</span>
           </div>
 
-          <div>
             <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-tighter">
-                {isExpired ? 'Suscripción Vencida' : 'Adeudo de Equipo'}
+                {isDemoExpired ? 'Demo Finalizada' : isExpired ? 'Suscripción Vencida' : 'Adeudo de Equipo'}
             </h2>
-            <p className={`${isExpired ? 'text-red-200' : 'text-amber-200'} mb-8 font-bold uppercase text-[10px] tracking-[0.2em] opacity-70 leading-relaxed`}>
-                {isExpired 
-                    ? "Tu licencia de Solaris POS ha expirado. \n Regulariza tu pago mensual para continuar operando."
-                    : "Detectamos un atraso en el pago de tu hardware. \n Regulariza tu saldo para desbloquear la estación."
+            <p className={`${isExpired ? 'text-red-200' : 'text-amber-200'} mb-8 font-bold uppercase text-[10px] tracking-[0.2em] opacity-70 leading-relaxed whitespace-pre-line`}>
+                {isDemoExpired
+                    ? "Tu periodo de prueba de 20 días ha terminado. \n Contacta a soporte para activar un plan permanente."
+                    : isExpired 
+                        ? "Tu licencia de Solaris POS ha expirado. \n Regulariza tu pago mensual para continuar operando."
+                        : "Detectamos un atraso en el pago de tu hardware. \n Regulariza tu saldo para desbloquear la estación."
                 }
             </p>
 

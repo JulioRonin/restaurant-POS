@@ -136,64 +136,66 @@ export const POSScreen: React.FC = () => {
       <div className="flex-1 flex flex-col p-3 md:p-6 overflow-hidden relative z-10 w-full">
         
         {/* Compact Header Section */}
-        <div className="flex flex-col md:flex-row gap-3 mb-4 items-stretch">
-          <GlowCard glowColor="orange" className="md:w-auto lg:min-w-[220px] lg:w-[260px] border border-white/5 bg-[#0a0a0b] flex flex-col justify-center rounded-solaris shadow-2xl !p-4">
-            <div className="flex items-center gap-2 mb-1 opacity-40">
-                <Zap size={10} className="text-solaris-orange" />
-                <span className="text-[8px] font-black tracking-[0.3em] uppercase">{authProfile?.businessName || 'SOLARIS CORE'}</span>
+        <div className="flex flex-col lg:flex-row gap-3 mb-3 items-center">
+          <div className="flex items-center justify-between w-full lg:w-auto lg:min-w-[200px] bg-[#0a0a0b] border border-white/5 rounded-2xl p-2.5 px-4 shadow-xl">
+            <div>
+              <div className="flex items-center gap-1.5 opacity-60 mb-0.5">
+                  <Zap size={8} className="text-solaris-orange" />
+                  <span className="text-[7px] font-black tracking-[0.2em] uppercase">{authProfile?.businessName || 'SOLARIS CORE'}</span>
+              </div>
+              <h2 className="text-lg font-black italic tracking-tighter uppercase text-white leading-none">Command Center</h2>
             </div>
-            <h2 className="text-xl lg:text-2xl font-black italic tracking-tighter uppercase text-white mb-1 leading-none">Command Center</h2>
-            <div className="flex items-center gap-2 text-[7px] font-black uppercase text-solaris-orange/60 tracking-widest italic">
-                <div className="w-1.5 h-1.5 rounded-full bg-solaris-orange animate-pulse" />
-                Node Online
+            <div className="flex flex-col items-end">
+              <div className="flex items-center gap-1.5 text-[6px] font-black uppercase text-solaris-orange/80 tracking-widest italic">
+                  <div className="w-1 h-1 rounded-full bg-solaris-orange animate-pulse" />
+                  Online
+              </div>
             </div>
-          </GlowCard>
+          </div>
 
-          <GlowCard className="flex-1 border border-white/5 bg-[#0a0a0b] !p-4 flex flex-col justify-center rounded-solaris shadow-2xl">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
-                <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-xl w-full sm:w-auto">
-                    {['A la carte', 'Bebidas', 'Rappi/Uber'].map(menu => (
-                        <button
-                            key={menu}
-                            onClick={() => setActiveMenu(menu)}
-                            className={`flex-1 sm:flex-none px-3 py-1.5 rounded-lg text-[7px] lg:text-[8px] font-black uppercase tracking-widest transition-all ${activeMenu === menu ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-white/30 hover:text-white hover:bg-white/5'}`}
-                        >
-                            {menu}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                    {activeEmployee && (
-                        <div className="flex items-center gap-2">
-                            <div className="text-right hidden xs:block">
-                                <p className="text-[7px] font-black text-white/30 uppercase tracking-widest leading-none mb-0.5">Operator</p>
-                                <p className="text-[10px] font-black text-white italic">{activeEmployee.name}</p>
-                            </div>
-                            <img src={activeEmployee.image} className="w-8 h-8 lg:w-9 lg:h-9 rounded-xl object-cover border border-white/10 shadow-lg" alt="" />
-                        </div>
-                    )}
-                    {settings.isDirectPrintingEnabled && (
-                        <button 
-                            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[7px] font-black uppercase tracking-widest border transition-all ${printerReady ? 'bg-green-500/10 text-green-500 border-green-500/20 shadow-green-900/10 shadow-lg' : 'bg-red-500/10 text-red-500 border-red-500/20 animate-pulse'}`}
-                        >
-                            <Printer size={12} /> {printerReady ? 'ONLINE' : 'ERROR'}
-                        </button>
-                    )}
-                </div>
+          <div className="flex-1 w-full flex flex-col sm:flex-row items-center gap-3 bg-[#0a0a0b] border border-white/5 rounded-2xl p-2 px-3 shadow-xl">
+            <div className="flex bg-white/[0.03] border border-white/5 p-0.5 rounded-lg w-full sm:w-auto">
+                {['A la carte', 'Bebidas', 'Rappi/Uber'].map(menu => (
+                    <button
+                        key={menu}
+                        onClick={() => setActiveMenu(menu)}
+                        className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-[7px] font-black uppercase tracking-widest transition-all ${activeMenu === menu ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-white/30 hover:text-white hover:bg-white/5'}`}
+                    >
+                        {menu}
+                    </button>
+                ))}
             </div>
 
-            <div className="mt-3 relative group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-solaris-orange transition-colors" size={14} />
+            <div className="flex-1 w-full relative group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-solaris-orange transition-colors" size={12} />
                 <input 
                     type="text" 
-                    placeholder="Search biological or physical assets..." 
+                    placeholder="Search assets..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-white/[0.03] border border-white/5 rounded-xl text-white font-bold outline-none focus:border-solaris-orange/40 focus:bg-white/[0.05] shadow-inner transition-all text-[11px] placeholder:text-white/20"
+                    className="w-full pl-8 pr-3 py-1.5 bg-white/[0.03] border border-white/5 rounded-lg text-white font-bold outline-none focus:border-solaris-orange/40 focus:bg-white/[0.05] shadow-inner transition-all text-[10px] placeholder:text-white/20 h-[32px]"
                 />
             </div>
-          </GlowCard>
+
+            <div className="flex items-center gap-3 shrink-0">
+                {settings.isDirectPrintingEnabled && (
+                    <button 
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[6px] font-black uppercase tracking-widest border transition-all h-[32px] ${printerReady ? 'bg-green-500/10 text-green-500 border-green-500/20 shadow-green-900/10' : 'bg-red-500/10 text-red-500 border-red-500/20 animate-pulse'}`}
+                    >
+                        <Printer size={10} /> {printerReady ? 'ON' : 'ERR'}
+                    </button>
+                )}
+                {activeEmployee && (
+                    <div className="flex items-center gap-2">
+                        <div className="text-right hidden sm:block">
+                            <p className="text-[6px] font-black text-white/30 uppercase tracking-widest leading-none mb-0.5">Op</p>
+                            <p className="text-[9px] font-black text-white italic leading-none">{activeEmployee.name}</p>
+                        </div>
+                        <img src={activeEmployee.image} className="w-8 h-8 rounded-lg object-cover border border-white/10 shadow-lg" alt="" />
+                    </div>
+                )}
+            </div>
+          </div>
         </div>
 
         {/* Categories (Responsive scrolling) */}

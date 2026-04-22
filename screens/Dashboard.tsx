@@ -26,7 +26,7 @@ import {
   Target
 } from 'lucide-react';
 
-type TimeRange = 'Weekly' | 'Monthly' | 'SpecificDay' | 'SpecificMonth';
+type TimeRange = 'Weekly' | 'Monthly' | 'Yearly' | 'SpecificDay' | 'SpecificMonth' | 'DateRange';
 
 export const DashboardScreen: React.FC = () => {
     const { expenses } = useExpenses();
@@ -44,6 +44,10 @@ export const DashboardScreen: React.FC = () => {
         const dd = String(d.getDate()).padStart(2, '0');
         return `${yyyy}-${mm}-${dd}`;
     }); 
+    const [dateRange, setDateRange] = useState<{ start: string, end: string }>({
+        start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        end: new Date().toISOString().split('T')[0]
+    });
     const [isReportOpen, setIsReportOpen] = useState(false);
 
     // Helper to get local date string YYYY-MM-DD or YYYY-MM
@@ -82,6 +86,12 @@ export const DashboardScreen: React.FC = () => {
                     const diffTime = Math.abs(new Date().getTime() - d.getTime());
                     const diffDays = diffTime / (1000 * 60 * 60 * 24);
                     if (diffDays > 30) return false;
+                } else if (timeRange === 'Yearly') {
+                    const diffTime = Math.abs(new Date().getTime() - d.getTime());
+                    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+                    if (diffDays > 365) return false;
+                } else if (timeRange === 'DateRange') {
+                    if (orderDateStr < dateRange.start || orderDateStr > dateRange.end) return false;
                 }
 
                 // Category filter
@@ -122,6 +132,12 @@ export const DashboardScreen: React.FC = () => {
                     const diffTime = Math.abs(new Date().getTime() - d.getTime());
                     const diffDays = diffTime / (1000 * 60 * 60 * 24);
                     if (diffDays > 30) return false;
+                } else if (timeRange === 'Yearly') {
+                    const diffTime = Math.abs(new Date().getTime() - d.getTime());
+                    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+                    if (diffDays > 365) return false;
+                } else if (timeRange === 'DateRange') {
+                    if (expDateStr < dateRange.start || expDateStr > dateRange.end) return false;
                 }
                 
                 return true;
@@ -138,7 +154,19 @@ export const DashboardScreen: React.FC = () => {
         activeOrders.forEach(o => {
             if (o.status !== 'CANCELLED') {
                 const d = new Date(o.timestamp || Date.now());
-                const key = timeRange === 'SpecificDay' ? `${String(d.getHours()).padStart(2, '0')}:00` : getLocalDatePart(d, 'date');
+                let key = getLocalDatePart(d, 'date');
+                
+                if (timeRange === 'SpecificDay') {
+                    key = `${String(d.getHours()).padStart(2, '0')}:00`;
+                } else if (timeRange === 'Yearly') {
+                    key = getLocalDatePart(d, 'month');
+                } else if (timeRange === 'DateRange') {
+                    const start = new Date(dateRange.start);
+                    const end = new Date(dateRange.end);
+                    const diffDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+                    if (diffDays > 60) key = getLocalDatePart(d, 'month');
+                }
+
                 if (!aggr[key]) aggr[key] = { name: key, revenue: 0, cost: 0 };
                 aggr[key].revenue += (o.total || 0);
             }
@@ -146,13 +174,25 @@ export const DashboardScreen: React.FC = () => {
 
         activeExpenses.forEach(e => {
             const d = new Date(e.date || Date.now());
-            const key = timeRange === 'SpecificDay' ? `${String(d.getHours()).padStart(2, '0')}:00` : getLocalDatePart(d, 'date');
+            let key = getLocalDatePart(d, 'date');
+            
+            if (timeRange === 'SpecificDay') {
+                key = `${String(d.getHours()).padStart(2, '0')}:00`;
+            } else if (timeRange === 'Yearly') {
+                key = getLocalDatePart(d, 'month');
+            } else if (timeRange === 'DateRange') {
+                const start = new Date(dateRange.start);
+                const end = new Date(dateRange.end);
+                const diffDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+                if (diffDays > 60) key = getLocalDatePart(d, 'month');
+            }
+
             if (!aggr[key]) aggr[key] = { name: key, revenue: 0, cost: 0 };
             aggr[key].cost += e.amount;
         });
 
         return Object.values(aggr).sort((a, b) => a.name.localeCompare(b.name));
-    }, [activeOrders, activeExpenses, timeRange]);
+    }, [activeOrders, activeExpenses, timeRange, dateRange]);
 
     const { sales, items, cancelledSales, cancelledCount, avgTicket } = useMemo(() => {
         let _sales = 0, _items = 0, _count = 0, _cSales = 0, _cCount = 0;
@@ -243,8 +283,10 @@ export const DashboardScreen: React.FC = () => {
                             >
                                 <option value="Weekly" className="bg-[#0a0a0b]">Weekly</option>
                                 <option value="Monthly" className="bg-[#0a0a0b]">Monthly</option>
+                                <option value="Yearly" className="bg-[#0a0a0b]">Yearly</option>
                                 <option value="SpecificDay" className="bg-[#0a0a0b]">Specific Day</option>
                                 <option value="SpecificMonth" className="bg-[#0a0a0b]">Specific Month</option>
+                                <option value="DateRange" className="bg-[#0a0a0b]">Date Range</option>
                             </select>
                             {(timeRange === 'SpecificDay' || timeRange === 'SpecificMonth') && (
                                 <input 
@@ -253,6 +295,23 @@ export const DashboardScreen: React.FC = () => {
                                     onChange={(e) => setSelectedDate(e.target.value)}
                                     className="bg-white/5 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer hover:bg-white/[0.08] transition-all"
                                 />
+                            )}
+                            {timeRange === 'DateRange' && (
+                                <div className="flex items-center gap-2 px-2">
+                                    <input 
+                                        type="date"
+                                        value={dateRange.start}
+                                        onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                                        className="bg-white/5 text-white px-2 py-1 rounded-lg text-[9px] font-bold outline-none border-none"
+                                    />
+                                    <span className="text-[9px] text-white/30">to</span>
+                                    <input 
+                                        type="date"
+                                        value={dateRange.end}
+                                        onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                                        className="bg-white/5 text-white px-2 py-1 rounded-lg text-[9px] font-bold outline-none border-none"
+                                    />
+                                </div>
                             )}
                             <select
                                 value={selectedCategory}
@@ -422,7 +481,13 @@ export const DashboardScreen: React.FC = () => {
                 onClose={() => setIsReportOpen(false)}
                 orders={activeOrders}
                 expenses={activeExpenses}
-                periodLabel={timeRange === 'SpecificDay' ? selectedDate : selectedDate.substring(0, 7)}
+                periodLabel={
+                    timeRange === 'DateRange' 
+                        ? `${dateRange.start} a ${dateRange.end}` 
+                        : timeRange === 'SpecificDay' 
+                            ? selectedDate 
+                            : selectedDate.substring(0, 7)
+                }
                 categoryLabel={selectedCategory}
                 restaurantName={settings.name}
             />

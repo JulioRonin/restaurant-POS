@@ -171,7 +171,9 @@ export enum SubscriptionStatus {
   ACTIVE = 'ACTIVE',
   WARNING = 'WARNING',
   EXPIRED = 'EXPIRED',
-  DEBT_BLOCKED = 'DEBT_BLOCKED'
+  DEBT_BLOCKED = 'DEBT_BLOCKED',
+  DEMO = 'DEMO',
+  DEMO_EXPIRED = 'DEMO_EXPIRED'
 }
 
 export interface PaymentRecord {

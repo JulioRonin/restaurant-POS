@@ -23,7 +23,8 @@ import {
 interface Business {
   id: string;
   name: string;
-  plan: 'basic' | 'premium' | 'enterprise';
+  plan: 'basic' | 'premium' | 'enterprise' | 'demo';
+  demo_until?: string | null;
   is_active: boolean;
   created_at: string;
   custom_price?: number | null;
@@ -125,23 +126,44 @@ export default function SuperAdminScreen() {
     }
   };
 
-  const updateBusinessPlan = async (plan: 'basic' | 'premium' | 'enterprise') => {
+  const updateBusinessPlan = async (plan: 'basic' | 'premium' | 'enterprise' | 'demo') => {
     if (!selectedBusiness) return;
     const supabase = getSupabase();
     if (!supabase) return;
 
     setSaving(true);
     try {
+      const updates: any = { plan };
+      
+      // If activating demo, set expiry to 20 days from now
+      if (plan === 'demo') {
+          const demoUntil = new Date();
+          demoUntil.setDate(demoUntil.getDate() + 20);
+          updates.demo_until = demoUntil.toISOString();
+      } else {
+          updates.demo_until = null; // Clear demo if upgrading/changing
+          
+          // If changing to basic or pro, ensure it's active
+          updates.is_active = true;
+          // Optionally extend subscription by 30 days if it was demo/expired
+          if (selectedBusiness.plan === 'demo') {
+              const newExpiry = new Date();
+              newExpiry.setDate(newExpiry.getDate() + 30);
+              updates.subscription_expiry = newExpiry.toISOString();
+          }
+      }
+
       const { error } = await supabase
         .from('businesses')
-        .update({ plan })
+        .update(updates)
         .eq('id', selectedBusiness.id);
 
       if (error) throw error;
       
-      setSelectedBusiness({ ...selectedBusiness, plan });
-      setBusinesses(prev => prev.map(b => b.id === selectedBusiness.id ? { ...b, plan } : b));
-      alert('Plan actualizado correctamente');
+      const updatedBusiness = { ...selectedBusiness, ...updates };
+      setSelectedBusiness(updatedBusiness);
+      setBusinesses(prev => prev.map(b => b.id === selectedBusiness.id ? updatedBusiness : b));
+      alert(`Plan ${plan.toUpperCase()} activado correctamente.`);
     } catch (err) {
       console.error('Error updating plan:', err);
       alert('Error al actualizar el plan');
@@ -330,9 +352,18 @@ export default function SuperAdminScreen() {
                     </h3>
 
                     <div className="grid grid-cols-1 gap-2">
-                        {(['basic', 'premium', 'enterprise'] as const).map((p) => {
+                        {(['demo', 'basic', 'premium', 'enterprise'] as const).map((p) => {
                             const isSelected = selectedBusiness.plan === p;
-                            const label = p === 'premium' ? 'Pro' : p.charAt(0).toUpperCase() + p.slice(1);
+                            let label = p === 'premium' ? 'Pro' : p.charAt(0).toUpperCase() + p.slice(1);
+                            let subtext = p === 'enterprise' ? 'Custom' : '$850 - $1,000 MXN';
+                            let iconColor = 'text-slate-500';
+                            
+                            if (p === 'demo') {
+                                label = 'Demo (20 Días)';
+                                subtext = 'Prueba gratuita temporal';
+                                iconColor = isSelected ? 'text-white' : 'text-amber-500';
+                            }
+
                             return (
                                 <button
                                     key={p}
@@ -340,20 +371,20 @@ export default function SuperAdminScreen() {
                                     disabled={saving}
                                     className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
                                         isSelected 
-                                        ? 'bg-blue-600/20 border-blue-500' 
+                                        ? (p === 'demo' ? 'bg-amber-500/20 border-amber-500' : 'bg-blue-600/20 border-blue-500')
                                         : 'bg-slate-800/30 border-slate-700 hover:border-slate-600'
                                     }`}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${isSelected ? 'bg-blue-500 text-white' : 'bg-slate-700 text-slate-500'}`}>
+                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${isSelected ? (p === 'demo' ? 'bg-amber-500' : 'bg-blue-500') + ' text-white' : 'bg-slate-700 ' + iconColor}`}>
                                             <Zap className="w-3.5 h-3.5" />
                                         </div>
                                         <div className="text-left">
                                             <div className={`text-xs font-bold leading-none ${isSelected ? 'text-white' : 'text-slate-400'}`}>{label}</div>
-                                            <div className="text-[9px] text-slate-500 mt-1">{p === 'enterprise' ? 'Custom' : '$850 - $1,000 MXN'}</div>
+                                            <div className="text-[9px] text-slate-500 mt-1">{subtext}</div>
                                         </div>
                                     </div>
-                                    {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
+                                    {isSelected && <CheckCircle2 className={`w-4 h-4 ${p === 'demo' ? 'text-amber-500' : 'text-blue-500'}`} />}
                                 </button>
                             );
                         })}
