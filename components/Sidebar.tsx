@@ -112,7 +112,10 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
     [SubscriptionStatus.ACTIVE]: { color: 'text-green-500 border-green-500/20 bg-green-500/5', label: 'Solaris Active' },
     [SubscriptionStatus.WARNING]: { color: 'text-solaris-orange border-solaris-orange/20 bg-solaris-orange/5', label: 'License Warning' },
     [SubscriptionStatus.EXPIRED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Node Expired' },
-  }[status];
+    [SubscriptionStatus.DEMO]: { color: 'text-amber-500 border-amber-500/20 bg-amber-500/5', label: 'Demo Mode' },
+    [SubscriptionStatus.DEMO_EXPIRED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Demo Expired' },
+    [SubscriptionStatus.DEBT_BLOCKED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Debt Blocked' },
+  }[status] || { color: 'text-gray-500 border-gray-500/20 bg-gray-500/5', label: 'Unknown' };
 
   return (
     <aside
