@@ -11,6 +11,7 @@ interface MenuContextType {
     deleteItem: (id: string) => Promise<void>;
     toggleStatus: (id: string) => Promise<void>;
     importCSV: (csvText: string) => Promise<{ success: boolean; count: number; errors: string[] }>;
+    clearMenu: () => Promise<void>;
 }
 
 const MenuContext = createContext<MenuContextType | undefined>(undefined);
@@ -97,6 +98,19 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await trackChange('products', 'DELETE', id, { id });
     };
 
+    const clearMenu = async () => {
+        // We capture current items before emptying the state
+        const itemsToDelete = [...menuItems];
+        setMenuItems([]);
+        
+        // Delete all locally and enqueue syncs
+        for (const item of itemsToDelete) {
+            await deleteRecord('products', item.id);
+            await trackChange('products', 'DELETE', item.id, { id: item.id });
+        }
+        triggerSync().catch(console.error);
+    };
+
     const toggleStatus = async (id: string) => {
         const item = menuItems.find(i => i.id === id);
         if (item) {
@@ -153,7 +167,7 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     return (
-        <MenuContext.Provider value={{ menuItems, addItem, updateItem, deleteItem, toggleStatus, importCSV }}>
+        <MenuContext.Provider value={{ menuItems, addItem, updateItem, deleteItem, toggleStatus, importCSV, clearMenu }}>
             {children}
         </MenuContext.Provider>
     );

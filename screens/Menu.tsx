@@ -22,7 +22,7 @@ import {
 const BASE_CATEGORIES = ['Entradas', 'Plato Fuerte', 'Bebidas', 'Postres', 'Extras', 'Tacos', 'Tortas', 'General'];
 
 export const MenuScreen: React.FC = () => {
-    const { menuItems, addItem, updateItem, deleteItem, toggleStatus, importCSV } = useMenu();
+    const { menuItems, addItem, updateItem, deleteItem, toggleStatus, importCSV, clearMenu } = useMenu();
     const [activeCategory, setActiveCategory] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -147,6 +147,12 @@ export const MenuScreen: React.FC = () => {
                     <p className="text-white/20 font-bold text-[10px] uppercase tracking-[0.4em]">Gastronomical Asset Registry & Pricing Logic</p>
                 </div>
                 <div className="flex gap-3">
+                    <button
+                        onClick={() => { if(confirm('⚠️ ¿ESTÁ SEGURO DE QUERER BORRAR TODO EL MENÚ?\n\nEsta acción eliminará de forma PERMANENTE todos los artículos de su dispositivo y de la nube.')) clearMenu(); }}
+                        className="flex items-center gap-2 px-5 py-3 bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-red-500/20 transition-all"
+                    >
+                        <Trash2 size={15} /> Borrar Todo
+                    </button>
                     <button
                         onClick={() => setIsImportModalOpen(true)}
                         className="flex items-center gap-2 px-5 py-3 bg-white/[0.03] border border-white/5 text-white/30 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/[0.06] transition-all"
