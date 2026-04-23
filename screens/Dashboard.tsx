@@ -105,7 +105,7 @@ export const DashboardScreen: React.FC = () => {
                 return false;
             }
         });
-    }, [orders, timeRange, selectedDate, selectedCategory]);
+    }, [orders, timeRange, selectedDate, selectedCategory, dateRange]);
 
     const activeExpenses = useMemo(() => {
         return expenses.filter(e => {
@@ -145,7 +145,7 @@ export const DashboardScreen: React.FC = () => {
                 return false;
             }
         });
-    }, [expenses, timeRange, selectedDate]);
+    }, [expenses, timeRange, selectedDate, dateRange]);
 
     // Real Chart Data
     const chartData = useMemo(() => {
@@ -188,7 +188,7 @@ export const DashboardScreen: React.FC = () => {
             }
 
             if (!aggr[key]) aggr[key] = { name: key, revenue: 0, cost: 0 };
-            aggr[key].cost += e.amount;
+            aggr[key].cost += Number(e.amount || 0);
         });
 
         return Object.values(aggr).sort((a, b) => a.name.localeCompare(b.name));
@@ -209,7 +209,7 @@ export const DashboardScreen: React.FC = () => {
         return { sales: _sales, items: _items, cancelledSales: _cSales, cancelledCount: _cCount, avgTicket: _count > 0 ? (_sales / _count) : 0 };
     }, [activeOrders]);
 
-    const totalExpenses = activeExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalExpenses = activeExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
     const netCashFlow = sales - totalExpenses;
 
     const DYNAMIC_KPIS = [
@@ -252,7 +252,7 @@ export const DashboardScreen: React.FC = () => {
         const expByCat: Record<string, number> = {};
         activeExpenses.forEach(e => {
             const cat = e.category || 'Varios';
-            expByCat[cat] = (expByCat[cat] || 0) + e.amount;
+            expByCat[cat] = (expByCat[cat] || 0) + Number(e.amount || 0);
         });
 
         const topInv = Object.entries(invByCat).sort((a, b) => b[1] - a[1]).slice(0, 5);

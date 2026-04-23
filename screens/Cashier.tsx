@@ -328,7 +328,7 @@ export const CashierScreen: React.FC = () => {
                                                 const totalRevenue = completedOrders.reduce((s, o) => s + (o.total || 0), 0);
                                                 const cashSales = completedOrders.filter(o => o.paymentMethod === PaymentMethod.CASH).reduce((s, o) => s + (o.total || 0), 0);
                                                 const cardSales = completedOrders.filter(o => o.paymentMethod === PaymentMethod.CARD).reduce((s, o) => s + (o.total || 0), 0);
-                                                const totalExpensesDay = expenses.filter(e => e.date.startsWith(selectedDate)).reduce((s, e) => s + e.amount, 0);
+                                                const totalExpensesDay = expenses.filter(e => e.date.startsWith(selectedDate)).reduce((s, e) => s + Number(e.amount || 0), 0);
                                                 const netRevenue = totalRevenue - totalExpensesDay;
                                                 
                                                 const cutData = {
@@ -408,7 +408,7 @@ export const CashierScreen: React.FC = () => {
                                     { label: 'Aggregated Revenue', value: salesMetrics.totalRevenue, color: 'text-white', icon: DollarSign, glow: 'orange' },
                                     { label: 'Liquid Assets (Cash)', value: salesMetrics.cashSales, color: 'text-green-400', icon: Wallet, glow: 'green' },
                                     { label: 'Spectral Assets (Card)', value: salesMetrics.cardSales, color: 'text-blue-400', icon: CreditCard, glow: 'blue' },
-                                    { label: 'Net Synthesis', value: salesMetrics.totalRevenue - expenses.filter(e => e.date.startsWith(selectedDate)).reduce((s, e) => s + e.amount, 0), color: 'text-solaris-orange', icon: TrendingUp, glow: 'orange' }
+                                    { label: 'Net Synthesis', value: salesMetrics.totalRevenue - expenses.filter(e => e.date.startsWith(selectedDate)).reduce((s, e) => s + Number(e.amount || 0), 0), color: 'text-solaris-orange', icon: TrendingUp, glow: 'orange' }
                                 ].map((kpi, i) => (
                                     <GlowCard key={i} glowColor={kpi.glow as any} customSize className="w-full !p-8 bg-white/[0.01] border-white/5 rounded-[32px]">
                                         <div className="flex items-center gap-4 mb-3 opacity-30">
