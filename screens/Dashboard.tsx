@@ -335,7 +335,7 @@ export const DashboardScreen: React.FC = () => {
                 {/* KPI Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
                     {DYNAMIC_KPIS.map((kpi, idx) => (
-                        <GlowCard key={idx} glowColor="orange" customSize className="!p-0 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-[24px]">
+                        <GlowCard key={idx} glowColor={kpi.color as any} customSize className="!p-0 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-[24px]">
                             <div className="p-6">
                                 <kpi.icon size={20} className="text-solaris-orange mb-4" />
                                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30 mb-1">{kpi.label}</p>
@@ -357,7 +357,22 @@ export const DashboardScreen: React.FC = () => {
                                         <CartesianGrid strokeDasharray="3 3" stroke="#fff" opacity={0.05} vertical={false} />
                                         <XAxis dataKey="name" stroke="#fff" opacity={0.3} tick={{ fill: '#fff', fontSize: 9, fontWeight: 900 }} axisLine={false} tickLine={false} />
                                         <YAxis stroke="#fff" opacity={0.3} tick={{ fill: '#fff', fontSize: 9, fontWeight: 900 }} axisLine={false} tickLine={false} />
-                                        <Tooltip contentStyle={{ backgroundColor: '#0a0a0c', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }} />
+                                        <Tooltip 
+                                            cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                                            content={({ active, payload, label }) => {
+                                                if (active && payload && payload.length) {
+                                                    return (
+                                                        <div className="bg-[#0a0a0c] border border-white/10 rounded-2xl p-3 shadow-2xl">
+                                                            <p className="text-white/50 text-[10px] font-bold mb-1">{label}</p>
+                                                            <p className="text-solaris-orange font-black text-sm">
+                                                                Ventas: ${Number(payload[0]?.value || 0).toLocaleString()}
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            }}
+                                        />
                                         <Bar dataKey="revenue" fill="#f97316" radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
@@ -375,7 +390,22 @@ export const DashboardScreen: React.FC = () => {
                                         <Area type="monotone" dataKey="cost" stroke="#f97316" fill="#f97316" fillOpacity={0.1} strokeWidth={3} />
                                         <XAxis dataKey="name" hide />
                                         <YAxis hide />
-                                        <Tooltip contentStyle={{ backgroundColor: '#0a0a0c', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }} />
+                                        <Tooltip 
+                                            cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
+                                            content={({ active, payload }) => {
+                                                if (active && payload && payload.length) {
+                                                    return (
+                                                        <div className="bg-[#0a0a0c] border border-white/10 rounded-2xl p-3 shadow-2xl">
+                                                            <p className="text-white/50 text-[10px] font-bold mb-1">Costo (Prime Cost)</p>
+                                                            <p className="text-solaris-orange font-black text-sm">
+                                                                Gastos: ${Number(payload[0]?.value || 0).toLocaleString()}
+                                                            </p>
+                                                        </div>
+                                                    );
+                                                }
+                                                return null;
+                                            }}
+                                        />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
