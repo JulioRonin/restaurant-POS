@@ -102,7 +102,10 @@ export const BillingScreen: React.FC = () => {
         [SubscriptionStatus.ACTIVE]: { bg: 'bg-green-500', text: 'Activa', icon: 'check_circle' },
         [SubscriptionStatus.WARNING]: { bg: 'bg-orange-500', text: 'Próxima a vencer', icon: 'error_outline' },
         [SubscriptionStatus.EXPIRED]: { bg: 'bg-red-500', text: 'Vencida', icon: 'lock' },
-    }[status];
+        [SubscriptionStatus.DEMO]: { bg: 'bg-amber-500', text: 'Demo (Prueba)', icon: 'workspace_premium' },
+        [SubscriptionStatus.DEMO_EXPIRED]: { bg: 'bg-red-500', text: 'Demo Finalizada', icon: 'lock' },
+        [SubscriptionStatus.DEBT_BLOCKED]: { bg: 'bg-red-500', text: 'Adeudo Equipo', icon: 'lock' },
+    }[status] || { bg: 'bg-gray-500', text: 'Desconocido', icon: 'help_outline' };
 
     return (
         <div className="p-8 bg-gray-50 h-full overflow-y-auto">
