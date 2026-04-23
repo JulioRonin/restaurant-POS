@@ -85,6 +85,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
 
       // 2. Fetch Subscription & Debt Status
       const { data: bizData, error: bError } = await supabase
+        .from('businesses')
         .select('subscription_expiry, equipment_total_debt, equipment_balance, plan, custom_price, demo_until')
         .eq('id', authProfile.businessId)
         .single();

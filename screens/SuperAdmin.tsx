@@ -135,10 +135,10 @@ export default function SuperAdminScreen() {
     try {
       const updates: any = { plan };
       
-      // If activating demo, set expiry to 20 days from now
+      // If activating demo, set expiry to 15 days from now
       if (plan === 'demo') {
           const demoUntil = new Date();
-          demoUntil.setDate(demoUntil.getDate() + 20);
+          demoUntil.setDate(demoUntil.getDate() + 15);
           updates.demo_until = demoUntil.toISOString();
       } else {
           updates.demo_until = null; // Clear demo if upgrading/changing
@@ -359,7 +359,7 @@ export default function SuperAdminScreen() {
                             let iconColor = 'text-slate-500';
                             
                             if (p === 'demo') {
-                                label = 'Demo (20 Días)';
+                                label = 'Demo (15 Días)';
                                 subtext = 'Prueba gratuita temporal';
                                 iconColor = isSelected ? 'text-white' : 'text-amber-500';
                             }

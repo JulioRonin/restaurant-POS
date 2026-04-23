@@ -14,7 +14,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js') // Future use
+      // preload: path.join(__dirname, 'preload.js') // Future use
     },
     icon: path.join(__dirname, 'public/icons/icon-512.png'),
     title: 'Culinex POS',
