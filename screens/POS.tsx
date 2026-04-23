@@ -126,7 +126,7 @@ export const POSScreen: React.FC = () => {
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="flex flex-col lg:flex-row h-full w-full bg-[#030303] text-white overflow-hidden relative antialiased">
+    <div className="flex flex-col lg:flex-row h-full w-full bg-[#1f2937] text-white overflow-hidden relative antialiased">
       {/* Hidden print root */}
       <div className="hidden print:block absolute inset-0 z-[9999] bg-white">
           {kitchenOrderToPrint && <KitchenTicket order={kitchenOrderToPrint} settings={settings} />}
@@ -272,7 +272,7 @@ export const POSScreen: React.FC = () => {
       <div className={`
         ${isCartOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0
         fixed lg:relative inset-y-0 right-0 w-full xs:w-[380px] sm:w-[420px] lg:w-[450px] 
-        bg-[#030303] border-l border-white/10 flex flex-col z-[60] lg:z-10 
+        bg-[#1f2937] border-l border-white/10 flex flex-col z-[60] lg:z-10 
         shadow-[-30px_0_60px_rgba(0,0,0,0.8)] transition-transform duration-300 ease-in-out
       `}>
         {/* Mobile Header for Cart */}

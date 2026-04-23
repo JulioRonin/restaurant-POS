@@ -27,16 +27,8 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
 
         try {
-            // --- EMERGENCY RECOVERY ---
-            // If menu is empty, try to recover from inventory (legacy system)
-            if (authProfile?.businessId) {
-                const { repairAndRecoverMenuData } = await import('../services/SyncService');
-                const recoveredCount = await repairAndRecoverMenuData(authProfile.businessId);
-                if (recoveredCount > 0) {
-                    console.log(`[MenuContext] Recovered ${recoveredCount} items from legacy storage.`);
-                }
-            }
-            // --- END RECOVERY ---
+            // --- EMERGENCY RECOVERY REMOVED ---
+            // Recovery logic disabled to prevent deleted items from resurrecting.
 
             const data = await getAll('products');
             // CRITICAL: Filter by businessId to prevent cross-tenant leakage

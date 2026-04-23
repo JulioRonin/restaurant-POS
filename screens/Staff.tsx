@@ -82,7 +82,7 @@ export const StaffScreen: React.FC = () => {
 
     const handleDownload = async () => {
         if (!printRef.current) return;
-        const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: '#030303' });
+        const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: '#1f2937' });
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
         pdf.addImage(imgData, 'PNG', 10, 10, 277, (canvas.height * 277) / canvas.width);

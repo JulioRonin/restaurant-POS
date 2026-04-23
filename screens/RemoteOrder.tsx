@@ -95,7 +95,7 @@ export const RemoteOrderScreen: React.FC = () => {
     };
 
     return (
-        <div className="flex h-full bg-[#030303] text-white overflow-hidden antialiased">
+        <div className="flex h-full bg-[#1f2937] text-white overflow-hidden antialiased">
 
             {/* ── LEFT: Menu Browser ── */}
             <div className="flex-1 flex flex-col overflow-hidden border-r border-white/5">
@@ -188,7 +188,7 @@ export const RemoteOrderScreen: React.FC = () => {
             </div>
 
             {/* ── RIGHT: Cart & Checkout ── */}
-            <div className="w-[400px] min-w-[320px] bg-[#030303] flex flex-col border-l border-white/5 shadow-2xl">
+            <div className="w-[400px] min-w-[320px] bg-[#1f2937] flex flex-col border-l border-white/5 shadow-2xl">
                 <div className="px-8 pt-8 pb-6 border-b border-white/5 shrink-0">
                     <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Orden de Venta</h2>
                     <p className="text-white/20 font-bold text-[9px] uppercase tracking-widest mt-1">

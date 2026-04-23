@@ -273,7 +273,7 @@ export const HostessScreen: React.FC = () => {
     const availableWaiters = MOCK_STAFF.filter(s => s.area === 'Service' || s.role.includes('Mesero'));
 
     return (
-        <div className="flex h-full w-full bg-[#030303] text-white/70 font-sans antialiased overflow-hidden">
+        <div className="flex h-full w-full bg-[#1f2937] text-white/70 font-sans antialiased overflow-hidden">
             {/* Map Area */}
             <div className="flex-1 p-8 relative overflow-hidden flex flex-col">
                 <header className="flex justify-between items-center mb-12 shrink-0">
@@ -492,7 +492,7 @@ export const HostessScreen: React.FC = () => {
             </div>
 
             {/* Side Panel */}
-            <aside className="w-[420px] bg-[#030303] border-l border-white/10 p-8 flex flex-col shadow-2xl overflow-y-auto custom-scrollbar shrink-0">
+            <aside className="w-[420px] bg-[#1f2937] border-l border-white/10 p-8 flex flex-col shadow-2xl overflow-y-auto custom-scrollbar shrink-0">
                 <div className="mb-10 p-8 bg-white/[0.02] rounded-solaris border border-white/5 shadow-inner relative overflow-hidden group">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-solaris-orange/40 to-transparent opacity-50"></div>
                     <h3 className="font-black italic text-white text-sm uppercase tracking-tight mb-8 flex items-center gap-3">

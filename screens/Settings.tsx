@@ -146,7 +146,7 @@ export const SettingsScreen: React.FC = () => {
     const filteredTabs = tabs.filter(tab => !tab.adminOnly || currentUser?.role === 'admin');
 
     return (
-        <div className="h-full bg-[#030303] text-white p-6 md:p-10 overflow-y-auto no-scrollbar antialiased relative z-10">
+        <div className="h-full bg-[#1f2937] text-white p-6 md:p-10 overflow-y-auto no-scrollbar antialiased relative z-10">
             <div className="hidden print:block absolute inset-0 z-[9999] bg-white text-black">
                 {testOrderToPrint && <Ticket order={testOrderToPrint} settings={localSettings} isTest={true} />}
             </div>
@@ -249,7 +249,7 @@ export const SettingsScreen: React.FC = () => {
                                             <label className="text-[11px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] px-2 italic">Interface Theme Protocol</label>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                                 {[
-                                                    { id: 'solaris', name: 'Solaris Core', bg: 'bg-[#030303]', accent: 'bg-solaris-orange', desc: 'Brand Master Mode' },
+                                                    { id: 'solaris', name: 'Solaris Core', bg: 'bg-[#1f2937]', accent: 'bg-solaris-orange', desc: 'Brand Master Mode' },
                                                     { id: 'midnight', name: 'Void Deep', bg: 'bg-[#000000]', accent: 'bg-emerald-500', desc: 'Efficiency Vector' },
                                                     { id: 'ruby', name: 'Critical State', bg: 'bg-[#000000]', accent: 'bg-red-500', desc: 'Alert Logic' }
                                                 ].map(t => (

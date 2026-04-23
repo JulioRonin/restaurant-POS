@@ -36,7 +36,7 @@ export const AuthScreen: React.FC = () => {
     };
 
     return (
-        <div className="relative min-h-screen w-full flex items-center justify-center bg-[#030303] overflow-hidden font-sans">
+        <div className="relative min-h-screen w-full flex items-center justify-center bg-[#111827] overflow-hidden font-sans">
             {/* Background Shader */}
             <SolarisShader />
 

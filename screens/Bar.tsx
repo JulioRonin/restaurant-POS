@@ -153,7 +153,7 @@ export const BarScreen: React.FC = () => {
     };
 
     return (
-        <div className="h-full bg-[#030303] text-white flex flex-col overflow-hidden antialiased relative">
+        <div className="h-full bg-[#1f2937] text-white flex flex-col overflow-hidden antialiased relative">
             {/* New Order Alert */}
             <AnimatePresence>
                 {alert && (

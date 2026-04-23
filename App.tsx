@@ -54,11 +54,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation(); // Accurate location tracking for stable transitions
 
   return (
-    <div className="flex h-screen w-screen bg-[#030303] text-white font-sans overflow-hidden antialiased selection:bg-solaris-orange selection:text-white">
+    <div className="flex h-screen w-screen bg-[#1f2937] text-white font-sans overflow-hidden antialiased selection:bg-solaris-orange selection:text-white">
       <div className="no-print hidden lg:block">
         <Sidebar onLock={clearActiveEmployee} />
       </div>
-      <main className="flex-1 h-full overflow-hidden relative bg-[#030303] pb-24 lg:pb-0">
+      <main className="flex-1 h-full overflow-hidden relative bg-[#1f2937] pb-24 lg:pb-0">
         {children}
         <MobileNavbar />
       </main>
@@ -88,7 +88,7 @@ const AppContent: React.FC = () => {
 
   if (isAuthenticating) {
     return (
-      <div className="fixed inset-0 bg-[#030303] flex flex-col items-center justify-center text-white">
+      <div className="fixed inset-0 bg-[#1f2937] flex flex-col items-center justify-center text-white">
         <div className="w-12 h-12 border-4 border-solaris-orange/20 border-t-solaris-orange rounded-full animate-spin mb-6 shadow-solaris-glow"></div>
         <p className="text-[10px] font-black uppercase tracking-[0.4em] text-solaris-orange animate-pulse italic">Solaris OS Core Booting</p>
       </div>

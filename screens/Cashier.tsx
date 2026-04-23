@@ -190,7 +190,7 @@ export const CashierScreen: React.FC = () => {
 
             <div className="flex-1 flex overflow-hidden flex-col lg:flex-row relative">
                 {/* Left Navigation Panel — Reduced width for more workspace */}
-                <div className={`${selectedOrder ? 'hidden lg:flex' : 'flex'} w-full lg:w-80 border-r border-white/5 flex-col no-print bg-[#030303]/50 shrink-0 h-full`}>
+                <div className={`${selectedOrder ? 'hidden lg:flex' : 'flex'} w-full lg:w-80 border-r border-white/5 flex-col no-print bg-[#1f2937]/50 shrink-0 h-full`}>
                     <div className="p-6 md:p-8 space-y-6 md:space-y-8">
                         <div>
                            <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase mb-2">Terminal Ops</h1>
@@ -385,7 +385,7 @@ export const CashierScreen: React.FC = () => {
                 </div>
 
                 {/* Main Content Area */}
-                <div className="flex-1 flex flex-col bg-[#030303] no-print relative">
+                <div className="flex-1 flex flex-col bg-[#1f2937] no-print relative">
                     {activeTab === 'history' ? (
                         <div className="h-full flex flex-col p-10 gap-10 overflow-hidden">
                             {/* Logs Panoramic View */}

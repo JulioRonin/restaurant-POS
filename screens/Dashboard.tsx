@@ -263,7 +263,7 @@ export const DashboardScreen: React.FC = () => {
 
     return (
         <div className="h-full w-full relative">
-            <div className="flex-1 bg-[#030303] text-white p-6 md:p-10 overflow-y-auto h-full relative font-sans antialiased custom-scrollbar no-print">
+            <div className="flex-1 bg-[#1f2937] text-white p-6 md:p-10 overflow-y-auto h-full relative font-sans antialiased custom-scrollbar no-print">
                 <SolarisShader />
 
                 <div className="relative z-10">

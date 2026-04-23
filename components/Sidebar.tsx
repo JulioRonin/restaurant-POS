@@ -121,7 +121,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
     <aside
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
-      className={`hidden lg:flex ${isExpanded ? 'w-64' : 'w-24'} h-full bg-[#030303] flex-col py-8 z-50 border-r border-white/5 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] relative shadow-[20px_0_50px_rgba(0,0,0,0.8)]`}
+      className={`hidden lg:flex ${isExpanded ? 'w-64' : 'w-24'} h-full bg-[#111827] flex-col py-8 z-50 border-r border-white/5 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] relative shadow-[20px_0_50px_rgba(0,0,0,0.8)]`}
     >
       {/* Brand Header */}
       <div className={`mb-12 p-2 flex flex-col items-center ${isExpanded ? 'px-8 w-full' : 'justify-center'}`}>
@@ -244,7 +244,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
       </nav>
 
       {/* Network Operator Status */}
-      <div className="w-full px-4 py-8 border-t border-white/5 mt-auto bg-[#030303]">
+      <div className="w-full px-4 py-8 border-t border-white/5 mt-auto bg-[#111827]">
         <div 
           className="flex items-center justify-between group cursor-pointer bg-white/[0.02] p-4 rounded-solaris border border-white/5 hover:border-solaris-orange/20 transition-all shadow-xl" 
           onClick={onLock}
