@@ -10,6 +10,18 @@ export default defineConfig(({ mode }) => {
       port: 3001,
       host: '0.0.0.0',
     },
+    build: {
+      chunkSizeWarningLimit: 5000,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              return 'vendor';
+            }
+          }
+        }
+      }
+    },
     base: './',
     plugins: [
       react(),
@@ -18,6 +30,7 @@ export default defineConfig(({ mode }) => {
         includeAssets: ['icons/icon.svg', 'icons/*.png'],
         manifest: false, // We provide our own in public/manifest.json
         workbox: {
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
           runtimeCaching: [
             {
