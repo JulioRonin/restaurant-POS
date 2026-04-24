@@ -24,8 +24,13 @@ import {
   Zap,
   Printer as PrinterIcon,
   ShieldCheck,
-  X
+  X,
+  Database,
+  Cloud,
+  HardDrive
 } from 'lucide-react';
+import { getAll } from '../services/db';
+import { getSupabase } from '../services/auth';
 
 export const SettingsScreen: React.FC = () => {
     const { settings, updateSettings } = useSettings();
@@ -39,6 +44,14 @@ export const SettingsScreen: React.FC = () => {
     const [userForm, setUserForm] = useState({ name: '', role: 'mesero', pin: '1111', area: 'Service' });
     const [isConnecting, setIsConnecting] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
+    // Storage Inspector State
+    const [showStoragePinModal, setShowStoragePinModal] = useState(false);
+    const [storagePin, setStoragePin] = useState('');
+    const [storagePinError, setStoragePinError] = useState(false);
+    const [showStorageInspector, setShowStorageInspector] = useState(false);
+    const [storageData, setStorageData] = useState<{ table: string, local: number, cloud: number | 'Err' | 'N/A' }[]>([]);
+    const [isLoadingStorage, setIsLoadingStorage] = useState(false);
 
     useEffect(() => { setLocalSettings(settings); }, [settings]);
 
@@ -132,6 +145,66 @@ export const SettingsScreen: React.FC = () => {
         } else {
             showStatus('error', 'DRAWER_PULSE_FAILED');
         }
+    };
+
+    const handleStorageAccess = () => {
+        setShowStoragePinModal(true);
+        setStoragePin('');
+        setStoragePinError(false);
+    };
+
+    const verifyStoragePin = () => {
+        if (storagePin === '666') {
+            setShowStoragePinModal(false);
+            setShowStorageInspector(true);
+            fetchStorageData();
+        } else {
+            setStoragePinError(true);
+        }
+    };
+
+    const fetchStorageData = async () => {
+        setIsLoadingStorage(true);
+        const tables = ['products', 'orders', 'employees', 'inventory', 'expenses'];
+        const supabaseTables = ['menu_items', 'orders', 'employees', 'inventory_items', 'expenses'];
+        
+        const data: any[] = [];
+        const supabase = getSupabase();
+
+        for (let i = 0; i < tables.length; i++) {
+            const localStore = tables[i];
+            const cloudTable = supabaseTables[i];
+            
+            // Get local count
+            let localCount = 0;
+            try {
+                const localRecords = await getAll(localStore);
+                localCount = localRecords.length;
+            } catch (e) {
+                console.error(e);
+            }
+
+            // Get cloud count
+            let cloudCount: number | 'Err' | 'N/A' = 'N/A';
+            if (supabase && currentUser?.businessId) {
+                try {
+                    const { count, error } = await supabase
+                        .from(cloudTable)
+                        .select('*', { count: 'exact', head: true })
+                        .eq('business_id', currentUser.businessId);
+                        
+                    if (!error) cloudCount = count || 0;
+                    else cloudCount = 'Err';
+                } catch (e) {
+                    cloudCount = 'Err';
+                }
+            }
+
+            data.push({ table: localStore.toUpperCase(), local: localCount, cloud: cloudCount });
+        }
+        
+        setStorageData(data);
+        setIsLoadingStorage(false);
     };
 
     const tabs = [
@@ -565,7 +638,8 @@ export const SettingsScreen: React.FC = () => {
                                             {[
                                                 { label: 'OUTPUT TEST', desc: 'Thermal Stream Vector validation', action: handlePrintTest, icon: PrinterIcon, color: 'text-solaris-orange' },
                                                 { label: 'DRAWER PULSE', desc: 'RJ11 electronic trigger protocol', action: handleDrawerTest, icon: Zap, color: 'text-yellow-500' },
-                                                { label: 'NETWORK PING', desc: 'Sync latency validation matrix', action: () => showStatus('success', `LATENCY: ${Math.floor(Math.random()*20+5)}ms — OPTIMAL`), icon: Activity, color: 'text-emerald-500' }
+                                                { label: 'NETWORK PING', desc: 'Sync latency validation matrix', action: () => showStatus('success', `LATENCY: ${Math.floor(Math.random()*20+5)}ms — OPTIMAL`), icon: Activity, color: 'text-emerald-500' },
+                                                { label: 'DATA INSPECTOR', desc: 'Deep storage analysis matrix (PIN: 666)', action: handleStorageAccess, icon: Database, color: 'text-blue-500' }
                                             ].map(d => (
                                                 <GlowCard key={d.label} className="border border-white/5 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04] transition-all text-center rounded-[32px] !p-10 shadow-xl group">
                                                     <div className="flex justify-center mb-8">
@@ -582,6 +656,110 @@ export const SettingsScreen: React.FC = () => {
                                     </div>
                                 )}
                             </motion.div>
+                        </AnimatePresence>
+
+                        {/* Storage PIN Modal */}
+                        <AnimatePresence>
+                            {showStoragePinModal && (
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
+                                    <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-sm bg-[#0d0d0e] border border-white/10 rounded-[40px] p-10 shadow-2xl relative overflow-hidden">
+                                        <div className="flex justify-between items-center mb-8 relative z-10">
+                                            <h3 className="text-xl font-black italic uppercase text-white tracking-tighter flex items-center gap-3">
+                                                <ShieldCheck size={24} className="text-solaris-orange" /> Security Override
+                                            </h3>
+                                            <button onClick={() => setShowStoragePinModal(false)} className="text-white/30 hover:text-white transition-all"><X size={18} /></button>
+                                        </div>
+                                        <div className="space-y-6 relative z-10">
+                                            <div>
+                                                <label className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-1 italic">Authorized PIN</label>
+                                                <input
+                                                    type="password"
+                                                    value={storagePin}
+                                                    onChange={e => setStoragePin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                                                    onKeyDown={e => e.key === 'Enter' && verifyStoragePin()}
+                                                    placeholder="••••"
+                                                    className={`mt-2 w-full bg-white/[0.03] border ${storagePinError ? 'border-red-500/50' : 'border-white/5'} rounded-2xl py-5 px-6 text-center text-2xl text-white outline-none focus:border-solaris-orange/40 font-bold italic tracking-[1em] transition-all`}
+                                                />
+                                                {storagePinError && <p className="text-red-500 text-xs text-center mt-2 font-black uppercase italic tracking-widest">Access Denied</p>}
+                                            </div>
+                                            <button onClick={verifyStoragePin} className="w-full py-4 bg-solaris-orange text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all">Verify Access</button>
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Storage Inspector Modal */}
+                        <AnimatePresence>
+                            {showStorageInspector && (
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
+                                    <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-4xl bg-[#0d0d0e] border border-white/10 rounded-[40px] p-10 shadow-2xl flex flex-col max-h-[90vh]">
+                                        <div className="flex justify-between items-center mb-8 shrink-0">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-500 shadow-solaris-glow">
+                                                    <Database size={24} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-2xl font-black italic uppercase text-white tracking-tighter">Data Inspector Protocol</h3>
+                                                    <p className="text-[10px] font-black uppercase text-blue-400/60 tracking-[0.3em] italic">Local IndexedDB vs Cloud Supabase Synchronization Matrix</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-4">
+                                                <button onClick={fetchStorageData} className="px-5 py-3 bg-white/[0.04] text-white/50 rounded-xl hover:text-white hover:bg-white/10 transition-all flex items-center gap-2 font-black text-xs uppercase tracking-widest">
+                                                    <RefreshCcw size={16} className={isLoadingStorage ? 'animate-spin text-solaris-orange' : ''} /> Refresh
+                                                </button>
+                                                <button onClick={() => setShowStorageInspector(false)} className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 hover:bg-red-500/20 transition-all"><X size={20} /></button>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-1 overflow-y-auto no-scrollbar space-y-4">
+                                            {isLoadingStorage ? (
+                                                <div className="h-64 flex flex-col items-center justify-center gap-4">
+                                                    <div className="w-12 h-12 border-4 border-solaris-orange/20 border-t-solaris-orange rounded-full animate-spin"></div>
+                                                    <p className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.4em] italic animate-pulse">Scanning Storage Sectors...</p>
+                                                </div>
+                                            ) : (
+                                                <table className="w-full text-left">
+                                                    <thead>
+                                                        <tr className="border-b border-white/10 text-[10px] font-black uppercase text-white/40 tracking-[0.3em] italic">
+                                                            <th className="pb-4 pl-4">Storage Sector</th>
+                                                            <th className="pb-4 text-center">
+                                                                <div className="flex flex-col items-center gap-2 text-white">
+                                                                    <HardDrive size={18} className="text-emerald-400" />
+                                                                    <span>Local Data (Device)</span>
+                                                                </div>
+                                                            </th>
+                                                            <th className="pb-4 text-center">
+                                                                <div className="flex flex-col items-center gap-2 text-white">
+                                                                    <Cloud size={18} className="text-blue-400" />
+                                                                    <span>Cloud Data (Supabase)</span>
+                                                                </div>
+                                                            </th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-white/5">
+                                                        {storageData.map((row, idx) => (
+                                                            <tr key={idx} className="hover:bg-white/[0.02] transition-colors group">
+                                                                <td className="py-6 pl-4 font-black text-white italic tracking-widest">{row.table}</td>
+                                                                <td className="py-6 text-center">
+                                                                    <span className="inline-block px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-black text-lg shadow-inner">
+                                                                        {row.local} <span className="text-[10px] opacity-50 uppercase tracking-widest">items</span>
+                                                                    </span>
+                                                                </td>
+                                                                <td className="py-6 text-center">
+                                                                    <span className={`inline-block px-4 py-2 rounded-xl font-black text-lg shadow-inner border ${row.cloud === 'Err' || row.cloud === 'N/A' ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>
+                                                                        {row.cloud} <span className="text-[10px] opacity-50 uppercase tracking-widest">{typeof row.cloud === 'number' ? 'items' : ''}</span>
+                                                                    </span>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                </motion.div>
+                            )}
                         </AnimatePresence>
                         </div>
 
