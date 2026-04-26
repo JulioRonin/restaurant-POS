@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -22,6 +22,7 @@ import {
 export const MobileNavbar: React.FC = () => {
     const { activeEmployee, isSuperAdmin } = useUser();
     const { isFeatureEnabled } = useSubscription();
+    const scrollRef = useRef<HTMLDivElement>(null);
 
     const navItems = [
         { to: '/dashboard', icon: LayoutDashboard, label: 'Dash', path: '/dashboard', feature: 'dashboard' },
@@ -39,33 +40,95 @@ export const MobileNavbar: React.FC = () => {
         { to: '/settings', icon: Settings2, label: 'Ajustes', path: '/settings', feature: null },
     ];
 
-    return (
-        <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] w-[95%] max-w-full print:hidden">
-            <div className="bg-[#0a0a0a]/90 backdrop-blur-2xl border border-white/10 rounded-[32px] p-2 flex items-center shadow-2xl shadow-black overflow-x-auto no-scrollbar gap-2 px-4">
-                {navItems.map((item) => {
-                    const hasAccess = isSuperAdmin || (canAccess(activeEmployee?.role, item.path) && (!item.feature || isFeatureEnabled(item.feature)));
-                    if (!hasAccess) return null;
+    const visibleItems = navItems.filter(item =>
+        isSuperAdmin || (canAccess(activeEmployee?.role, item.path) && (!item.feature || isFeatureEnabled(item.feature)))
+    );
 
-                    return (
-                        <NavLink
-                            key={item.to}
-                            to={item.to}
-                            className={({ isActive }) =>
-                                `flex flex-col items-center justify-center w-[60px] min-w-[60px] h-[60px] rounded-2xl transition-all flex-shrink-0 ${
-                                    isActive 
-                                    ? 'bg-solaris-orange text-white shadow-solaris-glow scale-105' 
-                                    : 'text-white/40 active:scale-95 hover:bg-white/5'
-                                }`
-                            }
-                        >
-                            <item.icon size={20} />
-                            <span className="text-[8px] font-black uppercase mt-1 tracking-tighter opacity-70">
-                                {item.label}
-                            </span>
-                        </NavLink>
-                    );
-                })}
+    return (
+        <div
+            className="lg:hidden print:hidden"
+            style={{
+                position: 'fixed',
+                bottom: '16px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '95%',
+                maxWidth: '100%',
+                zIndex: 100,
+            }}
+        >
+            <div
+                ref={scrollRef}
+                style={{
+                    background: 'rgba(10,10,10,0.95)',
+                    backdropFilter: 'blur(24px)',
+                    WebkitBackdropFilter: 'blur(24px)',
+                    border: '1px solid rgba(255,255,255,0.12)',
+                    borderRadius: '28px',
+                    padding: '8px 12px',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    overflowX: 'auto',
+                    overflowY: 'hidden',
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    gap: '4px',
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+                }}
+            >
+                {visibleItems.map((item) => (
+                    <NavLink
+                        key={item.to}
+                        to={item.to}
+                        style={{ textDecoration: 'none' }}
+                        className={({ isActive }) =>
+                            isActive
+                                ? 'flex flex-col items-center justify-center rounded-2xl transition-all bg-[#f97316] text-white shadow-lg'
+                                : 'flex flex-col items-center justify-center rounded-2xl transition-all text-white/50 active:scale-95'
+                        }
+                    >
+                        {({ isActive }) => (
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '58px',
+                                    minWidth: '58px',
+                                    height: '58px',
+                                    flexShrink: 0,
+                                    borderRadius: '16px',
+                                    background: isActive ? '#f97316' : 'transparent',
+                                    color: isActive ? '#fff' : 'rgba(255,255,255,0.45)',
+                                    transition: 'all 0.2s ease',
+                                    transform: isActive ? 'scale(1.05)' : 'scale(1)',
+                                    boxShadow: isActive ? '0 0 20px rgba(249,115,22,0.5)' : 'none',
+                                }}
+                            >
+                                <item.icon size={20} />
+                                <span style={{
+                                    fontSize: '8px',
+                                    fontWeight: 900,
+                                    textTransform: 'uppercase',
+                                    marginTop: '4px',
+                                    letterSpacing: '-0.02em',
+                                    opacity: 0.8,
+                                    whiteSpace: 'nowrap',
+                                }}>
+                                    {item.label}
+                                </span>
+                            </div>
+                        )}
+                    </NavLink>
+                ))}
             </div>
+            {/* Hide scrollbar with inline style */}
+            <style>{`
+                div[data-mobile-nav]::-webkit-scrollbar { display: none; }
+            `}</style>
         </div>
     );
 };

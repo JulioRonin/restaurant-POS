@@ -58,7 +58,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <div className="no-print hidden lg:block">
         <Sidebar onLock={clearActiveEmployee} />
       </div>
-      <main className="flex-1 h-full overflow-hidden relative bg-[#1f2937] pb-24 lg:pb-0">
+      <main className="flex-1 h-full overflow-hidden relative bg-[#1f2937] pb-28 lg:pb-0">
         {children}
         <MobileNavbar />
       </main>
