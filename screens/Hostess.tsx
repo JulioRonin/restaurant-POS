@@ -273,61 +273,65 @@ export const HostessScreen: React.FC = () => {
     const availableWaiters = MOCK_STAFF.filter(s => s.area === 'Service' || s.role.includes('Mesero'));
 
     return (
-        <div className="flex h-full w-full bg-[#1f2937] text-white/70 font-sans antialiased overflow-hidden">
-            {/* Map Area */}
-            <div className="flex-1 p-8 relative overflow-hidden flex flex-col">
-                <header className="flex justify-between items-center mb-12 shrink-0">
-                    <div className="flex items-center gap-6">
+        <div className="flex flex-col h-full w-full bg-[#1f2937] text-white/70 font-sans antialiased overflow-hidden">
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                {/* Header */}
+                <header className="flex flex-wrap justify-between items-center gap-3 p-4 md:p-8 shrink-0">
+                    <div className="flex items-center gap-4">
                         <div>
-                            <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2 text-white">Floor Plan</h1>
-                            <p className="text-solaris-orange/40 font-bold text-[10px] uppercase tracking-[0.5em]">Active Node Orchestration</p>
+                            <h1 className="text-2xl md:text-4xl font-black italic tracking-tighter uppercase text-white">Floor Plan</h1>
+                            <p className="text-solaris-orange/40 font-bold text-[9px] md:text-[10px] uppercase tracking-[0.4em]">Active Node Orchestration</p>
                         </div>
                         <button
                             onClick={() => setIsAddTableModalOpen(true)}
-                            className="flex items-center gap-3 px-6 py-4 bg-solaris-orange text-white rounded-2xl shadow-solaris-glow hover:scale-105 transition-all text-[10px] font-black uppercase tracking-widest"
+                            className="flex items-center gap-2 px-4 py-3 bg-solaris-orange text-white rounded-xl shadow-solaris-glow hover:scale-105 transition-all text-[9px] font-black uppercase tracking-widest"
                         >
-                            <Plus size={16} />
-                            Ingresar Mesa
+                            <Plus size={14} />
+                            Mesa
                         </button>
                     </div>
 
-                    <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-[24px]">
-                        <button
-                            onClick={() => setViewMode('floor')}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'floor' ? 'bg-white/10 text-white shadow-xl' : 'text-white/20 hover:text-white'}`}
-                        >
-                            Floor Plan
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white/10 text-white shadow-xl' : 'text-white/20 hover:text-white'}`}
-                        >
-                            List View
-                        </button>
-                    </div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-[20px]">
+                            <button
+                                onClick={() => setViewMode('floor')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'floor' ? 'bg-white/10 text-white shadow-xl' : 'text-white/20 hover:text-white'}`}
+                            >
+                                Floor
+                            </button>
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white/10 text-white shadow-xl' : 'text-white/20 hover:text-white'}`}
+                            >
+                                Lista
+                            </button>
+                        </div>
 
-                    <div className="flex gap-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
-                            <span className="text-[9px] text-solaris-orange/40 font-black uppercase tracking-widest italic">Available</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
-                            <span className="text-[9px] text-solaris-orange/40 font-black uppercase tracking-widest italic">Occupied</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-yellow-500 shadow-[0_0_10px_rgba(234,179,8,0.5)]"></div>
-                            <span className="text-[9px] text-solaris-orange/40 font-black uppercase tracking-widest italic">Reserved</span>
+                        <div className="hidden md:flex gap-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-green-500" />
+                                <span className="text-[9px] text-solaris-orange/40 font-black uppercase tracking-widest italic">Libre</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-red-500" />
+                                <span className="text-[9px] text-solaris-orange/40 font-black uppercase tracking-widest italic">Ocupada</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                                <span className="text-[9px] text-solaris-orange/40 font-black uppercase tracking-widest italic">Reservada</span>
+                            </div>
                         </div>
                     </div>
                 </header>
 
-                <div className="flex gap-8 flex-1 overflow-hidden">
-                    {/* WAITLIST KANBAN SIDEBAR */}
-                    <div className="w-72 bg-white/[0.02] rounded-solaris p-8 border border-white/5 flex flex-col shrink-0 overflow-hidden shadow-2xl">
-                        <h3 className="font-black text-solaris-orange/40 text-[10px] uppercase tracking-[0.4em] mb-8 flex items-center gap-3 italic">
-                             <Hourglass size={14} />
-                             Waitlist Core
+                {/* Map + Waitlist area */}
+                <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0 overflow-hidden px-4 md:px-8 pb-4">
+                    {/* WAITLIST KANBAN SIDEBAR — hidden on mobile, drawer on tablet+ */}
+                    <div className="hidden md:flex w-64 bg-white/[0.02] rounded-2xl p-5 border border-white/5 flex-col shrink-0 overflow-hidden shadow-2xl">
+                        <h3 className="font-black text-solaris-orange/40 text-[9px] uppercase tracking-[0.4em] mb-5 flex items-center gap-2 italic">
+                             <Hourglass size={12} />
+                             Waitlist
                              <span className="ml-auto bg-solaris-orange text-white px-2 py-0.5 rounded-lg text-[8px] font-black">{waitlist.length}</span>
                         </h3>
                         
@@ -362,9 +366,13 @@ export const HostessScreen: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="flex-1 border border-white/5 rounded-solaris relative bg-[#0a0a0b]/30 shadow-2xl overflow-auto custom-scrollbar">
+                    {/* Table Map / List */}
+                    <div
+                        className="flex-1 border border-white/5 rounded-2xl relative bg-[#0a0a0b]/30 shadow-2xl"
+                        style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}
+                    >
                         {viewMode === 'floor' ? (
-                            <div className="relative w-full h-full p-12 min-w-[800px] min-h-[800px]" onDragOver={(e) => e.preventDefault()}>
+                            <div className="relative w-full p-6 min-w-[600px] min-h-[500px]" onDragOver={(e) => e.preventDefault()}>
                                 <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
                                 {activeTables.map(table => {
                                     const waiterId = waiterAssignments[table.id];
@@ -491,49 +499,47 @@ export const HostessScreen: React.FC = () => {
                 </div>
             </div>
 
-            {/* Side Panel */}
-            <aside className="w-[420px] bg-[#1f2937] border-l border-white/10 p-8 flex flex-col shadow-2xl overflow-y-auto custom-scrollbar shrink-0">
-                <div className="mb-10 p-8 bg-white/[0.02] rounded-solaris border border-white/5 shadow-inner relative overflow-hidden group">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-solaris-orange/40 to-transparent opacity-50"></div>
-                    <h3 className="font-black italic text-white text-sm uppercase tracking-tight mb-8 flex items-center gap-3">
-                        <UserPlus size={18} className="text-solaris-orange" />
-                        Terminal Walk-in
+            {/* Side Panel — Full width below on mobile, fixed right column on desktop */}
+            <aside
+                className="w-full md:w-[380px] lg:w-[420px] bg-[#1f2937] border-t md:border-t-0 md:border-l border-white/10 flex flex-col shadow-2xl shrink-0"
+                style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch', maxHeight: selectedTableId ? '55vh' : '220px' }}
+            >
+                <div className="p-5 md:p-8 flex flex-col gap-5 flex-1">
+                {/* Walk-in terminal — compact on mobile */}
+                <div className="mb-5 p-5 bg-white/[0.02] rounded-2xl border border-white/5 shadow-inner relative overflow-hidden">
+                    <h3 className="font-black italic text-white text-xs uppercase tracking-tight mb-4 flex items-center gap-2">
+                        <UserPlus size={14} className="text-solaris-orange" />
+                        Walk-in
                     </h3>
-                    <div className="space-y-6">
-                        <div>
-                            <label className="text-[9px] font-black text-solaris-orange/60 uppercase tracking-[0.4em] mb-2.5 block italic">Identidad Cliente</label>
-                            <input
-                                type="text"
-                                value={customerName}
-                                onChange={(e) => setCustomerName(e.target.value)}
-                                className="w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl outline-none focus:border-solaris-orange/40 text-white font-bold transition-all text-sm placeholder:text-white/5 shadow-inner"
-                                placeholder="Ingresar designación..."
-                            />
-                        </div>
-                        <div className="flex justify-between items-center bg-white/[0.02] p-3 rounded-2xl border border-white/5">
-                            <span className="text-[9px] font-black text-solaris-orange/60 uppercase tracking-[0.4em] ml-4 italic">Métrica Pax</span>
-                            <div className="flex items-center gap-6 pr-2">
-                                <button onClick={() => setPartySize(Math.max(1, partySize - 1))} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-white transition-all border border-white/5 shadow-xl">-</button>
-                                <span className="font-black italic text-2xl text-solaris-orange w-8 text-center">{partySize}</span>
-                                <button onClick={() => setPartySize(partySize + 1)} className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-white transition-all border border-white/5 shadow-xl">+</button>
-                            </div>
+                    <div className="flex gap-3">
+                        <input
+                            type="text"
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            className="flex-1 p-3 bg-white/[0.03] border border-white/10 rounded-xl outline-none focus:border-solaris-orange/40 text-white font-bold transition-all text-sm placeholder:text-white/20 shadow-inner"
+                            placeholder="Nombre cliente..."
+                        />
+                        <div className="flex items-center gap-2 bg-white/[0.02] px-3 rounded-xl border border-white/5">
+                            <button onClick={() => setPartySize(Math.max(1, partySize - 1))} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center font-black text-white text-lg">-</button>
+                            <span className="font-black italic text-lg text-solaris-orange w-6 text-center">{partySize}</span>
+                            <button onClick={() => setPartySize(partySize + 1)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center font-black text-white text-lg">+</button>
                         </div>
                     </div>
-                    <div className="mt-8">
+                    <div className="flex gap-2 mt-3">
                         <button
                             onClick={handleAddToWaitlist}
                             disabled={!customerName}
-                            className="w-full py-5 bg-solaris-orange text-white rounded-[24px] font-black italic uppercase text-[11px] tracking-[0.3em] shadow-solaris-glow hover:scale-[1.02] transition-all transform active:scale-95 flex items-center justify-center gap-4 disabled:opacity-20 disabled:grayscale"
+                            className="flex-1 py-3 bg-solaris-orange text-white rounded-xl font-black italic uppercase text-[9px] tracking-widest shadow-solaris-glow hover:scale-[1.02] transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-20"
                         >
-                            <Hourglass size={18} />
-                            Desplegar a Espera
+                            <Hourglass size={14} />
+                            En Espera
                         </button>
                     </div>
                 </div>
 
-                <div className="mb-8 pb-8 border-b border-white/10">
-                    <h2 className="text-2xl font-black italic text-white tracking-tighter uppercase mb-2">{selectedTable ? selectedTable.name : 'Sector Desconectado'}</h2>
-                    <p className="text-solaris-orange/40 text-[9px] font-black uppercase tracking-[0.5em] italic">Consola de Comando de Mesa</p>
+                <div className="mb-4 pb-4 border-b border-white/10">
+                    <h2 className="text-xl font-black italic text-white tracking-tighter uppercase">{selectedTable ? selectedTable.name : 'Sin selección'}</h2>
+                    <p className="text-solaris-orange/40 text-[8px] font-black uppercase tracking-[0.4em] italic">Consola de Mesa</p>
                 </div>
 
                 {selectedTable ? (
@@ -715,6 +721,7 @@ export const HostessScreen: React.FC = () => {
                         <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em] leading-relaxed">Selecciona un nodo de mesa para iniciar la secuencia de control táctico operacional.</p>
                     </div>
                 )}
+                </div>
             </aside>
 
             {/* Modals Container */}
