@@ -2,7 +2,7 @@ import React from "react";
 
 export const SolarisShader: React.FC = () => {
   return (
-    <div className="absolute inset-0 w-full h-full z-0 overflow-hidden pointer-events-none bg-black">
+    <div className="fixed inset-0 w-screen h-screen z-0 overflow-hidden pointer-events-none bg-black">
       {/* Replaced heavy MeshGradient with static high-performance image */}
       <div 
         className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat opacity-80"
