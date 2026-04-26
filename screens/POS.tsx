@@ -126,14 +126,14 @@ export const POSScreen: React.FC = () => {
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="flex flex-col lg:flex-row h-full w-full bg-[#1f2937] text-white overflow-hidden relative antialiased">
+    <div className="flex flex-col lg:flex-row h-full w-full bg-[#1f2937] text-white relative antialiased">
       {/* Hidden print root */}
       <div className="hidden print:block absolute inset-0 z-[9999] bg-white">
           {kitchenOrderToPrint && <KitchenTicket order={kitchenOrderToPrint} settings={settings} />}
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col p-3 md:p-6 overflow-hidden relative z-10 w-full">
+      <div className="flex-1 flex flex-col p-3 md:p-6 overflow-hidden relative z-10 w-full min-h-0">
         
         {/* Compact Header Section */}
         <div className="flex flex-col lg:flex-row gap-3 mb-3 items-center">
@@ -218,8 +218,11 @@ export const POSScreen: React.FC = () => {
         </div>
 
         {/* Grid Responsive Columns */}
-        <div className="flex-1 overflow-y-auto pr-1 md:pr-2 custom-scrollbar">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xxl:grid-cols-5 gap-3 sm:gap-6 pb-16 lg:pb-10">
+        <div
+            className="flex-1 min-h-0"
+            style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}
+        >
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-40 lg:pb-10">
                 {filteredItems.map(item => (
                     <motion.div 
                         key={item.id} 
@@ -253,7 +256,7 @@ export const POSScreen: React.FC = () => {
         </div>
 
         {/* Floating Cart Button (Mobile Only) */}
-        <div className="lg:hidden fixed bottom-6 right-6 z-50">
+        <div className="lg:hidden fixed z-[90]" style={{ bottom: '100px', right: '20px' }}>
             <button 
                 onClick={() => setIsCartOpen(!isCartOpen)}
                 className="w-14 h-14 bg-solaris-orange text-white rounded-full flex items-center justify-center shadow-solaris-glow relative"
