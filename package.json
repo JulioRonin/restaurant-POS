@@ -27,7 +27,6 @@
     }
   },
   "dependencies": {
-    "@paper-design/shaders-react": "^0.0.75",
     "@supabase/supabase-js": "^2.101.1",
     "esc-pos-encoder": "^3.0.0",
     "framer-motion": "^12.38.0",
