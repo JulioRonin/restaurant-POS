@@ -89,7 +89,7 @@ const SyncBadge = () => {
     return unsubscribe;
   }, []);
 
-  const color = sync.pendingCount > 0 ? 'text-solaris-orange' : sync.isSyncing ? 'text-white' : 'text-green-500/40';
+  const color = sync.pendingCount > 0 ? 'text-[#F98359]' : sync.isSyncing ? 'text-white' : 'text-green-500/40';
   const Icon = sync.pendingCount > 0 ? CloudCog : sync.isSyncing ? RefreshCw : Cloud;
   
   return (
@@ -110,7 +110,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
 
   const statusConfig = {
     [SubscriptionStatus.ACTIVE]: { color: 'text-green-500 border-green-500/20 bg-green-500/5', label: 'KOSO Activo' },
-    [SubscriptionStatus.WARNING]: { color: 'text-solaris-orange border-solaris-orange/20 bg-solaris-orange/5', label: 'License Warning' },
+    [SubscriptionStatus.WARNING]: { color: 'text-[#F98359] border-[#F98359]/20 bg-[#F98359]/5', label: 'License Warning' },
     [SubscriptionStatus.EXPIRED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Node Expired' },
     [SubscriptionStatus.DEMO]: { color: 'text-amber-500 border-amber-500/20 bg-amber-500/5', label: 'Demo Mode' },
     [SubscriptionStatus.DEMO_EXPIRED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Demo Expired' },
@@ -153,7 +153,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
                           if (match) switchBusiness(match.id, match.name);
                        }
                      }}
-                     className="text-solaris-orange hover:text-white p-1 hover:bg-white/5 rounded-full transition-colors hidden group-hover/header:block"
+                     className="text-[#F98359] hover:text-white p-1 hover:bg-white/5 rounded-full transition-colors hidden group-hover/header:block"
                    >
                      <RefreshCw size={12} />
                    </button>
@@ -247,7 +247,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
       {/* Network Operator Status */}
       <div className="w-full px-4 py-6 mt-auto" style={{ borderTop: '1px solid rgba(250,250,243,0.1)', background: 'rgba(0,0,0,0.15)' }}>
         <div 
-          className="flex items-center justify-between group cursor-pointer bg-white/[0.02] p-4 rounded-solaris border border-white/5 hover:border-solaris-orange/20 transition-all shadow-xl" 
+          className="flex items-center justify-between group cursor-pointer bg-white/[0.02] p-4 rounded-solaris border border-white/5 hover:border-[#F98359]/20 transition-all shadow-xl" 
           onClick={onLock}
         >
            <div className="flex items-center gap-4 overflow-hidden">
@@ -257,11 +257,11 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
               {isExpanded && (
                 <div className="min-w-0">
                   <p className="text-[10px] font-black uppercase text-white truncate italic leading-none">{activeEmployee?.name}</p>
-                  <p className="text-[8px] font-black uppercase text-solaris-orange tracking-widest mt-2">{activeEmployee?.role}</p>
+                  <p className="text-[8px] font-black uppercase text-[#F98359] tracking-widest mt-2">{activeEmployee?.role}</p>
                 </div>
               )}
            </div>
-           {isExpanded && <Lock size={14} className="text-white/20 group-hover:text-solaris-orange transition-colors" />}
+           {isExpanded && <Lock size={14} className="text-white/20 group-hover:text-[#F98359] transition-colors" />}
         </div>
         
         {authProfile?.role === 'admin' && isExpanded && (

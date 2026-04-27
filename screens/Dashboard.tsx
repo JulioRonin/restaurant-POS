@@ -304,7 +304,7 @@ export const DashboardScreen: React.FC = () => {
                                         onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
                                         className="bg-white/5 text-[#1a1c14] px-2 py-1 rounded-lg text-[9px] font-bold outline-none border-none"
                                     />
-                                    <span className="text-[9px] text-[#505530]/45">to</span>
+                                    <span className="text-[9px] text-[#505530]/60 font-bold">to</span>
                                     <input 
                                         type="date"
                                         value={dateRange.end}
@@ -335,10 +335,10 @@ export const DashboardScreen: React.FC = () => {
                 {/* KPI Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
                     {DYNAMIC_KPIS.map((kpi, idx) => (
-                        <GlowCard key={idx} glowColor={kpi.color as any} customSize className="!p-0 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-[24px]">
+                        <GlowCard key={idx} glowColor={kpi.color as any} customSize className="!p-0 border border-white/5 bg-white/70 backdrop-blur-md rounded-[24px]">
                             <div className="p-6">
                                 <kpi.icon size={20} className="text-solaris-orange mb-4" />
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#505530]/45 mb-1">{kpi.label}</p>
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#505530]/60 font-bold mb-1">{kpi.label}</p>
                                 <p className="text-xl font-black italic tracking-tight">{kpi.value}</p>
                             </div>
                         </GlowCard>
@@ -347,9 +347,9 @@ export const DashboardScreen: React.FC = () => {
 
                 {/* Main Charts */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-                    <GlowCard glowColor="orange" customSize className="lg:col-span-2 !p-0 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-[32px]">
+                    <GlowCard glowColor="orange" customSize className="lg:col-span-2 !p-0 border border-white/5 bg-white/70 backdrop-blur-md rounded-[32px]">
                         <div className="p-8">
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#505530]/45 mb-1 italic">Proyección Financiera</h3>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#505530]/60 font-bold mb-1 italic">Proyección Financiera</h3>
                             <p className="text-xl font-black text-[#1a1c14] italic tracking-tight mb-8">Revenue Analytics</p>
                             <div className="h-72 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -380,9 +380,9 @@ export const DashboardScreen: React.FC = () => {
                         </div>
                     </GlowCard>
 
-                    <GlowCard glowColor="orange" customSize className="!p-0 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-[32px]">
+                    <GlowCard glowColor="orange" customSize className="!p-0 border border-white/5 bg-white/70 backdrop-blur-md rounded-[32px]">
                         <div className="p-8">
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#505530]/45 mb-1 italic">Operación</h3>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#505530]/60 font-bold mb-1 italic">Operación</h3>
                             <p className="text-xl font-black text-[#1a1c14] italic tracking-tight mb-8">Prime Cost</p>
                             <div className="h-72 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -416,7 +416,7 @@ export const DashboardScreen: React.FC = () => {
                 {/* New Insights Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-20">
                     {/* Top Selling Products */}
-                    <GlowCard glowColor="orange" customSize className="!p-0 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-[32px]">
+                    <GlowCard glowColor="orange" customSize className="!p-0 border border-white/5 bg-white/70 backdrop-blur-md rounded-[32px]">
                        <div className="p-8">
                            <div className="flex items-center justify-between mb-8">
                                 <div className="flex items-center gap-3">
@@ -445,7 +445,7 @@ export const DashboardScreen: React.FC = () => {
 
                     <div className="space-y-8">
                         {/* Financial Categories */}
-                        <GlowCard glowColor="orange" customSize className="!p-0 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-[32px]">
+                        <GlowCard glowColor="orange" customSize className="!p-0 border border-white/5 bg-white/70 backdrop-blur-md rounded-[32px]">
                             <div className="p-8">
                                 <div className="flex items-center gap-3 mb-8">
                                     <Target className="text-blue-400" size={20} />
@@ -484,7 +484,7 @@ export const DashboardScreen: React.FC = () => {
                         </GlowCard>
 
                         {/* Low Sales Alert */}
-                        <GlowCard glowColor="red" customSize className="!p-0 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-[32px]">
+                        <GlowCard glowColor="red" customSize className="!p-0 border border-white/5 bg-white/70 backdrop-blur-md rounded-[32px]">
                             <div className="p-8">
                                 <div className="flex items-center gap-3 mb-8">
                                     <TrendingDown className="text-red-500" size={20} />

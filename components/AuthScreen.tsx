@@ -56,7 +56,7 @@ export const AuthScreen: React.FC = () => {
                     >
                         <img src="/koso-logo.png" alt="KŌSO" className="w-full h-full object-cover" />
                     </motion.div>
-                    <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter text-white uppercase mb-2 md:mb-4 drop-shadow-lg">KŌSO POS</h1>
+                    <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter text-[#FAFAF3] !text-[#FAFAF3] uppercase mb-2 md:mb-4 drop-shadow-lg">KŌSO POS</h1>
                     <p className="text-white/60 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.6em] italic">Restaurant Management System</p>
                 </div>
 
@@ -68,14 +68,14 @@ export const AuthScreen: React.FC = () => {
                                 className={`pb-4 md:pb-6 text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] transition-all relative whitespace-nowrap ${isLogin ? 'text-[#F98359]' : 'text-[#505530]/30 hover:text-[#505530]/60'}`}
                             >
                                 Iniciar Sesión
-                                {isLogin && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-solaris-orange shadow-solaris-glow" />}
+                                {isLogin && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-[#F98359] shadow-solaris-glow" />}
                             </button>
                             <button 
                                 onClick={() => setIsLogin(false)}
                                 className={`pb-6 text-[11px] font-black uppercase tracking-[0.3em] transition-all relative ${!isLogin ? 'text-[#F98359]' : 'text-[#505530]/30 hover:text-[#505530]/60'}`}
                             >
                                 Registrar Negocio
-                                {!isLogin && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-solaris-orange shadow-solaris-glow" />}
+                                {!isLogin && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-[#F98359] shadow-solaris-glow" />}
                             </button>
                         </div>
 
@@ -106,7 +106,7 @@ export const AuthScreen: React.FC = () => {
                                                 <input 
                                                     type="text" required value={businessName}
                                                     onChange={(e) => setBusinessName(e.target.value)}
-                                                    className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#1a1c14] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
+                                                    className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#505530] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
                                                     placeholder="ej. Mi Restaurante"
                                                 />
                                             </div>
@@ -118,7 +118,7 @@ export const AuthScreen: React.FC = () => {
                                                 <input 
                                                     type="text" required value={fullName}
                                                     onChange={(e) => setFullName(e.target.value)}
-                                                    className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#1a1c14] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
+                                                    className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#505530] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
                                                     placeholder="Tu nombre real"
                                                 />
                                             </div>
@@ -134,7 +134,7 @@ export const AuthScreen: React.FC = () => {
                                     <input 
                                         type="email" required value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#1a1c14] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
+                                        className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#505530] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
                                         placeholder="correo@turestaurante.com"
                                     />
                                 </div>
@@ -147,7 +147,7 @@ export const AuthScreen: React.FC = () => {
                                     <input 
                                         type="password" required value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#1a1c14] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
+                                        className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#505530] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
                                         placeholder="••••••••"
                                     />
                                 </div>
@@ -157,7 +157,7 @@ export const AuthScreen: React.FC = () => {
                                 whileHover={{ scale: 1.02, boxShadow: "0 0 40px rgba(249, 115, 22, 0.4)" }}
                                 whileTap={{ scale: 0.98 }}
                                 disabled={loading}
-                                className="w-full bg-solaris-orange text-white font-black uppercase tracking-[0.4em] py-6 rounded-[24px] shadow-solaris-glow transition-all flex items-center justify-center gap-4 mt-12 disabled:opacity-50 text-[11px] italic"
+                                className="w-full bg-[#F98359] text-[#FAFAF3] !text-[#FAFAF3] font-black uppercase tracking-[0.4em] py-6 rounded-[24px] shadow-solaris-glow transition-all flex items-center justify-center gap-4 mt-12 disabled:opacity-50 text-[11px] italic"
                             >
                                 {loading ? (
                                     <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />

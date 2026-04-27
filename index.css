@@ -1,4 +1,4 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -237,4 +237,17 @@ body {
     hsl(var(--hue) var(--saturation) var(--lightness) / var(--bg-spot-opacity)), transparent
   );
   z-index: 0;
+}
+
+/* Visibility Helpers */
+.force-cream { color: #FAFAF3 !important; }
+.force-olive { color: #505530 !important; }
+.force-salmon { color: #F98359 !important; }
+
+.shadow-salmon-glow {
+  box-shadow: 0 0 20px rgba(249, 131, 89, 0.3);
+}
+
+.shadow-olive-glow {
+  box-shadow: 0 0 20px rgba(80, 85, 48, 0.2);
 }

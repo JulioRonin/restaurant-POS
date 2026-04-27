@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 
 export const SolarisShader: React.FC = () => {
   return (
@@ -9,7 +9,7 @@ export const SolarisShader: React.FC = () => {
         style={{ backgroundImage: "url('/bg-koso.jpg')" }}
       />
       {/* Subtle dark overlay for text readability */}
-      <div className="absolute inset-0 bg-black/30 pointer-events-none" />
+      <div className="absolute inset-0 bg-black/20 pointer-events-none" />
     </div>
   );
 };

@@ -129,7 +129,7 @@ export const InventoryScreen: React.FC = () => {
     const getStockStatus = (qty: number, max: number, min: number) => {
         const pct = (qty / (max || 100)) * 100;
         if (qty <= min) return { label: 'CRITICAL', color: 'text-red-500', bar: 'bg-red-500', pct };
-        if (pct < 40) return { label: 'LOW', color: 'text-solaris-orange', bar: 'bg-solaris-orange', pct };
+        if (pct < 40) return { label: 'LOW', color: 'text-solaris-orange', bar: 'bg-[#F98359]', pct };
         return { label: 'STABLE', color: 'text-green-500', bar: 'bg-green-500', pct };
     };
 
@@ -155,12 +155,12 @@ export const InventoryScreen: React.FC = () => {
 
                         <button onClick={() => setIsCartOpen(true)} className="relative group bg-white/[0.03] border border-white/5 p-3 rounded-2xl hover:bg-white/[0.05] transition-all">
                              <ShoppingCart size={20} className="text-gray-400 group-hover:text-[#1a1c14]" />
-                             {cart.length > 0 && <span className="absolute -top-1 -right-1 bg-solaris-orange text-[#1a1c14] text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-solaris-glow">{cart.length}</span>}
+                             {cart.length > 0 && <span className="absolute -top-1 -right-1 bg-[#F98359] text-[#1a1c14] text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-solaris-glow">{cart.length}</span>}
                         </button>
 
                         <button 
                             onClick={() => { setEditingItem(null); setIsAddModalOpen(true); }}
-                            className="bg-solaris-orange text-[#1a1c14] px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-solaris-glow hover:scale-105 transition-all"
+                            className="bg-[#F98359] text-[#1a1c14] px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-solaris-glow hover:scale-105 transition-all"
                         >
                              <Plus size={16} /> Add Supply
                         </button>
@@ -260,7 +260,7 @@ export const InventoryScreen: React.FC = () => {
                                             <h3 className="text-xl font-black italic text-[#1a1c14] uppercase tracking-tight mb-1">Order #{order.id.slice(0, 8)}</h3>
                                             <p className="text-[9px] font-black uppercase tracking-widest text-gray-600 italic">{new Date(order.date).toLocaleDateString()} • {order.supplier}</p>
                                         </div>
-                                        <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.3em] border ${order.status === 'RECEIVED' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-solaris-orange/10 text-solaris-orange border-solaris-orange/20'}`}>
+                                        <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.3em] border ${order.status === 'RECEIVED' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-[#F98359]/10 text-solaris-orange border-solaris-orange/20'}`}>
                                             {order.status}
                                         </div>
                                     </div>
@@ -291,7 +291,7 @@ export const InventoryScreen: React.FC = () => {
                                             {order.status === 'PENDING' && (
                                                 <button 
                                                     onClick={() => handleUpdateStatus(order.id, SupplyOrderStatus.ORDERED)}
-                                                    className="bg-solaris-orange text-[#1a1c14] px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-solaris-glow"
+                                                    className="bg-[#F98359] text-[#1a1c14] px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-solaris-glow"
                                                 >
                                                     Ship
                                                 </button>
@@ -339,7 +339,7 @@ export const InventoryScreen: React.FC = () => {
                                             {['PZ', 'gr', 'Bolsa'].map(u => (
                                                 <label key={u} className="cursor-pointer">
                                                     <input type="radio" name="unit" value={u} defaultChecked={editingItem?.unit === u || (!editingItem && u === 'PZ')} className="sr-only peer" />
-                                                    <div className="peer-checked:bg-solaris-orange/20 peer-checked:border-solaris-orange peer-checked:text-[#1a1c14] bg-white/[0.03] border border-white/5 rounded-2xl py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-500 transition-all">{u}</div>
+                                                    <div className="peer-checked:bg-[#F98359]/20 peer-checked:border-solaris-orange peer-checked:text-[#1a1c14] bg-white/[0.03] border border-white/5 rounded-2xl py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-500 transition-all">{u}</div>
                                                 </label>
                                             ))}
                                         </div>
@@ -358,7 +358,7 @@ export const InventoryScreen: React.FC = () => {
                                              <input name="cost" type="number" step="0.01" defaultValue={editingItem?.costPerUnit} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-[#1a1c14] text-center font-bold" />
                                         </div>
                                     </div>
-                                    <button type="submit" className="w-full bg-solaris-orange text-[#1a1c14] font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-600 transition-all text-[11px] mt-2">
+                                    <button type="submit" className="w-full bg-[#F98359] text-[#1a1c14] font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-600 transition-all text-[11px] mt-2">
                                         Guardar Cambios
                                     </button>
                                 </div>
@@ -382,7 +382,7 @@ export const InventoryScreen: React.FC = () => {
 
                                  <div className="flex gap-4">
                                      <button onClick={() => setRestockItem(null)} className="flex-1 py-4 text-[10px] font-black uppercase text-gray-700 tracking-widest hover:text-[#1a1c14] transition-colors">Abort</button>
-                                     <button onClick={() => addToCart(restockItem, restockQty)} className="flex-1 py-4 bg-solaris-orange text-[#1a1c14] font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-solaris-glow">Add to Queue</button>
+                                     <button onClick={() => addToCart(restockItem, restockQty)} className="flex-1 py-4 bg-[#F98359] text-[#1a1c14] font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-solaris-glow">Add to Queue</button>
                                  </div>
                              </div>
                          </motion.div>
@@ -438,7 +438,7 @@ export const InventoryScreen: React.FC = () => {
                                 <span className="text-[9px] font-black uppercase text-gray-700 tracking-widest">Aggregate Cost</span>
                                 <span className="text-3xl font-black italic text-[#1a1c14] tracking-tighter">${cartTotal.toFixed(2)}</span>
                             </div>
-                            <button onClick={handleCreateOrder} disabled={cart.length === 0} className="w-full bg-solaris-orange text-[#1a1c14] font-black uppercase tracking-[0.2em] py-6 rounded-2xl shadow-solaris-glow disabled:opacity-30 flex items-center justify-center gap-3">
+                            <button onClick={handleCreateOrder} disabled={cart.length === 0} className="w-full bg-[#F98359] text-[#1a1c14] font-black uppercase tracking-[0.2em] py-6 rounded-2xl shadow-solaris-glow disabled:opacity-30 flex items-center justify-center gap-3">
                                 <ShoppingCart size={20} /> Authorize Procurement
                             </button>
                         </div>

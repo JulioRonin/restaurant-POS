@@ -193,7 +193,7 @@ export const MenuScreen: React.FC = () => {
                     </button>
                     <button
                         onClick={handleOpenAdd}
-                        className="flex items-center gap-2 px-6 py-3 bg-solaris-orange text-[#1a1c14] text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-105 transition-all"
+                        className="flex items-center gap-2 px-6 py-3 bg-[#F98359] text-[#1a1c14] text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-105 transition-all"
                     >
                         <Plus size={15} /> Register Asset
                     </button>
@@ -222,7 +222,7 @@ export const MenuScreen: React.FC = () => {
                             onClick={() => setActiveCategory(cat)}
                             className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
                                 activeCategory === cat
-                                    ? 'bg-solaris-orange text-[#1a1c14] border-solaris-orange shadow-solaris-glow'
+                                    ? 'bg-[#F98359] text-[#1a1c14] border-solaris-orange shadow-solaris-glow'
                                     : 'bg-white/[0.03] text-[#505530]/45 border-white/5 hover:text-[#1a1c14] hover:border-white/20'
                             }`}
                         >
@@ -436,7 +436,7 @@ export const MenuScreen: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => setIsAddingNewCategory(true)}
-                                                        className="px-4 bg-solaris-orange/10 border border-solaris-orange/20 text-solaris-orange rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-solaris-orange/20 transition-all whitespace-nowrap"
+                                                        className="px-4 bg-[#F98359]/10 border border-solaris-orange/20 text-solaris-orange rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-[#F98359]/20 transition-all whitespace-nowrap"
                                                     >
                                                         + New
                                                     </button>
@@ -485,7 +485,7 @@ export const MenuScreen: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         onClick={addVariant}
-                                                        className="flex items-center gap-1.5 px-3 py-2 bg-solaris-orange/10 border border-solaris-orange/20 text-solaris-orange rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-solaris-orange/20 transition-all"
+                                                        className="flex items-center gap-1.5 px-3 py-2 bg-[#F98359]/10 border border-solaris-orange/20 text-solaris-orange rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-[#F98359]/20 transition-all"
                                                     >
                                                         <Plus size={10} /> Variante
                                                     </button>
@@ -526,7 +526,7 @@ export const MenuScreen: React.FC = () => {
                                         {/* Submit */}
                                         <button
                                             type="submit"
-                                            className="w-full bg-solaris-orange text-[#1a1c14] font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-500 active:scale-95 transition-all text-[11px] flex items-center justify-center gap-3"
+                                            className="w-full bg-[#F98359] text-[#1a1c14] font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-500 active:scale-95 transition-all text-[11px] flex items-center justify-center gap-3"
                                         >
                                             <CheckCircle size={18} />
                                             {editingItem ? 'Save Changes' : 'Add to Menu'}
@@ -586,7 +586,7 @@ export const MenuScreen: React.FC = () => {
                                         {importResult.errors.length ? importResult.errors.join(', ') : `${importResult.count} assets imported successfully`}
                                     </div>
                                 )}
-                                <button onClick={handleImport} className="w-full py-5 bg-solaris-orange text-[#1a1c14] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all text-[11px]">
+                                <button onClick={handleImport} className="w-full py-5 bg-[#F98359] text-[#1a1c14] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all text-[11px]">
                                     Execute Import
                                 </button>
                             </div>
