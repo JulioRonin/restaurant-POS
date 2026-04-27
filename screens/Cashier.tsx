@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useTables } from '../contexts/TableContext';
@@ -574,14 +574,14 @@ export const CashierScreen: React.FC = () => {
                                             <GlowButton 
                                                 onClick={() => setPaymentMethod(PaymentMethod.CASH)}
                                                 variant={paymentMethod === PaymentMethod.CASH ? 'primary' : 'secondary'}
-                                                className="w-full py-6 md:py-8 rounded-[24px] md:rounded-[32px] flex items-center justify-center gap-4 md:gap-6"
+                                                className="w-full py-6 md:py-8 rounded-[24px] md:rounded-[32px] flex items-center justify-center gap-4 md:gap-6 !text-[#505530]"
                                             >
                                                 <Wallet size={20} className="md:w-7 md:h-7" /> <span className="text-[11px] md:text-sm font-black uppercase tracking-widest">Liquid Asset</span>
                                             </GlowButton>
                                             <GlowButton 
                                                 onClick={() => setPaymentMethod(PaymentMethod.CARD)}
                                                 variant={paymentMethod === PaymentMethod.CARD ? 'primary' : 'secondary'}
-                                                className="w-full py-6 md:py-8 rounded-[24px] md:rounded-[32px] flex items-center justify-center gap-4 md:gap-6"
+                                                className="w-full py-6 md:py-8 rounded-[24px] md:rounded-[32px] flex items-center justify-center gap-4 md:gap-6 !text-[#505530]"
                                             >
                                                 <CreditCard size={20} className="md:w-7 md:h-7" /> <span className="text-[11px] md:text-sm font-black uppercase tracking-widest">Spectral Card</span>
                                             </GlowButton>
@@ -592,7 +592,7 @@ export const CashierScreen: React.FC = () => {
                                     <div className="space-y-4 pt-8 md:pt-10 border-t border-white/5">
                                         <GlowButton
                                             onClick={() => setIsPaymentModalOpen(true)}
-                                            className="w-full py-8 md:py-12 rounded-[28px] md:rounded-[40px] tracking-[0.2em] md:tracking-[0.4em] text-xl md:text-3xl flex items-center justify-center gap-4 md:gap-8 group"
+                                            className="w-full py-8 md:py-12 rounded-[28px] md:rounded-[40px] tracking-[0.2em] md:tracking-[0.4em] text-xl md:text-3xl flex items-center justify-center gap-4 md:gap-8 group !text-[#505530]"
                                         >
                                             Execute <ArrowRight size={24} className="md:w-10 md:h-10 group-hover:translate-x-2 transition-transform" />
                                         </GlowButton>
@@ -699,14 +699,14 @@ export const CashierScreen: React.FC = () => {
                                                 <GlowButton
                                                     onClick={() => setPaymentMethod(PaymentMethod.CASH)}
                                                     variant={paymentMethod === PaymentMethod.CASH ? 'primary' : 'secondary'}
-                                                    className="w-full text-[10px] py-4"
+                                                    className="w-full text-[10px] py-4 !text-[#505530]"
                                                 >
                                                     <Wallet size={16} /> <span className="hidden xs:inline">Liquid Asset</span>
                                                 </GlowButton>
                                                 <GlowButton
                                                     onClick={() => setPaymentMethod(PaymentMethod.CARD)}
                                                     variant={paymentMethod === PaymentMethod.CARD ? 'primary' : 'secondary'}
-                                                    className="w-full text-[10px] py-4"
+                                                    className="w-full text-[10px] py-4 !text-[#505530]"
                                                 >
                                                     <CreditCard size={16} /> <span className="hidden xs:inline">Spectral Card</span>
                                                 </GlowButton>
@@ -717,7 +717,7 @@ export const CashierScreen: React.FC = () => {
                                     <GlowButton
                                         onClick={handleProcessPayment}
                                         disabled={paymentMethod === PaymentMethod.CASH && (parseFloat(cashReceived) || 0) < (total / splitCount)}
-                                        className="w-full py-5 md:py-7 tracking-[0.2em] md:tracking-[0.3em] text-base md:text-lg mb-8 md:mb-0"
+                                        className="w-full py-5 md:py-7 tracking-[0.2em] md:tracking-[0.3em] text-base md:text-lg mb-8 md:mb-0 !text-[#505530]"
                                     >
                                         <CheckCircle2 size={20} className="md:w-6 md:h-6" /> Confirm Transmission
                                     </GlowButton>
