@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { useUser } from '../contexts/UserContext';
 import { OrderStatus, TableStatus, OrderSource, MenuItem } from '../types';
@@ -15,7 +15,8 @@ import {
   Save,
   Lock,
   ChevronRight,
-  Package
+  Package,
+  BellRing
 } from 'lucide-react';
 
 export const MyTablesScreen: React.FC = () => {
@@ -50,7 +51,42 @@ export const MyTablesScreen: React.FC = () => {
     const finalizeSave = () => {
         if (!editingOrder) return;
         const newTotal = tempItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        updateOrderStatus(editingOrder.id, editingOrder.status, { ...editingOrder, items: tempItems, total: newTotal });
+        
+        let newStatus = editingOrder.status;
+        let isKitchenReady = editingOrder.isKitchenReady;
+        let isBarReady = editingOrder.isBarReady;
+
+        const isDrink = (item: any) => 
+            item.category?.toLowerCase().includes('bebida') ||
+            item.category?.toLowerCase().includes('bar') ||
+            item.category?.toLowerCase().includes('vino') ||
+            item.category?.toLowerCase().includes('trago') ||
+            item.category?.toLowerCase().includes('cerveza') ||
+            item.category?.toLowerCase().includes('drink') ||
+            item.category?.toLowerCase().includes('cocktail');
+
+        // Check if any new food or drink items were added
+        const oldFoodCount = editingOrder.items.filter((i: any) => !isDrink(i)).reduce((acc: number, item: any) => acc + item.quantity, 0);
+        const newFoodCount = tempItems.filter(i => !isDrink(i)).reduce((acc: number, item: any) => acc + item.quantity, 0);
+        
+        const oldDrinkCount = editingOrder.items.filter((i: any) => isDrink(i)).reduce((acc: number, item: any) => acc + item.quantity, 0);
+        const newDrinkCount = tempItems.filter(i => isDrink(i)).reduce((acc: number, item: any) => acc + item.quantity, 0);
+
+        if (newFoodCount > oldFoodCount) isKitchenReady = false;
+        if (newDrinkCount > oldDrinkCount) isBarReady = false;
+
+        // Revert to COOKING if new items were added and it needs prep again
+        if (!isKitchenReady || !isBarReady) {
+            newStatus = OrderStatus.COOKING;
+        }
+        
+        updateOrderStatus(editingOrder.id, newStatus, { 
+            ...editingOrder, 
+            items: tempItems, 
+            total: newTotal, 
+            isKitchenReady, 
+            isBarReady 
+        });
         setEditingOrder(null);
         setPin('');
         setShowPinModal(false);
@@ -92,6 +128,11 @@ export const MyTablesScreen: React.FC = () => {
                                 {isRequested && (
                                     <div className="absolute top-0 right-0 bg-solaris-orange text-[#1a1c14] px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.3em] animate-pulse rounded-bl-2xl z-10">
                                         PAYOUT_REQD
+                                    </div>
+                                )}
+                                {!isRequested && order.status === OrderStatus.READY && (
+                                    <div className="absolute top-0 right-0 bg-[#F98359] text-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] animate-bounce shadow-salmon-glow rounded-bl-2xl z-10 flex items-center gap-1.5">
+                                        <BellRing size={14} className="animate-pulse" /> LISTA PARA SERVIR
                                     </div>
                                 )}
 
