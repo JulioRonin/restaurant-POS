@@ -134,7 +134,7 @@ export const InventoryScreen: React.FC = () => {
     };
 
     return (
-        <div className="h-full bg-solaris-black text-white p-6 md:p-10 overflow-y-auto antialiased">
+        <div className="h-full bg-[#FAFAF3] text-[#1a1c14] p-6 md:p-10 overflow-y-auto antialiased">
             <div className="max-w-7xl mx-auto w-full">
                 {/* Header */}
                 <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
@@ -154,13 +154,13 @@ export const InventoryScreen: React.FC = () => {
                         </div>
 
                         <button onClick={() => setIsCartOpen(true)} className="relative group bg-white/[0.03] border border-white/5 p-3 rounded-2xl hover:bg-white/[0.05] transition-all">
-                             <ShoppingCart size={20} className="text-gray-400 group-hover:text-white" />
-                             {cart.length > 0 && <span className="absolute -top-1 -right-1 bg-solaris-orange text-white text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-solaris-glow">{cart.length}</span>}
+                             <ShoppingCart size={20} className="text-gray-400 group-hover:text-[#1a1c14]" />
+                             {cart.length > 0 && <span className="absolute -top-1 -right-1 bg-solaris-orange text-[#1a1c14] text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-solaris-glow">{cart.length}</span>}
                         </button>
 
                         <button 
                             onClick={() => { setEditingItem(null); setIsAddModalOpen(true); }}
-                            className="bg-solaris-orange text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-solaris-glow hover:scale-105 transition-all"
+                            className="bg-solaris-orange text-[#1a1c14] px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-solaris-glow hover:scale-105 transition-all"
                         >
                              <Plus size={16} /> Add Supply
                         </button>
@@ -206,13 +206,13 @@ export const InventoryScreen: React.FC = () => {
                                             <tr key={item.id} className="border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors group">
                                                 <td className="py-6 px-8">
                                                     <div className="cursor-pointer" onClick={() => { setEditingItem(item); setIsAddModalOpen(true); }}>
-                                                        <p className="font-bold text-white group-hover:text-solaris-orange transition-colors uppercase italic">{item.name}</p>
+                                                        <p className="font-bold text-[#1a1c14] group-hover:text-solaris-orange transition-colors uppercase italic">{item.name}</p>
                                                         <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest">{item.category}</p>
                                                     </div>
                                                 </td>
                                                 <td className="py-6 px-4 min-w-[200px]">
                                                     <div className="flex justify-between items-end mb-2">
-                                                        <p className="text-[10px] font-black italic text-white">{item.quantity} <span className="text-[8px] font-normal not-italic text-gray-600">{item.unit}</span></p>
+                                                        <p className="text-[10px] font-black italic text-[#1a1c14]">{item.quantity} <span className="text-[8px] font-normal not-italic text-gray-600">{item.unit}</span></p>
                                                         <p className={`text-[8px] font-black uppercase tracking-widest ${status.color}`}>{status.label}</p>
                                                     </div>
                                                     <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
@@ -220,7 +220,7 @@ export const InventoryScreen: React.FC = () => {
                                                     </div>
                                                 </td>
                                                 <td className="py-6 px-4 text-center">
-                                                    <span className="text-xs font-black italic text-white">${item.costPerUnit.toFixed(2)}</span>
+                                                    <span className="text-xs font-black italic text-[#1a1c14]">${item.costPerUnit.toFixed(2)}</span>
                                                 </td>
                                                 <td className="py-6 px-4">
                                                     <span className="text-[10px] font-bold text-gray-500 uppercase italic opacity-60">{item.supplier}</span>
@@ -229,7 +229,7 @@ export const InventoryScreen: React.FC = () => {
                                                     <div className="flex justify-end gap-3">
                                                         <button 
                                                             onClick={() => { setRestockItem(item); setRestockQty(Math.max(0, item.maxStock - item.quantity)); }}
-                                                            className="px-4 py-2 bg-white/[0.03] border border-white/5 text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white hover:border-white/20 transition-all rounded-xl"
+                                                            className="px-4 py-2 bg-white/[0.03] border border-white/5 text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-[#1a1c14] hover:border-white/20 transition-all rounded-xl"
                                                         >
                                                             Restock
                                                         </button>
@@ -257,7 +257,7 @@ export const InventoryScreen: React.FC = () => {
                                 <GlowCard glowColor="orange" className={`relative border !p-8 ${order.status === 'PENDING' ? 'border-solaris-orange/20' : 'border-white/5'}`}>
                                     <div className="flex justify-between items-start mb-6">
                                         <div>
-                                            <h3 className="text-xl font-black italic text-white uppercase tracking-tight mb-1">Order #{order.id.slice(0, 8)}</h3>
+                                            <h3 className="text-xl font-black italic text-[#1a1c14] uppercase tracking-tight mb-1">Order #{order.id.slice(0, 8)}</h3>
                                             <p className="text-[9px] font-black uppercase tracking-widest text-gray-600 italic">{new Date(order.date).toLocaleDateString()} • {order.supplier}</p>
                                         </div>
                                         <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.3em] border ${order.status === 'RECEIVED' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-solaris-orange/10 text-solaris-orange border-solaris-orange/20'}`}>
@@ -268,7 +268,7 @@ export const InventoryScreen: React.FC = () => {
                                     <div className="space-y-3 mb-8">
                                         {order.items.map((item, i) => (
                                             <div key={i} className="flex justify-between items-center text-[10px]">
-                                                <span className="font-bold text-gray-400">{item.orderQuantity}x <span className="text-white uppercase italic">{item.name}</span></span>
+                                                <span className="font-bold text-gray-400">{item.orderQuantity}x <span className="text-[#1a1c14] uppercase italic">{item.name}</span></span>
                                                 <span className="text-gray-700 font-mono">${(item.costPerUnit * item.orderQuantity).toFixed(2)}</span>
                                             </div>
                                         ))}
@@ -277,13 +277,13 @@ export const InventoryScreen: React.FC = () => {
                                     <div className="flex justify-between items-center pt-6 border-t border-white/[0.02]">
                                         <div>
                                             <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest mb-1">Payload Total</p>
-                                            <p className="text-2xl font-black italic text-white tracking-tighter">${order.totalCost.toFixed(2)}</p>
+                                            <p className="text-2xl font-black italic text-[#1a1c14] tracking-tighter">${order.totalCost.toFixed(2)}</p>
                                         </div>
                                         <div className="flex gap-2">
                                             {order.status === 'ORDERED' && (
                                                 <button 
                                                     onClick={() => handleUpdateStatus(order.id, SupplyOrderStatus.RECEIVED)}
-                                                    className="bg-green-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-900/20"
+                                                    className="bg-green-600 text-[#1a1c14] px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-900/20"
                                                 >
                                                     Receive
                                                 </button>
@@ -291,7 +291,7 @@ export const InventoryScreen: React.FC = () => {
                                             {order.status === 'PENDING' && (
                                                 <button 
                                                     onClick={() => handleUpdateStatus(order.id, SupplyOrderStatus.ORDERED)}
-                                                    className="bg-solaris-orange text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-solaris-glow"
+                                                    className="bg-solaris-orange text-[#1a1c14] px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-solaris-glow"
                                                 >
                                                     Ship
                                                 </button>
@@ -309,27 +309,27 @@ export const InventoryScreen: React.FC = () => {
             <AnimatePresence>
                 {isAddModalOpen && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-[#0a0a0b] border border-white/10 rounded-solaris w-full max-w-lg overflow-hidden shadow-2xl">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-white/10 rounded-solaris w-full max-w-lg overflow-hidden shadow-2xl">
                              <form onSubmit={handleSaveItem} className="p-10">
                                 <div className="flex justify-between items-center mb-10">
-                                    <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Supply Registry</h2>
-                                    <X onClick={() => setIsAddModalOpen(false)} className="text-gray-700 hover:text-white cursor-pointer" size={24} />
+                                    <h2 className="text-2xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Supply Registry</h2>
+                                    <X onClick={() => setIsAddModalOpen(false)} className="text-gray-700 hover:text-[#1a1c14] cursor-pointer" size={24} />
                                 </div>
                                 <div className="space-y-5">
                                     <div className="space-y-2">
                                         <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Nombre del insumo</label>
-                                        <input name="name" defaultValue={editingItem?.name} required className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-solaris-orange/50 transition-all font-bold" />
+                                        <input name="name" defaultValue={editingItem?.name} required className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold" />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Categoría</label>
-                                            <select name="category" defaultValue={editingItem?.category || 'General'} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none appearance-none font-bold">
-                                                {INVENTORY_CATEGORIES.filter(c => c !== 'All').map(c => <option key={c} value={c} className="bg-[#0a0a0b]">{c}</option>)}
+                                            <select name="category" defaultValue={editingItem?.category || 'General'} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-[#1a1c14] outline-none appearance-none font-bold">
+                                                {INVENTORY_CATEGORIES.filter(c => c !== 'All').map(c => <option key={c} value={c} className="bg-white">{c}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Proveedor</label>
-                                            <input name="supplier" defaultValue={editingItem?.supplier} required placeholder="Nombre del proveedor" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none font-bold" />
+                                            <input name="supplier" defaultValue={editingItem?.supplier} required placeholder="Nombre del proveedor" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-[#1a1c14] outline-none font-bold" />
                                         </div>
                                     </div>
                                     {/* Unit type selector */}
@@ -339,7 +339,7 @@ export const InventoryScreen: React.FC = () => {
                                             {['PZ', 'gr', 'Bolsa'].map(u => (
                                                 <label key={u} className="cursor-pointer">
                                                     <input type="radio" name="unit" value={u} defaultChecked={editingItem?.unit === u || (!editingItem && u === 'PZ')} className="sr-only peer" />
-                                                    <div className="peer-checked:bg-solaris-orange/20 peer-checked:border-solaris-orange peer-checked:text-white bg-white/[0.03] border border-white/5 rounded-2xl py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-500 transition-all">{u}</div>
+                                                    <div className="peer-checked:bg-solaris-orange/20 peer-checked:border-solaris-orange peer-checked:text-[#1a1c14] bg-white/[0.03] border border-white/5 rounded-2xl py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-500 transition-all">{u}</div>
                                                 </label>
                                             ))}
                                         </div>
@@ -347,18 +347,18 @@ export const InventoryScreen: React.FC = () => {
                                     <div className="grid grid-cols-3 gap-4">
                                         <div className="space-y-2">
                                             <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Mín. Crítico</label>
-                                            <input name="minStock" type="number" defaultValue={editingItem?.minStock || 10} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-white text-center font-bold" />
+                                            <input name="minStock" type="number" defaultValue={editingItem?.minStock || 10} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-[#1a1c14] text-center font-bold" />
                                         </div>
                                         <div className="space-y-2">
                                              <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Cap. Ideal</label>
-                                             <input name="maxStock" type="number" defaultValue={editingItem?.maxStock || 100} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-white text-center font-bold" />
+                                             <input name="maxStock" type="number" defaultValue={editingItem?.maxStock || 100} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-[#1a1c14] text-center font-bold" />
                                         </div>
                                         <div className="space-y-2">
                                              <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Costo/Unidad</label>
-                                             <input name="cost" type="number" step="0.01" defaultValue={editingItem?.costPerUnit} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-white text-center font-bold" />
+                                             <input name="cost" type="number" step="0.01" defaultValue={editingItem?.costPerUnit} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-[#1a1c14] text-center font-bold" />
                                         </div>
                                     </div>
-                                    <button type="submit" className="w-full bg-solaris-orange text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-600 transition-all text-[11px] mt-2">
+                                    <button type="submit" className="w-full bg-solaris-orange text-[#1a1c14] font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-600 transition-all text-[11px] mt-2">
                                         Guardar Cambios
                                     </button>
                                 </div>
@@ -369,20 +369,20 @@ export const InventoryScreen: React.FC = () => {
 
                 {restockItem && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
-                         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-[#0a0a0b] border border-white/10 rounded-solaris w-full max-w-sm overflow-hidden shadow-2xl">
+                         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-white/10 rounded-solaris w-full max-w-sm overflow-hidden shadow-2xl">
                              <div className="p-8">
-                                 <h3 className="text-xl font-black italic uppercase text-white mb-2">Restock Payload</h3>
+                                 <h3 className="text-xl font-black italic uppercase text-[#1a1c14] mb-2">Restock Payload</h3>
                                  <p className="text-[9px] font-black uppercase text-solaris-orange tracking-[0.3em] mb-10">{restockItem.name}</p>
                                  
                                  <div className="flex items-center gap-6 mb-10">
                                      <button onClick={() => setRestockQty(Math.max(0, restockQty - 1))} className="w-14 h-14 rounded-2xl border border-white/5 flex items-center justify-center text-xl hover:bg-white/5 transition-all">-</button>
-                                     <input type="number" value={restockQty} onChange={e => setRestockQty(Number(e.target.value))} className="flex-1 bg-transparent border-b-2 border-white/10 outline-none text-4xl font-black italic text-center text-white" />
+                                     <input type="number" value={restockQty} onChange={e => setRestockQty(Number(e.target.value))} className="flex-1 bg-transparent border-b-2 border-white/10 outline-none text-4xl font-black italic text-center text-[#1a1c14]" />
                                      <button onClick={() => setRestockQty(restockQty + 1)} className="w-14 h-14 rounded-2xl border border-white/5 flex items-center justify-center text-xl hover:bg-white/5 transition-all">+</button>
                                  </div>
 
                                  <div className="flex gap-4">
-                                     <button onClick={() => setRestockItem(null)} className="flex-1 py-4 text-[10px] font-black uppercase text-gray-700 tracking-widest hover:text-white transition-colors">Abort</button>
-                                     <button onClick={() => addToCart(restockItem, restockQty)} className="flex-1 py-4 bg-solaris-orange text-white font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-solaris-glow">Add to Queue</button>
+                                     <button onClick={() => setRestockItem(null)} className="flex-1 py-4 text-[10px] font-black uppercase text-gray-700 tracking-widest hover:text-[#1a1c14] transition-colors">Abort</button>
+                                     <button onClick={() => addToCart(restockItem, restockQty)} className="flex-1 py-4 bg-solaris-orange text-[#1a1c14] font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-solaris-glow">Add to Queue</button>
                                  </div>
                              </div>
                          </motion.div>
@@ -390,13 +390,13 @@ export const InventoryScreen: React.FC = () => {
                 )}
 
                 {isCartOpen && (
-                    <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed inset-y-0 right-0 w-full md:w-[450px] bg-[#0a0a0b] border-l border-white/10 shadow-2xl z-50 flex flex-col">
+                    <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed inset-y-0 right-0 w-full md:w-[450px] bg-white border-l border-white/10 shadow-2xl z-50 flex flex-col">
                         <div className="p-10 border-b border-white/5 flex justify-between items-center">
                             <div>
-                                <h2 className="text-2xl font-black italic text-white uppercase tracking-tight">Procurement Loop</h2>
+                                <h2 className="text-2xl font-black italic text-[#1a1c14] uppercase tracking-tight">Procurement Loop</h2>
                                 <p className="text-[9px] font-black uppercase text-solaris-orange tracking-widest mt-1">{cart.length} Assets Enqueued</p>
                             </div>
-                            <X onClick={() => setIsCartOpen(false)} className="text-gray-700 hover:text-white cursor-pointer" size={24} />
+                            <X onClick={() => setIsCartOpen(false)} className="text-gray-700 hover:text-[#1a1c14] cursor-pointer" size={24} />
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-8 space-y-6">
@@ -419,7 +419,7 @@ export const InventoryScreen: React.FC = () => {
                                         {items.map(item => (
                                             <div key={item.id} className="flex justify-between items-center bg-white/[0.02] border border-white/5 p-4 rounded-2xl">
                                                 <div>
-                                                    <h4 className="font-bold text-white uppercase italic text-sm">{item.name}</h4>
+                                                    <h4 className="font-bold text-[#1a1c14] uppercase italic text-sm">{item.name}</h4>
                                                     <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest">{item.orderQuantity} {item.unit} · ${item.costPerUnit}/{item.unit}</p>
                                                 </div>
                                                 <div className="text-right">
@@ -436,9 +436,9 @@ export const InventoryScreen: React.FC = () => {
                         <div className="p-10 border-t border-white/5 bg-white/[0.01]">
                             <div className="flex justify-between items-center mb-10">
                                 <span className="text-[9px] font-black uppercase text-gray-700 tracking-widest">Aggregate Cost</span>
-                                <span className="text-3xl font-black italic text-white tracking-tighter">${cartTotal.toFixed(2)}</span>
+                                <span className="text-3xl font-black italic text-[#1a1c14] tracking-tighter">${cartTotal.toFixed(2)}</span>
                             </div>
-                            <button onClick={handleCreateOrder} disabled={cart.length === 0} className="w-full bg-solaris-orange text-white font-black uppercase tracking-[0.2em] py-6 rounded-2xl shadow-solaris-glow disabled:opacity-30 flex items-center justify-center gap-3">
+                            <button onClick={handleCreateOrder} disabled={cart.length === 0} className="w-full bg-solaris-orange text-[#1a1c14] font-black uppercase tracking-[0.2em] py-6 rounded-2xl shadow-solaris-glow disabled:opacity-30 flex items-center justify-center gap-3">
                                 <ShoppingCart size={20} /> Authorize Procurement
                             </button>
                         </div>

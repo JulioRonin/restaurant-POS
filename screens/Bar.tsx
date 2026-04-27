@@ -37,7 +37,7 @@ const BarTimer: React.FC<{ timestamp: Date }> = ({ timestamp }) => {
     }, [timestamp]);
 
     return (
-        <span className={`px-4 py-1.5 rounded-xl font-mono text-lg font-black italic tracking-tighter ${isLate ? 'bg-red-500 text-white animate-pulse shadow-lg' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+        <span className={`px-4 py-1.5 rounded-xl font-mono text-lg font-black italic tracking-tighter ${isLate ? 'bg-red-500 text-[#1a1c14] animate-pulse shadow-lg' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
             {elapsed}
         </span>
     );
@@ -60,7 +60,7 @@ const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string)
                     <Wine size={12} className="text-blue-400 shrink-0" />
                     <span className="text-[9px] font-black uppercase tracking-widest text-blue-400/60">Bar Order</span>
                 </div>
-                <h3 className="text-xl font-black italic uppercase tracking-tighter text-white leading-tight">
+                <h3 className="text-xl font-black italic uppercase tracking-tighter text-[#1a1c14] leading-tight">
                     {tableLabel}
                 </h3>
                 <p className="text-[9px] font-black uppercase text-white/20 tracking-widest mt-1 italic">
@@ -80,7 +80,7 @@ const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string)
                         <span className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center font-black italic text-blue-400 text-sm shrink-0">
                             {item.quantity}
                         </span>
-                        <span className="font-black italic text-white uppercase tracking-tight text-sm">{item.name}</span>
+                        <span className="font-black italic text-[#1a1c14] uppercase tracking-tight text-sm">{item.name}</span>
                     </div>
                     {item.notes && (
                         <div className="mx-1 p-2.5 rounded-xl bg-red-500/5 border border-red-500/10 flex items-center gap-2">
@@ -96,7 +96,7 @@ const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string)
         <div className="p-4 border-t border-white/5 bg-white/[0.01]">
             <button
                 onClick={() => onComplete(order.id)}
-                className="w-full py-4 bg-blue-500 text-white font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-lg shadow-blue-500/20 hover:scale-[1.02] hover:bg-blue-400 active:scale-95 transition-all flex items-center justify-center gap-3"
+                className="w-full py-4 bg-blue-500 text-[#1a1c14] font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-lg shadow-blue-500/20 hover:scale-[1.02] hover:bg-blue-400 active:scale-95 transition-all flex items-center justify-center gap-3"
             >
                 <Wine size={18} /> Bebidas Listas
             </button>
@@ -153,7 +153,7 @@ export const BarScreen: React.FC = () => {
     };
 
     return (
-        <div className="h-full bg-[#1f2937] text-white flex flex-col overflow-hidden antialiased relative">
+        <div className="h-full bg-[#F0F0E8] text-[#1a1c14] flex flex-col overflow-hidden antialiased relative">
             {/* New Order Alert */}
             <AnimatePresence>
                 {alert && (
@@ -163,7 +163,7 @@ export const BarScreen: React.FC = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
                     >
-                        <div className="p-16 rounded-[4rem] bg-blue-500 text-white shadow-2xl border-[10px] border-white/20 flex flex-col items-center">
+                        <div className="p-16 rounded-[4rem] bg-blue-500 text-[#1a1c14] shadow-2xl border-[10px] border-white/20 flex flex-col items-center">
                             <Bell size={80} className="mb-6 animate-bounce" />
                             <h2 className="text-6xl font-black italic uppercase tracking-tighter">Bar Order Incoming</h2>
                             <p className="text-[12px] font-black uppercase tracking-[0.5em] mt-2 opacity-60">Nuevo pedido de bebidas</p>

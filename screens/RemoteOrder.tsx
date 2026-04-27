@@ -95,7 +95,7 @@ export const RemoteOrderScreen: React.FC = () => {
     };
 
     return (
-        <div className="flex h-full bg-[#1f2937] text-white overflow-hidden antialiased">
+        <div className="flex h-full bg-[#F0F0E8] text-[#1a1c14] overflow-hidden antialiased">
 
             {/* ── LEFT: Menu Browser ── */}
             <div className="flex-1 flex flex-col overflow-hidden border-r border-white/5">
@@ -116,13 +116,13 @@ export const RemoteOrderScreen: React.FC = () => {
                         <div className="bg-white/[0.03] border border-white/5 p-1 rounded-2xl flex">
                             <button
                                 onClick={() => { setActiveMode('DRIVE_THRU'); setSelectedTable(null); }}
-                                className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeMode === 'DRIVE_THRU' ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-white/30 hover:text-white'}`}
+                                className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeMode === 'DRIVE_THRU' ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-white/30 hover:text-[#1a1c14]'}`}
                             >
                                 <Smartphone size={14} /> Drive-Thru
                             </button>
                             <button
                                 onClick={() => setActiveMode('TABLES')}
-                                className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeMode === 'TABLES' ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-white/30 hover:text-white'}`}
+                                className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeMode === 'TABLES' ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-white/30 hover:text-[#1a1c14]'}`}
                             >
                                 <Table2 size={14} /> {selectedTable ? selectedTable.name : 'Mesas'}
                             </button>
@@ -136,7 +136,7 @@ export const RemoteOrderScreen: React.FC = () => {
                                 placeholder="Buscar producto..."
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 pl-10 pr-4 text-sm font-bold text-white outline-none focus:border-solaris-orange/40 placeholder:text-white/10 transition-all"
+                                className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 pl-10 pr-4 text-sm font-bold text-[#1a1c14] outline-none focus:border-solaris-orange/40 placeholder:text-white/10 transition-all"
                             />
                         </div>
                     </div>
@@ -148,7 +148,7 @@ export const RemoteOrderScreen: React.FC = () => {
                         <button
                             key={cat}
                             onClick={() => setActiveCategory(cat)}
-                            className={`px-5 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'bg-white/[0.03] border border-white/5 text-white/30 hover:text-white hover:border-white/20'}`}
+                            className={`px-5 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'bg-white/[0.03] border border-white/5 text-white/30 hover:text-[#1a1c14] hover:border-white/20'}`}
                         >
                             {cat}
                         </button>
@@ -175,10 +175,10 @@ export const RemoteOrderScreen: React.FC = () => {
                                             : <div className="w-full h-full flex items-center justify-center"><Zap size={32} className="text-white/10" /></div>
                                         }
                                         <div className="absolute inset-0 bg-solaris-orange/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                            <Plus size={32} className="text-white" />
+                                            <Plus size={32} className="text-[#1a1c14]" />
                                         </div>
                                     </div>
-                                    <h3 className="font-black italic text-white text-sm leading-tight mb-1 uppercase line-clamp-2">{item.name}</h3>
+                                    <h3 className="font-black italic text-[#1a1c14] text-sm leading-tight mb-1 uppercase line-clamp-2">{item.name}</h3>
                                     <p className="text-solaris-orange font-black italic text-base">${item.price.toFixed(2)}</p>
                                 </button>
                             ))}
@@ -188,9 +188,9 @@ export const RemoteOrderScreen: React.FC = () => {
             </div>
 
             {/* ── RIGHT: Cart & Checkout ── */}
-            <div className="w-[400px] min-w-[320px] bg-[#1f2937] flex flex-col border-l border-white/5 shadow-2xl">
+            <div className="w-[400px] min-w-[320px] bg-[#F0F0E8] flex flex-col border-l border-white/5 shadow-2xl">
                 <div className="px-8 pt-8 pb-6 border-b border-white/5 shrink-0">
-                    <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Orden de Venta</h2>
+                    <h2 className="text-2xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Orden de Venta</h2>
                     <p className="text-white/20 font-bold text-[9px] uppercase tracking-widest mt-1">
                         {activeMode === 'DRIVE_THRU' ? 'Drive-Thru' : (selectedTable ? `Mesa: ${selectedTable.name}` : 'Sin mesa asignada')}
                     </p>
@@ -206,19 +206,19 @@ export const RemoteOrderScreen: React.FC = () => {
                     ) : cart.map(item => (
                         <div key={item.id} className="flex items-center gap-3 p-4 bg-white/[0.02] border border-white/5 rounded-2xl group hover:border-white/10 transition-all">
                             <div className="flex-1 min-w-0">
-                                <h4 className="font-black italic text-white text-sm uppercase leading-tight truncate">{item.name}</h4>
+                                <h4 className="font-black italic text-[#1a1c14] text-sm uppercase leading-tight truncate">{item.name}</h4>
                                 <p className="text-white/30 font-bold text-[10px] mt-0.5">${item.price.toFixed(2)} c/u</p>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                                 <button onClick={() => updateQuantity(item.id, -1)} className="w-7 h-7 rounded-lg bg-white/[0.04] text-white/40 hover:bg-red-500/20 hover:text-red-400 transition-all flex items-center justify-center">
                                     <Minus size={12} />
                                 </button>
-                                <span className="font-black italic text-base text-white w-5 text-center">{item.quantity}</span>
+                                <span className="font-black italic text-base text-[#1a1c14] w-5 text-center">{item.quantity}</span>
                                 <button onClick={() => updateQuantity(item.id, 1)} className="w-7 h-7 rounded-lg bg-white/[0.04] text-white/40 hover:bg-solaris-orange/20 hover:text-solaris-orange transition-all flex items-center justify-center">
                                     <Plus size={12} />
                                 </button>
                             </div>
-                            <span className="font-black italic text-sm text-white w-16 text-right shrink-0">${(item.price * item.quantity).toFixed(2)}</span>
+                            <span className="font-black italic text-sm text-[#1a1c14] w-16 text-right shrink-0">${(item.price * item.quantity).toFixed(2)}</span>
                         </div>
                     ))}
                 </div>
@@ -230,7 +230,7 @@ export const RemoteOrderScreen: React.FC = () => {
                         <span className="text-white/30 font-bold text-sm">${cartTotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="text-white font-black italic text-xl uppercase">Total</span>
+                        <span className="text-[#1a1c14] font-black italic text-xl uppercase">Total</span>
                         <span className="text-solaris-orange font-black italic text-2xl">${cartTotal.toFixed(2)}</span>
                     </div>
 
@@ -254,7 +254,7 @@ export const RemoteOrderScreen: React.FC = () => {
                     <button
                         disabled={cart.length === 0 || isProcessing}
                         onClick={() => handlePayment(PaymentMethod.CASH)}
-                        className="w-full py-4 bg-solaris-orange text-white rounded-2xl font-black italic uppercase text-[10px] tracking-widest shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-solaris-orange text-[#1a1c14] rounded-2xl font-black italic uppercase text-[10px] tracking-widest shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
                     >
                         <Wallet size={16} /> Pagar en Efectivo
                     </button>
@@ -269,7 +269,7 @@ export const RemoteOrderScreen: React.FC = () => {
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6"
                     >
-                        <div className="bg-[#0d0d0e] border border-white/10 w-full max-w-sm rounded-[40px] p-10 text-center shadow-2xl">
+                        <div className="bg-[#FAFAF3] border border-white/10 w-full max-w-sm rounded-[40px] p-10 text-center shadow-2xl">
                             <div className="w-20 h-20 mx-auto mb-8 relative">
                                 <div className="absolute inset-0 border-4 border-solaris-orange/20 rounded-full" />
                                 <div className="absolute inset-0 border-4 border-solaris-orange rounded-full border-t-transparent animate-spin" />
@@ -277,7 +277,7 @@ export const RemoteOrderScreen: React.FC = () => {
                                     <CreditCard size={32} className="text-solaris-orange" />
                                 </div>
                             </div>
-                            <h3 className="text-2xl font-black italic uppercase text-white mb-2 tracking-tighter">Procesando Pago</h3>
+                            <h3 className="text-2xl font-black italic uppercase text-[#1a1c14] mb-2 tracking-tighter">Procesando Pago</h3>
                             <p className="text-solaris-orange font-bold animate-pulse text-[10px] uppercase tracking-widest mb-6">{terminalStep}</p>
                             <p className="text-[9px] text-white/20 font-bold uppercase tracking-widest">No apagues la terminal</p>
                         </div>
@@ -292,21 +292,21 @@ export const RemoteOrderScreen: React.FC = () => {
                         className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6"
                     >
                         <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
-                            className="bg-[#0d0d0e] border border-white/10 w-full max-w-md rounded-[40px] overflow-hidden shadow-2xl"
+                            className="bg-[#FAFAF3] border border-white/10 w-full max-w-md rounded-[40px] overflow-hidden shadow-2xl"
                         >
                             <div className="bg-purple-500/10 border-b border-purple-500/20 p-10 text-center">
                                 <p className="text-purple-400/60 font-black text-[9px] uppercase tracking-[0.4em] mb-2">Total a Transferir</p>
-                                <h2 className="text-6xl font-black italic tracking-tighter text-white">${cartTotal.toFixed(2)}</h2>
+                                <h2 className="text-6xl font-black italic tracking-tighter text-[#1a1c14]">${cartTotal.toFixed(2)}</h2>
                             </div>
                             <div className="p-10 space-y-6">
                                 <div className="grid grid-cols-2 gap-6">
                                     <div>
                                         <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-1">Banco</p>
-                                        <p className="font-black italic text-white uppercase">{settings.bankName || '—'}</p>
+                                        <p className="font-black italic text-[#1a1c14] uppercase">{settings.bankName || '—'}</p>
                                     </div>
                                     <div>
                                         <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mb-1">Beneficiario</p>
-                                        <p className="font-black italic text-white uppercase">{settings.bankBeneficiary || '—'}</p>
+                                        <p className="font-black italic text-[#1a1c14] uppercase">{settings.bankBeneficiary || '—'}</p>
                                     </div>
                                 </div>
                                 <div className="bg-white/[0.03] border border-white/5 p-5 rounded-2xl flex items-center justify-between gap-4">
@@ -325,13 +325,13 @@ export const RemoteOrderScreen: React.FC = () => {
                                 </div>
                                 <div className="flex gap-3">
                                     <button onClick={() => setShowTransferModal(false)}
-                                        className="flex-1 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white/40 font-black text-[10px] uppercase tracking-widest hover:text-white transition-all"
+                                        className="flex-1 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white/40 font-black text-[10px] uppercase tracking-widest hover:text-[#1a1c14] transition-all"
                                     >
                                         Regresar
                                     </button>
                                     <button
                                         onClick={() => { handlePayment(PaymentMethod.TRANSFER); setShowTransferModal(false); }}
-                                        className="flex-1 py-4 bg-purple-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-purple-400 transition-all shadow-lg"
+                                        className="flex-1 py-4 bg-purple-500 text-[#1a1c14] rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-purple-400 transition-all shadow-lg"
                                     >
                                         Confirmar
                                     </button>
@@ -349,14 +349,14 @@ export const RemoteOrderScreen: React.FC = () => {
                         className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6"
                     >
                         <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
-                            className="bg-[#0d0d0e] border border-white/10 w-full max-w-2xl rounded-[40px] p-10 shadow-2xl"
+                            className="bg-[#FAFAF3] border border-white/10 w-full max-w-2xl rounded-[40px] p-10 shadow-2xl"
                         >
                             <div className="flex justify-between items-center mb-8">
                                 <div>
-                                    <h2 className="text-3xl font-black italic uppercase text-white tracking-tighter">Seleccionar Mesa</h2>
+                                    <h2 className="text-3xl font-black italic uppercase text-[#1a1c14] tracking-tighter">Seleccionar Mesa</h2>
                                     <p className="text-white/20 font-bold text-[9px] uppercase tracking-widest mt-1">Asigna esta orden remota</p>
                                 </div>
-                                <button onClick={() => setShowTableModal(false)} className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center text-white/30 hover:text-white transition-all">
+                                <button onClick={() => setShowTableModal(false)} className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center text-white/30 hover:text-[#1a1c14] transition-all">
                                     <X size={18} />
                                 </button>
                             </div>
@@ -365,7 +365,7 @@ export const RemoteOrderScreen: React.FC = () => {
                                     <button
                                         key={table.id}
                                         onClick={() => { setSelectedTable(table); setShowTableModal(false); }}
-                                        className={`p-6 rounded-[28px] border-2 flex flex-col items-center gap-2 transition-all ${selectedTable?.id === table.id ? 'border-solaris-orange bg-solaris-orange/10 text-solaris-orange' : 'border-white/5 bg-white/[0.02] text-white/40 hover:border-white/20 hover:text-white'}`}
+                                        className={`p-6 rounded-[28px] border-2 flex flex-col items-center gap-2 transition-all ${selectedTable?.id === table.id ? 'border-solaris-orange bg-solaris-orange/10 text-solaris-orange' : 'border-white/5 bg-white/[0.02] text-white/40 hover:border-white/20 hover:text-[#1a1c14]'}`}
                                     >
                                         <Table2 size={28} />
                                         <span className="font-black italic text-lg">{table.name}</span>
@@ -384,11 +384,11 @@ export const RemoteOrderScreen: React.FC = () => {
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-xl"
                     >
-                        <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="bg-[#0d0d0e] border border-white/10 p-16 rounded-[40px] shadow-2xl flex flex-col items-center">
+                        <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="bg-[#FAFAF3] border border-white/10 p-16 rounded-[40px] shadow-2xl flex flex-col items-center">
                             <div className="w-24 h-24 bg-green-500/10 border-2 border-green-500 rounded-full flex items-center justify-center mb-6 shadow-2xl">
                                 <CheckCircle2 size={48} className="text-green-400" />
                             </div>
-                            <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white">Cobro Exitoso</h2>
+                            <h2 className="text-4xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Cobro Exitoso</h2>
                             <p className="text-white/30 font-bold mt-3 uppercase text-[10px] tracking-[0.4em]">Orden por ${lastOrderTotal.toFixed(2)}</p>
                         </motion.div>
                     </motion.div>

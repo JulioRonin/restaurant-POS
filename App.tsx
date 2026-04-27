@@ -54,11 +54,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation(); // Accurate location tracking for stable transitions
 
   return (
-    <div className="flex h-screen w-screen bg-[#12140d] text-white font-sans overflow-hidden antialiased selection:bg-[#F98359] selection:text-white">
+    <div className="flex h-screen w-screen bg-[#FAFAF3] text-[#1a1c14] font-sans overflow-hidden antialiased selection:bg-[#F98359] selection:text-white">
       <div className="no-print hidden lg:block">
         <Sidebar onLock={clearActiveEmployee} />
       </div>
-      <main className="flex-1 h-full overflow-hidden relative bg-[#12140d] pb-28 lg:pb-0">
+      <main className="flex-1 h-full overflow-hidden relative bg-[#FAFAF3] pb-28 lg:pb-0">
         {children}
         <MobileNavbar />
       </main>

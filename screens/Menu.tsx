@@ -171,7 +171,7 @@ export const MenuScreen: React.FC = () => {
     };
 
     return (
-        <div className="h-full w-full bg-solaris-black text-white flex flex-col overflow-hidden antialiased">
+        <div className="h-full w-full bg-[#FAFAF3] text-[#1a1c14] flex flex-col overflow-hidden antialiased">
             {/* Header */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center px-8 pt-8 pb-6 gap-4 shrink-0 border-b border-white/5">
                 <div>
@@ -193,7 +193,7 @@ export const MenuScreen: React.FC = () => {
                     </button>
                     <button
                         onClick={handleOpenAdd}
-                        className="flex items-center gap-2 px-6 py-3 bg-solaris-orange text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-105 transition-all"
+                        className="flex items-center gap-2 px-6 py-3 bg-solaris-orange text-[#1a1c14] text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-105 transition-all"
                     >
                         <Plus size={15} /> Register Asset
                     </button>
@@ -210,7 +210,7 @@ export const MenuScreen: React.FC = () => {
                         placeholder="Search by name..."
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
-                        className="bg-transparent outline-none text-white text-sm font-bold w-full placeholder:text-white/10"
+                        className="bg-transparent outline-none text-[#1a1c14] text-sm font-bold w-full placeholder:text-white/10"
                     />
                 </div>
 
@@ -222,8 +222,8 @@ export const MenuScreen: React.FC = () => {
                             onClick={() => setActiveCategory(cat)}
                             className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
                                 activeCategory === cat
-                                    ? 'bg-solaris-orange text-white border-solaris-orange shadow-solaris-glow'
-                                    : 'bg-white/[0.03] text-white/30 border-white/5 hover:text-white hover:border-white/20'
+                                    ? 'bg-solaris-orange text-[#1a1c14] border-solaris-orange shadow-solaris-glow'
+                                    : 'bg-white/[0.03] text-white/30 border-white/5 hover:text-[#1a1c14] hover:border-white/20'
                             }`}
                         >
                             {cat}
@@ -249,7 +249,7 @@ export const MenuScreen: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-8">
                         {filteredItems.map(item => (
                             <motion.div key={item.id} layout>
-                                <div className={`group relative rounded-[28px] border overflow-hidden flex flex-col bg-[#0d0d0e] transition-all ${item.status === 'ACTIVE' ? 'border-white/[0.07]' : 'border-red-500/10 opacity-60'}`}>
+                                <div className={`group relative rounded-[28px] border overflow-hidden flex flex-col bg-[#FAFAF3] transition-all ${item.status === 'ACTIVE' ? 'border-white/[0.07]' : 'border-red-500/10 opacity-60'}`}>
                                     {/* Image */}
                                     <div className="h-44 relative overflow-hidden shrink-0">
                                         <img
@@ -275,7 +275,7 @@ export const MenuScreen: React.FC = () => {
                                     {/* Content */}
                                     <div className="p-5 flex flex-col flex-1">
                                         <div className="flex justify-between items-start mb-1">
-                                            <h3 className="font-black italic text-white uppercase tracking-tight text-base leading-tight flex-1 mr-2 truncate">{item.name}</h3>
+                                            <h3 className="font-black italic text-[#1a1c14] uppercase tracking-tight text-base leading-tight flex-1 mr-2 truncate">{item.name}</h3>
                                             <span className="text-solaris-orange font-black italic text-lg shrink-0">${item.price.toFixed(0)}</span>
                                         </div>
                                         <p className="text-[9px] font-black uppercase tracking-widest text-white/20 mb-4 flex items-center gap-1.5">
@@ -290,7 +290,7 @@ export const MenuScreen: React.FC = () => {
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => handleOpenEdit(item)}
-                                                className="flex-1 py-2.5 bg-white/[0.04] border border-white/5 text-[9px] font-black uppercase tracking-widest text-white/30 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center gap-2 rounded-xl"
+                                                className="flex-1 py-2.5 bg-white/[0.04] border border-white/5 text-[9px] font-black uppercase tracking-widest text-white/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all flex items-center justify-center gap-2 rounded-xl"
                                             >
                                                 <Edit3 size={12} /> Edit
                                             </button>
@@ -318,11 +318,11 @@ export const MenuScreen: React.FC = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[600] flex items-center justify-center bg-black/90 backdrop-blur-3xl p-4"
                     >
-                        <div className="w-full max-w-3xl bg-[#0d0d0e] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: '92vh' }}>
+                        <div className="w-full max-w-3xl bg-[#FAFAF3] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: '92vh' }}>
                             {/* Modal Header */}
                             <div className="flex justify-between items-center px-10 py-7 border-b border-white/5 shrink-0">
                                 <div>
-                                    <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white">
+                                    <h2 className="text-3xl font-black italic uppercase tracking-tighter text-[#1a1c14]">
                                         {editingItem ? 'Edit Asset' : 'New Menu Registry'}
                                     </h2>
                                     <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] mt-1 italic">
@@ -331,7 +331,7 @@ export const MenuScreen: React.FC = () => {
                                 </div>
                                 <button
                                     onClick={() => setIsAddModalOpen(false)}
-                                    className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 transition-all"
+                                    className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-white/20 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
                                 >
                                     <XCircle size={22} />
                                 </button>
@@ -390,7 +390,7 @@ export const MenuScreen: React.FC = () => {
                                                 defaultValue={editingItem?.name}
                                                 required
                                                 placeholder="e.g. Corte New York"
-                                                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-white outline-none focus:border-solaris-orange/50 transition-all font-bold text-sm"
+                                                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold text-sm"
                                             />
                                         </div>
 
@@ -405,7 +405,7 @@ export const MenuScreen: React.FC = () => {
                                                     defaultValue={editingItem?.price}
                                                     required
                                                     placeholder="0.00"
-                                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-white text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold"
+                                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold"
                                                 />
                                             </div>
                                             <div>
@@ -414,7 +414,7 @@ export const MenuScreen: React.FC = () => {
                                                     name="gramaje"
                                                     defaultValue={editingItem?.gramaje}
                                                     placeholder="e.g. 300g"
-                                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-white text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold"
+                                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold"
                                                 />
                                             </div>
                                         </div>
@@ -427,10 +427,10 @@ export const MenuScreen: React.FC = () => {
                                                     <select
                                                         value={formCategory}
                                                         onChange={e => setFormCategory(e.target.value)}
-                                                        className="flex-1 bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-white text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold appearance-none cursor-pointer"
+                                                        className="flex-1 bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold appearance-none cursor-pointer"
                                                     >
                                                         {allCategories.map(cat => (
-                                                            <option key={cat} value={cat} className="bg-[#0d0d0e]">{cat}</option>
+                                                            <option key={cat} value={cat} className="bg-[#FAFAF3]">{cat}</option>
                                                         ))}
                                                     </select>
                                                     <button
@@ -449,12 +449,12 @@ export const MenuScreen: React.FC = () => {
                                                         onChange={e => setNewCategoryName(e.target.value)}
                                                         placeholder="New category name..."
                                                         autoFocus
-                                                        className="flex-1 bg-white/[0.03] border border-solaris-orange/40 rounded-2xl py-4 px-5 text-white text-sm outline-none font-bold"
+                                                        className="flex-1 bg-white/[0.03] border border-solaris-orange/40 rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none font-bold"
                                                     />
                                                     <button
                                                         type="button"
                                                         onClick={() => setIsAddingNewCategory(false)}
-                                                        className="px-4 bg-white/[0.03] border border-white/10 text-white/30 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:text-white transition-all"
+                                                        className="px-4 bg-white/[0.03] border border-white/10 text-white/30 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:text-[#1a1c14] transition-all"
                                                     >
                                                         Cancel
                                                     </button>
@@ -470,7 +470,7 @@ export const MenuScreen: React.FC = () => {
                                                 defaultValue={editingItem?.description}
                                                 placeholder="Describe ingredients, preparation, allergens..."
                                                 rows={3}
-                                                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-white text-sm outline-none focus:border-solaris-orange/50 transition-all font-medium resize-none"
+                                                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-medium resize-none"
                                             />
                                         </div>
 
@@ -502,14 +502,14 @@ export const MenuScreen: React.FC = () => {
                                                             placeholder={`Variante ${idx + 1} (ej. Grande)`}
                                                             value={v.name}
                                                             onChange={e => updateVariant(idx, 'name', e.target.value)}
-                                                            className="flex-1 bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white text-xs outline-none focus:border-solaris-orange/40 font-bold"
+                                                            className="flex-1 bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-[#1a1c14] text-xs outline-none focus:border-solaris-orange/40 font-bold"
                                                         />
                                                         <input
                                                             type="number"
                                                             placeholder="Precio"
                                                             value={v.price}
                                                             onChange={e => updateVariant(idx, 'price', e.target.value)}
-                                                            className="w-24 bg-white/[0.03] border border-white/10 rounded-xl py-3 px-3 text-white text-xs outline-none focus:border-solaris-orange/40 font-bold text-center"
+                                                            className="w-24 bg-white/[0.03] border border-white/10 rounded-xl py-3 px-3 text-[#1a1c14] text-xs outline-none focus:border-solaris-orange/40 font-bold text-center"
                                                         />
                                                         <button
                                                             type="button"
@@ -526,7 +526,7 @@ export const MenuScreen: React.FC = () => {
                                         {/* Submit */}
                                         <button
                                             type="submit"
-                                            className="w-full bg-solaris-orange text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-500 active:scale-95 transition-all text-[11px] flex items-center justify-center gap-3"
+                                            className="w-full bg-solaris-orange text-[#1a1c14] font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-500 active:scale-95 transition-all text-[11px] flex items-center justify-center gap-3"
                                         >
                                             <CheckCircle size={18} />
                                             {editingItem ? 'Save Changes' : 'Add to Menu'}
@@ -548,10 +548,10 @@ export const MenuScreen: React.FC = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[600] flex items-center justify-center bg-black/90 backdrop-blur-3xl p-4"
                     >
-                        <div className="w-full max-w-2xl bg-[#0d0d0e] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden">
+                        <div className="w-full max-w-2xl bg-[#FAFAF3] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden">
                             <div className="flex justify-between items-center px-10 py-7 border-b border-white/5">
-                                <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Bulk Import CSV</h2>
-                                <button onClick={() => setIsImportModalOpen(false)} className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 transition-all">
+                                <h2 className="text-2xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Bulk Import CSV</h2>
+                                <button onClick={() => setIsImportModalOpen(false)} className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-white/20 hover:text-[#1a1c14] hover:bg-white/10 transition-all">
                                     <XCircle size={22} />
                                 </button>
                             </div>
@@ -562,7 +562,7 @@ export const MenuScreen: React.FC = () => {
                                     </p>
                                     <button
                                         onClick={() => csvFileInputRef.current?.click()}
-                                        className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/10 text-white/60 text-[8px] font-black uppercase tracking-widest rounded-xl hover:bg-white/10 hover:text-white transition-all transition-colors"
+                                        className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/10 text-white/60 text-[8px] font-black uppercase tracking-widest rounded-xl hover:bg-white/10 hover:text-[#1a1c14] transition-all transition-colors"
                                     >
                                         <Upload size={12} /> Upload CSV File
                                     </button>
@@ -579,14 +579,14 @@ export const MenuScreen: React.FC = () => {
                                     onChange={e => setCsvInput(e.target.value)}
                                     placeholder={"Tacos de Carne, Tacos, 75, Tacos de carne asada\nEnsalada César, Entradas, 120, Lechuga romana, aderezo"}
                                     rows={8}
-                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-white text-sm outline-none focus:border-solaris-orange/50 transition-all font-mono resize-none"
+                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-mono resize-none"
                                 />
                                 {importResult && (
                                     <div className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest ${importResult.errors.length ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
                                         {importResult.errors.length ? importResult.errors.join(', ') : `${importResult.count} assets imported successfully`}
                                     </div>
                                 )}
-                                <button onClick={handleImport} className="w-full py-5 bg-solaris-orange text-white font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all text-[11px]">
+                                <button onClick={handleImport} className="w-full py-5 bg-solaris-orange text-[#1a1c14] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all text-[11px]">
                                     Execute Import
                                 </button>
                             </div>

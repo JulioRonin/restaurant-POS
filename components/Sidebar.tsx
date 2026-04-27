@@ -68,7 +68,7 @@ const NavItem = ({ to, icon: Icon, label, isExpanded }: { to: string; icon: any;
   <NavLink
     to={to}
     className={({ isActive }) =>
-      `flex items-center ${isExpanded ? 'px-4 gap-4 w-full mx-2' : 'justify-center w-12 mx-auto'} h-12 rounded-solaris my-2 transition-all duration-300 group relative ${isActive ? 'bg-solaris-orange text-white shadow-solaris-glow scale-105' : 'text-gray-600 hover:bg-white/[0.05] hover:text-white'
+      `flex items-center ${isExpanded ? 'px-4 gap-4 w-full mx-2' : 'justify-center w-12 mx-auto'} h-12 rounded-solaris my-1 transition-all duration-300 group relative ${isActive ? 'bg-[#F98359] text-white shadow-[0_0_20px_rgba(249,131,89,0.4)] scale-105' : 'text-[#FAFAF3]/50 hover:bg-white/[0.08] hover:text-[#FAFAF3]'
       }`
     }
   >
@@ -121,7 +121,8 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
     <aside
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
-      className={`hidden lg:flex ${isExpanded ? 'w-64' : 'w-24'} h-full bg-[#1a1c14] flex-col py-8 z-50 border-r border-[#505530]/20 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] relative shadow-[20px_0_50px_rgba(0,0,0,0.8)]`}
+      className={`hidden lg:flex ${isExpanded ? 'w-64' : 'w-24'} h-full flex-col py-8 z-50 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] relative shadow-[4px_0_30px_rgba(0,0,0,0.15)]`}
+      style={{ background: 'linear-gradient(160deg, #505530 0%, #3d4124 60%, #2e3018 100%)' }}
     >
       {/* Brand Header */}
       <div className={`mb-12 p-2 flex flex-col items-center ${isExpanded ? 'px-8 w-full' : 'justify-center'}`}>
@@ -201,7 +202,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
           <NavItem to="/menu" icon={MenuSquare} label="Asset Grid" isExpanded={isExpanded} />
         )}
 
-        <div className={`h-px bg-white/5 my-6 ${isExpanded ? 'w-full' : 'w-8 mx-auto'}`}></div>
+        <div className={`h-px my-5 ${isExpanded ? 'w-full' : 'w-8 mx-auto'}`} style={{ background: 'rgba(250,250,243,0.1)' }}></div>
 
         {canAccess(activeEmployee?.role, '/staff') && isFeatureEnabled('staff') && (
           <NavItem to="/staff" icon={Users} label="Personnel" isExpanded={isExpanded} />
@@ -244,7 +245,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
       </nav>
 
       {/* Network Operator Status */}
-      <div className="w-full px-4 py-8 border-t border-[#505530]/20 mt-auto bg-[#1a1c14]">
+      <div className="w-full px-4 py-6 mt-auto" style={{ borderTop: '1px solid rgba(250,250,243,0.1)', background: 'rgba(0,0,0,0.15)' }}>
         <div 
           className="flex items-center justify-between group cursor-pointer bg-white/[0.02] p-4 rounded-solaris border border-white/5 hover:border-solaris-orange/20 transition-all shadow-xl" 
           onClick={onLock}

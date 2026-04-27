@@ -50,7 +50,7 @@ const OrderTimer: React.FC<{ timestamp: Date }> = ({ timestamp }) => {
     }, [timestamp]);
 
     return (
-        <span className={`px-4 py-1.5 rounded-xl font-mono text-lg font-black italic tracking-tighter ${isLate ? 'bg-red-500 text-white shadow-lg animate-pulse' : 'bg-solaris-orange/10 text-solaris-orange border border-solaris-orange/20'}`}>
+        <span className={`px-4 py-1.5 rounded-xl font-mono text-lg font-black italic tracking-tighter ${isLate ? 'bg-red-500 text-[#1a1c14] shadow-lg animate-pulse' : 'bg-solaris-orange/10 text-solaris-orange border border-solaris-orange/20'}`}>
             {elapsed}
         </span>
     );
@@ -81,7 +81,7 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
                             {isDineIn ? 'Comedor' : (order.source || 'Delivery')}
                         </span>
                     </div>
-                    <h3 className="text-xl font-black italic uppercase tracking-tighter text-white leading-tight">
+                    <h3 className="text-xl font-black italic uppercase tracking-tighter text-[#1a1c14] leading-tight">
                         {tableLabel}
                     </h3>
                     <p className="text-[9px] font-black uppercase text-white/20 tracking-widest mt-1 italic">
@@ -101,7 +101,7 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
                             <span className="w-8 h-8 rounded-xl bg-solaris-orange/10 border border-solaris-orange/20 flex items-center justify-center font-black italic text-solaris-orange text-sm shrink-0">
                                 {item.quantity}
                             </span>
-                            <span className="font-black italic text-white uppercase tracking-tight text-sm">{item.name}</span>
+                            <span className="font-black italic text-[#1a1c14] uppercase tracking-tight text-sm">{item.name}</span>
                         </div>
                         {item.notes && (
                             <div className="mx-1 p-2.5 rounded-xl bg-red-500/5 border border-red-500/10 flex items-center gap-2">
@@ -117,7 +117,7 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
             <div className="p-4 border-t border-white/5 bg-white/[0.01]">
                 <button
                     onClick={() => onComplete(order.id)}
-                    className="w-full py-4 bg-solaris-orange text-white font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] hover:bg-orange-500 active:scale-95 transition-all flex items-center justify-center gap-3"
+                    className="w-full py-4 bg-solaris-orange text-[#1a1c14] font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] hover:bg-orange-500 active:scale-95 transition-all flex items-center justify-center gap-3"
                 >
                     <CheckCircle2 size={18} /> Pedido Listo
                 </button>
@@ -183,7 +183,7 @@ export const KitchenScreen: React.FC = () => {
     };
 
     return (
-        <div className="h-full bg-solaris-black text-white flex flex-col overflow-hidden antialiased relative">
+        <div className="h-full bg-[#FAFAF3] text-[#1a1c14] flex flex-col overflow-hidden antialiased relative">
             {/* New Order Alert */}
             <AnimatePresence>
                 {alert && (
@@ -193,7 +193,7 @@ export const KitchenScreen: React.FC = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
                     >
-                        <div className="p-16 rounded-[4rem] bg-solaris-orange text-white shadow-solaris-glow border-[10px] border-white/20 flex flex-col items-center">
+                        <div className="p-16 rounded-[4rem] bg-solaris-orange text-[#1a1c14] shadow-solaris-glow border-[10px] border-white/20 flex flex-col items-center">
                             <Bell size={80} className="mb-6 animate-bounce" />
                             <h2 className="text-6xl font-black italic uppercase tracking-tighter">New Asset Inbound</h2>
                             <p className="text-[12px] font-black uppercase tracking-[0.5em] mt-2 opacity-60">Synchronizing Kitchen Cluster</p>
@@ -214,13 +214,13 @@ export const KitchenScreen: React.FC = () => {
                     <div className="bg-white/[0.03] border border-white/5 p-1 rounded-2xl flex">
                         <button
                             onClick={() => setIsSplit(false)}
-                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${!isSplit ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-white/30 hover:text-white'}`}
+                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${!isSplit ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-white/30 hover:text-[#1a1c14]'}`}
                         >
                             <LayoutGrid size={14} /> Global Stream
                         </button>
                         <button
                             onClick={() => setIsSplit(true)}
-                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${isSplit ? 'bg-solaris-orange text-white shadow-solaris-glow' : 'text-white/30 hover:text-white'}`}
+                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${isSplit ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-white/30 hover:text-[#1a1c14]'}`}
                         >
                             <Columns2 size={14} /> Matrix View
                         </button>

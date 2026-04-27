@@ -111,7 +111,7 @@ export const BillingScreen: React.FC = () => {
         <div className="p-8 bg-gray-50 h-full overflow-y-auto">
             <header className="mb-10">
                 <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2 uppercase">Gestión de Suscripción</h1>
-                <p className="text-gray-500 font-medium">Administra el acceso a tu plataforma Solaris POS.</p>
+                <p className="text-gray-500 font-medium">Administra el acceso a tu plataforma KOSO POS.</p>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
@@ -123,13 +123,13 @@ export const BillingScreen: React.FC = () => {
                         <div className="flex justify-between items-start mb-12">
                             <div>
                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Estado Actual</span>
-                                <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-white font-black text-xs uppercase tracking-wider ${statusConfig.bg}`}>
+                                <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[#1a1c14] font-black text-xs uppercase tracking-wider ${statusConfig.bg}`}>
                                     <span className="material-icons-round text-sm">{statusConfig.icon}</span>
                                     {statusConfig.text}
                                 </div>
                             </div>
                             <div className="text-right">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Solaris POS ID</span>
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">KOSO POS ID</span>
                                 <span className="text-gray-900 font-mono font-bold uppercase">
                                     POS-{settings.name.substring(0, 3).toUpperCase()}-{Math.floor(100+Math.random()*899)}
                                 </span>
@@ -152,7 +152,7 @@ export const BillingScreen: React.FC = () => {
                     <div className="relative z-10 flex flex-wrap gap-4">
                         <button 
                             onClick={handleRenovar}
-                            className="flex-1 min-w-[240px] py-4 bg-primary hover:bg-blue-600 text-white rounded-2xl font-black transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 text-lg disabled:opacity-50"
+                            className="flex-1 min-w-[240px] py-4 bg-primary hover:bg-blue-600 text-[#1a1c14] rounded-2xl font-black transition-all flex items-center justify-center gap-2 shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 text-lg disabled:opacity-50"
                             disabled={isPaying}
                         >
                             <span className="material-icons-round">{isPaying ? 'sync' : 'refresh'}</span>
@@ -160,7 +160,7 @@ export const BillingScreen: React.FC = () => {
                         </button>
                         <button 
                             onClick={handleEquipmentButtonClick}
-                            className={`px-8 py-4 rounded-2xl transition-all font-black flex items-center gap-2 shadow-xl hover:scale-[1.02] active:scale-95 ${posStatus.isFullyPaid ? 'bg-green-600 shadow-green-200 text-white cursor-default' : 'bg-slate-900 hover:bg-slate-800 text-white shadow-slate-200'}`}
+                            className={`px-8 py-4 rounded-2xl transition-all font-black flex items-center gap-2 shadow-xl hover:scale-[1.02] active:scale-95 ${posStatus.isFullyPaid ? 'bg-green-600 shadow-green-200 text-[#1a1c14] cursor-default' : 'bg-slate-900 hover:bg-slate-800 text-[#1a1c14] shadow-slate-200'}`}
                         >
                             <span className="material-icons-round">{posStatus.isFullyPaid ? 'check_circle' : 'devices'}</span>
                             {posStatus.isFullyPaid ? 'Equipo Pagado' : 'Equipo POS'}
@@ -172,7 +172,7 @@ export const BillingScreen: React.FC = () => {
                 </div>
 
                 {/* Info Card */}
-                <div className="bg-slate-900 rounded-[32px] p-8 text-white flex flex-col justify-between shadow-2xl relative overflow-hidden">
+                <div className="bg-slate-900 rounded-[32px] p-8 text-[#1a1c14] flex flex-col justify-between shadow-2xl relative overflow-hidden">
                     <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-primary/20 rounded-full blur-[80px]"></div>
                     <div>
                         <h3 className="text-xl font-black mb-6 tracking-tight tracking-wider uppercase text-[10px] text-primary">Beneficios de tu Suscripción</h3>
@@ -200,7 +200,7 @@ export const BillingScreen: React.FC = () => {
 
             {/* Payment Success Toast */}
             {showSuccess && (
-                <div className="fixed top-8 right-8 bg-green-600 text-white px-8 py-4 rounded-2xl shadow-2xl z-[100] animate-in slide-in-from-right flex items-center gap-4">
+                <div className="fixed top-8 right-8 bg-green-600 text-[#1a1c14] px-8 py-4 rounded-2xl shadow-2xl z-[100] animate-in slide-in-from-right flex items-center gap-4">
                     <span className="material-icons-round bg-white text-green-600 rounded-full p-1">check</span>
                     <div>
                         <p className="font-black text-sm uppercase tracking-wider">¡Pago Completado!</p>
@@ -295,14 +295,14 @@ export const BillingScreen: React.FC = () => {
                                             <p className="text-blue-600 text-[10px] font-black uppercase tracking-widest mb-1">Total a Pagar Hoy</p>
                                             <p className="text-3xl font-black text-blue-900">${selectedEquipmentPlan.price.toLocaleString()} MXN</p>
                                         </div>
-                                        <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-200">
+                                        <div className="w-12 h-12 bg-blue-600 text-[#1a1c14] rounded-full flex items-center justify-center shadow-lg shadow-blue-200">
                                             <span className="material-icons-round">shopping_cart</span>
                                         </div>
                                     </div>
                                     
                                     <button
                                         onClick={handleEquipmentPayment}
-                                        className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-[24px] font-black text-xl shadow-2xl shadow-blue-200 transition-all flex items-center justify-center gap-3 active:scale-95"
+                                        className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-[#1a1c14] rounded-[24px] font-black text-xl shadow-2xl shadow-blue-200 transition-all flex items-center justify-center gap-3 active:scale-95"
                                     >
                                         <span className="material-icons-round">credit_card</span>
                                         CONTINUAR AL PAGO
@@ -362,7 +362,7 @@ export const BillingScreen: React.FC = () => {
 
                             <button
                                 onClick={handleRecurringEquipmentPayment}
-                                className="w-full py-5 bg-slate-900 hover:bg-black text-white rounded-2xl font-black text-lg shadow-xl shadow-slate-200 transition-all flex items-center justify-center gap-3 active:scale-95"
+                                className="w-full py-5 bg-slate-900 hover:bg-black text-[#1a1c14] rounded-2xl font-black text-lg shadow-xl shadow-slate-200 transition-all flex items-center justify-center gap-3 active:scale-95"
                             >
                                 <span className="material-icons-round">payment</span>
                                 REALIZAR SIGUIENTE PAGO
@@ -397,7 +397,7 @@ const PaymentStripeModal: React.FC<{
             <div className="bg-slate-50 p-6 border-b border-gray-100 flex justify-between items-center text-gray-900">
                 <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                        <span className="material-icons-round text-white text-sm">payments</span>
+                        <span className="material-icons-round text-[#1a1c14] text-sm">payments</span>
                     </div>
                     <span className="font-black tracking-tight">{title}</span>
                 </div>
@@ -436,7 +436,7 @@ const PaymentStripeModal: React.FC<{
                 <button
                     onClick={onPay}
                     disabled={isPaying}
-                    className={`w-full mt-10 py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-lg transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-200 hover:scale-[1.02] active:scale-95 disabled:opacity-50`}
+                    className={`w-full mt-10 py-5 bg-blue-600 hover:bg-blue-700 text-[#1a1c14] rounded-xl font-black text-lg transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-200 hover:scale-[1.02] active:scale-95 disabled:opacity-50`}
                 >
                     {isPaying ? (
                         <>

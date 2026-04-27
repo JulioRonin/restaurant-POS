@@ -9,6 +9,10 @@
   --olive-color: #505530;
   --cream-color: #FAFAF3;
   --primary-rgb: 249, 131, 89;
+  --koso-bg: #FAFAF3;
+  --koso-surface: #F0F0E8;
+  --koso-olive: #505530;
+  --koso-text: #1a1c14;
 }
 
 body {
@@ -16,6 +20,39 @@ body {
   font-family: 'Manrope', 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #FAFAF3;
+  color: #1a1c14;
+}
+
+/* ── KŌSO Design Tokens ──────────────────────────────────────── */
+/* Distribution: 35% #FAFAF3, 40% #505530, 20% #F98359, 5% #C694DB */
+
+.koso-card {
+  background: rgba(250, 250, 243, 0.85);
+  border: 1px solid rgba(80, 85, 48, 0.15);
+  border-radius: 1.5rem;
+  box-shadow: 0 2px 20px rgba(80, 85, 48, 0.08);
+}
+
+.koso-surface {
+  background: rgba(240, 240, 232, 0.7);
+  border: 1px solid rgba(80, 85, 48, 0.1);
+}
+
+.koso-label {
+  color: #505530;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  font-size: 0.6rem;
+}
+
+.koso-accent {
+  color: #F98359;
+}
+
+.koso-purple {
+  color: #C694DB;
 }
 
 /* Custom Scrollbars */

@@ -214,16 +214,16 @@ export default function OnboardingScreen() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6 sm:p-12">
+      <div className="min-h-screen bg-[#FAFAF3] flex items-center justify-center p-6 sm:p-12">
         <div className="max-w-md w-full bg-gray-800 rounded-3xl p-8 border border-white/5 text-center shadow-2xl">
           <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <span className="material-icons-round text-4xl text-emerald-500">check_circle</span>
           </div>
-          <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">¡Configuración Completa!</h2>
+          <h2 className="text-2xl font-black text-[#1a1c14] mb-2 uppercase tracking-tight">¡Configuración Completa!</h2>
           <p className="text-gray-400 mb-8">Tu restaurante "{restaurantInfo.name}" ha sido creado con éxito. Todos tus platillos, personal y mesas están listos.</p>
           <button 
             onClick={() => window.location.hash = '/dashboard'}
-            className="w-full py-4 bg-primary hover:bg-primary-dark text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
+            className="w-full py-4 bg-primary hover:bg-primary-dark text-[#1a1c14] rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
           >
             Entrar al Sistema
             <span className="material-icons-round">rocket_launch</span>
@@ -234,11 +234,11 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col font-sans text-white">
+    <div className="min-h-screen bg-[#FAFAF3] flex flex-col font-sans text-[#1a1c14]">
       {/* Header */}
       <header className="bg-white border-b px-8 py-4 flex justify-between items-center sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white">
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-[#1a1c14]">
             <ChefHat size={24} />
           </div>
           <div>
@@ -267,7 +267,7 @@ export default function OnboardingScreen() {
         <div className="max-w-4xl w-full bg-white rounded-3xl shadow-xl shadow-indigo-100/50 border border-indigo-50/50 overflow-hidden flex min-h-[600px]">
           
           {/* Sidebar Info */}
-          <div className="w-1/3 bg-slate-900 p-8 text-white flex flex-col justify-between">
+          <div className="w-1/3 bg-slate-900 p-8 text-[#1a1c14] flex flex-col justify-between">
             <div>
               <div className="mb-8">
                 {currentStep === 'PLAN' && <CreditCard size={48} className="text-indigo-400 mb-4" />}
@@ -302,7 +302,7 @@ export default function OnboardingScreen() {
                 {steps.slice(0, -1).map((s, idx) => (
                   <div key={s} className="flex items-center gap-3">
                     <div className={`w-2 h-2 rounded-full ${steps.indexOf(currentStep) >= idx ? 'bg-indigo-400' : 'bg-slate-700'}`} />
-                    <span className={`text-sm ${steps.indexOf(currentStep) === idx ? 'text-white font-medium' : 'text-slate-500'}`}>
+                    <span className={`text-sm ${steps.indexOf(currentStep) === idx ? 'text-[#1a1c14] font-medium' : 'text-slate-500'}`}>
                       {idx + 1}. {s.charAt(0) + s.slice(1).toLowerCase()}
                     </span>
                   </div>
@@ -311,7 +311,7 @@ export default function OnboardingScreen() {
             </div>
 
             <div className="text-xs text-slate-500">
-              © 2026 Solaris POS - Todos los derechos reservados.
+              © 2026 KOSO POS - Todos los derechos reservados.
             </div>
           </div>
 
@@ -488,7 +488,7 @@ export default function OnboardingScreen() {
                         <p className="text-xs text-slate-500">Impórtalo rápidamente para no empezar de cero.</p>
                       </div>
                     </div>
-                    <button className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors">
+                    <button className="bg-indigo-600 text-[#1a1c14] px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors">
                       IMPORTAR CSV
                     </button>
                   </div>
@@ -538,7 +538,7 @@ export default function OnboardingScreen() {
               {/* Step 4: TABLES */}
               {currentStep === 'TABLES' && (
                 <div className="space-y-6">
-                  <div className="bg-slate-900 rounded-2xl p-8 text-center text-white relative overflow-hidden">
+                  <div className="bg-slate-900 rounded-2xl p-8 text-center text-[#1a1c14] relative overflow-hidden">
                     <div className="relative z-10">
                       <Rows size={48} className="mx-auto mb-4 text-indigo-400 opacity-50" />
                       <h3 className="text-lg font-bold mb-2">Editor de Piso de Ventas</h3>
@@ -550,12 +550,12 @@ export default function OnboardingScreen() {
                           <div className="flex items-center gap-3">
                              <button 
                                onClick={() => setTables(prev => prev.length > 0 ? prev.slice(0, -1) : [])}
-                               className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-white hover:bg-slate-700 transition-colors"
+                               className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-[#1a1c14] hover:bg-slate-700 transition-colors"
                              >-</button>
                              <span className="text-3xl font-bold w-12">{tables.length}</span>
                              <button 
                                onClick={() => setTables(prev => [...prev, { id: `T${prev.length + 1}`, name: `Mesa ${prev.length + 1}`, seats: 4 }])}
-                               className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white hover:bg-indigo-700 transition-colors"
+                               className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-[#1a1c14] hover:bg-indigo-700 transition-colors"
                              >+</button>
                           </div>
                         </div>
@@ -593,7 +593,7 @@ export default function OnboardingScreen() {
                   <div className="grid grid-cols-2 gap-4">
                     {/* Owner - Always there */}
                     <div className="p-4 bg-indigo-50/50 rounded-2xl border-2 border-indigo-200 flex items-center gap-4 relative">
-                      <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold">
+                      <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-[#1a1c14] font-bold">
                         {authProfile?.fullName?.charAt(0) || 'A'}
                       </div>
                       <div>
@@ -601,7 +601,7 @@ export default function OnboardingScreen() {
                         <p className="text-xs text-indigo-600 font-medium">Administrador</p>
                       </div>
                       <div className="absolute top-2 right-2 flex items-center gap-1">
-                        <span className="text-[8px] font-bold bg-indigo-600 text-white px-1.5 rounded-full">PIN 0000</span>
+                        <span className="text-[8px] font-bold bg-indigo-600 text-[#1a1c14] px-1.5 rounded-full">PIN 0000</span>
                       </div>
                     </div>
 
@@ -658,7 +658,7 @@ export default function OnboardingScreen() {
                         </div>
                         <button 
                           onClick={scanHardware}
-                          className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors"
+                          className="bg-slate-900 text-[#1a1c14] px-6 py-2.5 rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors"
                         >
                           COMENZAR ESCANEO (RECOMENDADO)
                         </button>
@@ -788,7 +788,7 @@ export default function OnboardingScreen() {
                 <button 
                   onClick={handleFinish}
                   disabled={loading}
-                  className="bg-indigo-600 text-white px-10 py-4 rounded-3xl text-sm font-bold shadow-xl shadow-indigo-200 hover:bg-indigo-700 hover:translate-y-[-2px] active:translate-y-0 transition-all flex items-center justify-center gap-3 ring-4 ring-white min-w-[220px]"
+                  className="bg-indigo-600 text-[#1a1c14] px-10 py-4 rounded-3xl text-sm font-bold shadow-xl shadow-indigo-200 hover:bg-indigo-700 hover:translate-y-[-2px] active:translate-y-0 transition-all flex items-center justify-center gap-3 ring-4 ring-white min-w-[220px]"
                 >
                   {loading ? (
                     <>
@@ -802,7 +802,7 @@ export default function OnboardingScreen() {
               ) : (
                 <button 
                   onClick={nextStep}
-                  className="bg-slate-900 text-white px-10 py-4 rounded-3xl text-sm font-bold shadow-xl shadow-slate-200 hover:bg-slate-800 hover:translate-y-[-2px] active:translate-y-0 transition-all flex items-center gap-2"
+                  className="bg-slate-900 text-[#1a1c14] px-10 py-4 rounded-3xl text-sm font-bold shadow-xl shadow-slate-200 hover:bg-slate-800 hover:translate-y-[-2px] active:translate-y-0 transition-all flex items-center gap-2"
                 >
                   CONTINUAR <ChevronRight size={20} />
                 </button>

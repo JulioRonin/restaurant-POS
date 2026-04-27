@@ -63,10 +63,10 @@ export const MyTablesScreen: React.FC = () => {
     };
 
     return (
-        <div className="h-full bg-solaris-black text-white p-6 md:p-10 flex flex-col overflow-y-auto no-scrollbar antialiased">
+        <div className="h-full bg-[#FAFAF3] text-[#1a1c14] p-6 md:p-10 flex flex-col overflow-y-auto no-scrollbar antialiased">
             <header className="mb-10 flex justify-between items-start md:items-end flex-wrap gap-6 shrink-0">
                 <div>
-                    <h1 className="text-5xl font-black italic tracking-tighter uppercase mb-2 text-white">Node Matrix Monitor</h1>
+                    <h1 className="text-5xl font-black italic tracking-tighter uppercase mb-2 text-[#1a1c14]">Node Matrix Monitor</h1>
                     <p className="text-solaris-orange/40 font-black text-[11px] uppercase tracking-[0.5em] italic">Active Duty Node Monitoring • Solaris OS v4</p>
                 </div>
                 <div className="bg-white/[0.03] border border-white/5 px-8 py-5 rounded-2xl text-right">
@@ -90,7 +90,7 @@ export const MyTablesScreen: React.FC = () => {
                                 className={`flex flex-col rounded-[28px] border relative overflow-hidden transition-all ${isRequested ? 'border-solaris-orange shadow-solaris-glow' : 'border-white/[0.07] bg-white/[0.015]'}`}
                             >
                                 {isRequested && (
-                                    <div className="absolute top-0 right-0 bg-solaris-orange text-white px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.3em] animate-pulse rounded-bl-2xl z-10">
+                                    <div className="absolute top-0 right-0 bg-solaris-orange text-[#1a1c14] px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.3em] animate-pulse rounded-bl-2xl z-10">
                                         PAYOUT_REQD
                                     </div>
                                 )}
@@ -99,13 +99,13 @@ export const MyTablesScreen: React.FC = () => {
                                 <div className="px-6 pt-6 pb-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center gap-3">
                                     <div className="min-w-0 flex-1">
                                         <p className="text-[8px] font-black text-solaris-orange/40 uppercase tracking-widest mb-1 italic">NODE_ID</p>
-                                        <h3 className="text-base font-black italic tracking-tighter uppercase text-white leading-tight font-mono truncate">
+                                        <h3 className="text-base font-black italic tracking-tighter uppercase text-[#1a1c14] leading-tight font-mono truncate">
                                             {order.tableId.length > 16 ? `${order.tableId.slice(0, 10)}...${order.tableId.slice(-4)}` : order.tableId}
                                         </h3>
                                     </div>
                                     <div className="text-right shrink-0">
                                         <p className="text-[8px] font-black text-solaris-orange/40 uppercase tracking-widest mb-1 italic">UPTIME</p>
-                                        <p className="text-xs font-black italic text-white flex items-center gap-1 justify-end">
+                                        <p className="text-xs font-black italic text-[#1a1c14] flex items-center gap-1 justify-end">
                                             <Clock size={11} className="text-solaris-orange" /> {getElapsedTime(order.timestamp)}
                                         </p>
                                     </div>
@@ -116,7 +116,7 @@ export const MyTablesScreen: React.FC = () => {
                                     <div className="space-y-2">
                                         {order.items.map((item: any, i: number) => (
                                             <div key={i} className="flex justify-between items-center text-[11px] py-1 border-b border-white/[0.03] last:border-0">
-                                                <span className="text-white font-black italic uppercase tracking-tight flex-1 truncate mr-2">
+                                                <span className="text-[#1a1c14] font-black italic uppercase tracking-tight flex-1 truncate mr-2">
                                                     <span className="text-solaris-orange mr-1">{item.quantity}×</span>{item.name}
                                                 </span>
                                                 <span className="font-black italic text-white/50 shrink-0">${(item.price * item.quantity).toFixed(0)}</span>
@@ -149,7 +149,7 @@ export const MyTablesScreen: React.FC = () => {
                                             </button>
                                             <button
                                                 onClick={() => updateOrderStatus(order.id, OrderStatus.BILL_REQUESTED)}
-                                                className="flex-1 py-3 bg-white text-black rounded-2xl font-black italic uppercase tracking-[0.15em] text-[10px] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-solaris-orange hover:text-white"
+                                                className="flex-1 py-3 bg-white text-black rounded-2xl font-black italic uppercase tracking-[0.15em] text-[10px] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-solaris-orange hover:text-[#1a1c14]"
                                             >
                                                 Settle Account <ChevronRight size={14} />
                                             </button>
@@ -176,20 +176,20 @@ export const MyTablesScreen: React.FC = () => {
                         className="fixed inset-0 z-[600] flex items-center justify-center bg-black/95 backdrop-blur-3xl p-4"
                     >
                         <div
-                            className="w-full max-w-5xl bg-[#0d0d0e] border border-white/10 rounded-[40px] shadow-2xl flex flex-col"
+                            className="w-full max-w-5xl bg-[#FAFAF3] border border-white/10 rounded-[40px] shadow-2xl flex flex-col"
                             style={{ maxHeight: '90vh' }}
                         >
                             {/* Header */}
                             <div className="flex justify-between items-center px-10 py-7 border-b border-white/5 bg-white/[0.01] shrink-0 rounded-t-[40px]">
                                 <div>
-                                    <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white">Modify Manifest</h2>
+                                    <h2 className="text-3xl font-black italic tracking-tighter uppercase text-[#1a1c14]">Modify Manifest</h2>
                                     <p className="text-[10px] font-black uppercase text-solaris-orange/50 tracking-[0.4em] mt-1 italic">
                                         Node: {editingOrder.tableId}
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => setEditingOrder(null)}
-                                    className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-white/20 hover:text-white hover:bg-white/10 transition-all"
+                                    className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-white/20 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
                                 >
                                     <X size={22} />
                                 </button>
@@ -208,7 +208,7 @@ export const MyTablesScreen: React.FC = () => {
                                         </div>
                                         <button
                                             onClick={() => { setShowItemPicker(v => !v); setPickerSearch(''); }}
-                                            className="px-6 py-3 bg-solaris-orange rounded-xl text-[10px] font-black uppercase text-white shadow-solaris-glow hover:scale-105 active:scale-95 transition-all"
+                                            className="px-6 py-3 bg-solaris-orange rounded-xl text-[10px] font-black uppercase text-[#1a1c14] shadow-solaris-glow hover:scale-105 active:scale-95 transition-all"
                                         >
                                             {showItemPicker ? '✕ Close' : '+ Add Asset'}
                                         </button>
@@ -222,7 +222,7 @@ export const MyTablesScreen: React.FC = () => {
                                                 <input
                                                     type="text"
                                                     placeholder="Search menu items..."
-                                                    className="w-full pl-11 pr-5 py-3 bg-white/[0.04] border border-white/10 rounded-2xl outline-none font-black text-sm italic placeholder:text-white/10 focus:border-solaris-orange/40 transition-all text-white"
+                                                    className="w-full pl-11 pr-5 py-3 bg-white/[0.04] border border-white/10 rounded-2xl outline-none font-black text-sm italic placeholder:text-white/10 focus:border-solaris-orange/40 transition-all text-[#1a1c14]"
                                                     value={pickerSearch}
                                                     onChange={e => setPickerSearch(e.target.value)}
                                                     autoFocus
@@ -245,7 +245,7 @@ export const MyTablesScreen: React.FC = () => {
                                                                 setShowItemPicker(false);
                                                                 setPickerSearch('');
                                                             }}
-                                                            className="p-4 bg-white/[0.03] hover:bg-solaris-orange text-white/50 hover:text-white rounded-2xl border border-white/5 transition-all text-left"
+                                                            className="p-4 bg-white/[0.03] hover:bg-solaris-orange text-white/50 hover:text-[#1a1c14] rounded-2xl border border-white/5 transition-all text-left"
                                                         >
                                                             <p className="font-black italic uppercase text-sm leading-tight truncate">{item.name}</p>
                                                             <p className="text-[10px] opacity-50 mt-0.5">${item.price.toFixed(0)}</p>
@@ -267,7 +267,7 @@ export const MyTablesScreen: React.FC = () => {
                                                 className="flex items-center justify-between bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-5 hover:border-solaris-orange/20 transition-all"
                                             >
                                                 <div className="min-w-0 flex-1 mr-4">
-                                                    <p className="font-black italic text-white uppercase tracking-tight leading-tight truncate">{item.name}</p>
+                                                    <p className="font-black italic text-[#1a1c14] uppercase tracking-tight leading-tight truncate">{item.name}</p>
                                                     <p className="text-[10px] text-solaris-orange/40 font-black italic mt-0.5">
                                                         ${item.price.toFixed(0)} × {item.quantity} = ${(item.price * item.quantity).toFixed(0)}
                                                     </p>
@@ -282,7 +282,7 @@ export const MyTablesScreen: React.FC = () => {
                                                         }}
                                                         className="w-9 h-9 rounded-xl bg-white/[0.03] hover:bg-red-500/20 text-white/30 hover:text-red-500 transition-all flex items-center justify-center text-xl font-black"
                                                     >−</button>
-                                                    <span className="min-w-[24px] text-center font-black italic text-xl text-white">{item.quantity}</span>
+                                                    <span className="min-w-[24px] text-center font-black italic text-xl text-[#1a1c14]">{item.quantity}</span>
                                                     <button
                                                         onClick={() => {
                                                             const n = [...tempItems];
@@ -310,11 +310,11 @@ export const MyTablesScreen: React.FC = () => {
                                         <div className="bg-white/[0.02] rounded-2xl p-5 border border-white/5 space-y-3">
                                             <div className="flex justify-between items-center text-[11px]">
                                                 <span className="text-white/30 font-black italic uppercase">Total Qty</span>
-                                                <span className="text-white font-black italic">{tempItems.reduce((a, i) => a + i.quantity, 0)}</span>
+                                                <span className="text-[#1a1c14] font-black italic">{tempItems.reduce((a, i) => a + i.quantity, 0)}</span>
                                             </div>
                                             <div className="flex justify-between items-center text-[11px]">
                                                 <span className="text-white/30 font-black italic uppercase">Lines</span>
-                                                <span className="text-white font-black italic">{tempItems.length}</span>
+                                                <span className="text-[#1a1c14] font-black italic">{tempItems.length}</span>
                                             </div>
                                             <div className="flex justify-between items-center text-[11px] border-t border-white/5 pt-3">
                                                 <span className="text-solaris-orange font-black italic uppercase">Total</span>
@@ -333,7 +333,7 @@ export const MyTablesScreen: React.FC = () => {
                                             });
                                             if (isRed) setShowPinModal(true); else finalizeSave();
                                         }}
-                                        className="w-full py-6 bg-white text-black rounded-2xl font-black italic uppercase tracking-[0.3em] text-base shadow-2xl hover:bg-solaris-orange hover:text-white transition-all active:scale-95 flex items-center justify-center gap-3"
+                                        className="w-full py-6 bg-white text-black rounded-2xl font-black italic uppercase tracking-[0.3em] text-base shadow-2xl hover:bg-solaris-orange hover:text-[#1a1c14] transition-all active:scale-95 flex items-center justify-center gap-3"
                                     >
                                         <Save size={20} /> Commit Changes
                                     </button>
@@ -353,11 +353,11 @@ export const MyTablesScreen: React.FC = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[700] flex items-center justify-center bg-black/98 backdrop-blur-3xl p-6"
                     >
-                        <div className="w-full max-w-md bg-[#0d0d0e] border border-white/10 rounded-[40px] shadow-2xl p-12 text-center">
+                        <div className="w-full max-w-md bg-[#FAFAF3] border border-white/10 rounded-[40px] shadow-2xl p-12 text-center">
                             <div className="w-20 h-20 bg-solaris-orange/10 rounded-full flex items-center justify-center text-solaris-orange mx-auto mb-8 border border-solaris-orange/20">
                                 <Lock size={36} />
                             </div>
-                            <h3 className="text-3xl font-black italic tracking-tighter uppercase text-white mb-2">Auth Code Required</h3>
+                            <h3 className="text-3xl font-black italic tracking-tighter uppercase text-[#1a1c14] mb-2">Auth Code Required</h3>
                             <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.5em] mb-10 italic">Security Interlock Active</p>
 
                             <div className="flex justify-center gap-6 mb-10">
@@ -380,12 +380,12 @@ export const MyTablesScreen: React.FC = () => {
                                 <button onClick={() => pin.length < 4 && setPin(pin + '0')} className="w-full h-16 rounded-2xl bg-white/[0.03] hover:bg-white text-white/40 hover:text-black text-2xl font-black italic transition-all active:scale-90 border border-white/5">0</button>
                                 <button
                                     onClick={() => { if (pin === '0000') finalizeSave(); else { alert('ACCESS_DENIED'); setPin(''); } }}
-                                    className="w-full h-16 rounded-2xl bg-solaris-orange text-white flex items-center justify-center hover:scale-105 transition-all active:scale-95"
+                                    className="w-full h-16 rounded-2xl bg-solaris-orange text-[#1a1c14] flex items-center justify-center hover:scale-105 transition-all active:scale-95"
                                 >
                                     <CheckCircle2 size={28} />
                                 </button>
                             </div>
-                            <button onClick={() => { setShowPinModal(false); setPin(''); }} className="text-white/10 hover:text-white transition-colors uppercase font-black text-[10px] tracking-widest italic flex items-center justify-center gap-2 mx-auto">
+                            <button onClick={() => { setShowPinModal(false); setPin(''); }} className="text-white/10 hover:text-[#1a1c14] transition-colors uppercase font-black text-[10px] tracking-widest italic flex items-center justify-center gap-2 mx-auto">
                                 <X size={14} /> Discard Protocol
                             </button>
                         </div>

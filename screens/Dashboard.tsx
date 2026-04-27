@@ -263,14 +263,14 @@ export const DashboardScreen: React.FC = () => {
 
     return (
         <div className="h-full w-full relative">
-            <div className="flex-1 bg-[#1f2937] text-white p-6 md:p-10 overflow-y-auto h-full relative font-sans antialiased custom-scrollbar no-print">
+            <div className="flex-1 bg-[#F0F0E8] text-[#1a1c14] p-6 md:p-10 overflow-y-auto h-full relative font-sans antialiased custom-scrollbar no-print">
                 <SolarisShader />
 
                 <div className="relative z-10">
                 {/* Header Section */}
                 <div className="flex justify-between items-center mb-12 flex-wrap gap-6 no-print-dashboard">
                     <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2 text-white">Solaris Core</h1>
+                        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2 text-[#1a1c14]">KOSO POS</h1>
                         <p className="text-white/40 font-bold text-[10px] uppercase tracking-[0.5em]">Real-time Financial Orchestration</p>
                     </motion.div>
 
@@ -279,21 +279,21 @@ export const DashboardScreen: React.FC = () => {
                             <select
                                 value={timeRange}
                                 onChange={(e) => setTimeRange(e.target.value as TimeRange)}
-                                className="bg-transparent text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-white/[0.05] transition-all"
+                                className="bg-transparent text-[#1a1c14] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-white/[0.05] transition-all"
                             >
-                                <option value="Weekly" className="bg-[#0a0a0b]">Weekly</option>
-                                <option value="Monthly" className="bg-[#0a0a0b]">Monthly</option>
-                                <option value="Yearly" className="bg-[#0a0a0b]">Yearly</option>
-                                <option value="SpecificDay" className="bg-[#0a0a0b]">Specific Day</option>
-                                <option value="SpecificMonth" className="bg-[#0a0a0b]">Specific Month</option>
-                                <option value="DateRange" className="bg-[#0a0a0b]">Date Range</option>
+                                <option value="Weekly" className="bg-white">Weekly</option>
+                                <option value="Monthly" className="bg-white">Monthly</option>
+                                <option value="Yearly" className="bg-white">Yearly</option>
+                                <option value="SpecificDay" className="bg-white">Specific Day</option>
+                                <option value="SpecificMonth" className="bg-white">Specific Month</option>
+                                <option value="DateRange" className="bg-white">Date Range</option>
                             </select>
                             {(timeRange === 'SpecificDay' || timeRange === 'SpecificMonth') && (
                                 <input 
                                     type={timeRange === 'SpecificDay' ? 'date' : 'month'}
                                     value={selectedDate}
                                     onChange={(e) => setSelectedDate(e.target.value)}
-                                    className="bg-white/5 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer hover:bg-white/[0.08] transition-all"
+                                    className="bg-white/5 text-[#1a1c14] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer hover:bg-white/[0.08] transition-all"
                                 />
                             )}
                             {timeRange === 'DateRange' && (
@@ -302,29 +302,29 @@ export const DashboardScreen: React.FC = () => {
                                         type="date"
                                         value={dateRange.start}
                                         onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                                        className="bg-white/5 text-white px-2 py-1 rounded-lg text-[9px] font-bold outline-none border-none"
+                                        className="bg-white/5 text-[#1a1c14] px-2 py-1 rounded-lg text-[9px] font-bold outline-none border-none"
                                     />
                                     <span className="text-[9px] text-white/30">to</span>
                                     <input 
                                         type="date"
                                         value={dateRange.end}
                                         onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                                        className="bg-white/5 text-white px-2 py-1 rounded-lg text-[9px] font-bold outline-none border-none"
+                                        className="bg-white/5 text-[#1a1c14] px-2 py-1 rounded-lg text-[9px] font-bold outline-none border-none"
                                     />
                                 </div>
                             )}
                             <select
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value)}
-                                className="bg-transparent text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-white/[0.05] transition-all"
+                                className="bg-transparent text-[#1a1c14] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-white/[0.05] transition-all"
                             >
-                                {CATEGORIES.map(cat => <option key={cat} value={cat} className="bg-[#0a0a0b]">{cat}</option>)}
+                                {CATEGORIES.map(cat => <option key={cat} value={cat} className="bg-white">{cat}</option>)}
                             </select>
                         </div>
 
                         <button
                             onClick={() => setIsReportOpen(true)}
-                            className="flex items-center gap-3 px-8 py-4 bg-solaris-orange text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-[24px] shadow-solaris-glow hover:scale-105 transition-all"
+                            className="flex items-center gap-3 px-8 py-4 bg-solaris-orange text-[#1a1c14] text-[10px] font-black uppercase tracking-[0.2em] rounded-[24px] shadow-solaris-glow hover:scale-105 transition-all"
                         >
                             <FileText size={16} />
                             Export Master
@@ -350,7 +350,7 @@ export const DashboardScreen: React.FC = () => {
                     <GlowCard glowColor="orange" customSize className="lg:col-span-2 !p-0 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-[32px]">
                         <div className="p-8">
                             <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 mb-1 italic">Proyección Financiera</h3>
-                            <p className="text-xl font-black text-white italic tracking-tight mb-8">Revenue Analytics</p>
+                            <p className="text-xl font-black text-[#1a1c14] italic tracking-tight mb-8">Revenue Analytics</p>
                             <div className="h-72 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={chartData}>
@@ -383,7 +383,7 @@ export const DashboardScreen: React.FC = () => {
                     <GlowCard glowColor="orange" customSize className="!p-0 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-[32px]">
                         <div className="p-8">
                             <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 mb-1 italic">Operación</h3>
-                            <p className="text-xl font-black text-white italic tracking-tight mb-8">Prime Cost</p>
+                            <p className="text-xl font-black text-[#1a1c14] italic tracking-tight mb-8">Prime Cost</p>
                             <div className="h-72 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={chartData}>
@@ -433,7 +433,7 @@ export const DashboardScreen: React.FC = () => {
                                            <span className="text-[11px] font-black uppercase tracking-widest text-white/70">{p.name}</span>
                                        </div>
                                        <div className="text-right">
-                                           <span className="text-[11px] font-black text-white italic">{p.quantity} Unid.</span>
+                                           <span className="text-[11px] font-black text-[#1a1c14] italic">{p.quantity} Unid.</span>
                                            <p className="text-[9px] text-white/20 font-bold tracking-widest group-hover:text-solaris-orange transition-colors">${p.revenue.toLocaleString()}</p>
                                        </div>
                                    </div>

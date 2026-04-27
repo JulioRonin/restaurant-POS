@@ -205,10 +205,10 @@ export default function SuperAdminScreen() {
 
   if (!isSuperAdmin) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-white bg-slate-900 p-8">
+      <div className="flex flex-col items-center justify-center h-full text-[#1a1c14] bg-slate-900 p-8">
         <ShieldCheck className="w-20 h-20 text-red-500 mb-4 animate-pulse" />
         <h1 className="text-3xl font-bold mb-2">Acceso Restringido</h1>
-        <p className="text-slate-400">Esta área es solo para administradores de Solaris POS.</p>
+        <p className="text-slate-400">Esta área es solo para administradores de KOSO POS.</p>
       </div>
     );
   }
@@ -221,9 +221,9 @@ export default function SuperAdminScreen() {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <div className="bg-blue-600 p-2 rounded-lg">
-                <Zap className="w-5 h-5 text-white" />
+                <Zap className="w-5 h-5 text-[#1a1c14]" />
             </div>
-            <h1 className="text-3xl font-black uppercase tracking-tighter text-white">
+            <h1 className="text-3xl font-black uppercase tracking-tighter text-[#1a1c14]">
               Solaris Control <span className="text-blue-500">Center</span>
             </h1>
           </div>
@@ -290,12 +290,12 @@ export default function SuperAdminScreen() {
                 >
                   <div className="flex items-center gap-4 text-left">
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg transition-colors ${
-                        selectedBusiness?.id === business.id ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400 group-hover:text-blue-400'
+                        selectedBusiness?.id === business.id ? 'bg-blue-500 text-[#1a1c14]' : 'bg-slate-800 text-slate-400 group-hover:text-blue-400'
                     }`}>
                       {business.name.substring(0, 1).toUpperCase()}
                     </div>
                     <div>
-                      <div className="font-bold text-white group-hover:text-blue-400 transition-colors">{business.name}</div>
+                      <div className="font-bold text-[#1a1c14] group-hover:text-blue-400 transition-colors">{business.name}</div>
                       <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
                         <CreditCard className="w-3 h-3" />
                         PLAN {business.plan === 'premium' ? 'PRO' : business.plan?.toUpperCase()}
@@ -315,11 +315,11 @@ export default function SuperAdminScreen() {
             <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 sticky top-6 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-300">
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
                 <div className="flex items-center gap-5">
-                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-2xl font-black text-white shadow-xl shadow-blue-500/20">
+                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-2xl font-black text-[#1a1c14] shadow-xl shadow-blue-500/20">
                      {selectedBusiness.name.substring(0, 1).toUpperCase()}
                    </div>
                    <div>
-                     <h2 className="text-3xl font-black text-white">{selectedBusiness.name}</h2>
+                     <h2 className="text-3xl font-black text-[#1a1c14]">{selectedBusiness.name}</h2>
                      <div className="flex items-center gap-3 mt-1">
                         <span className="text-[10px] bg-slate-800 px-2 py-1 rounded text-slate-400 font-mono">ID: {selectedBusiness.id}</span>
                         <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500">
@@ -361,7 +361,7 @@ export default function SuperAdminScreen() {
                             if (p === 'demo') {
                                 label = 'Demo (15 Días)';
                                 subtext = 'Prueba gratuita temporal';
-                                iconColor = isSelected ? 'text-white' : 'text-amber-500';
+                                iconColor = isSelected ? 'text-[#1a1c14]' : 'text-amber-500';
                             }
 
                             return (
@@ -376,11 +376,11 @@ export default function SuperAdminScreen() {
                                     }`}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${isSelected ? (p === 'demo' ? 'bg-amber-500' : 'bg-blue-500') + ' text-white' : 'bg-slate-700 ' + iconColor}`}>
+                                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${isSelected ? (p === 'demo' ? 'bg-amber-500' : 'bg-blue-500') + ' text-[#1a1c14]' : 'bg-slate-700 ' + iconColor}`}>
                                             <Zap className="w-3.5 h-3.5" />
                                         </div>
                                         <div className="text-left">
-                                            <div className={`text-xs font-bold leading-none ${isSelected ? 'text-white' : 'text-slate-400'}`}>{label}</div>
+                                            <div className={`text-xs font-bold leading-none ${isSelected ? 'text-[#1a1c14]' : 'text-slate-400'}`}>{label}</div>
                                             <div className="text-[9px] text-slate-500 mt-1">{subtext}</div>
                                         </div>
                                     </div>
@@ -398,7 +398,7 @@ export default function SuperAdminScreen() {
                                 <input 
                                     type="number"
                                     placeholder="850 (Default)"
-                                    className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 pl-6 pr-3 text-xs text-white outline-none focus:border-blue-500"
+                                    className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 pl-6 pr-3 text-xs text-[#1a1c14] outline-none focus:border-blue-500"
                                     value={selectedBusiness.custom_price || ''}
                                     onChange={(e) => {
                                         const val = e.target.value ? Number(e.target.value) : null;
@@ -418,7 +418,7 @@ export default function SuperAdminScreen() {
                                     setSaving(false);
                                 }}
                                 disabled={saving}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-[#1a1c14] rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all disabled:opacity-50"
                              >
                                 {saving ? 'Sincronizando...' : 'Guardar Precio'}
                              </button>
@@ -463,7 +463,7 @@ export default function SuperAdminScreen() {
                                    }
                                    loadData();
                                 }}
-                                className="text-[9px] font-bold text-slate-500 hover:text-white uppercase tracking-wider"
+                                className="text-[9px] font-bold text-slate-500 hover:text-[#1a1c14] uppercase tracking-wider"
                             >
                                 Sincronizar Catálogo
                             </button>
@@ -518,7 +518,7 @@ export default function SuperAdminScreen() {
                                    if (defaultFeatures.length > 0) await supabase.from('features').insert(defaultFeatures);
                                    loadData();
                                 }}
-                                className="text-[10px] bg-blue-600 text-white px-3 py-1.5 rounded-lg"
+                                className="text-[10px] bg-blue-600 text-[#1a1c14] px-3 py-1.5 rounded-lg"
                             >
                                 Iniciar Módulos
                             </button>
@@ -534,7 +534,7 @@ export default function SuperAdminScreen() {
                         >
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <span className={`text-[11px] font-bold block ${isEnabled ? 'text-white' : 'text-slate-500'}`}>{feature.name}</span>
+                                    <span className={`text-[11px] font-bold block ${isEnabled ? 'text-[#1a1c14]' : 'text-slate-500'}`}>{feature.name}</span>
                                     <span className="text-[8px] text-slate-600 block">{feature.key}</span>
                                 </div>
                                 <button 
@@ -606,7 +606,7 @@ const GlobalConfigPanel = () => {
                     <CreditCard size={24} />
                 </div>
                 <div>
-                    <h3 className="text-lg font-black uppercase tracking-tight text-white italic">Estrategia de Precios</h3>
+                    <h3 className="text-lg font-black uppercase tracking-tight text-[#1a1c14] italic">Estrategia de Precios</h3>
                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Costo de Membresía Mensual (Global)</p>
                 </div>
             </div>
@@ -618,13 +618,13 @@ const GlobalConfigPanel = () => {
                         type="number"
                         value={price}
                         onChange={(e) => setPrice(Number(e.target.value))}
-                        className="pl-8 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-white font-black w-full md:w-32 focus:ring-2 focus:ring-emerald-500 outline-none"
+                        className="pl-8 pr-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-[#1a1c14] font-black w-full md:w-32 focus:ring-2 focus:ring-emerald-500 outline-none"
                     />
                 </div>
                 <button 
                     onClick={handleSave}
                     disabled={saving}
-                    className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-lg shadow-emerald-500/10 active:scale-95 disabled:opacity-50"
+                    className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-[#1a1c14] rounded-xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-lg shadow-emerald-500/10 active:scale-95 disabled:opacity-50"
                 >
                     {saving ? 'Guardando...' : 'Aplicar Cambio'}
                 </button>
