@@ -263,15 +263,15 @@ export const DashboardScreen: React.FC = () => {
 
     return (
         <div className="h-full w-full relative">
-            <div className="flex-1 text-[#1a1c14] p-6 md:p-10 overflow-y-auto h-full relative font-sans antialiased custom-scrollbar no-print" style={{ backgroundImage: 'url(/bg-koso.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+            <div className="flex-1 text-white p-6 md:p-10 overflow-y-auto h-full relative font-sans antialiased custom-scrollbar no-print" style={{ backgroundImage: 'url(/bg-koso.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
                 <SolarisShader />
 
                 <div className="relative z-10">
                 {/* Header Section */}
                 <div className="flex justify-between items-center mb-12 flex-wrap gap-6 no-print-dashboard">
                     <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2 text-[#1a1c14]">KOSO POS</h1>
-                        <p className="text-[#505530]/55 font-bold text-[10px] uppercase tracking-[0.5em]">Real-time Financial Orchestration</p>
+                        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2 text-white">KOSO POS</h1>
+                        <p className="text-white/80 font-bold text-[10px] uppercase tracking-[0.5em]">Real-time Financial Orchestration</p>
                     </motion.div>
 
                     <div className="flex gap-4 items-center flex-wrap">
@@ -279,21 +279,21 @@ export const DashboardScreen: React.FC = () => {
                             <select
                                 value={timeRange}
                                 onChange={(e) => setTimeRange(e.target.value as TimeRange)}
-                                className="bg-transparent text-[#1a1c14] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-white/[0.05] transition-all"
+                                className="bg-transparent text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-white/[0.05] transition-all"
                             >
-                                <option value="Weekly" className="bg-white">Weekly</option>
-                                <option value="Monthly" className="bg-white">Monthly</option>
-                                <option value="Yearly" className="bg-white">Yearly</option>
-                                <option value="SpecificDay" className="bg-white">Specific Day</option>
-                                <option value="SpecificMonth" className="bg-white">Specific Month</option>
-                                <option value="DateRange" className="bg-white">Date Range</option>
+                                <option value="Weekly" className="text-black bg-white">Weekly</option>
+                                <option value="Monthly" className="text-black bg-white">Monthly</option>
+                                <option value="Yearly" className="text-black bg-white">Yearly</option>
+                                <option value="SpecificDay" className="text-black bg-white">Specific Day</option>
+                                <option value="SpecificMonth" className="text-black bg-white">Specific Month</option>
+                                <option value="DateRange" className="text-black bg-white">Date Range</option>
                             </select>
                             {(timeRange === 'SpecificDay' || timeRange === 'SpecificMonth') && (
                                 <input 
                                     type={timeRange === 'SpecificDay' ? 'date' : 'month'}
                                     value={selectedDate}
                                     onChange={(e) => setSelectedDate(e.target.value)}
-                                    className="bg-white/5 text-[#1a1c14] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer hover:bg-white/[0.08] transition-all"
+                                    className="bg-white/5 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none border-none cursor-pointer hover:bg-white/[0.08] transition-all"
                                 />
                             )}
                             {timeRange === 'DateRange' && (
@@ -302,29 +302,29 @@ export const DashboardScreen: React.FC = () => {
                                         type="date"
                                         value={dateRange.start}
                                         onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                                        className="bg-white/5 text-[#1a1c14] px-2 py-1 rounded-lg text-[9px] font-bold outline-none border-none"
+                                        className="bg-white/5 text-white px-2 py-1 rounded-lg text-[9px] font-bold outline-none border-none"
                                     />
-                                    <span className="text-[9px] text-[#505530]/60 font-bold">to</span>
+                                    <span className="text-[9px] text-white/80 font-bold">to</span>
                                     <input 
                                         type="date"
                                         value={dateRange.end}
                                         onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                                        className="bg-white/5 text-[#1a1c14] px-2 py-1 rounded-lg text-[9px] font-bold outline-none border-none"
+                                        className="bg-white/5 text-white px-2 py-1 rounded-lg text-[9px] font-bold outline-none border-none"
                                     />
                                 </div>
                             )}
                             <select
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value)}
-                                className="bg-transparent text-[#1a1c14] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-white/[0.05] transition-all"
+                                className="bg-transparent text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer hover:bg-white/[0.05] transition-all"
                             >
-                                {CATEGORIES.map(cat => <option key={cat} value={cat} className="bg-white">{cat}</option>)}
+                                {CATEGORIES.map(cat => <option key={cat} value={cat} className="text-black bg-white">{cat}</option>)}
                             </select>
                         </div>
 
                         <button
                             onClick={() => setIsReportOpen(true)}
-                            className="flex items-center gap-3 px-8 py-4 bg-solaris-orange text-[#1a1c14] text-[10px] font-black uppercase tracking-[0.2em] rounded-[24px] shadow-solaris-glow hover:scale-105 transition-all"
+                            className="flex items-center gap-3 px-8 py-4 bg-[#F98359] !text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-[24px] shadow-salmon-glow hover:scale-105 transition-all"
                         >
                             <FileText size={16} />
                             Export Master
@@ -337,8 +337,8 @@ export const DashboardScreen: React.FC = () => {
                     {DYNAMIC_KPIS.map((kpi, idx) => (
                         <GlowCard key={idx} glowColor={kpi.color as any} customSize className="!p-0 border border-white/5 bg-white/70 backdrop-blur-md rounded-[24px]">
                             <div className="p-6">
-                                <kpi.icon size={20} className="text-solaris-orange mb-4" />
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#505530]/60 font-bold mb-1">{kpi.label}</p>
+                                <kpi.icon size={20} className="text-[#F98359] mb-4" />
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/80 font-bold mb-1">{kpi.label}</p>
                                 <p className="text-xl font-black italic tracking-tight">{kpi.value}</p>
                             </div>
                         </GlowCard>
@@ -349,8 +349,8 @@ export const DashboardScreen: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
                     <GlowCard glowColor="orange" customSize className="lg:col-span-2 !p-0 border border-white/5 bg-white/70 backdrop-blur-md rounded-[32px]">
                         <div className="p-8">
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#505530]/60 font-bold mb-1 italic">Proyección Financiera</h3>
-                            <p className="text-xl font-black text-[#1a1c14] italic tracking-tight mb-8">Revenue Analytics</p>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/80 font-bold mb-1 italic">Proyección Financiera</h3>
+                            <p className="text-xl font-black text-white italic tracking-tight mb-8">Revenue Analytics</p>
                             <div className="h-72 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart data={chartData}>
@@ -363,8 +363,8 @@ export const DashboardScreen: React.FC = () => {
                                                 if (active && payload && payload.length) {
                                                     return (
                                                         <div className="bg-[#0a0a0c] border border-white/10 rounded-2xl p-3 shadow-2xl">
-                                                            <p className="text-[#505530]/65 text-[10px] font-bold mb-1">{label}</p>
-                                                            <p className="text-solaris-orange font-black text-sm">
+                                                            <p className="text-white/60 text-[10px] font-bold mb-1">{label}</p>
+                                                            <p className="text-[#F98359] font-black text-sm">
                                                                 Ventas: ${Number(payload[0]?.value || 0).toLocaleString()}
                                                             </p>
                                                         </div>
@@ -382,8 +382,8 @@ export const DashboardScreen: React.FC = () => {
 
                     <GlowCard glowColor="orange" customSize className="!p-0 border border-white/5 bg-white/70 backdrop-blur-md rounded-[32px]">
                         <div className="p-8">
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#505530]/60 font-bold mb-1 italic">Operación</h3>
-                            <p className="text-xl font-black text-[#1a1c14] italic tracking-tight mb-8">Prime Cost</p>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/80 font-bold mb-1 italic">Operación</h3>
+                            <p className="text-xl font-black text-white italic tracking-tight mb-8">Prime Cost</p>
                             <div className="h-72 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={chartData}>
@@ -396,8 +396,8 @@ export const DashboardScreen: React.FC = () => {
                                                 if (active && payload && payload.length) {
                                                     return (
                                                         <div className="bg-[#0a0a0c] border border-white/10 rounded-2xl p-3 shadow-2xl">
-                                                            <p className="text-[#505530]/65 text-[10px] font-bold mb-1">Costo (Prime Cost)</p>
-                                                            <p className="text-solaris-orange font-black text-sm">
+                                                            <p className="text-white/60 text-[10px] font-bold mb-1">Costo (Prime Cost)</p>
+                                                            <p className="text-[#F98359] font-black text-sm">
                                                                 Gastos: ${Number(payload[0]?.value || 0).toLocaleString()}
                                                             </p>
                                                         </div>
@@ -423,22 +423,22 @@ export const DashboardScreen: React.FC = () => {
                                     <ArrowUpRight className="text-green-500" size={20} />
                                     <h3 className="text-lg font-black italic uppercase tracking-tight">Best Sellers Top 10</h3>
                                 </div>
-                                <span className="text-[10px] font-black text-[#505530]/30 uppercase tracking-[0.2em]">{activeOrders.length} Ventas</span>
+                                <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">{activeOrders.length} Ventas</span>
                            </div>
                            <div className="space-y-4">
                                {productStats.top.map((p, i) => (
                                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 group hover:bg-white/5 transition-all">
                                        <div className="flex items-center gap-4">
-                                           <span className="text-solaris-orange font-black italic w-6">#{i+1}</span>
-                                           <span className="text-[11px] font-black uppercase tracking-widest text-[#505530]/70">{p.name}</span>
+                                           <span className="text-[#F98359] font-black italic w-6">#{i+1}</span>
+                                           <span className="text-[11px] font-black uppercase tracking-widest text-white/90">{p.name}</span>
                                        </div>
                                        <div className="text-right">
-                                           <span className="text-[11px] font-black text-[#1a1c14] italic">{p.quantity} Unid.</span>
-                                           <p className="text-[9px] text-[#505530]/30 font-bold tracking-widest group-hover:text-solaris-orange transition-colors">${p.revenue.toLocaleString()}</p>
+                                           <span className="text-[11px] font-black text-white italic">{p.quantity} Unid.</span>
+                                           <p className="text-[9px] text-white/40 font-bold tracking-widest group-hover:text-[#F98359] transition-colors">${p.revenue.toLocaleString()}</p>
                                        </div>
                                    </div>
                                ))}
-                               {productStats.top.length === 0 && <p className="text-center py-10 text-[#505530]/30 uppercase font-black text-[10px] italic">Sin datos de volumen</p>}
+                               {productStats.top.length === 0 && <p className="text-center py-10 text-white/40 uppercase font-black text-[10px] italic">Sin datos de volumen</p>}
                            </div>
                        </div>
                     </GlowCard>
@@ -454,26 +454,26 @@ export const DashboardScreen: React.FC = () => {
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div>
-                                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#505530]/30 mb-4 flex items-center gap-2">
+                                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/40 mb-4 flex items-center gap-2">
                                             <Layers size={12} /> Costo Inventario
                                         </p>
                                         <div className="space-y-3">
                                             {categoryInsights.topInv.map(([cat, val], i) => (
                                                 <div key={i} className="flex justify-between items-center text-[10px]">
-                                                    <span className="font-bold text-[#505530]/55">{cat}</span>
-                                                    <span className="font-black text-solaris-orange">${val.toLocaleString()}</span>
+                                                    <span className="font-bold text-white/60">{cat}</span>
+                                                    <span className="font-black text-[#F98359]">${val.toLocaleString()}</span>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
                                     <div>
-                                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#505530]/30 mb-4 flex items-center gap-2">
+                                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/40 mb-4 flex items-center gap-2">
                                             <Wallet size={12} /> Distribución Gastos
                                         </p>
                                         <div className="space-y-3">
                                             {categoryInsights.topExp.map(([cat, val], i) => (
                                                 <div key={i} className="flex justify-between items-center text-[10px]">
-                                                    <span className="font-bold text-[#505530]/55">{cat}</span>
+                                                    <span className="font-bold text-white/60">{cat}</span>
                                                     <span className="font-black text-red-500">${val.toLocaleString()}</span>
                                                 </div>
                                             ))}
@@ -493,11 +493,11 @@ export const DashboardScreen: React.FC = () => {
                                 <div className="space-y-3">
                                     {productStats.bottom.map((p, i) => (
                                         <div key={i} className="flex justify-between items-center p-3 rounded-lg bg-red-500/[0.03] border border-red-500/10">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-[#505530]/60">{p.name}</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-white/60">{p.name}</span>
                                             <span className="text-[10px] font-black text-red-500">{p.quantity} Unid.</span>
                                         </div>
                                     ))}
-                                    {productStats.bottom.length === 0 && <p className="text-center py-6 text-[#505530]/30 uppercase font-black text-[10px]">Ecosistema Saludable</p>}
+                                    {productStats.bottom.length === 0 && <p className="text-center py-6 text-white/40 uppercase font-black text-[10px]">Ecosistema Saludable</p>}
                                 </div>
                             </div>
                         </GlowCard>

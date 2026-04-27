@@ -251,3 +251,10 @@ body {
 .shadow-olive-glow {
   box-shadow: 0 0 20px rgba(80, 85, 48, 0.2);
 }
+
+/* Force date/month input icons to be white on dark backgrounds */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+}
