@@ -15,6 +15,11 @@ export enum TableStatus {
   DIRTY = 'DIRTY'
 }
 
+export interface MenuItemVariant {
+  name: string;
+  price?: number;
+}
+
 export interface MenuItem {
   id: string;
   name: string;
@@ -26,11 +31,13 @@ export interface MenuItem {
   status: 'ACTIVE' | 'INACTIVE';
   gramaje?: string;
   businessId: string;
+  variants?: MenuItemVariant[];
 }
 
 export interface OrderItem extends MenuItem {
   quantity: number;
   notes?: string;
+  selectedVariant?: MenuItemVariant;
 }
 
 export enum OrderSource {

@@ -1,4 +1,4 @@
-import { 
+﻿import { 
   getAll, put, deleteRecord, enqueueSyncOp, 
   getPendingSyncOps, updateSyncOp, clearSyncedOps, 
   getSyncQueueCount, SyncOperation, updateRecordSyncStatus, getById

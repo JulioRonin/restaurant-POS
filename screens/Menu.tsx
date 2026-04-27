@@ -20,7 +20,7 @@ import {
   Layers
 } from 'lucide-react';
 
-const BASE_CATEGORIES = ['Entradas', 'Plato Fuerte', 'Bebidas', 'Postres', 'Extras', 'Tacos', 'Tortas', 'General'];
+const BASE_CATEGORIES = ['Variante', 'Entradas', 'Plato Fuerte', 'Bebidas', 'Postres', 'Extras', 'Tacos', 'Tortas', 'General'];
 
 export const MenuScreen: React.FC = () => {
     const { menuItems, addItem, updateItem, deleteItem, toggleStatus, importCSV, clearMenu } = useMenu();
@@ -78,7 +78,7 @@ export const MenuScreen: React.FC = () => {
         setFormStatus('ACTIVE');
         setIsAddingNewCategory(false);
         setNewCategoryName('');
-        setVariants([]);
+        setVariants(item.variants?.map(v => ({ name: v.name, price: v.price?.toString() || "" })) || []);
         setIsAddModalOpen(true);
     };
 
@@ -89,7 +89,7 @@ export const MenuScreen: React.FC = () => {
         setFormStatus((item.status as 'ACTIVE' | 'INACTIVE') || 'ACTIVE');
         setIsAddingNewCategory(false);
         setNewCategoryName('');
-        setVariants([]);
+        setVariants(item.variants?.map(v => ({ name: v.name, price: v.price?.toString() || "" })) || []);
         setIsAddModalOpen(true);
     };
 
@@ -121,7 +121,11 @@ export const MenuScreen: React.FC = () => {
             gramaje: formData.get('gramaje') as string,
             status: formStatus,
             image: imagePreview || editingItem?.image || `https://picsum.photos/seed/${formData.get('name')}/400/300`,
-            inventoryLevel: 4
+            inventoryLevel: 4,
+            variants: variants.filter(v => v.name.trim()).map(v => ({
+                name: v.name.trim(),
+                price: v.price ? parseFloat(v.price) : undefined
+            }))
         };
 
         if (editingItem) {
@@ -129,24 +133,9 @@ export const MenuScreen: React.FC = () => {
         } else {
             addItem(data);
         }
-        // Save variants as separate menu items under "Variante" category
-        for (const v of variants) {
-            if (v.name.trim() && v.price) {
-                addItem({
-                    name: v.name.trim(),
-                    category: 'Variante',
-                    price: parseFloat(v.price),
-                    description: `Variante de ${data.name}`,
-                    gramaje: '',
-                    status: 'ACTIVE',
-                    image: data.image,
-                    inventoryLevel: 4
-                });
-            }
-        }
         setIsAddModalOpen(false);
         setEditingItem(null);
-        setVariants([]);
+        setVariants(item.variants?.map(v => ({ name: v.name, price: v.price?.toString() || "" })) || []);
     };
 
     const handleImport = async () => {

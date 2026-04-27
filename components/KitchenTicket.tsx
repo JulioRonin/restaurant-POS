@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Order, OrderItem } from '../types';
 import { BusinessSettings } from '../contexts/SettingsContext';
 
@@ -40,7 +40,12 @@ export const KitchenTicket: React.FC<KitchenTicketProps> = ({ order, settings })
                 {item.quantity}
               </span>
               <div className="flex-1">
-                <span className="text-lg font-black uppercase leading-none">{item.name}</span>
+                                <span className="text-lg font-black uppercase leading-none">{item.name}</span>
+                {item.selectedVariant && (
+                  <div className="bg-black text-white px-2 py-0.5 mt-1 inline-block">
+                    <span className="text-sm font-black">OPCIÓN: {item.selectedVariant.name.toUpperCase()}</span>
+                  </div>
+                )}
                 
                 {/* Notes are critical for Kitchen */}
                 {item.notes && (
@@ -58,7 +63,7 @@ export const KitchenTicket: React.FC<KitchenTicketProps> = ({ order, settings })
       {/* Footer for kitchen */}
       <div className="mt-4 text-center border-t-2 border-black pt-2">
         <p className="text-[10px] font-bold">--- FIN DE COMANDA ---</p>
-        <p className="text-[9px] mt-1">Solaris POS</p>
+        <p className="text-[9px] mt-1">KŌSO POS</p>
         <p className="text-[9px]">Ronin Studio</p>
       </div>
 

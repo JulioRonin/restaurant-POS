@@ -43,7 +43,7 @@ export const POSScreen: React.FC = () => {
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [selectedSource, setSelectedSource] = useState<OrderSource>(OrderSource.DINE_IN);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showTableModal, setShowTableModal] = useState(false);
+  const [showTableModal, setShowTableModal] = useState(false); const [variantItem, setVariantItem] = useState<MenuItem | null>(null);
   const [printerReady, setPrinterReady] = useState(false);
 
   useEffect(() => {
@@ -84,7 +84,7 @@ export const POSScreen: React.FC = () => {
 
   const handleSendOrder = async () => {
     if (cart.length === 0) return;
-    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const total = cart.reduce((sum, item) => { const price = item.selectedVariant?.price !== undefined ? item.selectedVariant.price : item.price; return sum + (price * item.quantity); }, 0);
     const newOrder: Order = {
         id: crypto.randomUUID(),
         tableId: selectedTable?.id || 'COUNTER',
@@ -122,7 +122,7 @@ export const POSScreen: React.FC = () => {
 
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const total = cart.reduce((sum, item) => { const price = item.selectedVariant?.price !== undefined ? item.selectedVariant.price : item.price; return sum + (price * item.quantity); }, 0);
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
@@ -321,11 +321,11 @@ export const POSScreen: React.FC = () => {
                                         {item.quantity}
                                     </div>
                                     <div className="flex-1">
-                                        <h4 className="font-black italic text-[#505530] uppercase tracking-tight text-[13px] mb-0.5 leading-tight">{item.name}</h4>
-                                        <p className="text-[8px] font-black text-[#505530]/45 uppercase tracking-widest">Val: ${item.price}</p>
+                                        <h4 className="font-black italic text-[#505530] uppercase tracking-tight text-[13px] mb-0.5 leading-tight">{item.name} {item.selectedVariant && <span className="text-[#F98359] ml-1">({item.selectedVariant.name})</span>}</h4>
+                                        <p className="text-[8px] font-black text-[#505530]/45 uppercase tracking-widest">Val: ${item.selectedVariant?.price !== undefined ? item.selectedVariant.price : item.price}</p>
                                     </div>
                                 </div>
-                                <span className="text-sm font-black italic text-[#505530] tracking-widest">${(item.price * item.quantity).toFixed(0)}</span>
+                                <span className="text-sm font-black italic text-[#505530] tracking-widest">${((item.selectedVariant?.price !== undefined ? item.selectedVariant.price : item.price) * item.quantity).toFixed(0)}</span>
                              </div>
 
                              <input 
@@ -403,6 +403,36 @@ export const POSScreen: React.FC = () => {
                     <h2 className="text-2xl sm:text-4xl font-black italic text-[#505530] uppercase tracking-tighter mb-4 leading-tight">Transmission Successful</h2>
                     <p className="text-[#505530]/45 font-bold text-[9px] sm:text-[11px] uppercase tracking-[0.3em]">Kitchen Unit Acknowledged Packet</p>
                 </div>
+            </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Variant Selection Modal */}
+      <AnimatePresence>
+        {variantItem && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 backdrop-blur-2xl p-4">
+                <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-[#FAFAF3] border border-[#505530]/10 rounded-[40px] w-full max-w-lg p-10 shadow-2xl relative overflow-hidden">
+                    <div className="flex justify-between items-start mb-10">
+                        <div>
+                            <h2 className="text-3xl font-black italic uppercase tracking-tighter text-[#505530] mb-2">{variantItem.name}</h2>
+                            <p className="text-[10px] text-[#505530]/40 font-black uppercase tracking-[0.4em] italic">Select Option / Variante</p>
+                        </div>
+                        <button onClick={() => setVariantItem(null)} className="w-12 h-12 rounded-2xl bg-[#505530]/5 text-[#505530]/40 hover:text-[#505530] transition-all flex items-center justify-center"><X size={24} /></button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        {variantItem.variants?.map((v, i) => (
+                            <button
+                                key={i}
+                                onClick={() => addToCart(variantItem, v)}
+                                className="p-6 rounded-[24px] border-2 border-[#505530]/5 hover:border-[#F98359] hover:bg-[#F98359]/5 flex justify-between items-center group transition-all"
+                            >
+                                <span className="font-black text-xl italic uppercase text-[#505530] group-hover:text-[#F98359] transition-colors">{v.name}</span>
+                                {v.price && <span className="text-lg font-black text-[#505530]/40">${v.price}</span>}
+                            </button>
+                        ))}
+                    </div>
+                </motion.div>
             </motion.div>
         )}
       </AnimatePresence>
