@@ -60,7 +60,7 @@ export const MobileNavbar: React.FC = () => {
             <div
                 ref={scrollRef}
                 style={{
-                    background: 'rgba(10,10,10,0.95)',
+                    background: 'rgba(26,28,20,0.97)',
                     backdropFilter: 'blur(24px)',
                     WebkitBackdropFilter: 'blur(24px)',
                     border: '1px solid rgba(255,255,255,0.12)',
@@ -101,11 +101,11 @@ export const MobileNavbar: React.FC = () => {
                                     height: '58px',
                                     flexShrink: 0,
                                     borderRadius: '16px',
-                                    background: isActive ? '#f97316' : 'transparent',
-                                    color: isActive ? '#fff' : 'rgba(255,255,255,0.45)',
+                                    background: isActive ? '#F98359' : 'transparent',
+                                    color: isActive ? '#FAFAF3' : 'rgba(250,250,243,0.4)',
                                     transition: 'all 0.2s ease',
                                     transform: isActive ? 'scale(1.05)' : 'scale(1)',
-                                    boxShadow: isActive ? '0 0 20px rgba(249,115,22,0.5)' : 'none',
+                                    boxShadow: isActive ? '0 0 20px rgba(249,131,89,0.5)' : 'none',
                                 }}
                             >
                                 <item.icon size={20} />

@@ -121,7 +121,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
     <aside
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
-      className={`hidden lg:flex ${isExpanded ? 'w-64' : 'w-24'} h-full bg-[#111827] flex-col py-8 z-50 border-r border-white/5 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] relative shadow-[20px_0_50px_rgba(0,0,0,0.8)]`}
+      className={`hidden lg:flex ${isExpanded ? 'w-64' : 'w-24'} h-full bg-[#1a1c14] flex-col py-8 z-50 border-r border-[#505530]/20 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] relative shadow-[20px_0_50px_rgba(0,0,0,0.8)]`}
     >
       {/* Brand Header */}
       <div className={`mb-12 p-2 flex flex-col items-center ${isExpanded ? 'px-8 w-full' : 'justify-center'}`}>
@@ -131,17 +131,17 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
         </div>
         
         <div className="flex items-center gap-4 w-full group/header relative">
-          <div className="w-12 h-12 min-w-[48px] bg-white/[0.03] border border-white/10 rounded-solaris flex items-center justify-center overflow-hidden transition-all group-hover/header:border-solaris-orange/50 shadow-solaris-glow">
+          <div className="w-12 h-12 min-w-[48px] bg-[#505530]/20 border border-[#505530]/40 rounded-solaris flex items-center justify-center overflow-hidden transition-all group-hover/header:border-[#F98359]/50 shadow-koso-glow">
             {settings.logoUrl ? (
               <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover filter contrast-125" />
             ) : (
-              <Zap className="text-solaris-orange" size={24} />
+              <img src="/koso-logo.png" alt="KŌSO" className="w-full h-full object-cover" />
             )}
           </div>
           {isExpanded && (
             <div className="flex-1 overflow-hidden">
                <div className="flex items-center justify-between">
-                <h1 className="font-black text-white leading-tight uppercase tracking-tighter text-xs truncate italic">{settings.name || 'Solaris OS'}</h1>
+                <h1 className="font-black text-white leading-tight uppercase tracking-tighter text-xs truncate italic">KŌSO POS</h1>
                 {isSuperAdmin && (
                    <button 
                      onClick={async () => {
@@ -158,7 +158,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
                    </button>
                 )}
                </div>
-               <p className="text-[8px] text-white/30 font-black uppercase tracking-[0.4em] mt-1 italic">Core Control</p>
+               <p className="text-[8px] text-[#F98359]/50 font-black uppercase tracking-[0.4em] mt-1 italic">Restaurant POS</p>
             </div>
           )}
         </div>
@@ -244,7 +244,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
       </nav>
 
       {/* Network Operator Status */}
-      <div className="w-full px-4 py-8 border-t border-white/5 mt-auto bg-[#111827]">
+      <div className="w-full px-4 py-8 border-t border-[#505530]/20 mt-auto bg-[#1a1c14]">
         <div 
           className="flex items-center justify-between group cursor-pointer bg-white/[0.02] p-4 rounded-solaris border border-white/5 hover:border-solaris-orange/20 transition-all shadow-xl" 
           onClick={onLock}

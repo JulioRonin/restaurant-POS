@@ -14,24 +14,34 @@ export default {
       },
       colors: {
         solaris: {
-          black: '#030303',
-          orange: '#f97316',
-          dark: '#0a0a0b',
-          accent: '#fb923c',
+          black: '#1a1c14',
+          orange: '#F98359',
+          dark: '#12140d',
+          accent: '#e8724a',
+        },
+        koso: {
+          olive:   '#505530',
+          cream:   '#FAFAF3',
+          orange:  '#F98359',
+          purple:  '#C694DB',
+          dark:    '#12140d',
+          surface: '#1e2118',
         },
         primary: {
-          DEFAULT: '#f97316',
-          dark: '#ea580c',
-          light: '#fb923c',
+          DEFAULT: '#F98359',
+          dark:    '#e8724a',
+          light:   '#fab08a',
         }
       },
       borderRadius: {
         'solaris': '2rem',
-        '3xl': '2rem', // Mapping standard 3xl to 32px as well
+        '3xl': '2rem',
       },
       boxShadow: {
-        'solaris': '0 0 40px rgba(249, 115, 22, 0.1)',
-        'solaris-glow': '0 0 20px rgba(249, 115, 22, 0.4)',
+        'solaris':      '0 0 40px rgba(249, 131, 89, 0.12)',
+        'solaris-glow': '0 0 20px rgba(249, 131, 89, 0.45)',
+        'koso-glow':    '0 0 24px rgba(249, 131, 89, 0.45)',
+        'olive-glow':   '0 0 20px rgba(80, 85, 48, 0.5)',
       }
     },
   },

@@ -4,9 +4,11 @@
 
 /* Base Styles */
 :root {
-  --primary-color: #f97316;
-  --secondary-color: #fb923c;
-  --primary-rgb: 249, 115, 22;
+  --primary-color: #F98359;
+  --secondary-color: #C694DB;
+  --olive-color: #505530;
+  --cream-color: #FAFAF3;
+  --primary-rgb: 249, 131, 89;
 }
 
 body {
