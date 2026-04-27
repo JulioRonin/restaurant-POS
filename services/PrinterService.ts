@@ -1,4 +1,4 @@
-import ReceiptPrinterEncoder from 'esc-pos-encoder';
+﻿import ReceiptPrinterEncoder from 'esc-pos-encoder';
 
 class PrinterService {
   private device: any = null;
@@ -521,7 +521,7 @@ class PrinterService {
         .newline()
         .text(center('--- CIERRE DE TURNO ---'))
         .newline()
-        .text(center('Solaris POS'))
+        .text(center('KŌSO POS'))
         .newline()
         .text(center('Ronin Studio'))
         .newline()
@@ -632,7 +632,7 @@ class PrinterService {
         .newline()
         .text(center('--- FIN DE COMANDA ---'))
         .newline()
-        .text(center('Solaris POS'))
+        .text(center('KŌSO POS'))
         .newline()
         .text(center('Ronin Studio'))
         .newline()

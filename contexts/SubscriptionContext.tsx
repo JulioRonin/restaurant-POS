@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { SubscriptionStatus, PaymentRecord } from '../types';
 import { getSupabase } from '../services/auth';
 import { useUser } from './UserContext';
@@ -230,7 +230,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
           businessName: authProfile.full_name,
           amount: membershipPrice,
           type: 'SUBSCRIPTION',
-          planName: 'Solaris POS - Renovación Mensual'
+          planName: 'KŌSO POS - Renovación Mensual'
         }),
       });
 

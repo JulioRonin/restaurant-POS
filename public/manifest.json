@@ -1,25 +1,19 @@
 {
-  "name": "Solaris POS - Intelligent Terminal",
-  "short_name": "Solaris POS",
-  "description": "Sistema de Punto de Venta Inteligente - Solaris Design System",
+  "name": "KŌSO RESTAURANT POS",
+  "short_name": "KŌSO POS",
+  "description": "Sistema de Punto de Venta Inteligente - KŌSO",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#030303",
-  "theme_color": "#f97316",
+  "background_color": "#FAFAF3",
+  "theme_color": "#505530",
   "orientation": "any",
   "categories": ["business", "productivity"],
   "icons": [
     {
-      "src": "/icons/icon-512.png",
+      "src": "/icon-512.jpg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/jpeg",
       "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
     }
   ]
 }

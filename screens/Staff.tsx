@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { Employee } from '../types';
 import jsPDF from 'jspdf';
@@ -86,7 +86,7 @@ export const StaffScreen: React.FC = () => {
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
         pdf.addImage(imgData, 'PNG', 10, 10, 277, (canvas.height * 277) / canvas.width);
-        pdf.save(`Staff_Solaris_${new Date().toISOString().slice(0, 10)}.pdf`);
+        pdf.save(`Staff_KŌSO_${new Date().toISOString().slice(0, 10)}.pdf`);
     };
 
     if (isAuthenticating) {

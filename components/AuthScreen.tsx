@@ -54,7 +54,7 @@ export const AuthScreen: React.FC = () => {
                         transition={{ delay: 0.2 }}
                         className="inline-flex items-center justify-center w-16 h-16 md:w-24 md:h-24 rounded-solaris bg-[#505530]/10 border border-[#505530]/20 mb-4 md:mb-8 overflow-hidden"
                     >
-                        <img src="/koso-logo.png" alt="KŌSO" className="w-full h-full object-cover" />
+                        <img src="/koso-logo.jpg" alt="KŌSO" className="w-full h-full object-cover" />
                     </motion.div>
                     <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter text-[#FAFAF3] !text-[#FAFAF3] uppercase mb-2 md:mb-4 drop-shadow-lg">KŌSO POS</h1>
                     <p className="text-white/60 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.6em] italic">Restaurant Management System</p>

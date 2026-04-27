@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useUser } from '../contexts/UserContext';
 
@@ -60,7 +60,7 @@ export const SubscriptionGuard: React.FC<{ children: React.ReactNode }> = ({ chi
                 {isDemoExpired
                     ? "Tu periodo de prueba de 15 días ha terminado. \n Contacta a soporte para activar un plan permanente."
                     : isExpired 
-                        ? "Tu licencia de Solaris POS ha expirado. \n Regulariza tu pago mensual para continuar operando."
+                        ? "Tu licencia de KŌSO POS ha expirado. \n Regulariza tu pago mensual para continuar operando."
                         : "Detectamos un atraso en el pago de tu hardware. \n Regulariza tu saldo para desbloquear la estación."
                 }
             </p>

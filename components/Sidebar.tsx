@@ -136,7 +136,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
             {settings.logoUrl ? (
               <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover filter contrast-125" />
             ) : (
-              <img src="/koso-logo.png" alt="KŌSO" className="w-full h-full object-cover" />
+              <img src="/koso-logo.jpg" alt="KŌSO" className="w-full h-full object-cover" />
             )}
           </div>
           {isExpanded && (

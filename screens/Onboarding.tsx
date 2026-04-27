@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CreditCard, 
   Store, 
@@ -242,7 +242,7 @@ export default function OnboardingScreen() {
             <ChefHat size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Configuración Solaris</h1>
+            <h1 className="text-xl font-bold text-slate-900">Configuración KŌSO</h1>
             <p className="text-sm text-slate-500">Paso {steps.indexOf(currentStep) + 1} de {steps.length}</p>
           </div>
         </div>
@@ -420,7 +420,7 @@ export default function OnboardingScreen() {
                       value={restaurantInfo.name}
                       onChange={e => setRestaurantInfo({...restaurantInfo, name: e.target.value})}
                       className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                      placeholder="Ej. Sushi Solaris"
+                      placeholder="Ej. Sushi KŌSO"
                     />
                   </div>
                   <div className="space-y-1">

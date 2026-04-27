@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+﻿import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
@@ -15,7 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { businessId, businessName, type = 'SUBSCRIPTION', planName = 'Solaris POS Premium' } = req.body;
+  const { businessId, businessName, type = 'SUBSCRIPTION', planName = 'KŌSO POS Premium' } = req.body;
 
   if (!businessId) {
     return res.status(400).json({ error: 'Missing businessId' });
@@ -50,7 +50,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             currency: 'mxn',
             product_data: {
               name: `${planName}`,
-              description: type === 'SUBSCRIPTION' ? 'Renovación de Licencia Solaris POS (30 días)' : 'Pago de Equipo/Hardware Solaris POS',
+              description: type === 'SUBSCRIPTION' ? 'Renovación de Licencia KŌSO POS (30 días)' : 'Pago de Equipo/Hardware KŌSO POS',
             },
             unit_amount: Math.round(finalAmount * 100), // Stripe expects cents
           },

@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Order, Expense } from '../types';
 import { BusinessSettings } from '../contexts/SettingsContext';
 
@@ -132,7 +132,7 @@ export const CashCutTicket: React.FC<CashCutTicketProps> = ({
       <div className="flex flex-col items-center text-center border-t border-black border-dashed pt-4 mt-6">
         <p className="text-[10px] font-bold">--- CIERRE DE TURNO ---</p>
         <p className="text-[9px] mt-1">Soporte: Ronin Studio</p>
-        <p className="text-[9px]">Solaris POS</p>
+        <p className="text-[9px]">KŌSO POS</p>
       </div>
 
       {/* Print Styles */}
