@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { MenuItem, OrderItem, Order, OrderStatus, Table, OrderSource } from '../types';
 import { useOrders } from '../contexts/OrderContext';
@@ -159,7 +159,7 @@ export const POSScreen: React.FC = () => {
                     <button
                         key={menu}
                         onClick={() => setActiveMenu(menu)}
-                        className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-[7px] font-black uppercase tracking-widest transition-all ${activeMenu === menu ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-white/30 hover:text-[#1a1c14] hover:bg-white/5'}`}
+                        className={`flex-1 sm:flex-none px-3 py-1.5 rounded-md text-[7px] font-black uppercase tracking-widest transition-all ${activeMenu === menu ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-[#505530]/45 hover:text-[#1a1c14] hover:bg-white/5'}`}
                     >
                         {menu}
                     </button>
@@ -167,13 +167,13 @@ export const POSScreen: React.FC = () => {
             </div>
 
             <div className="flex-1 w-full relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 group-focus-within:text-solaris-orange transition-colors" size={12} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#505530]/45 group-focus-within:text-solaris-orange transition-colors" size={12} />
                 <input 
                     type="text" 
-                    placeholder="Search assets..." 
+                    placeholder="Buscar platillo..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 bg-white/[0.03] border border-white/5 rounded-lg text-[#1a1c14] font-bold outline-none focus:border-solaris-orange/40 focus:bg-white/[0.05] shadow-inner transition-all text-[10px] placeholder:text-white/20 h-[32px]"
+                    className="w-full pl-8 pr-3 py-1.5 bg-[#F0F0E8] border border-[#505530]/15 rounded-lg text-[#505530] font-bold outline-none focus:border-[#F98359]/60 transition-all text-[10px] placeholder:text-[#505530]/30 h-[32px]"
                 />
             </div>
 
@@ -188,7 +188,7 @@ export const POSScreen: React.FC = () => {
                 {activeEmployee && (
                     <div className="flex items-center gap-2">
                         <div className="text-right hidden sm:block">
-                            <p className="text-[6px] font-black text-white/30 uppercase tracking-widest leading-none mb-0.5">Op</p>
+                            <p className="text-[6px] font-black text-[#505530]/45 uppercase tracking-widest leading-none mb-0.5">Op</p>
                             <p className="text-[9px] font-black text-[#1a1c14] italic leading-none">{activeEmployee.name}</p>
                         </div>
                         <img src={activeEmployee.image} className="w-8 h-8 rounded-lg object-cover border border-white/10 shadow-lg" alt="" />
@@ -199,10 +199,10 @@ export const POSScreen: React.FC = () => {
         </div>
 
         {/* Categories (Responsive scrolling) */}
-        <div className="mb-4 flex gap-2 overflow-x-auto no-scrollbar pb-1">
+        <div className="mb-3 flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
             <button
                 onClick={() => setActiveCategory('All')}
-                className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${activeCategory === 'All' ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow scale-105' : 'bg-white/[0.03] text-white/40 border border-white/5 hover:bg-white/5'}`}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${activeCategory === 'All' ? 'bg-[#505530] text-[#505530] shadow-olive-glow scale-105' : 'bg-white text-[#505530]/60 border border-[#505530]/15 hover:bg-[#505530]/10'}`}
             >
                 Global
             </button>
@@ -210,7 +210,7 @@ export const POSScreen: React.FC = () => {
                 <button
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
-                    className={`flex-shrink-0 px-4 py-2.5 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all ${activeCategory === cat ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow scale-105' : 'bg-white/[0.03] text-white/40 border border-white/5 hover:bg-white/5'}`}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${activeCategory === cat ? 'bg-[#505530] text-[#505530] shadow-olive-glow scale-105' : 'bg-white text-[#505530]/60 border border-[#505530]/15 hover:bg-[#505530]/10'}`}
                 >
                     {cat}
                 </button>
@@ -222,34 +222,31 @@ export const POSScreen: React.FC = () => {
             className="flex-1 min-h-0"
             style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}
         >
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-40 lg:pb-10">
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-3 pb-40 lg:pb-6">
                 {filteredItems.map(item => (
                     <motion.div 
                         key={item.id} 
                         layout 
-                        whileHover={{ y: -3 }}
-                        whileTap={{ scale: 0.98 }}
+                        whileHover={{ y: -2, scale: 1.02 }}
+                        whileTap={{ scale: 0.97 }}
                         onClick={() => addToCart(item)}
-                        className="cursor-pointer h-full"
+                        className="cursor-pointer"
                     >
-                        <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white overflow-hidden group shadow-2xl rounded-solaris h-full">
-                           <div className="relative h-40 sm:h-48 overflow-hidden">
-                                <img src={item.image} className="w-full h-full object-cover filter contrast-125 transition-transform duration-700 group-hover:scale-110" alt="" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0b] via-transparent to-transparent opacity-80" />
-                                <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
-                                    <div>
-                                        <h3 className="text-[12px] sm:text-[13px] font-black uppercase italic text-[#1a1c14] tracking-tighter leading-tight mb-0.5">{item.name}</h3>
-                                        <p className="text-[8px] font-black uppercase text-white/40 tracking-widest">{item.category}</p>
-                                    </div>
-                                    <div className="bg-solaris-orange text-[#1a1c14] p-2 rounded-lg shadow-solaris-glow group-hover:scale-110 transition-transform">
-                                        <Plus size={14} />
-                                    </div>
+                        <div className="bg-white border border-[#505530]/12 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-[#F98359]/40 transition-all group">
+                           <div className="relative h-24 sm:h-28 overflow-hidden">
+                                <img src={item.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
+                                <div className="absolute top-1.5 right-1.5 bg-[#505530]/90 backdrop-blur-sm px-2 py-0.5 rounded-md">
+                                    <span className="text-[9px] font-black text-[#505530] tracking-wider">${item.price.toFixed(0)}</span>
                                 </div>
-                                <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-lg border border-white/10">
-                                    <span className="text-[10px] sm:text-xs font-black italic text-solaris-orange tracking-widest">${item.price.toFixed(0)}</span>
+                                <div className="absolute bottom-1.5 right-1.5 bg-[#F98359] text-[#505530] p-1 rounded-lg shadow-md opacity-0 group-hover:opacity-100 transition-all">
+                                    <Plus size={10} />
                                 </div>
                            </div>
-                        </GlowCard>
+                           <div className="p-2">
+                               <h3 className="text-[9px] font-black uppercase text-[#505530] tracking-tight leading-tight truncate">{item.name}</h3>
+                               <p className="text-[7px] font-bold text-[#505530]/40 uppercase tracking-widest truncate mt-0.5">{item.category}</p>
+                           </div>
+                        </div>
                     </motion.div>
                 ))}
             </div>
@@ -281,7 +278,7 @@ export const POSScreen: React.FC = () => {
         {/* Mobile Header for Cart */}
         <div className="lg:hidden flex items-center justify-between p-4 border-b border-white/10">
             <h3 className="text-xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Order Queue</h3>
-            <button onClick={() => setIsCartOpen(false)} className="p-2 text-white/40 hover:text-[#1a1c14]">
+            <button onClick={() => setIsCartOpen(false)} className="p-2 text-[#505530]/55 hover:text-[#1a1c14]">
                 <X size={24} />
             </button>
         </div>
@@ -295,9 +292,9 @@ export const POSScreen: React.FC = () => {
                    <h2 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter text-[#1a1c14] group-hover:text-solaris-orange transition-colors truncate">
                         {selectedTable ? selectedTable.name : 'Select Node'}
                    </h2>
-                   <p className="text-[8px] font-black uppercase text-white/20 tracking-widest mt-1">Terminal Secure Protocol</p>
+                   <p className="text-[8px] font-black uppercase text-[#505530]/30 tracking-widest mt-1">Terminal Secure Protocol</p>
                 </div>
-                <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-white/20 group-hover:text-solaris-orange transition-all shadow-inner shrink-0">
+                <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-[#505530]/30 group-hover:text-solaris-orange transition-all shadow-inner shrink-0">
                     <TableIcon size={20} className="md:w-7 md:h-7" />
                 </div>
             </div>
@@ -306,7 +303,7 @@ export const POSScreen: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 md:space-y-6 custom-scrollbar">
             <AnimatePresence>
                 {cart.length === 0 ? (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col items-center justify-center text-white/5">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col items-center justify-center text-[#505530]/5">
                         <ShoppingCart size={60} className="mb-6 opacity-20" />
                         <p className="text-[9px] font-black uppercase tracking-[0.5em] italic">Queue Empty</p>
                     </motion.div>
@@ -325,7 +322,7 @@ export const POSScreen: React.FC = () => {
                                     </div>
                                     <div className="flex-1">
                                         <h4 className="font-black italic text-[#1a1c14] uppercase tracking-tight text-[13px] mb-0.5 leading-tight">{item.name}</h4>
-                                        <p className="text-[8px] font-black text-white/30 uppercase tracking-widest">Val: ${item.price}</p>
+                                        <p className="text-[8px] font-black text-[#505530]/45 uppercase tracking-widest">Val: ${item.price}</p>
                                     </div>
                                 </div>
                                 <span className="text-sm font-black italic text-[#1a1c14] tracking-widest">${(item.price * item.quantity).toFixed(0)}</span>
@@ -338,12 +335,12 @@ export const POSScreen: React.FC = () => {
                                 onChange={(e) => {
                                     setCart(prev => prev.map(i => i.id === item.id ? { ...i, notes: e.target.value } : i));
                                 }}
-                                className="w-full bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2 text-[9px] placeholder:text-white/10 text-white/60 font-medium focus:outline-none focus:border-solaris-orange/20 italic transition-all"
+                                className="w-full bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2 text-[9px] placeholder:text-[#505530]/10 text-[#505530]/60 font-medium focus:outline-none focus:border-solaris-orange/20 italic transition-all"
                              />
 
                              <div className="mt-4 flex justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 bg-white/5 rounded-lg text-white/40 hover:text-[#1a1c14] hover:bg-white/10 transition-all flex items-center justify-center"><Minus size={14} /></button>
-                                <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 bg-white/5 rounded-lg text-white/40 hover:text-[#1a1c14] hover:bg-white/10 transition-all flex items-center justify-center"><Plus size={14} /></button>
+                                <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 bg-white/5 rounded-lg text-[#505530]/55 hover:text-[#1a1c14] hover:bg-white/10 transition-all flex items-center justify-center"><Minus size={14} /></button>
+                                <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 bg-white/5 rounded-lg text-[#505530]/55 hover:text-[#1a1c14] hover:bg-white/10 transition-all flex items-center justify-center"><Plus size={14} /></button>
                                 <button onClick={() => setCart(prev => prev.filter(i => i.id !== item.id))} className="w-8 h-8 bg-red-500/10 rounded-lg text-red-500/40 hover:text-red-500 hover:bg-red-500/20 transition-all flex items-center justify-center"><Trash2 size={14} /></button>
                              </div>
                         </motion.div>
@@ -355,7 +352,7 @@ export const POSScreen: React.FC = () => {
         <div className="p-4 md:p-8 bg-white border-t border-white/10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
             <div className="grid grid-cols-2 gap-2 md:gap-4 mb-6 md:mb-10">
                 {[
-                    { id: OrderSource.TO_GO, icon: ShoppingBag, label: 'Carry out', color: 'bg-white/5 border-white/5 text-white/40' },
+                    { id: OrderSource.TO_GO, icon: ShoppingBag, label: 'Carry out', color: 'bg-white/5 border-white/5 text-[#505530]/55' },
                     { id: OrderSource.RAPPI, icon: Truck, label: 'Grid/Rappi', color: 'bg-[#FF3C5C]/5 border-[#FF3C5C]/10 text-[#FF3C5C]/60' },
                     { id: OrderSource.UBER_EATS, icon: ChefHat, label: 'Uber Sys', color: 'bg-[#06C167]/5 border-[#06C167]/10 text-[#06C167]/60' },
                     { id: OrderSource.DINE_IN, icon: TableIcon, label: 'In-Node', color: 'bg-solaris-orange/10 border-solaris-orange/10 text-solaris-orange' }
@@ -373,12 +370,12 @@ export const POSScreen: React.FC = () => {
 
             <div className="flex justify-between items-end mb-6 md:mb-10 px-2">
                 <div>
-                    <p className="text-[8px] font-black uppercase text-white/20 tracking-[0.4em] mb-1">Payload Value</p>
+                    <p className="text-[8px] font-black uppercase text-[#505530]/30 tracking-[0.4em] mb-1">Payload Value</p>
                     <p className="text-2xl md:text-4xl font-black italic tracking-tighter text-[#1a1c14] uppercase italic">${total.toFixed(2)}</p>
                 </div>
                 <div className="text-right hidden sm:block">
                     <p className="text-[8px] font-black text-solaris-orange uppercase tracking-widest mb-1 shadow-solaris-glow">Protocol Secured</p>
-                    <p className="text-[9px] text-white/20 font-bold italic">Node Output</p>
+                    <p className="text-[9px] text-[#505530]/30 font-bold italic">Node Output</p>
                 </div>
             </div>
 
@@ -404,7 +401,7 @@ export const POSScreen: React.FC = () => {
                         <CheckCircle2 size={40} className="text-[#1a1c14] sm:w-14 sm:h-14" />
                     </motion.div>
                     <h2 className="text-2xl sm:text-4xl font-black italic text-[#1a1c14] uppercase tracking-tighter mb-4 leading-tight">Transmission Successful</h2>
-                    <p className="text-white/30 font-bold text-[9px] sm:text-[11px] uppercase tracking-[0.3em]">Kitchen Unit Acknowledged Packet</p>
+                    <p className="text-[#505530]/45 font-bold text-[9px] sm:text-[11px] uppercase tracking-[0.3em]">Kitchen Unit Acknowledged Packet</p>
                 </div>
             </motion.div>
         )}
@@ -419,9 +416,9 @@ export const POSScreen: React.FC = () => {
                     <div className="flex justify-between items-center mb-8 sm:mb-12">
                         <div>
                             <h2 className="text-2xl sm:text-3xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Node Grid Matrix</h2>
-                            <p className="text-[9px] text-white/20 font-black uppercase tracking-[0.4em] mt-1 italic">Select Terminal Assignment</p>
+                            <p className="text-[9px] text-[#505530]/30 font-black uppercase tracking-[0.4em] mt-1 italic">Select Terminal Assignment</p>
                         </div>
-                        <button onClick={() => setShowTableModal(false)} className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/5 border border-white/10 text-white/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all flex items-center justify-center"><X size={24} /></button>
+                        <button onClick={() => setShowTableModal(false)} className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/5 border border-white/10 text-[#505530]/45 hover:text-[#1a1c14] hover:bg-white/10 transition-all flex items-center justify-center"><X size={24} /></button>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-8 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
@@ -429,9 +426,9 @@ export const POSScreen: React.FC = () => {
                             <button
                                 key={table.id}
                                 onClick={() => { setSelectedTable(table); setShowTableModal(false); }}
-                                className={`p-4 sm:p-10 rounded-solaris border-2 flex flex-col items-center gap-3 sm:gap-6 transition-all group ${selectedTable?.id === table.id ? 'border-solaris-orange bg-solaris-orange/10 text-solaris-orange shadow-solaris-glow scale-[1.02]' : 'border-white/5 text-white/20 hover:text-[#1a1c14] hover:border-white/20 hover:bg-white/5'}`}
+                                className={`p-4 sm:p-10 rounded-solaris border-2 flex flex-col items-center gap-3 sm:gap-6 transition-all group ${selectedTable?.id === table.id ? 'border-solaris-orange bg-solaris-orange/10 text-solaris-orange shadow-solaris-glow scale-[1.02]' : 'border-white/5 text-[#505530]/30 hover:text-[#1a1c14] hover:border-white/20 hover:bg-white/5'}`}
                             >
-                                <div className={`w-10 h-10 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center transition-all ${selectedTable?.id === table.id ? 'bg-solaris-orange text-[#1a1c14]' : 'bg-white/5 text-white/20'}`}>
+                                <div className={`w-10 h-10 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center transition-all ${selectedTable?.id === table.id ? 'bg-solaris-orange text-[#1a1c14]' : 'bg-white/5 text-[#505530]/30'}`}>
                                     <TableIcon size={24} className="sm:w-10 sm:h-10" />
                                 </div>
                                 <div className="text-center min-w-0 w-full">

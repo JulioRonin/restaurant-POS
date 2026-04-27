@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+﻿import React, { useState, useMemo, useRef } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { Employee } from '../types';
 import jsPDF from 'jspdf';
@@ -107,15 +107,15 @@ export const StaffScreen: React.FC = () => {
                 </motion.div>
 
                 <div className="flex gap-4 items-center flex-wrap">
-                    <button onClick={handleDownload} className="bg-white/[0.03] border border-white/5 text-white/40 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-white/[0.05] hover:text-[#1a1c14] transition-all">
+                    <button onClick={handleDownload} className="bg-white/[0.03] border border-white/5 text-[#505530]/55 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-white/[0.05] hover:text-[#1a1c14] transition-all">
                         <FileText size={16} /> Export Intel
                     </button>
                     
                     <div className="bg-white/[0.03] border border-white/5 p-1 rounded-2xl flex">
-                        <button onClick={() => setViewMode('grid')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${viewMode === 'grid' ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-white/20 hover:text-[#1a1c14]'}`}>
+                        <button onClick={() => setViewMode('grid')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${viewMode === 'grid' ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-[#505530]/30 hover:text-[#1a1c14]'}`}>
                             <LayoutGrid size={14} /> Matrix
                         </button>
-                        <button onClick={() => setViewMode('schedule')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${viewMode === 'schedule' ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-white/20 hover:text-[#1a1c14]'}`}>
+                        <button onClick={() => setViewMode('schedule')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${viewMode === 'schedule' ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-[#505530]/30 hover:text-[#1a1c14]'}`}>
                             <Calendar size={14} /> Timeline
                         </button>
                     </div>
@@ -132,7 +132,7 @@ export const StaffScreen: React.FC = () => {
             <div className="flex flex-col xl:flex-row gap-6 mb-12">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
                     {[
-                        { label: 'Total Node Units', val: employees.length, icon: Users, color: 'text-white/40' },
+                        { label: 'Total Node Units', val: employees.length, icon: Users, color: 'text-[#505530]/55' },
                         { label: 'Active Channels', val: onShiftCount, icon: UserCheck, color: 'text-solaris-orange' },
                         { label: 'Network Integrity', val: '4.8', icon: Star, color: 'text-solaris-orange' },
                     ].map((s, i) => (
@@ -148,7 +148,7 @@ export const StaffScreen: React.FC = () => {
 
                 <div className="bg-white/[0.02] border border-white/5 p-2 rounded-2xl flex items-center gap-1 overflow-x-auto min-w-max">
                     {areas.map(area => (
-                        <button key={area} onClick={() => setSelectedArea(area)} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectedArea === area ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-white/20 hover:text-[#1a1c14]'}`}>
+                        <button key={area} onClick={() => setSelectedArea(area)} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectedArea === area ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-[#505530]/30 hover:text-[#1a1c14]'}`}>
                             {area}
                         </button>
                     ))}
@@ -158,7 +158,7 @@ export const StaffScreen: React.FC = () => {
             <div ref={printRef} className="space-y-12 pb-20">
             {filteredStaff.length === 0 ? (
                 <div className="bg-white/[0.01] rounded-solaris p-20 flex flex-col items-center justify-center text-center border border-white/5 border-dashed">
-                    <Search size={64} className="text-white/5 mb-6" />
+                    <Search size={64} className="text-[#505530]/5 mb-6" />
                     <h2 className="text-xl font-black italic text-[#1a1c14] uppercase tracking-tighter mb-2">No Bio-ID Detected</h2>
                     <p className="text-solaris-orange/20 text-[10px] font-bold uppercase tracking-widest max-w-sm mb-10">Iniciando protocolo de búsqueda en red local...</p>
                     <div className="flex gap-4">
@@ -192,13 +192,13 @@ export const StaffScreen: React.FC = () => {
                                     </div>
 
                                     <div className="flex gap-2 w-full">
-                                        <button onClick={() => handleProfileClick(emp)} className="flex-1 py-3 px-4 rounded-xl bg-white/[0.03] border border-white/10 text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-[#1a1c14] hover:bg-white/10 transition-all">Profile</button>
+                                        <button onClick={() => handleProfileClick(emp)} className="flex-1 py-3 px-4 rounded-xl bg-white/[0.03] border border-white/10 text-[9px] font-black uppercase tracking-widest text-[#505530]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">Profile</button>
                                         {(activeEmployee?.role?.toLowerCase() === 'admin' || isSuperAdmin) && (
-                                            <button onClick={() => handleScheduleClick(emp)} className="flex-1 py-3 px-4 rounded-xl bg-white/[0.03] border border-white/10 text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-[#1a1c14] hover:bg-white/10 transition-all">Tasking</button>
+                                            <button onClick={() => handleScheduleClick(emp)} className="flex-1 py-3 px-4 rounded-xl bg-white/[0.03] border border-white/10 text-[9px] font-black uppercase tracking-widest text-[#505530]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">Tasking</button>
                                         )}
                                     </div>
                                 </div>
-                                <div className={`absolute top-4 right-4 text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest ${emp.status === 'ON_SHIFT' ? 'bg-solaris-orange/10 text-solaris-orange border border-solaris-orange/20' : 'bg-white/5 text-white/20'}`}>
+                                <div className={`absolute top-4 right-4 text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest ${emp.status === 'ON_SHIFT' ? 'bg-solaris-orange/10 text-solaris-orange border border-solaris-orange/20' : 'bg-white/5 text-[#505530]/30'}`}>
                                     {emp.status.replace('_', ' ')}
                                 </div>
                             </GlowCard>
@@ -274,19 +274,19 @@ export const StaffScreen: React.FC = () => {
                             <div className="p-10">
                                 <div className="flex justify-between items-center mb-10">
                                     <h2 className="text-2xl font-black italic uppercase tracking-tighter text-[#1a1c14]">System Command</h2>
-                                    <button onClick={() => setActiveModal('none')} className="text-white/20 hover:text-[#1a1c14] transition-colors"><X size={24} /></button>
+                                    <button onClick={() => setActiveModal('none')} className="text-[#505530]/30 hover:text-[#1a1c14] transition-colors"><X size={24} /></button>
                                 </div>
 
                                 {activeModal === 'add' && (
                                     <form onSubmit={handleAddEmployee} className="space-y-8">
                                         <div className="space-y-2">
                                             <label className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-widest px-1 italic">Biological Identity</label>
-                                            <input name="name" type="text" required placeholder="Unidad de Personal" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold placeholder:text-white/5" />
+                                            <input name="name" type="text" required placeholder="Unidad de Personal" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold placeholder:text-[#505530]/5" />
                                         </div>
                                         <div className="grid grid-cols-2 gap-6">
                                             <div className="space-y-2">
                                                 <label className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-widest px-1 italic">Functional Designation</label>
-                                                <input name="role" type="text" required placeholder="Role" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold placeholder:text-white/5" />
+                                                <input name="role" type="text" required placeholder="Role" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold placeholder:text-[#505530]/5" />
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-widest px-1 italic">Sector Node</label>
@@ -361,7 +361,7 @@ export const StaffScreen: React.FC = () => {
                                             </button>
                                         ) : (
                                             <div className="flex gap-4">
-                                                <button onClick={() => setIsEditing(false)} className="flex-1 bg-white/[0.03] border border-white/10 text-white/40 font-black uppercase py-4 rounded-xl text-[10px] tracking-widest">Cancel</button>
+                                                <button onClick={() => setIsEditing(false)} className="flex-1 bg-white/[0.03] border border-white/10 text-[#505530]/55 font-black uppercase py-4 rounded-xl text-[10px] tracking-widest">Cancel</button>
                                                 <button onClick={handleSaveEmployee} className="flex-1 bg-solaris-orange text-[#1a1c14] font-black uppercase py-4 rounded-xl text-[10px] tracking-widest shadow-solaris-glow">Save Changes</button>
                                             </div>
                                         )}
@@ -380,10 +380,10 @@ export const StaffScreen: React.FC = () => {
 
                                         {/* Current Shifts */}
                                         <div className="space-y-3">
-                                            <label className="text-[9px] font-black uppercase text-white/20 tracking-widest italic ml-1">Active Time-Nodes</label>
+                                            <label className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest italic ml-1">Active Time-Nodes</label>
                                             {(editingEmployee.schedule || []).length === 0 ? (
                                                 <div className="p-8 rounded-2xl border border-dashed border-white/5 text-center">
-                                                    <p className="text-[9px] font-black uppercase tracking-widest text-white/10">No tasks assigned</p>
+                                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#505530]/10">No tasks assigned</p>
                                                 </div>
                                             ) : (
                                                 editingEmployee.schedule?.map((shift, idx) => (
@@ -409,20 +409,20 @@ export const StaffScreen: React.FC = () => {
 
                                         {/* Add New Shift */}
                                         <div className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl space-y-6">
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40 italic">New Temporal Allocation</h4>
+                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-[#505530]/55 italic">New Temporal Allocation</h4>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="col-span-2">
-                                                    <label className="text-[8px] font-black uppercase text-white/10 mb-2 block">Day</label>
+                                                    <label className="text-[8px] font-black uppercase text-[#505530]/10 mb-2 block">Day</label>
                                                     <select id="new-shift-day" className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-black appearance-none outline-none focus:border-solaris-orange/50 transition-all">
                                                         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => <option key={d} value={d} className="bg-white">{d}</option>)}
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label className="text-[8px] font-black uppercase text-white/10 mb-2 block">Start</label>
+                                                    <label className="text-[8px] font-black uppercase text-[#505530]/10 mb-2 block">Start</label>
                                                     <input id="new-shift-start" type="time" defaultValue="09:00" className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-black outline-none focus:border-solaris-orange/50 transition-all" />
                                                 </div>
                                                 <div>
-                                                    <label className="text-[8px] font-black uppercase text-white/10 mb-2 block">End</label>
+                                                    <label className="text-[8px] font-black uppercase text-[#505530]/10 mb-2 block">End</label>
                                                     <input id="new-shift-end" type="time" defaultValue="17:00" className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-black outline-none focus:border-solaris-orange/50 transition-all" />
                                                 </div>
                                             </div>

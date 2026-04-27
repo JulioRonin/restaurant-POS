@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowCard } from './ui/spotlight-card';
@@ -56,8 +56,8 @@ export const AuthScreen: React.FC = () => {
                     >
                         <img src="/koso-logo.png" alt="KŌSO" className="w-full h-full object-cover" />
                     </motion.div>
-                    <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter text-[#1a1c14] uppercase mb-2 md:mb-4">KŌSO POS</h1>
-                    <p className="text-[#505530]/50 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.6em] italic">Restaurant Management System</p>
+                    <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter text-white uppercase mb-2 md:mb-4 drop-shadow-lg">KŌSO POS</h1>
+                    <p className="text-white/60 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.6em] italic">Restaurant Management System</p>
                 </div>
 
                 <GlowCard glowColor="orange" customSize className="w-full !p-0 overflow-hidden border border-[#505530]/20 bg-white rounded-solaris shadow-2xl">
@@ -172,7 +172,7 @@ export const AuthScreen: React.FC = () => {
                     </div>
                 </GlowCard>
 
-                <p className="text-center mt-12 text-[10px] font-black text-[#505530]/30 uppercase tracking-[0.5em] italic mb-16">
+                <p className="text-center mt-12 text-[10px] font-black text-white/30 uppercase tracking-[0.5em] italic mb-16">
                     KŌSO POS v1.0 • Secure Restaurant Management
                 </p>
             </motion.div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowCard } from './ui/spotlight-card';
@@ -43,8 +43,8 @@ export const LockScreen: React.FC = () => {
             {/* Left: User Selection */}
             <div className="relative z-10 flex-1 flex flex-col justify-center px-6 md:px-12 py-10 overflow-y-auto custom-scrollbar lg:max-h-screen">
                 <div className="mb-8 md:mb-12 mt-8 md:mt-0">
-                    <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter text-[#1a1c14] uppercase mb-2 leading-none">KOSO Terminal</h1>
-                    <p className="text-[#505530]/50 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.5em]">Identidad de Operador Requerida</p>
+                    <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter text-white uppercase mb-2 leading-none drop-shadow-lg">KOSO Terminal</h1>
+                    <p className="text-white/50 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.5em]">Identidad de Operador Requerida</p>
                 </div>
 
                 <div className="grid grid-cols-2 xs:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">

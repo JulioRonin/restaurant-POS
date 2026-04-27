@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+ï»¿import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
@@ -54,7 +54,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation(); // Accurate location tracking for stable transitions
 
   return (
-    <div className="flex h-screen w-screen bg-[#FAFAF3] text-[#1a1c14] font-sans overflow-hidden antialiased selection:bg-[#F98359] selection:text-white">
+    <div className="flex h-screen w-screen bg-[#FAFAF3] font-sans overflow-hidden antialiased selection:bg-[#F98359] selection:text-white koso-app">
       <div className="no-print hidden lg:block">
         <Sidebar onLock={clearActiveEmployee} />
       </div>
@@ -154,7 +154,7 @@ const AppContent: React.FC = () => {
               <Route path="/my-tables" element={<RoleGuard path="/my-tables"><MyTablesScreen /></RoleGuard>} />
               
               <Route path="/onboarding" element={<OnboardingScreen />} />
-              <Route path="*" element={<div className="flex flex-col items-center justify-center h-full text-solaris-orange uppercase font-black tracking-[0.5em] italic text-[10px] gap-6"><Activity size={48} className="animate-pulse" /> 404 - Módulo No Encontrado</div>} />
+              <Route path="*" element={<div className="flex flex-col items-center justify-center h-full text-solaris-orange uppercase font-black tracking-[0.5em] italic text-[10px] gap-6"><Activity size={48} className="animate-pulse" /> 404 - Mï¿½dulo No Encontrado</div>} />
             </Routes>
           </Layout>
         </SubscriptionGuard>

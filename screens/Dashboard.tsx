@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { CATEGORIES } from '../constants';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useOrders } from '../contexts/OrderContext';
@@ -263,7 +263,7 @@ export const DashboardScreen: React.FC = () => {
 
     return (
         <div className="h-full w-full relative">
-            <div className="flex-1 bg-[#F0F0E8] text-[#1a1c14] p-6 md:p-10 overflow-y-auto h-full relative font-sans antialiased custom-scrollbar no-print">
+            <div className="flex-1 text-[#1a1c14] p-6 md:p-10 overflow-y-auto h-full relative font-sans antialiased custom-scrollbar no-print" style={{ backgroundImage: 'url(/bg-koso.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
                 <SolarisShader />
 
                 <div className="relative z-10">
@@ -271,7 +271,7 @@ export const DashboardScreen: React.FC = () => {
                 <div className="flex justify-between items-center mb-12 flex-wrap gap-6 no-print-dashboard">
                     <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
                         <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2 text-[#1a1c14]">KOSO POS</h1>
-                        <p className="text-white/40 font-bold text-[10px] uppercase tracking-[0.5em]">Real-time Financial Orchestration</p>
+                        <p className="text-[#505530]/55 font-bold text-[10px] uppercase tracking-[0.5em]">Real-time Financial Orchestration</p>
                     </motion.div>
 
                     <div className="flex gap-4 items-center flex-wrap">
@@ -304,7 +304,7 @@ export const DashboardScreen: React.FC = () => {
                                         onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
                                         className="bg-white/5 text-[#1a1c14] px-2 py-1 rounded-lg text-[9px] font-bold outline-none border-none"
                                     />
-                                    <span className="text-[9px] text-white/30">to</span>
+                                    <span className="text-[9px] text-[#505530]/45">to</span>
                                     <input 
                                         type="date"
                                         value={dateRange.end}
@@ -338,7 +338,7 @@ export const DashboardScreen: React.FC = () => {
                         <GlowCard key={idx} glowColor={kpi.color as any} customSize className="!p-0 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-[24px]">
                             <div className="p-6">
                                 <kpi.icon size={20} className="text-solaris-orange mb-4" />
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/30 mb-1">{kpi.label}</p>
+                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[#505530]/45 mb-1">{kpi.label}</p>
                                 <p className="text-xl font-black italic tracking-tight">{kpi.value}</p>
                             </div>
                         </GlowCard>
@@ -349,7 +349,7 @@ export const DashboardScreen: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
                     <GlowCard glowColor="orange" customSize className="lg:col-span-2 !p-0 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-[32px]">
                         <div className="p-8">
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 mb-1 italic">Proyección Financiera</h3>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#505530]/45 mb-1 italic">Proyección Financiera</h3>
                             <p className="text-xl font-black text-[#1a1c14] italic tracking-tight mb-8">Revenue Analytics</p>
                             <div className="h-72 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -363,7 +363,7 @@ export const DashboardScreen: React.FC = () => {
                                                 if (active && payload && payload.length) {
                                                     return (
                                                         <div className="bg-[#0a0a0c] border border-white/10 rounded-2xl p-3 shadow-2xl">
-                                                            <p className="text-white/50 text-[10px] font-bold mb-1">{label}</p>
+                                                            <p className="text-[#505530]/65 text-[10px] font-bold mb-1">{label}</p>
                                                             <p className="text-solaris-orange font-black text-sm">
                                                                 Ventas: ${Number(payload[0]?.value || 0).toLocaleString()}
                                                             </p>
@@ -382,7 +382,7 @@ export const DashboardScreen: React.FC = () => {
 
                     <GlowCard glowColor="orange" customSize className="!p-0 border border-white/5 bg-white/[0.02] backdrop-blur-xl rounded-[32px]">
                         <div className="p-8">
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30 mb-1 italic">Operación</h3>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-[#505530]/45 mb-1 italic">Operación</h3>
                             <p className="text-xl font-black text-[#1a1c14] italic tracking-tight mb-8">Prime Cost</p>
                             <div className="h-72 w-full">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -396,7 +396,7 @@ export const DashboardScreen: React.FC = () => {
                                                 if (active && payload && payload.length) {
                                                     return (
                                                         <div className="bg-[#0a0a0c] border border-white/10 rounded-2xl p-3 shadow-2xl">
-                                                            <p className="text-white/50 text-[10px] font-bold mb-1">Costo (Prime Cost)</p>
+                                                            <p className="text-[#505530]/65 text-[10px] font-bold mb-1">Costo (Prime Cost)</p>
                                                             <p className="text-solaris-orange font-black text-sm">
                                                                 Gastos: ${Number(payload[0]?.value || 0).toLocaleString()}
                                                             </p>
@@ -423,22 +423,22 @@ export const DashboardScreen: React.FC = () => {
                                     <ArrowUpRight className="text-green-500" size={20} />
                                     <h3 className="text-lg font-black italic uppercase tracking-tight">Best Sellers Top 10</h3>
                                 </div>
-                                <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">{activeOrders.length} Ventas</span>
+                                <span className="text-[10px] font-black text-[#505530]/30 uppercase tracking-[0.2em]">{activeOrders.length} Ventas</span>
                            </div>
                            <div className="space-y-4">
                                {productStats.top.map((p, i) => (
                                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 group hover:bg-white/5 transition-all">
                                        <div className="flex items-center gap-4">
                                            <span className="text-solaris-orange font-black italic w-6">#{i+1}</span>
-                                           <span className="text-[11px] font-black uppercase tracking-widest text-white/70">{p.name}</span>
+                                           <span className="text-[11px] font-black uppercase tracking-widest text-[#505530]/70">{p.name}</span>
                                        </div>
                                        <div className="text-right">
                                            <span className="text-[11px] font-black text-[#1a1c14] italic">{p.quantity} Unid.</span>
-                                           <p className="text-[9px] text-white/20 font-bold tracking-widest group-hover:text-solaris-orange transition-colors">${p.revenue.toLocaleString()}</p>
+                                           <p className="text-[9px] text-[#505530]/30 font-bold tracking-widest group-hover:text-solaris-orange transition-colors">${p.revenue.toLocaleString()}</p>
                                        </div>
                                    </div>
                                ))}
-                               {productStats.top.length === 0 && <p className="text-center py-10 text-white/20 uppercase font-black text-[10px] italic">Sin datos de volumen</p>}
+                               {productStats.top.length === 0 && <p className="text-center py-10 text-[#505530]/30 uppercase font-black text-[10px] italic">Sin datos de volumen</p>}
                            </div>
                        </div>
                     </GlowCard>
@@ -454,26 +454,26 @@ export const DashboardScreen: React.FC = () => {
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div>
-                                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/20 mb-4 flex items-center gap-2">
+                                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#505530]/30 mb-4 flex items-center gap-2">
                                             <Layers size={12} /> Costo Inventario
                                         </p>
                                         <div className="space-y-3">
                                             {categoryInsights.topInv.map(([cat, val], i) => (
                                                 <div key={i} className="flex justify-between items-center text-[10px]">
-                                                    <span className="font-bold text-white/40">{cat}</span>
+                                                    <span className="font-bold text-[#505530]/55">{cat}</span>
                                                     <span className="font-black text-solaris-orange">${val.toLocaleString()}</span>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
                                     <div>
-                                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/20 mb-4 flex items-center gap-2">
+                                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#505530]/30 mb-4 flex items-center gap-2">
                                             <Wallet size={12} /> Distribución Gastos
                                         </p>
                                         <div className="space-y-3">
                                             {categoryInsights.topExp.map(([cat, val], i) => (
                                                 <div key={i} className="flex justify-between items-center text-[10px]">
-                                                    <span className="font-bold text-white/40">{cat}</span>
+                                                    <span className="font-bold text-[#505530]/55">{cat}</span>
                                                     <span className="font-black text-red-500">${val.toLocaleString()}</span>
                                                 </div>
                                             ))}
@@ -493,11 +493,11 @@ export const DashboardScreen: React.FC = () => {
                                 <div className="space-y-3">
                                     {productStats.bottom.map((p, i) => (
                                         <div key={i} className="flex justify-between items-center p-3 rounded-lg bg-red-500/[0.03] border border-red-500/10">
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-white/60">{p.name}</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-[#505530]/60">{p.name}</span>
                                             <span className="text-[10px] font-black text-red-500">{p.quantity} Unid.</span>
                                         </div>
                                     ))}
-                                    {productStats.bottom.length === 0 && <p className="text-center py-6 text-white/20 uppercase font-black text-[10px]">Ecosistema Saludable</p>}
+                                    {productStats.bottom.length === 0 && <p className="text-center py-6 text-[#505530]/30 uppercase font-black text-[10px]">Ecosistema Saludable</p>}
                                 </div>
                             </div>
                         </GlowCard>

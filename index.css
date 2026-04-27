@@ -55,6 +55,22 @@ body {
   color: #C694DB;
 }
 
+/* ── Global: default text to olive on cream screens ────────────── */
+/* All content inside .koso-app (main layout) defaults to olive text */
+.koso-app {
+  color: #505530;
+}
+
+/* Dashboard cards over background image */
+.koso-glass-card {
+  background: rgba(250, 250, 243, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(80, 85, 48, 0.15);
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 24px rgba(80, 85, 48, 0.1);
+}
+
 /* Custom Scrollbars */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;

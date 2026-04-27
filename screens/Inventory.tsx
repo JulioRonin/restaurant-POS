@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { INVENTORY_CATEGORIES } from '../constants';
 import { InventoryItem, CartItem, SupplierOrder, SupplyOrderStatus } from '../types';
 import jsPDF from 'jspdf';

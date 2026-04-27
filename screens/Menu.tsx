@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+﻿import React, { useState, useMemo, useRef } from 'react';
 import { useMenu } from '../contexts/MenuContext';
 import { MenuItem } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -176,7 +176,7 @@ export const MenuScreen: React.FC = () => {
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center px-8 pt-8 pb-6 gap-4 shrink-0 border-b border-white/5">
                 <div>
                     <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-1">KOSO Menu</h1>
-                    <p className="text-white/20 font-bold text-[10px] uppercase tracking-[0.4em]">Gastronomical Asset Registry & Pricing Logic</p>
+                    <p className="text-[#505530]/30 font-bold text-[10px] uppercase tracking-[0.4em]">Gastronomical Asset Registry & Pricing Logic</p>
                 </div>
                 <div className="flex gap-3">
                     <button
@@ -187,7 +187,7 @@ export const MenuScreen: React.FC = () => {
                     </button>
                     <button
                         onClick={() => setIsImportModalOpen(true)}
-                        className="flex items-center gap-2 px-5 py-3 bg-white/[0.03] border border-white/5 text-white/30 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/[0.06] transition-all"
+                        className="flex items-center gap-2 px-5 py-3 bg-white/[0.03] border border-white/5 text-[#505530]/45 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/[0.06] transition-all"
                     >
                         <Upload size={15} /> Bulk Import
                     </button>
@@ -204,13 +204,13 @@ export const MenuScreen: React.FC = () => {
             <div className="px-8 py-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center shrink-0 border-b border-white/5">
                 {/* Search */}
                 <div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-2xl px-5 py-3 flex-1 max-w-sm">
-                    <Search className="text-white/20 shrink-0" size={16} />
+                    <Search className="text-[#505530]/30 shrink-0" size={16} />
                     <input
                         type="text"
                         placeholder="Search by name..."
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
-                        className="bg-transparent outline-none text-[#1a1c14] text-sm font-bold w-full placeholder:text-white/10"
+                        className="bg-transparent outline-none text-[#1a1c14] text-sm font-bold w-full placeholder:text-[#505530]/10"
                     />
                 </div>
 
@@ -223,7 +223,7 @@ export const MenuScreen: React.FC = () => {
                             className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
                                 activeCategory === cat
                                     ? 'bg-solaris-orange text-[#1a1c14] border-solaris-orange shadow-solaris-glow'
-                                    : 'bg-white/[0.03] text-white/30 border-white/5 hover:text-[#1a1c14] hover:border-white/20'
+                                    : 'bg-white/[0.03] text-[#505530]/45 border-white/5 hover:text-[#1a1c14] hover:border-white/20'
                             }`}
                         >
                             {cat}
@@ -233,7 +233,7 @@ export const MenuScreen: React.FC = () => {
 
                 {/* Counter */}
                 <div className="shrink-0 ml-auto text-right">
-                    <p className="text-[9px] font-black uppercase text-white/20 tracking-widest">Total Registry</p>
+                    <p className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest">Total Registry</p>
                     <p className="text-2xl font-black italic text-solaris-orange leading-tight">{menuItems.length}</p>
                 </div>
             </div>
@@ -278,11 +278,11 @@ export const MenuScreen: React.FC = () => {
                                             <h3 className="font-black italic text-[#1a1c14] uppercase tracking-tight text-base leading-tight flex-1 mr-2 truncate">{item.name}</h3>
                                             <span className="text-solaris-orange font-black italic text-lg shrink-0">${item.price.toFixed(0)}</span>
                                         </div>
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-white/20 mb-4 flex items-center gap-1.5">
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-[#505530]/30 mb-4 flex items-center gap-1.5">
                                             <Tag size={9} /> {item.category}
                                         </p>
                                         <div className="bg-white/[0.02] border border-white/5 p-3 rounded-2xl mb-4 flex-1">
-                                            <p className="text-[10px] text-white/30 line-clamp-2 italic font-medium leading-relaxed">
+                                            <p className="text-[10px] text-[#505530]/45 line-clamp-2 italic font-medium leading-relaxed">
                                                 {item.description || 'No description recorded.'}
                                             </p>
                                         </div>
@@ -290,7 +290,7 @@ export const MenuScreen: React.FC = () => {
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => handleOpenEdit(item)}
-                                                className="flex-1 py-2.5 bg-white/[0.04] border border-white/5 text-[9px] font-black uppercase tracking-widest text-white/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all flex items-center justify-center gap-2 rounded-xl"
+                                                className="flex-1 py-2.5 bg-white/[0.04] border border-white/5 text-[9px] font-black uppercase tracking-widest text-[#505530]/45 hover:text-[#1a1c14] hover:bg-white/10 transition-all flex items-center justify-center gap-2 rounded-xl"
                                             >
                                                 <Edit3 size={12} /> Edit
                                             </button>
@@ -331,7 +331,7 @@ export const MenuScreen: React.FC = () => {
                                 </div>
                                 <button
                                     onClick={() => setIsAddModalOpen(false)}
-                                    className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-white/20 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
+                                    className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-[#505530]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
                                 >
                                     <XCircle size={22} />
                                 </button>
@@ -350,29 +350,29 @@ export const MenuScreen: React.FC = () => {
                                                 <img src={imagePreview} alt="" className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="text-center">
-                                                    <Plus className="mx-auto text-white/10 mb-3 group-hover:text-solaris-orange transition-colors" size={36} />
-                                                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-white/10 group-hover:text-white/30 transition-colors">Upload Image</p>
+                                                    <Plus className="mx-auto text-[#505530]/10 mb-3 group-hover:text-solaris-orange transition-colors" size={36} />
+                                                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#505530]/10 group-hover:text-[#505530]/45 transition-colors">Upload Image</p>
                                                 </div>
                                             )}
                                             <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
                                         </div>
-                                        <p className="text-[8px] font-black uppercase text-white/10 tracking-[0.3em] text-center italic">Image Verification Buffer</p>
+                                        <p className="text-[8px] font-black uppercase text-[#505530]/10 tracking-[0.3em] text-center italic">Image Verification Buffer</p>
 
                                         {/* Active/Inactive Toggle */}
                                         <div className="w-full bg-white/[0.02] border border-white/5 rounded-2xl p-4">
-                                            <p className="text-[9px] font-black uppercase text-white/20 tracking-widest mb-3 italic">Status on POS</p>
+                                            <p className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest mb-3 italic">Status on POS</p>
                                             <div className="grid grid-cols-2 gap-2">
                                                 <button
                                                     type="button"
                                                     onClick={() => setFormStatus('ACTIVE')}
-                                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-1.5 ${formStatus === 'ACTIVE' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-white/[0.02] text-white/20 border-white/5'}`}
+                                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-1.5 ${formStatus === 'ACTIVE' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-white/[0.02] text-[#505530]/30 border-white/5'}`}
                                                 >
                                                     <Circle size={7} fill="currentColor" /> Active
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setFormStatus('INACTIVE')}
-                                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-1.5 ${formStatus === 'INACTIVE' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-white/[0.02] text-white/20 border-white/5'}`}
+                                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-1.5 ${formStatus === 'INACTIVE' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-white/[0.02] text-[#505530]/30 border-white/5'}`}
                                                 >
                                                     <Circle size={7} fill="currentColor" /> Inactive
                                                 </button>
@@ -384,7 +384,7 @@ export const MenuScreen: React.FC = () => {
                                     <div className="p-8 space-y-5">
                                         {/* Name */}
                                         <div>
-                                            <label className="text-[9px] font-black uppercase text-white/20 tracking-widest block mb-2">Dish Name *</label>
+                                            <label className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest block mb-2">Dish Name *</label>
                                             <input
                                                 name="name"
                                                 defaultValue={editingItem?.name}
@@ -397,7 +397,7 @@ export const MenuScreen: React.FC = () => {
                                         {/* Price + Gramaje */}
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="text-[9px] font-black uppercase text-white/20 tracking-widest block mb-2">Price (MXN) *</label>
+                                                <label className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest block mb-2">Price (MXN) *</label>
                                                 <input
                                                     name="price"
                                                     type="number"
@@ -409,7 +409,7 @@ export const MenuScreen: React.FC = () => {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-[9px] font-black uppercase text-white/20 tracking-widest block mb-2">Gramaje / Portion</label>
+                                                <label className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest block mb-2">Gramaje / Portion</label>
                                                 <input
                                                     name="gramaje"
                                                     defaultValue={editingItem?.gramaje}
@@ -421,7 +421,7 @@ export const MenuScreen: React.FC = () => {
 
                                         {/* Category */}
                                         <div>
-                                            <label className="text-[9px] font-black uppercase text-white/20 tracking-widest block mb-2">Category</label>
+                                            <label className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest block mb-2">Category</label>
                                             {!isAddingNewCategory ? (
                                                 <div className="flex gap-2">
                                                     <select
@@ -454,7 +454,7 @@ export const MenuScreen: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => setIsAddingNewCategory(false)}
-                                                        className="px-4 bg-white/[0.03] border border-white/10 text-white/30 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:text-[#1a1c14] transition-all"
+                                                        className="px-4 bg-white/[0.03] border border-white/10 text-[#505530]/45 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:text-[#1a1c14] transition-all"
                                                     >
                                                         Cancel
                                                     </button>
@@ -464,7 +464,7 @@ export const MenuScreen: React.FC = () => {
 
                                         {/* Description */}
                                         <div>
-                                            <label className="text-[9px] font-black uppercase text-white/20 tracking-widest block mb-2">Description</label>
+                                            <label className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest block mb-2">Description</label>
                                             <textarea
                                                 name="description"
                                                 defaultValue={editingItem?.description}
@@ -479,7 +479,7 @@ export const MenuScreen: React.FC = () => {
                                             <div className="flex justify-between items-center mb-4">
                                                 <div className="flex items-center gap-2">
                                                     <Layers size={14} className="text-solaris-orange" />
-                                                    <span className="text-[9px] font-black uppercase text-white/30 tracking-widest">Variantes <span className="text-solaris-orange">({variants.length}/4)</span></span>
+                                                    <span className="text-[9px] font-black uppercase text-[#505530]/45 tracking-widest">Variantes <span className="text-solaris-orange">({variants.length}/4)</span></span>
                                                 </div>
                                                 {variants.length < 4 && (
                                                     <button
@@ -492,7 +492,7 @@ export const MenuScreen: React.FC = () => {
                                                 )}
                                             </div>
                                             {variants.length === 0 && (
-                                                <p className="text-[9px] text-white/10 font-black uppercase tracking-widest text-center py-3 italic">Sin variantes — añade hasta 4</p>
+                                                <p className="text-[9px] text-[#505530]/10 font-black uppercase tracking-widest text-center py-3 italic">Sin variantes — añade hasta 4</p>
                                             )}
                                             <div className="space-y-3">
                                                 {variants.map((v, idx) => (
@@ -551,18 +551,18 @@ export const MenuScreen: React.FC = () => {
                         <div className="w-full max-w-2xl bg-[#FAFAF3] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden">
                             <div className="flex justify-between items-center px-10 py-7 border-b border-white/5">
                                 <h2 className="text-2xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Bulk Import CSV</h2>
-                                <button onClick={() => setIsImportModalOpen(false)} className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-white/20 hover:text-[#1a1c14] hover:bg-white/10 transition-all">
+                                <button onClick={() => setIsImportModalOpen(false)} className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-[#505530]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">
                                     <XCircle size={22} />
                                 </button>
                             </div>
                             <div className="p-10 space-y-6">
                                 <div className="flex justify-between items-center">
-                                    <p className="text-[10px] text-white/30 font-black uppercase tracking-widest">
+                                    <p className="text-[10px] text-[#505530]/45 font-black uppercase tracking-widest">
                                         Format: <span className="text-solaris-orange">name, category, price, description</span>
                                     </p>
                                     <button
                                         onClick={() => csvFileInputRef.current?.click()}
-                                        className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/10 text-white/60 text-[8px] font-black uppercase tracking-widest rounded-xl hover:bg-white/10 hover:text-[#1a1c14] transition-all transition-colors"
+                                        className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/10 text-[#505530]/60 text-[8px] font-black uppercase tracking-widest rounded-xl hover:bg-white/10 hover:text-[#1a1c14] transition-all transition-colors"
                                     >
                                         <Upload size={12} /> Upload CSV File
                                     </button>

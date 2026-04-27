@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { Order, OrderStatus } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -63,7 +63,7 @@ const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string)
                 <h3 className="text-xl font-black italic uppercase tracking-tighter text-[#1a1c14] leading-tight">
                     {tableLabel}
                 </h3>
-                <p className="text-[9px] font-black uppercase text-white/20 tracking-widest mt-1 italic">
+                <p className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest mt-1 italic">
                     PKT: {order.id.slice(0, 8).toUpperCase()}
                 </p>
             </div>
@@ -181,18 +181,18 @@ export const BarScreen: React.FC = () => {
                         </div>
                         <div>
                             <h1 className="text-4xl font-black italic tracking-tighter uppercase leading-none">Bar Station</h1>
-                            <p className="text-white/20 font-bold text-[10px] uppercase tracking-[0.4em]">Drinks Dispatch Monitor</p>
+                            <p className="text-[#505530]/30 font-bold text-[10px] uppercase tracking-[0.4em]">Drinks Dispatch Monitor</p>
                         </div>
                     </div>
                 </div>
 
                 <div className="flex gap-3">
                     <div className="bg-white/[0.03] border border-white/5 px-6 py-3 rounded-2xl text-center">
-                        <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">En Espera</p>
+                        <p className="text-[8px] font-black uppercase text-[#505530]/30 tracking-widest">En Espera</p>
                         <p className="text-2xl font-black italic text-blue-400 leading-none">{barOrders.length}</p>
                     </div>
                     <div className="bg-white/[0.03] border border-white/5 px-6 py-3 rounded-2xl text-center">
-                        <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Listos</p>
+                        <p className="text-[8px] font-black uppercase text-[#505530]/30 tracking-widest">Listos</p>
                         <p className="text-2xl font-black italic text-green-400 leading-none">
                             {orders.filter(o => o.status === OrderStatus.READY).length}
                         </p>

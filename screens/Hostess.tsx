@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { TABLES, MOCK_STAFF } from '../constants';
 import { Table, TableStatus, WaitlistEntry, OrderStatus } from '../types';
 import { useTables } from '../contexts/TableContext';
@@ -273,7 +273,7 @@ export const HostessScreen: React.FC = () => {
     const availableWaiters = MOCK_STAFF.filter(s => s.area === 'Service' || s.role.includes('Mesero'));
 
     return (
-        <div className="flex flex-col h-full w-full bg-[#F0F0E8] text-white/70 font-sans antialiased overflow-hidden">
+        <div className="flex flex-col h-full w-full bg-[#F0F0E8] text-[#505530]/70 font-sans antialiased overflow-hidden">
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                 {/* Header */}
@@ -296,13 +296,13 @@ export const HostessScreen: React.FC = () => {
                         <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-[20px]">
                             <button
                                 onClick={() => setViewMode('floor')}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'floor' ? 'bg-white/10 text-[#1a1c14] shadow-xl' : 'text-white/20 hover:text-[#1a1c14]'}`}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'floor' ? 'bg-white/10 text-[#1a1c14] shadow-xl' : 'text-[#505530]/30 hover:text-[#1a1c14]'}`}
                             >
                                 Floor
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white/10 text-[#1a1c14] shadow-xl' : 'text-white/20 hover:text-[#1a1c14]'}`}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white/10 text-[#1a1c14] shadow-xl' : 'text-[#505530]/30 hover:text-[#1a1c14]'}`}
                             >
                                 Lista
                             </button>
@@ -348,7 +348,7 @@ export const HostessScreen: React.FC = () => {
                                         <span className="text-[8px] font-black text-solaris-orange bg-solaris-orange/10 px-2 py-1 rounded-lg border border-solaris-orange/20">{entry.timestamp}</span>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-2 text-[10px] text-white/40 font-black italic">
+                                        <div className="flex items-center gap-2 text-[10px] text-[#505530]/55 font-black italic">
                                             <Users size={12} />
                                             {entry.partySize} PAX
                                         </div>
@@ -404,7 +404,7 @@ export const HostessScreen: React.FC = () => {
                                                 'border-white/10 bg-white/[0.02] hover:border-white/30'
                                             }`}
                                         >
-                                            <span className={`font-black italic text-xl uppercase tracking-tighter transition-colors ${isSelected ? 'text-[#1a1c14]' : 'text-white/60'}`}>{table.name}</span>
+                                            <span className={`font-black italic text-xl uppercase tracking-tighter transition-colors ${isSelected ? 'text-[#1a1c14]' : 'text-[#505530]/60'}`}>{table.name}</span>
                                             {session ? (
                                                 <div className="text-center mt-2 px-3">
                                                     <p className="font-black italic text-[10px] text-[#1a1c14] uppercase tracking-tight truncate w-full">{session.name}</p>
@@ -416,7 +416,7 @@ export const HostessScreen: React.FC = () => {
                                                     <p className="font-black italic text-[10px] text-[#1a1c14] uppercase tracking-tight truncate w-full">{reservation.name}</p>
                                                 </div>
                                             ) : (
-                                                <span className="text-[9px] font-black text-white/20 uppercase tracking-widest mt-2">{table.seats} Seats</span>
+                                                <span className="text-[9px] font-black text-[#505530]/30 uppercase tracking-widest mt-2">{table.seats} Seats</span>
                                             )}
 
                                             {/* Waiter Indicator */}
@@ -460,7 +460,7 @@ export const HostessScreen: React.FC = () => {
                                                             table.status === TableStatus.AVAILABLE ? 'bg-green-500/10 text-green-500' :
                                                             table.status === TableStatus.OCCUPIED ? 'bg-red-500/10 text-red-500' :
                                                             table.status === TableStatus.RESERVED ? 'bg-yellow-500/10 text-yellow-500' :
-                                                            'bg-white/5 text-white/40'
+                                                            'bg-white/5 text-[#505530]/55'
                                                         }`}>
                                                             <div className={`w-1.5 h-1.5 rounded-full ${
                                                                 table.status === TableStatus.AVAILABLE ? 'bg-green-500' :
@@ -471,22 +471,22 @@ export const HostessScreen: React.FC = () => {
                                                             {table.status}
                                                         </span>
                                                     </td>
-                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 font-black italic text-white/60 text-xs tracking-widest group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-solaris-orange/10' : ''}`}>{table.seats} PERS.</td>
+                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 font-black italic text-[#505530]/60 text-xs tracking-widest group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-solaris-orange/10' : ''}`}>{table.seats} PERS.</td>
                                                     <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-solaris-orange/10' : ''}`}>
                                                         {session ? (
                                                             <div>
                                                                 <p className="text-xs font-black italic text-[#1a1c14] uppercase tracking-tight">{session.name}</p>
                                                                 <p className="text-[9px] text-solaris-orange/40 uppercase font-black tracking-widest mt-1 italic">{session.pax} PAX • {session.time}</p>
                                                             </div>
-                                                        ) : <span className="text-white/10 font-black tracking-widest opacity-20">---</span>}
+                                                        ) : <span className="text-[#505530]/10 font-black tracking-widest opacity-20">---</span>}
                                                     </td>
                                                     <td className={`py-6 px-6 bg-white/[0.02] border-y border-r border-white/5 rounded-r-[24px] group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-solaris-orange/10' : ''}`}>
                                                         {waiter ? (
                                                             <div className="flex items-center gap-3">
                                                                 <img src={waiter.image} className="w-8 h-8 rounded-full border border-white/10" alt="" />
-                                                                <span className="text-[10px] font-black italic text-white/60 uppercase tracking-widest">{waiter.name}</span>
+                                                                <span className="text-[10px] font-black italic text-[#505530]/60 uppercase tracking-widest">{waiter.name}</span>
                                                             </div>
-                                                        ) : <span className="text-white/10 font-black tracking-widest opacity-20">---</span>}
+                                                        ) : <span className="text-[#505530]/10 font-black tracking-widest opacity-20">---</span>}
                                                     </td>
                                                 </tr>
                                             );
@@ -516,7 +516,7 @@ export const HostessScreen: React.FC = () => {
                             type="text"
                             value={customerName}
                             onChange={(e) => setCustomerName(e.target.value)}
-                            className="flex-1 p-3 bg-white/[0.03] border border-white/10 rounded-xl outline-none focus:border-solaris-orange/40 text-[#1a1c14] font-bold transition-all text-sm placeholder:text-white/20 shadow-inner"
+                            className="flex-1 p-3 bg-white/[0.03] border border-white/10 rounded-xl outline-none focus:border-solaris-orange/40 text-[#1a1c14] font-bold transition-all text-sm placeholder:text-[#505530]/30 shadow-inner"
                             placeholder="Nombre cliente..."
                         />
                         <div className="flex items-center gap-2 bg-white/[0.02] px-3 rounded-xl border border-white/5">
@@ -669,7 +669,7 @@ export const HostessScreen: React.FC = () => {
                                             <div className="w-12 h-12 rounded-full overflow-hidden mb-2 border border-white/10">
                                                 <img src={waiter.image} alt={waiter.name} className="w-full h-full object-cover" />
                                             </div>
-                                            <span className="text-[9px] font-black text-white/60 text-center leading-tight uppercase tracking-tighter truncate w-full">{waiter.name.split(' ')[0]}</span>
+                                            <span className="text-[9px] font-black text-[#505530]/60 text-center leading-tight uppercase tracking-tighter truncate w-full">{waiter.name.split(' ')[0]}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -681,7 +681,7 @@ export const HostessScreen: React.FC = () => {
                             <div className="flex gap-3 mb-4">
                                 <button 
                                     onClick={handleOpenEditModal}
-                                    className="flex-1 py-4 bg-white/5 border border-white/10 text-white/60 rounded-xl font-black uppercase italic text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-white/10 transition-all"
+                                    className="flex-1 py-4 bg-white/5 border border-white/10 text-[#505530]/60 rounded-xl font-black uppercase italic text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-white/10 transition-all"
                                 >
                                     <Edit3 size={14} />
                                     Ajustes
@@ -715,10 +715,10 @@ export const HostessScreen: React.FC = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-white/10 text-center px-12">
+                    <div className="flex-1 flex flex-col items-center justify-center text-[#505530]/10 text-center px-12">
                         <Monitor size={64} strokeWidth={1} className="mb-6 opacity-20" />
-                        <h4 className="text-white/40 font-black italic uppercase text-xs tracking-widest mb-2">Escaneo de Red Requerido</h4>
-                        <p className="text-[10px] font-bold text-white/20 uppercase tracking-[0.2em] leading-relaxed">Selecciona un nodo de mesa para iniciar la secuencia de control táctico operacional.</p>
+                        <h4 className="text-[#505530]/55 font-black italic uppercase text-xs tracking-widest mb-2">Escaneo de Red Requerido</h4>
+                        <p className="text-[10px] font-bold text-[#505530]/30 uppercase tracking-[0.2em] leading-relaxed">Selecciona un nodo de mesa para iniciar la secuencia de control táctico operacional.</p>
                     </div>
                 )}
                 </div>
@@ -737,24 +737,24 @@ export const HostessScreen: React.FC = () => {
                             <div className="absolute top-0 left-0 w-full h-1 bg-solaris-orange"></div>
                             <div className="flex justify-between items-center mb-10">
                                 <h2 className="text-2xl font-black italic text-[#1a1c14] uppercase tracking-tighter">Desplegar Nuevo Nodo</h2>
-                                <button onClick={() => setIsAddTableModalOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-white/20 hover:text-[#1a1c14] hover:bg-white/10 transition-all">
+                                <button onClick={() => setIsAddTableModalOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-[#505530]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">
                                     <span className="text-lg font-black">✕</span>
                                 </button>
                             </div>
                             <div className="space-y-8">
                                 <div>
-                                    <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] block mb-3">Identificador de Mesa</label>
+                                    <label className="text-[9px] font-black text-[#505530]/30 uppercase tracking-[0.5em] block mb-3">Identificador de Mesa</label>
                                     <input
                                         type="text"
                                         value={newTableName}
                                         onChange={(e) => setNewTableName(e.target.value)}
                                         placeholder="ej. MESA 24"
-                                        className="w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl outline-none focus:border-solaris-orange font-black italic text-[#1a1c14] transition-all text-lg placeholder:text-white/5 uppercase tracking-tight"
+                                        className="w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl outline-none focus:border-solaris-orange font-black italic text-[#1a1c14] transition-all text-lg placeholder:text-[#505530]/5 uppercase tracking-tight"
                                         autoFocus
                                     />
                                 </div>
                                 <div className="bg-white/[0.02] p-8 rounded-2xl border border-white/5">
-                                    <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] block mb-6 text-center">Capacidad Máxima PAX</label>
+                                    <label className="text-[9px] font-black text-[#505530]/30 uppercase tracking-[0.5em] block mb-6 text-center">Capacidad Máxima PAX</label>
                                     <div className="flex items-center justify-center gap-10">
                                         <button onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-[#1a1c14] transition-all border border-white/5">-</button>
                                         <span className="font-black italic text-5xl text-solaris-orange w-16 text-center">{newTableSeats}</span>
@@ -762,7 +762,7 @@ export const HostessScreen: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="flex gap-4 mt-10">
-                                    <button onClick={() => setIsAddTableModalOpen(false)} className="flex-1 py-5 bg-white/5 text-white/20 rounded-[20px] font-black italic uppercase text-[10px] tracking-widest hover:text-[#1a1c14] transition-all">Cancelar</button>
+                                    <button onClick={() => setIsAddTableModalOpen(false)} className="flex-1 py-5 bg-white/5 text-[#505530]/30 rounded-[20px] font-black italic uppercase text-[10px] tracking-widest hover:text-[#1a1c14] transition-all">Cancelar</button>
                                     <button onClick={handleAddTable} disabled={!newTableName} className="flex-1 py-5 bg-solaris-orange text-[#1a1c14] rounded-[20px] font-black italic uppercase text-[10px] tracking-widest shadow-solaris-glow hover:scale-[1.05] transition-all disabled:opacity-20">Confirmar Nodo</button>
                                 </div>
                             </div>
@@ -781,17 +781,17 @@ export const HostessScreen: React.FC = () => {
                             <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
                             <div className="flex justify-between items-center mb-10">
                                 <h2 className="text-2xl font-black italic text-[#1a1c14] uppercase tracking-tighter">Ajuste de Nodo</h2>
-                                <button onClick={() => setIsEditModalOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-white/20 hover:text-[#1a1c14] hover:bg-white/10 transition-all">
+                                <button onClick={() => setIsEditModalOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-[#505530]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">
                                     <span className="text-lg font-black">✕</span>
                                 </button>
                             </div>
                             <div className="space-y-8">
                                 <div>
-                                    <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] block mb-3">Identificador</label>
-                                    <input type="text" value={newTableName} onChange={(e) => setNewTableName(e.target.value)} className="w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl outline-none focus:border-blue-500 font-black italic text-[#1a1c14] transition-all text-lg placeholder:text-white/5 uppercase tracking-tight" autoFocus />
+                                    <label className="text-[9px] font-black text-[#505530]/30 uppercase tracking-[0.5em] block mb-3">Identificador</label>
+                                    <input type="text" value={newTableName} onChange={(e) => setNewTableName(e.target.value)} className="w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl outline-none focus:border-blue-500 font-black italic text-[#1a1c14] transition-all text-lg placeholder:text-[#505530]/5 uppercase tracking-tight" autoFocus />
                                 </div>
                                 <div className="bg-white/[0.02] p-8 rounded-2xl border border-white/5">
-                                    <label className="text-[9px] font-black text-white/20 uppercase tracking-[0.5em] block mb-6 text-center">Protocolo Pax</label>
+                                    <label className="text-[9px] font-black text-[#505530]/30 uppercase tracking-[0.5em] block mb-6 text-center">Protocolo Pax</label>
                                     <div className="flex items-center justify-center gap-10">
                                         <button onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-[#1a1c14] transition-all border border-white/5">-</button>
                                         <span className="font-black italic text-5xl text-blue-500 w-16 text-center">{newTableSeats}</span>
@@ -799,7 +799,7 @@ export const HostessScreen: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="flex gap-4 mt-10">
-                                    <button onClick={() => setIsEditModalOpen(false)} className="flex-1 py-5 bg-white/5 text-white/20 rounded-[20px] font-black italic uppercase text-[10px] tracking-widest hover:text-[#1a1c14] transition-all">Descartar</button>
+                                    <button onClick={() => setIsEditModalOpen(false)} className="flex-1 py-5 bg-white/5 text-[#505530]/30 rounded-[20px] font-black italic uppercase text-[10px] tracking-widest hover:text-[#1a1c14] transition-all">Descartar</button>
                                     <button onClick={handleUpdateTable} disabled={!newTableName} className="flex-1 py-5 bg-blue-600 text-[#1a1c14] rounded-[20px] font-black italic uppercase text-[10px] tracking-widest shadow-lg shadow-blue-500/20 hover:scale-[1.05] transition-all">Guardar Cambios</button>
                                 </div>
                             </div>
@@ -817,10 +817,10 @@ export const HostessScreen: React.FC = () => {
                         >
                             <AlertTriangle size={52} className="text-red-500 mx-auto mb-6" />
                             <h2 className="text-2xl font-black italic text-[#1a1c14] mb-2 uppercase tracking-tighter">¿Purgar Nodo?</h2>
-                            <p className="text-white/40 mb-10 font-bold text-[10px] uppercase tracking-[0.2em] leading-relaxed px-4">Esta acción eliminará la mesa <b className="text-[#1a1c14]">{selectedTable?.name}</b> permanentemente del sistema KOSO.</p>
+                            <p className="text-[#505530]/55 mb-10 font-bold text-[10px] uppercase tracking-[0.2em] leading-relaxed px-4">Esta acción eliminará la mesa <b className="text-[#1a1c14]">{selectedTable?.name}</b> permanentemente del sistema KOSO.</p>
                             <div className="flex flex-col gap-4">
                                 <button onClick={handleDeleteTableAction} className="w-full py-5 bg-red-600 text-[#1a1c14] rounded-[24px] font-black italic uppercase text-[11px] tracking-[0.3em] shadow-[0_15px_30px_rgba(220,38,38,0.3)] hover:scale-[1.05] transition-all">Confirmar Purga</button>
-                                <button onClick={() => setIsDeleteConfirmOpen(false)} className="w-full py-4 bg-white/5 text-white/20 rounded-xl font-black italic uppercase text-[10px] tracking-widest hover:text-[#1a1c14] transition-all">Abortar Procedimiento</button>
+                                <button onClick={() => setIsDeleteConfirmOpen(false)} className="w-full py-4 bg-white/5 text-[#505530]/30 rounded-xl font-black italic uppercase text-[10px] tracking-widest hover:text-[#1a1c14] transition-all">Abortar Procedimiento</button>
                             </div>
                         </motion.div>
                     </div>

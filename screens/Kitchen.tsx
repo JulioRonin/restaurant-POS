@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { Order, OrderStatus, OrderSource } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -84,7 +84,7 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
                     <h3 className="text-xl font-black italic uppercase tracking-tighter text-[#1a1c14] leading-tight">
                         {tableLabel}
                     </h3>
-                    <p className="text-[9px] font-black uppercase text-white/20 tracking-widest mt-1 italic">
+                    <p className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest mt-1 italic">
                         PKT: {order.id.slice(0, 8).toUpperCase()}
                     </p>
                 </div>
@@ -206,7 +206,7 @@ export const KitchenScreen: React.FC = () => {
             <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 px-8 pt-8 pb-6 border-b border-white/5 shrink-0">
                 <div>
                     <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-1">Production Cluster</h1>
-                    <p className="text-white/20 font-bold text-[10px] uppercase tracking-[0.4em]">Real-time Asset Manifest & Synthesis</p>
+                    <p className="text-[#505530]/30 font-bold text-[10px] uppercase tracking-[0.4em]">Real-time Asset Manifest & Synthesis</p>
                 </div>
 
                 <div className="flex gap-4 items-center">
@@ -214,13 +214,13 @@ export const KitchenScreen: React.FC = () => {
                     <div className="bg-white/[0.03] border border-white/5 p-1 rounded-2xl flex">
                         <button
                             onClick={() => setIsSplit(false)}
-                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${!isSplit ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-white/30 hover:text-[#1a1c14]'}`}
+                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${!isSplit ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-[#505530]/45 hover:text-[#1a1c14]'}`}
                         >
                             <LayoutGrid size={14} /> Global Stream
                         </button>
                         <button
                             onClick={() => setIsSplit(true)}
-                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${isSplit ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-white/30 hover:text-[#1a1c14]'}`}
+                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${isSplit ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-[#505530]/45 hover:text-[#1a1c14]'}`}
                         >
                             <Columns2 size={14} /> Matrix View
                         </button>
@@ -229,11 +229,11 @@ export const KitchenScreen: React.FC = () => {
                     {/* Counters */}
                     <div className="flex gap-3">
                         <div className="bg-white/[0.03] border border-white/5 px-5 py-3 rounded-2xl text-center">
-                            <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Queue</p>
+                            <p className="text-[8px] font-black uppercase text-[#505530]/30 tracking-widest">Queue</p>
                             <p className="text-xl font-black italic text-solaris-orange leading-none">{pending.length}</p>
                         </div>
                         <div className="bg-white/[0.03] border border-white/5 px-5 py-3 rounded-2xl text-center">
-                            <p className="text-[8px] font-black uppercase text-white/20 tracking-widest">Listos</p>
+                            <p className="text-[8px] font-black uppercase text-[#505530]/30 tracking-widest">Listos</p>
                             <p className="text-xl font-black italic text-green-400 leading-none">{orders.filter(o => o.status === OrderStatus.READY).length}</p>
                         </div>
                     </div>

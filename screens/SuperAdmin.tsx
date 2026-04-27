@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { getSupabase } from '../services/auth';
 import { useUser } from '../contexts/UserContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
