@@ -16,7 +16,8 @@ import {
   ToggleLeft,
   ToggleRight,
   Tag,
-  Circle
+  Circle,
+  Layers
 } from 'lucide-react';
 
 const BASE_CATEGORIES = ['Entradas', 'Plato Fuerte', 'Bebidas', 'Postres', 'Extras', 'Tacos', 'Tortas', 'General'];
@@ -41,6 +42,19 @@ export const MenuScreen: React.FC = () => {
     const [newCategoryName, setNewCategoryName] = useState('');
     const [customCategories, setCustomCategories] = useState<string[]>([]);
 
+    // Variants state
+    const [variants, setVariants] = useState<{ name: string; price: string }[]>([]);
+
+    const addVariant = () => {
+        if (variants.length < 4) setVariants(prev => [...prev, { name: '', price: '' }]);
+    };
+    const updateVariant = (idx: number, field: 'name' | 'price', val: string) => {
+        setVariants(prev => prev.map((v, i) => i === idx ? { ...v, [field]: val } : v));
+    };
+    const removeVariant = (idx: number) => {
+        setVariants(prev => prev.filter((_, i) => i !== idx));
+    };
+
     const allCategories = useMemo(() => {
         const fromItems = Array.from(new Set(menuItems.map(i => i.category).filter(Boolean)));
         return Array.from(new Set([...BASE_CATEGORIES, ...customCategories, ...fromItems]));
@@ -64,6 +78,7 @@ export const MenuScreen: React.FC = () => {
         setFormStatus('ACTIVE');
         setIsAddingNewCategory(false);
         setNewCategoryName('');
+        setVariants([]);
         setIsAddModalOpen(true);
     };
 
@@ -74,6 +89,7 @@ export const MenuScreen: React.FC = () => {
         setFormStatus((item.status as 'ACTIVE' | 'INACTIVE') || 'ACTIVE');
         setIsAddingNewCategory(false);
         setNewCategoryName('');
+        setVariants([]);
         setIsAddModalOpen(true);
     };
 
@@ -113,8 +129,24 @@ export const MenuScreen: React.FC = () => {
         } else {
             addItem(data);
         }
+        // Save variants as separate menu items under "Variante" category
+        for (const v of variants) {
+            if (v.name.trim() && v.price) {
+                addItem({
+                    name: v.name.trim(),
+                    category: 'Variante',
+                    price: parseFloat(v.price),
+                    description: `Variante de ${data.name}`,
+                    gramaje: '',
+                    status: 'ACTIVE',
+                    image: data.image,
+                    inventoryLevel: 4
+                });
+            }
+        }
         setIsAddModalOpen(false);
         setEditingItem(null);
+        setVariants([]);
     };
 
     const handleImport = async () => {
@@ -437,9 +469,58 @@ export const MenuScreen: React.FC = () => {
                                                 name="description"
                                                 defaultValue={editingItem?.description}
                                                 placeholder="Describe ingredients, preparation, allergens..."
-                                                rows={4}
+                                                rows={3}
                                                 className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-white text-sm outline-none focus:border-solaris-orange/50 transition-all font-medium resize-none"
                                             />
+                                        </div>
+
+                                        {/* Variants */}
+                                        <div className="border border-white/5 rounded-2xl p-5 bg-white/[0.01]">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <div className="flex items-center gap-2">
+                                                    <Layers size={14} className="text-solaris-orange" />
+                                                    <span className="text-[9px] font-black uppercase text-white/30 tracking-widest">Variantes <span className="text-solaris-orange">({variants.length}/4)</span></span>
+                                                </div>
+                                                {variants.length < 4 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={addVariant}
+                                                        className="flex items-center gap-1.5 px-3 py-2 bg-solaris-orange/10 border border-solaris-orange/20 text-solaris-orange rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-solaris-orange/20 transition-all"
+                                                    >
+                                                        <Plus size={10} /> Variante
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {variants.length === 0 && (
+                                                <p className="text-[9px] text-white/10 font-black uppercase tracking-widest text-center py-3 italic">Sin variantes — añade hasta 4</p>
+                                            )}
+                                            <div className="space-y-3">
+                                                {variants.map((v, idx) => (
+                                                    <div key={idx} className="flex gap-2 items-center">
+                                                        <input
+                                                            type="text"
+                                                            placeholder={`Variante ${idx + 1} (ej. Grande)`}
+                                                            value={v.name}
+                                                            onChange={e => updateVariant(idx, 'name', e.target.value)}
+                                                            className="flex-1 bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-white text-xs outline-none focus:border-solaris-orange/40 font-bold"
+                                                        />
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Precio"
+                                                            value={v.price}
+                                                            onChange={e => updateVariant(idx, 'price', e.target.value)}
+                                                            className="w-24 bg-white/[0.03] border border-white/10 rounded-xl py-3 px-3 text-white text-xs outline-none focus:border-solaris-orange/40 font-bold text-center"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeVariant(idx)}
+                                                            className="w-8 h-8 flex items-center justify-center text-red-500/40 hover:text-red-500 transition-colors"
+                                                        >
+                                                            <XCircle size={16} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
 
                                         {/* Submit */}

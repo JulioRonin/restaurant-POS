@@ -87,13 +87,22 @@ export const InventoryScreen: React.FC = () => {
 
     const handleCreateOrder = async () => {
         if (cart.length === 0) return;
-        await createSupplierOrder({
-            supplier: 'Global Supply Network',
-            date: new Date().toISOString(),
-            status: SupplyOrderStatus.PENDING,
-            items: [...cart],
-            totalCost: cartTotal
-        });
+        // Group by supplier — create one order per supplier
+        const bySupplier: Record<string, CartItem[]> = {};
+        for (const item of cart) {
+            const key = item.supplier || 'Sin Proveedor';
+            if (!bySupplier[key]) bySupplier[key] = [];
+            bySupplier[key].push(item);
+        }
+        for (const [supplier, items] of Object.entries(bySupplier)) {
+            await createSupplierOrder({
+                supplier,
+                date: new Date().toISOString(),
+                status: SupplyOrderStatus.PENDING,
+                items,
+                totalCost: items.reduce((s, i) => s + i.costPerUnit * i.orderQuantity, 0)
+            });
+        }
         setCart([]);
         setIsCartOpen(false);
         setActiveTab('orders');
@@ -306,39 +315,51 @@ export const InventoryScreen: React.FC = () => {
                                     <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Supply Registry</h2>
                                     <X onClick={() => setIsAddModalOpen(false)} className="text-gray-700 hover:text-white cursor-pointer" size={24} />
                                 </div>
-                                <div className="space-y-6">
+                                <div className="space-y-5">
                                     <div className="space-y-2">
-                                        <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Resource Blueprint Name</label>
+                                        <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Nombre del insumo</label>
                                         <input name="name" defaultValue={editingItem?.name} required className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none focus:border-solaris-orange/50 transition-all font-bold" />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Node Class</label>
+                                            <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Categoría</label>
                                             <select name="category" defaultValue={editingItem?.category || 'General'} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none appearance-none font-bold">
                                                 {INVENTORY_CATEGORIES.filter(c => c !== 'All').map(c => <option key={c} value={c} className="bg-[#0a0a0b]">{c}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Supplier ID</label>
-                                            <input name="supplier" defaultValue={editingItem?.supplier} required className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none font-bold" />
+                                            <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Proveedor</label>
+                                            <input name="supplier" defaultValue={editingItem?.supplier} required placeholder="Nombre del proveedor" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-white outline-none font-bold" />
+                                        </div>
+                                    </div>
+                                    {/* Unit type selector */}
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Unidad de Medida</label>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {['PZ', 'gr', 'Bolsa'].map(u => (
+                                                <label key={u} className="cursor-pointer">
+                                                    <input type="radio" name="unit" value={u} defaultChecked={editingItem?.unit === u || (!editingItem && u === 'PZ')} className="sr-only peer" />
+                                                    <div className="peer-checked:bg-solaris-orange/20 peer-checked:border-solaris-orange peer-checked:text-white bg-white/[0.03] border border-white/5 rounded-2xl py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-500 transition-all">{u}</div>
+                                                </label>
+                                            ))}
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-3 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Critical Min</label>
+                                            <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Mín. Crítico</label>
                                             <input name="minStock" type="number" defaultValue={editingItem?.minStock || 10} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-white text-center font-bold" />
                                         </div>
                                         <div className="space-y-2">
-                                             <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Ideal Cap</label>
+                                             <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Cap. Ideal</label>
                                              <input name="maxStock" type="number" defaultValue={editingItem?.maxStock || 100} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-white text-center font-bold" />
                                         </div>
                                         <div className="space-y-2">
-                                             <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Unit Cost</label>
+                                             <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Costo/Unidad</label>
                                              <input name="cost" type="number" step="0.01" defaultValue={editingItem?.costPerUnit} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-white text-center font-bold" />
                                         </div>
                                     </div>
-                                    <button type="submit" className="w-full bg-solaris-orange text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-600 transition-all text-[11px] mt-6">
-                                        Apply Data Structure
+                                    <button type="submit" className="w-full bg-solaris-orange text-white font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-600 transition-all text-[11px] mt-2">
+                                        Guardar Cambios
                                     </button>
                                 </div>
                              </form>
@@ -378,16 +399,35 @@ export const InventoryScreen: React.FC = () => {
                             <X onClick={() => setIsCartOpen(false)} className="text-gray-700 hover:text-white cursor-pointer" size={24} />
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-10 space-y-6">
-                            {cart.map(item => (
-                                <div key={item.id} className="flex justify-between items-center bg-white/[0.02] border border-white/5 p-6 rounded-2xl">
-                                    <div>
-                                        <h4 className="font-bold text-white uppercase italic">{item.name}</h4>
-                                        <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest">${item.costPerUnit} / {item.unit}</p>
+                        <div className="flex-1 overflow-y-auto p-8 space-y-6">
+                            {/* Group by supplier */}
+                            {Object.entries(
+                                cart.reduce((acc: Record<string, CartItem[]>, item) => {
+                                    const key = item.supplier || 'Sin Proveedor';
+                                    if (!acc[key]) acc[key] = [];
+                                    acc[key].push(item);
+                                    return acc;
+                                }, {})
+                            ).map(([supplier, items]) => (
+                                <div key={supplier}>
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <Truck size={12} className="text-solaris-orange" />
+                                        <span className="text-[9px] font-black uppercase text-solaris-orange tracking-widest">{supplier}</span>
+                                        <span className="ml-auto text-[9px] font-black text-gray-600">${items.reduce((s, i) => s + i.costPerUnit * i.orderQuantity, 0).toFixed(2)}</span>
                                     </div>
-                                    <div className="text-right">
-                                        <p className="font-black text-solaris-orange italic">${(item.costPerUnit * item.orderQuantity).toFixed(2)}</p>
-                                        <button onClick={() => setCart(prev => prev.filter(c => c.id !== item.id))} className="text-[8px] font-black uppercase text-red-500/60 hover:text-red-500 transition-colors">Remove</button>
+                                    <div className="space-y-3 pl-4 border-l border-solaris-orange/20">
+                                        {items.map(item => (
+                                            <div key={item.id} className="flex justify-between items-center bg-white/[0.02] border border-white/5 p-4 rounded-2xl">
+                                                <div>
+                                                    <h4 className="font-bold text-white uppercase italic text-sm">{item.name}</h4>
+                                                    <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest">{item.orderQuantity} {item.unit} · ${item.costPerUnit}/{item.unit}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-black text-solaris-orange italic">${(item.costPerUnit * item.orderQuantity).toFixed(2)}</p>
+                                                    <button onClick={() => setCart(prev => prev.filter(c => c.id !== item.id))} className="text-[8px] font-black uppercase text-red-500/60 hover:text-red-500 transition-colors">Quitar</button>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             ))}
