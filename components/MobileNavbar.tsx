@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+﻿import React, { useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -25,18 +25,18 @@ export const MobileNavbar: React.FC = () => {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const navItems = [
-        { to: '/dashboard', icon: LayoutDashboard, label: 'Dash', path: '/dashboard', feature: 'dashboard' },
+        { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', feature: 'dashboard' },
         { to: '/pos', icon: Zap, label: 'POS', path: '/pos', feature: 'pos' },
-        { to: '/my-tables', icon: Table2, label: 'Mesas', path: '/my-tables', feature: 'tables' },
-        { to: '/hostess', icon: MonitorCheck, label: 'Host', path: '/hostess', feature: 'hostess' },
+        { to: '/my-tables', icon: Table2, label: 'Mesas Activas', path: '/my-tables', feature: 'tables' },
+        { to: '/hostess', icon: MonitorCheck, label: 'Hostes', path: '/hostess', feature: 'hostess' },
         { to: '/cashier', icon: Receipt, label: 'Caja', path: '/cashier', feature: 'cashier' },
         { to: '/kitchen', icon: ChefHat, label: 'Cocina', path: '/kitchen', feature: 'kitchen' },
         { to: '/bar', icon: Wine, label: 'Bar', path: '/bar', feature: 'bar' },
-        { to: '/remote-order', icon: Smartphone, label: 'Remote', path: '/remote-order', feature: 'remote_order' },
+        { to: '/remote-order', icon: Smartphone, label: 'Remoto', path: '/remote-order', feature: 'remote_order' },
         { to: '/menu', icon: MenuSquare, label: 'Menú', path: '/menu', feature: 'menu_admin' },
-        { to: '/staff', icon: Users, label: 'Staff', path: '/staff', feature: 'staff' },
-        { to: '/inventory', icon: Boxes, label: 'Inv', path: '/inventory', feature: 'inventory' },
-        { to: '/billing', icon: CreditCard, label: 'Susc', path: '/billing', feature: null },
+        { to: '/staff', icon: Users, label: 'Personal', path: '/staff', feature: 'staff' },
+        { to: '/inventory', icon: Boxes, label: 'Inventario', path: '/inventory', feature: 'inventory' },
+        { to: '/billing', icon: CreditCard, label: 'Membresia', path: '/billing', feature: null },
         { to: '/settings', icon: Settings2, label: 'Ajustes', path: '/settings', feature: null },
     ];
 
@@ -85,7 +85,7 @@ export const MobileNavbar: React.FC = () => {
                         style={{ textDecoration: 'none' }}
                         className={({ isActive }) =>
                             isActive
-                                ? 'flex flex-col items-center justify-center rounded-2xl transition-all bg-[#f97316] text-white shadow-lg'
+                                ? 'flex flex-col items-center justify-center rounded-2xl transition-all bg-[#F98359] text-white shadow-lg'
                                 : 'flex flex-col items-center justify-center rounded-2xl transition-all text-white/50 active:scale-95'
                         }
                     >

@@ -110,11 +110,11 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
 
   const statusConfig = {
     [SubscriptionStatus.ACTIVE]: { color: 'text-green-500 border-green-500/20 bg-green-500/5', label: 'KOSO Activo' },
-    [SubscriptionStatus.WARNING]: { color: 'text-[#F98359] border-[#F98359]/20 bg-[#F98359]/5', label: 'License Warning' },
-    [SubscriptionStatus.EXPIRED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Node Expired' },
-    [SubscriptionStatus.DEMO]: { color: 'text-amber-500 border-amber-500/20 bg-amber-500/5', label: 'Demo Mode' },
-    [SubscriptionStatus.DEMO_EXPIRED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Demo Expired' },
-    [SubscriptionStatus.DEBT_BLOCKED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Debt Blocked' },
+    [SubscriptionStatus.WARNING]: { color: 'text-[#F98359] border-[#F98359]/20 bg-[#F98359]/5', label: 'Aviso de Licencia' },
+    [SubscriptionStatus.EXPIRED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Nodo Expirado' },
+    [SubscriptionStatus.DEMO]: { color: 'text-amber-500 border-amber-500/20 bg-amber-500/5', label: 'Modo Demo' },
+    [SubscriptionStatus.DEMO_EXPIRED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Demo Expirada' },
+    [SubscriptionStatus.DEBT_BLOCKED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Bloqueado por Pago' },
   }[status] || { color: 'text-gray-500 border-gray-500/20 bg-gray-500/5', label: 'Unknown' };
 
   return (
@@ -159,7 +159,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
                    </button>
                 )}
                </div>
-               <p className="text-[8px] text-[#F98359]/50 font-black uppercase tracking-[0.4em] mt-1 italic">Restaurant POS</p>
+               <p className="text-[8px] text-[#F98359]/50 font-black uppercase tracking-[0.4em] mt-1 italic">POS Restaurante</p>
             </div>
           )}
         </div>
@@ -167,57 +167,57 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
 
       <nav className="flex-1 flex flex-col w-full px-3 overflow-y-auto no-scrollbar space-y-1">
         {canAccess(activeEmployee?.role, '/dashboard') && isFeatureEnabled('dashboard') && (
-          <NavItem to="/dashboard" icon={LayoutDashboard} label="Network Hub" isExpanded={isExpanded} />
+          <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" isExpanded={isExpanded} />
         )}
         
         {canAccess(activeEmployee?.role, '/pos') && isFeatureEnabled('pos') && (
-          <NavItem to="/pos" icon={Zap} label="Quantum POS" isExpanded={isExpanded} />
+          <NavItem to="/pos" icon={Zap} label="POS" isExpanded={isExpanded} />
         )}
 
         {canAccess(activeEmployee?.role, '/my-tables') && isFeatureEnabled('tables') && (
-          <NavItem to="/my-tables" icon={Table2} label="Matrix Tables" isExpanded={isExpanded} />
+          <NavItem to="/my-tables" icon={Table2} label="Mesas Activas" isExpanded={isExpanded} />
         )}
 
         {canAccess(activeEmployee?.role, '/hostess') && isFeatureEnabled('hostess') && (
-          <NavItem to="/hostess" icon={MonitorCheck} label="Host Logic" isExpanded={isExpanded} />
+          <NavItem to="/hostess" icon={MonitorCheck} label="Hostes" isExpanded={isExpanded} />
         )}
 
         {canAccess(activeEmployee?.role, '/cashier') && isFeatureEnabled('cashier') && (
-          <NavItem to="/cashier" icon={Receipt} label="Terminal Pay" isExpanded={isExpanded} />
+          <NavItem to="/cashier" icon={Receipt} label="Caja" isExpanded={isExpanded} />
         )}
 
         {canAccess(activeEmployee?.role, '/kitchen') && isFeatureEnabled('kitchen') && (
-          <NavItem to="/kitchen" icon={ChefHat} label="Kitchen Ops" isExpanded={isExpanded} />
+          <NavItem to="/kitchen" icon={ChefHat} label="Cocina" isExpanded={isExpanded} />
         )}
 
         {canAccess(activeEmployee?.role, '/bar') && isFeatureEnabled('bar') && (
-          <NavItem to="/bar" icon={Wine} label="Bar System" isExpanded={isExpanded} />
+          <NavItem to="/bar" icon={Wine} label="Bar" isExpanded={isExpanded} />
         )}
 
         {canAccess(activeEmployee?.role, '/remote-order') && isFeatureEnabled('remote_order') && (
-          <NavItem to="/remote-order" icon={Smartphone} label="Remote Order" isExpanded={isExpanded} />
+          <NavItem to="/remote-order" icon={Smartphone} label="Orden Remota" isExpanded={isExpanded} />
         )}
         
         {canAccess(activeEmployee?.role, '/menu') && isFeatureEnabled('menu_admin') && (
-          <NavItem to="/menu" icon={MenuSquare} label="Asset Grid" isExpanded={isExpanded} />
+          <NavItem to="/menu" icon={MenuSquare} label="Menu" isExpanded={isExpanded} />
         )}
 
         <div className={`h-px my-5 ${isExpanded ? 'w-full' : 'w-8 mx-auto'}`} style={{ background: 'rgba(250,250,243,0.1)' }}></div>
 
         {canAccess(activeEmployee?.role, '/staff') && isFeatureEnabled('staff') && (
-          <NavItem to="/staff" icon={Users} label="Personnel" isExpanded={isExpanded} />
+          <NavItem to="/staff" icon={Users} label="Personal" isExpanded={isExpanded} />
         )}
         
         {canAccess(activeEmployee?.role, '/inventory') && isFeatureEnabled('inventory') && (
-          <NavItem to="/inventory" icon={Boxes} label="Supply Flow" isExpanded={isExpanded} />
+          <NavItem to="/inventory" icon={Boxes} label="Inventario" isExpanded={isExpanded} />
         )}
 
         {canAccess(activeEmployee?.role, '/billing') && (
-          <NavItem to="/billing" icon={CreditCard} label="Membership" isExpanded={isExpanded} />
+          <NavItem to="/billing" icon={CreditCard} label="Membresia" isExpanded={isExpanded} />
         )}
 
         {isSuperAdmin && (
-          <NavItem to="/super-admin" icon={ShieldCheck} label="Admin Root" isExpanded={isExpanded} />
+          <NavItem to="/super-admin" icon={ShieldCheck} label="Super Admin" isExpanded={isExpanded} />
         )}
 
         {isExpanded && (
@@ -225,7 +225,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
              <NavLink to="/billing" className={`block p-5 rounded-solaris border ${statusConfig.color} backdrop-blur-3xl relative overflow-hidden hover:scale-[1.02] transition-all cursor-pointer group/sub`}>
                 <div className="relative z-10">
                     <div className="flex justify-between items-center mb-3">
-                    <span className="text-[8px] font-black uppercase tracking-widest opacity-60 italic">Node Status</span>
+                    <span className="text-[8px] font-black uppercase tracking-widest opacity-60 italic">Estado del Nodo</span>
                     <div className="w-1.5 h-1.5 rounded-full bg-current animate-ping"></div>
                     </div>
                     <div className="text-2xl font-black italic tracking-tighter text-white">{daysRemaining}D</div>
@@ -240,7 +240,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
         )}
 
         {canAccess(activeEmployee?.role, '/settings') && (
-          <NavItem to="/settings" icon={Settings2} label="Core Adjust" isExpanded={isExpanded} />
+          <NavItem to="/settings" icon={Settings2} label="Ajustes" isExpanded={isExpanded} />
         )}
       </nav>
 
@@ -269,7 +269,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
                 onClick={signOut}
                 className="mt-6 flex items-center justify-center gap-3 w-full py-4 text-white/30 hover:text-red-500 transition-colors uppercase font-black text-[9px] tracking-[0.3em] border border-white/5 rounded-2xl hover:bg-red-500/5 hover:border-red-500/20"
             >
-                <LogOut size={14} /> Exit Core
+                <LogOut size={14} /> Salir
             </button>
         )}
       </div>
