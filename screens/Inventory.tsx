@@ -139,7 +139,7 @@ export const InventoryScreen: React.FC = () => {
                 {/* Header */}
                 <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
                     <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">Solaris Logistics</h1>
+                        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">KOSO Logistics</h1>
                         <p className="text-gray-600 font-bold text-[10px] uppercase tracking-[0.4em]">Resource Flow & Inventory Architecture</p>
                     </motion.div>
                     

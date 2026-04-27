@@ -36,7 +36,7 @@ export const AuthScreen: React.FC = () => {
     };
 
     return (
-        <div className="relative min-h-screen w-full flex items-center justify-center bg-[#111827] overflow-hidden font-sans">
+        <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden font-sans" style={{ background: '#FAFAF3' }}>
             {/* Background Shader */}
             <SolarisShader />
 
@@ -52,27 +52,27 @@ export const AuthScreen: React.FC = () => {
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: 0.2 }}
-                        className="inline-flex items-center justify-center w-16 h-16 md:w-24 md:h-24 rounded-solaris bg-white/[0.03] border border-white/10 mb-4 md:mb-8 shadow-solaris-glow"
+                        className="inline-flex items-center justify-center w-16 h-16 md:w-24 md:h-24 rounded-solaris bg-[#505530]/10 border border-[#505530]/20 mb-4 md:mb-8 overflow-hidden"
                     >
-                        <Zap className="text-solaris-orange" size={32} />
+                        <img src="/koso-logo.png" alt="KŌSO" className="w-full h-full object-cover" />
                     </motion.div>
-                    <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter text-white uppercase mb-2 md:mb-4">Solaris Core</h1>
-                    <p className="text-white/20 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.6em] italic">Ultimate OS Control Terminal</p>
+                    <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter text-[#1a1c14] uppercase mb-2 md:mb-4">KŌSO POS</h1>
+                    <p className="text-[#505530]/50 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.6em] italic">Restaurant Management System</p>
                 </div>
 
-                <GlowCard glowColor="orange" customSize className="w-full !p-0 overflow-hidden border border-white/5 backdrop-blur-3xl bg-white/[0.02] rounded-solaris shadow-2xl">
+                <GlowCard glowColor="orange" customSize className="w-full !p-0 overflow-hidden border border-[#505530]/20 bg-white rounded-solaris shadow-2xl">
                     <div className="p-6 md:p-14">
-                        <div className="flex gap-6 md:gap-10 mb-8 md:mb-12 border-b border-white/5 overflow-x-auto no-scrollbar">
+                            <div className="border-b border-[#505530]/10">
                             <button 
                                 onClick={() => setIsLogin(true)}
-                                className={`pb-4 md:pb-6 text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] transition-all relative whitespace-nowrap ${isLogin ? 'text-solaris-orange' : 'text-white/20 hover:text-white/40'}`}
+                                className={`pb-4 md:pb-6 text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] transition-all relative whitespace-nowrap ${isLogin ? 'text-[#F98359]' : 'text-[#505530]/30 hover:text-[#505530]/60'}`}
                             >
                                 Iniciar Sesión
                                 {isLogin && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-solaris-orange shadow-solaris-glow" />}
                             </button>
                             <button 
                                 onClick={() => setIsLogin(false)}
-                                className={`pb-6 text-[11px] font-black uppercase tracking-[0.3em] transition-all relative ${!isLogin ? 'text-solaris-orange' : 'text-white/20 hover:text-white/40'}`}
+                                className={`pb-6 text-[11px] font-black uppercase tracking-[0.3em] transition-all relative ${!isLogin ? 'text-[#F98359]' : 'text-[#505530]/30 hover:text-[#505530]/60'}`}
                             >
                                 Registrar Negocio
                                 {!isLogin && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-solaris-orange shadow-solaris-glow" />}
@@ -100,25 +100,25 @@ export const AuthScreen: React.FC = () => {
                                         className="space-y-8"
                                     >
                                         <div className="relative group/field">
-                                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-3 px-2">Nombre Comercial</label>
+                                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#505530]/60 mb-3 px-2">Nombre Comercial</label>
                                             <div className="relative">
-                                                <User className="absolute left-5 top-1/2 -translate-y-1/2 text-white/10 group-focus-within/field:text-solaris-orange transition-colors" size={20} />
+                                                <User className="absolute left-5 top-1/2 -translate-y-1/2 text-[#505530]/30 group-focus-within/field:text-[#F98359] transition-colors" size={20} />
                                                 <input 
                                                     type="text" required value={businessName}
                                                     onChange={(e) => setBusinessName(e.target.value)}
-                                                    className="w-full bg-white/[0.03] border border-white/5 rounded-[22px] py-5 pl-14 pr-6 text-white text-sm focus:bg-white/[0.06] focus:border-solaris-orange/30 transition-all outline-none placeholder:text-white/5"
-                                                    placeholder="ej. Solaris Bistro"
+                                                    className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#1a1c14] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
+                                                    placeholder="ej. Mi Restaurante"
                                                 />
                                             </div>
                                         </div>
                                         <div className="relative group/field">
-                                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-3 px-2">Nombre Completo (Dueño)</label>
+                                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#505530]/60 mb-3 px-2">Nombre Completo (Dueño)</label>
                                             <div className="relative">
-                                                <ShieldCheck className="absolute left-5 top-1/2 -translate-y-1/2 text-white/10 group-focus-within/field:text-solaris-orange transition-colors" size={20} />
+                                                <ShieldCheck className="absolute left-5 top-1/2 -translate-y-1/2 text-[#505530]/30 group-focus-within/field:text-[#F98359] transition-colors" size={20} />
                                                 <input 
                                                     type="text" required value={fullName}
                                                     onChange={(e) => setFullName(e.target.value)}
-                                                    className="w-full bg-white/[0.03] border border-white/5 rounded-[22px] py-5 pl-14 pr-6 text-white text-sm focus:bg-white/[0.06] focus:border-solaris-orange/30 transition-all outline-none placeholder:text-white/5"
+                                                    className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#1a1c14] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
                                                     placeholder="Tu nombre real"
                                                 />
                                             </div>
@@ -128,26 +128,26 @@ export const AuthScreen: React.FC = () => {
                             </AnimatePresence>
 
                             <div className="relative group/field">
-                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-3 px-2">E-mail Operativo</label>
+                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#505530]/60 mb-3 px-2">E-mail</label>
                                 <div className="relative">
-                                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-white/10 group-focus-within/field:text-solaris-orange transition-colors" size={20} />
+                                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-[#505530]/30 group-focus-within/field:text-[#F98359] transition-colors" size={20} />
                                     <input 
                                         type="email" required value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full bg-white/[0.03] border border-white/5 rounded-[22px] py-5 pl-14 pr-6 text-white text-sm focus:bg-white/[0.06] focus:border-solaris-orange/30 transition-all outline-none placeholder:text-white/5"
-                                        placeholder="terminal@solaris.os"
+                                        className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#1a1c14] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
+                                        placeholder="correo@turestaurante.com"
                                     />
                                 </div>
                             </div>
 
                             <div className="relative group/field">
-                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-3 px-2">Security PIN / Password</label>
+                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#505530]/60 mb-3 px-2">Contrasena</label>
                                 <div className="relative">
-                                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-white/10 group-focus-within/field:text-solaris-orange transition-colors" size={20} />
+                                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-[#505530]/30 group-focus-within/field:text-[#F98359] transition-colors" size={20} />
                                     <input 
                                         type="password" required value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full bg-white/[0.03] border border-white/5 rounded-[22px] py-5 pl-14 pr-6 text-white text-sm focus:bg-white/[0.06] focus:border-solaris-orange/30 transition-all outline-none placeholder:text-white/5"
+                                        className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#1a1c14] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
                                         placeholder="••••••••"
                                     />
                                 </div>
@@ -172,8 +172,8 @@ export const AuthScreen: React.FC = () => {
                     </div>
                 </GlowCard>
 
-                <p className="text-center mt-12 text-[10px] font-black text-white/10 uppercase tracking-[0.5em] italic mb-16">
-                    Solaris OS v4.1 • Secure Transaction Layer Encrypted
+                <p className="text-center mt-12 text-[10px] font-black text-[#505530]/30 uppercase tracking-[0.5em] italic mb-16">
+                    KŌSO POS v1.0 • Secure Restaurant Management
                 </p>
             </motion.div>
         </div>

@@ -175,7 +175,7 @@ export const MenuScreen: React.FC = () => {
             {/* Header */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center px-8 pt-8 pb-6 gap-4 shrink-0 border-b border-white/5">
                 <div>
-                    <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-1">Solaris Menu</h1>
+                    <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-1">KOSO Menu</h1>
                     <p className="text-white/20 font-bold text-[10px] uppercase tracking-[0.4em]">Gastronomical Asset Registry & Pricing Logic</p>
                 </div>
                 <div className="flex gap-3">

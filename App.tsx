@@ -90,7 +90,7 @@ const AppContent: React.FC = () => {
     return (
       <div className="fixed inset-0 bg-[#1f2937] flex flex-col items-center justify-center text-white">
         <div className="w-12 h-12 border-4 border-solaris-orange/20 border-t-solaris-orange rounded-full animate-spin mb-6 shadow-solaris-glow"></div>
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-solaris-orange animate-pulse italic">Solaris OS Core Booting</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-solaris-orange animate-pulse italic">KOSO POS Iniciando</p>
       </div>
     );
   }
@@ -154,7 +154,7 @@ const AppContent: React.FC = () => {
               <Route path="/my-tables" element={<RoleGuard path="/my-tables"><MyTablesScreen /></RoleGuard>} />
               
               <Route path="/onboarding" element={<OnboardingScreen />} />
-              <Route path="*" element={<div className="flex flex-col items-center justify-center h-full text-solaris-orange uppercase font-black tracking-[0.5em] italic text-[10px] gap-6"><Activity size={48} className="animate-pulse" /> 404 - Module Lost in Solaris</div>} />
+              <Route path="*" element={<div className="flex flex-col items-center justify-center h-full text-solaris-orange uppercase font-black tracking-[0.5em] italic text-[10px] gap-6"><Activity size={48} className="animate-pulse" /> 404 - Módulo No Encontrado</div>} />
             </Routes>
           </Layout>
         </SubscriptionGuard>

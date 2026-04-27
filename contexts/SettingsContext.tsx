@@ -38,7 +38,7 @@ interface SettingsContextType {
 }
 
 const DEFAULT_SETTINGS: BusinessSettings = {
-  name: 'Solaris Restaurante',
+  name: 'KOSO POS',
   legalName: '',
   rfc: '',
   address: '',

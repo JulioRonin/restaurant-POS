@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -109,7 +109,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
   const { settings } = useSettings();
 
   const statusConfig = {
-    [SubscriptionStatus.ACTIVE]: { color: 'text-green-500 border-green-500/20 bg-green-500/5', label: 'Solaris Active' },
+    [SubscriptionStatus.ACTIVE]: { color: 'text-green-500 border-green-500/20 bg-green-500/5', label: 'KOSO Activo' },
     [SubscriptionStatus.WARNING]: { color: 'text-solaris-orange border-solaris-orange/20 bg-solaris-orange/5', label: 'License Warning' },
     [SubscriptionStatus.EXPIRED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Node Expired' },
     [SubscriptionStatus.DEMO]: { color: 'text-amber-500 border-amber-500/20 bg-amber-500/5', label: 'Demo Mode' },
@@ -217,7 +217,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
         )}
 
         {isSuperAdmin && (
-          <NavItem to="/super-admin" icon={ShieldCheck} label="Solaris Root" isExpanded={isExpanded} />
+          <NavItem to="/super-admin" icon={ShieldCheck} label="Admin Root" isExpanded={isExpanded} />
         )}
 
         {isExpanded && (

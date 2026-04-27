@@ -67,7 +67,7 @@ export const MyTablesScreen: React.FC = () => {
             <header className="mb-10 flex justify-between items-start md:items-end flex-wrap gap-6 shrink-0">
                 <div>
                     <h1 className="text-5xl font-black italic tracking-tighter uppercase mb-2 text-[#1a1c14]">Node Matrix Monitor</h1>
-                    <p className="text-solaris-orange/40 font-black text-[11px] uppercase tracking-[0.5em] italic">Active Duty Node Monitoring • Solaris OS v4</p>
+                    <p className="text-solaris-orange/40 font-black text-[11px] uppercase tracking-[0.5em] italic">Active Duty Node Monitoring • KOSO POS v1</p>
                 </div>
                 <div className="bg-white/[0.03] border border-white/5 px-8 py-5 rounded-2xl text-right">
                     <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-1 italic">Active Clusters</p>

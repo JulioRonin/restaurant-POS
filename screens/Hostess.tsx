@@ -817,7 +817,7 @@ export const HostessScreen: React.FC = () => {
                         >
                             <AlertTriangle size={52} className="text-red-500 mx-auto mb-6" />
                             <h2 className="text-2xl font-black italic text-[#1a1c14] mb-2 uppercase tracking-tighter">¿Purgar Nodo?</h2>
-                            <p className="text-white/40 mb-10 font-bold text-[10px] uppercase tracking-[0.2em] leading-relaxed px-4">Esta acción eliminará la mesa <b className="text-[#1a1c14]">{selectedTable?.name}</b> permanentemente del ecosistema Solaris.</p>
+                            <p className="text-white/40 mb-10 font-bold text-[10px] uppercase tracking-[0.2em] leading-relaxed px-4">Esta acción eliminará la mesa <b className="text-[#1a1c14]">{selectedTable?.name}</b> permanentemente del sistema KOSO.</p>
                             <div className="flex flex-col gap-4">
                                 <button onClick={handleDeleteTableAction} className="w-full py-5 bg-red-600 text-[#1a1c14] rounded-[24px] font-black italic uppercase text-[11px] tracking-[0.3em] shadow-[0_15px_30px_rgba(220,38,38,0.3)] hover:scale-[1.05] transition-all">Confirmar Purga</button>
                                 <button onClick={() => setIsDeleteConfirmOpen(false)} className="w-full py-4 bg-white/5 text-white/20 rounded-xl font-black italic uppercase text-[10px] tracking-widest hover:text-[#1a1c14] transition-all">Abortar Procedimiento</button>
