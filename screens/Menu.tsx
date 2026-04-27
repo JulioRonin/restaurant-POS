@@ -78,7 +78,7 @@ export const MenuScreen: React.FC = () => {
         setFormStatus('ACTIVE');
         setIsAddingNewCategory(false);
         setNewCategoryName('');
-        setVariants(item.variants?.map(v => ({ name: v.name, price: v.price?.toString() || "" })) || []);
+        setVariants([]);
         setIsAddModalOpen(true);
     };
 
