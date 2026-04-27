@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { MenuItem, OrderItem, Order, OrderStatus, Table, OrderSource } from '../types';
 import { useOrders } from '../contexts/OrderContext';
@@ -67,17 +67,20 @@ export const POSScreen: React.FC = () => {
     });
   }, [activeCategory, searchQuery, activeMenuItems]);
 
-  const addToCart = (item: MenuItem) => {
+  const addToCart = (item: MenuItem, variant?: any) => {
     setCart(prev => {
-      const existing = prev.find(i => i.id === item.id);
-      if (existing) return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
-      return [...prev, { ...item, quantity: 1, notes: '' }];
+      const existing = prev.find(i => i.id === item.id && i.selectedVariant?.name === variant?.name);
+      if (existing) {
+        return prev.map(i => (i.id === item.id && i.selectedVariant?.name === variant?.name) ? { ...i, quantity: i.quantity + 1 } : i);
+      }
+      return [...prev, { ...item, quantity: 1, notes: '', selectedVariant: variant }];
     });
+    if (variant) setVariantItem(null);
   };
 
-  const updateQuantity = (id: string, delta: number) => {
-    setCart(prev => prev.map(item => {
-      if (item.id === id) return { ...item, quantity: Math.max(1, item.quantity + delta) };
+  const updateQuantity = (index: number, delta: number) => {
+    setCart(prev => prev.map((item, i) => {
+      if (i === index) return { ...item, quantity: Math.max(1, item.quantity + delta) };
       return item;
     }));
   };
@@ -229,11 +232,17 @@ export const POSScreen: React.FC = () => {
                         layout 
                         whileHover={{ y: -2, scale: 1.02 }}
                         whileTap={{ scale: 0.97 }}
-                        onClick={() => addToCart(item)}
+                        onClick={() => {
+                            if (item.variants && item.variants.length > 0) {
+                                setVariantItem(item);
+                            } else {
+                                addToCart(item);
+                            }
+                        }}
                         className="cursor-pointer"
                     >
-                        <div className="bg-white border border-[#505530]/12 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-[#F98359]/40 transition-all group">
-                           <div className="relative h-24 sm:h-28 overflow-hidden">
+                        <div className="bg-white border border-[#505530]/12 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-[#F98359]/40 transition-all group flex flex-col h-full">
+                           <div className="relative h-24 sm:h-28 overflow-hidden shrink-0">
                                 <img src={item.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
                                 <div className="absolute top-1.5 right-1.5 bg-[#F98359] px-2 py-0.5 rounded-md shadow-md">
                                     <span className="text-[9px] font-black text-[#505530] tracking-wider">${item.price.toFixed(0)}</span>
@@ -242,16 +251,31 @@ export const POSScreen: React.FC = () => {
                                     <Plus size={10} />
                                 </div>
                            </div>
-                           <div className="p-2">
-                               <h3 className="text-[9px] font-black uppercase text-[#505530] tracking-tight leading-tight truncate">{item.name}</h3>
-                               <p className="text-[7px] font-bold text-[#505530]/40 uppercase tracking-widest truncate mt-0.5">{item.category}</p>
+                           <div className="p-2 flex-1 flex flex-col justify-between">
+                               <div>
+                                   <h3 className="text-[9px] font-black uppercase text-[#505530] tracking-tight leading-tight line-clamp-2">{item.name}</h3>
+                                   <p className="text-[7px] font-bold text-[#505530]/40 uppercase tracking-widest truncate mt-0.5">{item.category}</p>
+                               </div>
+                               
+                               {item.variants && item.variants.length > 0 && (
+                                   <div className="mt-2 pt-2 border-t border-[#505530]/5">
+                                       <button 
+                                           className="w-full py-1.5 bg-[#F98359]/10 text-[#F98359] rounded-lg text-[7px] font-black uppercase tracking-widest hover:bg-[#F98359] hover:text-white transition-all border border-[#F98359]/20"
+                                           onClick={(e) => {
+                                               e.stopPropagation();
+                                               setVariantItem(item);
+                                           }}
+                                       >
+                                           Variantes
+                                       </button>
+                                   </div>
+                               )}
                            </div>
                         </div>
                     </motion.div>
                 ))}
             </div>
         </div>
-
         {/* Floating Cart Button (Mobile Only) */}
         <div className="lg:hidden fixed z-[90]" style={{ bottom: '100px', right: '20px' }}>
             <button 
@@ -339,9 +363,9 @@ export const POSScreen: React.FC = () => {
                              />
 
                              <div className="mt-4 flex justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => updateQuantity(item.id, -1)} className="w-8 h-8 bg-white/5 rounded-lg text-[#505530]/55 hover:text-[#505530] hover:bg-white/10 transition-all flex items-center justify-center"><Minus size={14} /></button>
-                                <button onClick={() => updateQuantity(item.id, 1)} className="w-8 h-8 bg-white/5 rounded-lg text-[#505530]/55 hover:text-[#505530] hover:bg-white/10 transition-all flex items-center justify-center"><Plus size={14} /></button>
-                                <button onClick={() => setCart(prev => prev.filter(i => i.id !== item.id))} className="w-8 h-8 bg-red-500/10 rounded-lg text-red-500/40 hover:text-red-500 hover:bg-red-500/20 transition-all flex items-center justify-center"><Trash2 size={14} /></button>
+                                <button onClick={() => updateQuantity(idx, -1)} className="w-8 h-8 bg-white/5 rounded-lg text-[#505530]/55 hover:text-[#505530] hover:bg-white/10 transition-all flex items-center justify-center"><Minus size={14} /></button>
+                                <button onClick={() => updateQuantity(idx, 1)} className="w-8 h-8 bg-white/5 rounded-lg text-[#505530]/55 hover:text-[#505530] hover:bg-white/10 transition-all flex items-center justify-center"><Plus size={14} /></button>
+                                <button onClick={() => setCart(prev => prev.filter((_, i) => i !== idx))} className="w-8 h-8 bg-red-500/10 rounded-lg text-red-500/40 hover:text-red-500 hover:bg-red-500/20 transition-all flex items-center justify-center"><Trash2 size={14} /></button>
                              </div>
                         </motion.div>
                     ))
