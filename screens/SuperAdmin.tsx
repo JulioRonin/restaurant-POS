@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getSupabase } from '../services/auth';
 import { useUser } from '../contexts/UserContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -25,6 +25,7 @@ interface Business {
   name: string;
   plan: 'basic' | 'premium' | 'enterprise' | 'demo';
   demo_until?: string | null;
+  subscription_expiry?: string | null;
   is_active: boolean;
   created_at: string;
   custom_price?: number | null;
@@ -49,6 +50,8 @@ export default function SuperAdminScreen() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentForm, setPaymentForm] = useState({ amount: 850, method: 'Transferencia' });
 
   useEffect(() => {
     if (isSuperAdmin) {
@@ -135,17 +138,13 @@ export default function SuperAdminScreen() {
     try {
       const updates: any = { plan };
       
-      // If activating demo, set expiry to 15 days from now
       if (plan === 'demo') {
           const demoUntil = new Date();
           demoUntil.setDate(demoUntil.getDate() + 15);
           updates.demo_until = demoUntil.toISOString();
       } else {
-          updates.demo_until = null; // Clear demo if upgrading/changing
-          
-          // If changing to basic or pro, ensure it's active
+          updates.demo_until = null;
           updates.is_active = true;
-          // Optionally extend subscription by 30 days if it was demo/expired
           if (selectedBusiness.plan === 'demo') {
               const newExpiry = new Date();
               newExpiry.setDate(newExpiry.getDate() + 30);
@@ -170,6 +169,49 @@ export default function SuperAdminScreen() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleRegisterPayment = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!selectedBusiness) return;
+      const supabase = getSupabase();
+      if (!supabase) return;
+      
+      setSaving(true);
+      try {
+          const newExpiry = selectedBusiness.subscription_expiry ? new Date(selectedBusiness.subscription_expiry) : new Date();
+          if (newExpiry < new Date()) {
+             newExpiry.setTime(new Date().getTime());
+          }
+          newExpiry.setMonth(newExpiry.getMonth() + 1); // Añade 1 mes
+          
+          const { error: pError } = await supabase.from('subscription_payments').insert({
+              business_id: selectedBusiness.id,
+              amount: paymentForm.amount,
+              method: paymentForm.method,
+              period_start: new Date().toISOString(),
+              period_end: newExpiry.toISOString()
+          });
+          if (pError) throw pError;
+          
+          const { error: bError } = await supabase.from('businesses').update({
+              subscription_expiry: newExpiry.toISOString(),
+              is_active: true
+          }).eq('id', selectedBusiness.id);
+          if (bError) throw bError;
+          
+          const updatedBusiness = { ...selectedBusiness, subscription_expiry: newExpiry.toISOString(), is_active: true };
+          setSelectedBusiness(updatedBusiness);
+          setBusinesses(prev => prev.map(b => b.id === selectedBusiness.id ? updatedBusiness : b));
+          
+          alert('Pago registrado exitosamente. Vigencia extendida por 1 mes.');
+          setShowPaymentModal(false);
+      } catch (err) {
+          console.error(err);
+          alert('Error al registrar el pago. Asegúrate de tener los permisos.');
+      } finally {
+          setSaving(false);
+      }
   };
 
   const toggleBusinessStatus = async () => {
@@ -282,10 +324,11 @@ export default function SuperAdminScreen() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
         {/* Global Strategy Section */}
-        <div className="lg:col-span-12 mb-4">
+        <div className="lg:col-span-12 space-y-6 mb-4">
             <GlobalConfigPanel />
+            <PaymentsDashboard businesses={businesses} />
         </div>
 
         {/* Business List */}
@@ -360,15 +403,35 @@ export default function SuperAdminScreen() {
                    </div>
                 </div>
                 
-                <div className="flex flex-col items-end">
-                    <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-2 ${
-                    selectedBusiness.is_active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                    }`}>
-                    {selectedBusiness.is_active ? 'Cuenta Activa' : 'Cuenta Suspendida'}
-                    </span>
-                    <div className="text-[10px] text-slate-500 font-bold flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
-                        Admin: {selectedBusinessAdmin?.full_name || 'Sin asignar'}
+                <div className="flex flex-col items-start md:items-end gap-3 mt-4 md:mt-0">
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => {
+                                setPaymentForm({ amount: selectedBusiness.custom_price || 850, method: 'Transferencia' });
+                                setShowPaymentModal(true);
+                            }}
+                            className="px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest bg-blue-600/10 text-blue-400 border border-blue-500/20 hover:bg-blue-600 hover:text-[#1a1c14] transition-colors shadow-lg shadow-blue-500/10"
+                        >
+                            Registrar Pago
+                        </button>
+                        <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${
+                        selectedBusiness.is_active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                        }`}>
+                        {selectedBusiness.is_active ? 'Activa' : 'Suspendida'}
+                        </span>
+                    </div>
+                    
+                    <div className="text-[10px] text-slate-500 font-bold flex flex-col md:items-end gap-1">
+                        <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            Vence: <span className={selectedBusiness.subscription_expiry && new Date(selectedBusiness.subscription_expiry) < new Date() ? 'text-red-400 font-black' : 'text-emerald-400'}>
+                                {selectedBusiness.subscription_expiry ? new Date(selectedBusiness.subscription_expiry).toLocaleDateString() : 'Sin fecha'}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                            <Mail className="w-3 h-3" />
+                            Admin: {selectedBusinessAdmin?.full_name || 'Sin asignar'}
+                        </div>
                     </div>
                 </div>
               </div>
@@ -522,7 +585,7 @@ export default function SuperAdminScreen() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-2 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
                     {features.length === 0 ? (
                         <div className="p-4 text-center border border-dashed border-slate-800 rounded-xl">
                             <p className="text-[10px] text-slate-600 mb-2">No se detectaron módulos.</p>
@@ -645,6 +708,56 @@ export default function SuperAdminScreen() {
           )}
         </div>
       </div>
+      {/* Payment Modal */}
+      {showPaymentModal && selectedBusiness && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-8 max-w-sm w-full shadow-2xl relative">
+                  <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-xl font-black text-slate-200">Registrar Pago</h3>
+                      <button onClick={() => setShowPaymentModal(false)} className="text-slate-500 hover:text-slate-300">
+                          <XCircle size={24} />
+                      </button>
+                  </div>
+                  <form onSubmit={handleRegisterPayment} className="space-y-4">
+                      <div>
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Monto (MXN)</label>
+                          <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                              <input 
+                                  type="number" 
+                                  required
+                                  value={paymentForm.amount}
+                                  onChange={e => setPaymentForm({...paymentForm, amount: Number(e.target.value)})}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-8 pr-4 text-slate-200 outline-none focus:border-blue-500"
+                              />
+                          </div>
+                      </div>
+                      <div>
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Método</label>
+                          <select 
+                              value={paymentForm.method}
+                              onChange={e => setPaymentForm({...paymentForm, method: e.target.value})}
+                              className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-slate-200 outline-none focus:border-blue-500 appearance-none"
+                          >
+                              <option value="Transferencia">Transferencia</option>
+                              <option value="Efectivo">Efectivo</option>
+                              <option value="Tarjeta">Tarjeta</option>
+                              <option value="Stripe">Stripe (Manual)</option>
+                          </select>
+                      </div>
+                      <div className="pt-4">
+                          <button 
+                              type="submit" 
+                              disabled={saving}
+                              className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-[#1a1c14] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                          >
+                              {saving ? 'Registrando...' : 'Confirmar Pago'}
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      )}
     </div>
   );
 }
@@ -721,3 +834,48 @@ function BoxIcon(props: any) {
     </svg>
   )
 }
+
+const PaymentsDashboard = ({ businesses }: { businesses: Business[] }) => {
+    // KPI Calculations
+    const activePro = businesses.filter(b => b.is_active && (b.plan === 'premium' || b.plan === 'enterprise' || b.plan === 'basic')).length;
+    const activeDemo = businesses.filter(b => b.plan === 'demo').length;
+    const inactive = businesses.filter(b => !b.is_active).length;
+    
+    // Revenue estimation: sum custom_price if exists, else 850 (assuming standard price)
+    // Only count active paid plans
+    const mrr = businesses.filter(b => b.is_active && b.plan !== 'demo').reduce((acc, curr) => {
+        return acc + (curr.custom_price ? curr.custom_price : 850);
+    }, 0);
+
+    return (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-5 relative overflow-hidden group">
+                <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-blue-500/5 rounded-full blur-xl group-hover:bg-blue-500/10 transition-colors" />
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><CheckCircle2 size={12} className="text-blue-500" /> Cuentas Activas</h3>
+                <p className="text-3xl font-black text-slate-200">{activePro}</p>
+                <p className="text-[8px] text-slate-600 uppercase tracking-widest mt-2">Planes de pago</p>
+            </div>
+            
+            <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-5 relative overflow-hidden group">
+                <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-amber-500/5 rounded-full blur-xl group-hover:bg-amber-500/10 transition-colors" />
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Zap size={12} className="text-amber-500" /> En Demo</h3>
+                <p className="text-3xl font-black text-slate-200">{activeDemo}</p>
+                <p className="text-[8px] text-slate-600 uppercase tracking-widest mt-2">Pruebas gratuitas</p>
+            </div>
+
+            <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-5 relative overflow-hidden group">
+                <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-red-500/5 rounded-full blur-xl group-hover:bg-red-500/10 transition-colors" />
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><XCircle size={12} className="text-red-500" /> Inactivas</h3>
+                <p className="text-3xl font-black text-slate-200">{inactive}</p>
+                <p className="text-[8px] text-slate-600 uppercase tracking-widest mt-2">Suspendidas / Onboarding</p>
+            </div>
+
+            <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-5 relative overflow-hidden group">
+                <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-colors" />
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><CreditCard size={12} className="text-emerald-500" /> Ingreso Mensual (MRR)</h3>
+                <p className="text-3xl font-black text-slate-200">${mrr.toLocaleString()}</p>
+                <p className="text-[8px] text-slate-600 uppercase tracking-widest mt-2">Proyección en MXN</p>
+            </div>
+        </div>
+    );
+};
