@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { useUser } from '../contexts/UserContext';
 import { OrderStatus, TableStatus, OrderSource, MenuItem } from '../types';
@@ -93,7 +93,7 @@ export const MyTablesScreen: React.FC = () => {
     };
 
     const handleCancelOrder = (id: string) => {
-        if (window.confirm('¿Confirmar CANCELACIÓN total del nodo? Esta acción purgará los registros activos.')) {
+        if (window.confirm('¿Estás seguro de que deseas CANCELAR este pedido? Esta acción lo eliminará de la vista de mesas y de la caja.')) {
             removeOrder(id);
         }
     };
