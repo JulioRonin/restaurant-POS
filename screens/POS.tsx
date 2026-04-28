@@ -412,6 +412,16 @@ export const POSScreen: React.FC = () => {
                 </div>
             </div>
 
+            <div className="flex gap-3 mb-4">
+                <button 
+                    onClick={() => setShowTableModal(true)}
+                    className={`flex-1 py-3 md:py-4 rounded-xl md:rounded-[22px] flex items-center justify-center gap-2 transition-all border ${selectedTable ? 'bg-[#505530] text-[#FAFAF3] border-[#505530] shadow-olive-glow' : 'bg-white text-[#505530]/60 border-[#505530]/20 hover:bg-[#505530]/5'}`}
+                >
+                    <TableIcon size={16} />
+                    <span className="text-[10px] font-black uppercase tracking-widest">{selectedTable ? selectedTable.name : 'Select Table'}</span>
+                </button>
+            </div>
+
             <button
                 onClick={handleSendOrder}
                 disabled={cart.length === 0}
