@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { MenuItem, OrderItem, Order, OrderStatus, Table, OrderSource } from '../types';
+import { MenuItem, OrderItem, Order, OrderStatus, Table, OrderSource, MenuItemVariant } from '../types';
 import { useOrders } from '../contexts/OrderContext';
 import { useUser } from '../contexts/UserContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -43,7 +43,9 @@ export const POSScreen: React.FC = () => {
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [selectedSource, setSelectedSource] = useState<OrderSource>(OrderSource.DINE_IN);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showTableModal, setShowTableModal] = useState(false); const [variantItem, setVariantItem] = useState<MenuItem | null>(null);
+  const [showTableModal, setShowTableModal] = useState(false); 
+  const [variantItem, setVariantItem] = useState<MenuItem | null>(null);
+  const [selectedVariants, setSelectedVariants] = useState<MenuItemVariant[]>([]);
   const [printerReady, setPrinterReady] = useState(false);
 
   useEffect(() => {
@@ -67,15 +69,25 @@ export const POSScreen: React.FC = () => {
     });
   }, [activeCategory, searchQuery, activeMenuItems]);
 
-  const addToCart = (item: MenuItem, variant?: any) => {
+  const addToCart = (item: MenuItem, variants?: MenuItemVariant[]) => {
     setCart(prev => {
-      const existing = prev.find(i => i.id === item.id && i.selectedVariant?.name === variant?.name);
+      const variantKey = (variants || []).map(v => v.name).sort().join('|');
+      const existing = prev.find(i => 
+        i.id === item.id && 
+        (i.selectedVariants || []).map(v => v.name).sort().join('|') === variantKey
+      );
+      
       if (existing) {
-        return prev.map(i => (i.id === item.id && i.selectedVariant?.name === variant?.name) ? { ...i, quantity: i.quantity + 1 } : i);
+        return prev.map(i => 
+          (i.id === item.id && (i.selectedVariants || []).map(v => v.name).sort().join('|') === variantKey) 
+          ? { ...i, quantity: i.quantity + 1 } 
+          : i
+        );
       }
-      return [...prev, { ...item, quantity: 1, notes: '', selectedVariant: variant }];
+      return [...prev, { ...item, quantity: 1, notes: '', selectedVariants: variants, selectedVariant: variants?.[0] }];
     });
-    if (variant) setVariantItem(null);
+    setVariantItem(null);
+    setSelectedVariants([]);
   };
 
   const updateQuantity = (index: number, delta: number) => {
@@ -87,7 +99,12 @@ export const POSScreen: React.FC = () => {
 
   const handleSendOrder = async () => {
     if (cart.length === 0) return;
-    const total = cart.reduce((sum, item) => { const price = item.selectedVariant?.price !== undefined ? item.selectedVariant.price : item.price; return sum + (price * item.quantity); }, 0);
+    const total = cart.reduce((sum, item) => { 
+      const price = (item.selectedVariants && item.selectedVariants.length > 0)
+        ? item.selectedVariants.reduce((s, v) => s + (v.price || 0), 0)
+        : (item.selectedVariant?.price !== undefined ? item.selectedVariant.price : item.price);
+      return sum + (price * item.quantity); 
+    }, 0);
     const newOrder: Order = {
         id: crypto.randomUUID(),
         tableId: selectedTable?.id || 'COUNTER',
@@ -105,7 +122,6 @@ export const POSScreen: React.FC = () => {
         await addOrder(newOrder);
         if (settings.isKitchenPrintingEnabled) {
           let printSuccess = false;
-          // Always attempt direct printing if a device is configured
           if (printerService.isConnected() || (settings.connectedDeviceName && settings.connectedDeviceName !== 'None')) {
             try {
                 printSuccess = await printerService.printKitchenTicket(newOrder, settings);
@@ -125,7 +141,12 @@ export const POSScreen: React.FC = () => {
 
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  const total = cart.reduce((sum, item) => { const price = item.selectedVariant?.price !== undefined ? item.selectedVariant.price : item.price; return sum + (price * item.quantity); }, 0);
+  const total = cart.reduce((sum, item) => { 
+    const price = (item.selectedVariants && item.selectedVariants.length > 0)
+      ? item.selectedVariants.reduce((s, v) => s + (v.price || 0), 0)
+      : (item.selectedVariant?.price !== undefined ? item.selectedVariant.price : item.price);
+    return sum + (price * item.quantity); 
+  }, 0);
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
@@ -188,15 +209,13 @@ export const POSScreen: React.FC = () => {
                         <Printer size={10} /> {printerReady ? 'ON' : 'ERR'}
                     </button>
                 )}
-                {activeEmployee && (
-                    <div className="flex items-center gap-2">
-                        <div className="text-right hidden sm:block">
-                            <p className="text-[6px] font-black text-[#505530]/45 uppercase tracking-widest leading-none mb-0.5">Op</p>
-                            <p className="text-[9px] font-black text-[#505530] italic leading-none">{activeEmployee.name}</p>
-                        </div>
-                        <img src={activeEmployee.image} className="w-8 h-8 rounded-lg object-cover border border-white/10 shadow-lg" alt="" />
-                    </div>
-                )}
+                
+                <button 
+                    onClick={() => setShowTableModal(true)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[7px] font-black uppercase tracking-widest border transition-all h-[32px] ${selectedTable ? 'bg-[#505530] text-white border-[#505530]' : 'bg-white text-[#505530]/45 border-[#505530]/10 hover:border-[#505530]/30'}`}
+                >
+                    <TableIcon size={10} /> {selectedTable ? selectedTable.name : 'Table'}
+                </button>
             </div>
           </div>
         </div>
@@ -205,7 +224,7 @@ export const POSScreen: React.FC = () => {
         <div className="mb-3 flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
             <button
                 onClick={() => setActiveCategory('All')}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${activeCategory === 'All' ? 'bg-[#505530] text-[#505530] shadow-olive-glow scale-105' : 'bg-white text-[#505530]/80 border border-[#505530]/20 hover:bg-[#505530]/10'}`}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${activeCategory === 'All' ? 'bg-[#505530] text-[#FAFAF3] shadow-olive-glow scale-105' : 'bg-white text-[#505530]/80 border border-[#505530]/20 hover:bg-[#505530]/10'}`}
             >
                 Global
             </button>
@@ -213,7 +232,7 @@ export const POSScreen: React.FC = () => {
                 <button
                     key={cat}
                     onClick={() => setActiveCategory(cat)}
-                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${activeCategory === cat ? 'bg-[#505530] text-[#505530] shadow-olive-glow scale-105' : 'bg-white text-[#505530]/80 border border-[#505530]/20 hover:bg-[#505530]/10'}`}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${activeCategory === cat ? 'bg-[#505530] text-[#FAFAF3] shadow-olive-glow scale-105' : 'bg-white text-[#505530]/80 border border-[#505530]/20 hover:bg-[#505530]/10'}`}
                 >
                     {cat}
                 </button>
@@ -245,7 +264,7 @@ export const POSScreen: React.FC = () => {
                            <div className="relative h-24 sm:h-28 overflow-hidden shrink-0">
                                 <img src={item.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt="" />
                                 <div className="absolute top-1.5 right-1.5 bg-[#F98359] px-2 py-0.5 rounded-md shadow-md">
-                                    <span className="text-[9px] font-black text-[#505530] tracking-wider">${item.price.toFixed(0)}</span>
+                                    <span className="text-[9px] font-black text-[#FAFAF3] tracking-wider">${item.price.toFixed(0)}</span>
                                 </div>
                                 <div className="absolute bottom-1.5 right-1.5 bg-[#F98359] text-[#FAFAF3] p-1 rounded-lg shadow-md opacity-0 group-hover:opacity-100 transition-all">
                                     <Plus size={10} />
@@ -296,60 +315,50 @@ export const POSScreen: React.FC = () => {
       <div className={`
         ${isCartOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0
         fixed lg:relative inset-y-0 right-0 w-full xs:w-[380px] sm:w-[420px] lg:w-[450px] 
-        bg-[#F0F0E8] border-l border-white/10 flex flex-col z-[60] lg:z-10 
-        shadow-[-30px_0_60px_rgba(0,0,0,0.8)] transition-transform duration-300 ease-in-out
+        bg-[#F0F0E8] border-l border-[#505530]/10 flex flex-col z-[60] lg:z-10 
+        shadow-[-30px_0_60px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-in-out
       `}>
-        {/* Mobile Header for Cart */}
-        <div className="lg:hidden flex items-center justify-between p-4 border-b border-white/10">
-            <h3 className="text-xl font-black italic uppercase tracking-tighter text-[#505530]">Order Queue</h3>
-            <button onClick={() => setIsCartOpen(false)} className="p-2 text-[#505530]/55 hover:text-[#505530]">
-                <X size={24} />
-            </button>
-        </div>
-
-        <div className="p-4 md:p-8 border-b border-white/5">
-            <div 
-                className="flex items-center justify-between cursor-pointer group p-4 md:p-6 bg-white/[0.02] rounded-solaris border border-white/5 hover:border-[#F98359]/20 transition-all shadow-xl"
-                onClick={() => setShowTableModal(true)}
-            >
-                <div className="flex-1 min-w-0 pr-4">
-                   <h2 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter text-[#505530] group-hover:text-[#F98359] transition-colors truncate">
-                        {selectedTable ? selectedTable.name : 'Select Node'}
-                   </h2>
-                   <p className="text-[8px] font-black uppercase text-[#505530]/30 tracking-widest mt-1">Terminal Secure Protocol</p>
+        <div className="p-4 md:p-8 border-b border-[#505530]/10 flex justify-between items-center bg-white">
+            <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#F98359]/10 rounded-xl flex items-center justify-center text-[#F98359]">
+                    <ShoppingCart size={20} />
                 </div>
-                <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center text-[#505530]/30 group-hover:text-[#F98359] transition-all shadow-inner shrink-0">
-                    <TableIcon size={20} className="md:w-7 md:h-7" />
+                <div>
+                    <h2 className="text-xl font-black italic uppercase tracking-tighter text-[#505530]">Payload</h2>
+                    <p className="text-[8px] text-[#505530]/30 font-black uppercase tracking-widest">{cartItemCount} Assets Queued</p>
                 </div>
             </div>
+            <button onClick={() => setIsCartOpen(false)} className="lg:hidden w-10 h-10 bg-[#505530]/5 rounded-xl flex items-center justify-center text-[#505530]/40"><X size={20} /></button>
+            <button onClick={() => setCart([])} className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-red-500/5 text-red-500/40 hover:text-red-500 rounded-lg text-[7px] font-black uppercase tracking-widest transition-all"><Trash2 size={10} /> Clear</button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 md:space-y-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto no-scrollbar p-4 md:p-6 space-y-4">
             <AnimatePresence>
                 {cart.length === 0 ? (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col items-center justify-center text-[#505530]/5">
-                        <ShoppingCart size={60} className="mb-6 opacity-20" />
-                        <p className="text-[9px] font-black uppercase tracking-[0.5em] italic">Queue Empty</p>
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col items-center justify-center text-center p-10">
+                        <div className="w-20 h-20 bg-[#505530]/5 rounded-full flex items-center justify-center text-[#505530]/10 mb-6">
+                            <ShoppingBag size={40} />
+                        </div>
+                        <p className="text-[#505530]/20 font-black uppercase tracking-[0.3em] text-[10px] italic">No active data streams</p>
                     </motion.div>
                 ) : (
                     cart.map((item, idx) => (
-                        <motion.div 
-                            key={`${item.id}-${idx}`}
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="bg-white border border-white/5 p-4 md:p-6 rounded-solaris relative group overflow-hidden shadow-2xl"
-                        >
-                             <div className="flex justify-between items-start mb-4">
-                                <div className="flex gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-[#F98359]/10 border border-[#F98359]/20 flex items-center justify-center text-[#F98359] font-black italic text-base shadow-inner">
-                                        {item.quantity}
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-black italic text-[#505530] uppercase tracking-tight text-[13px] mb-0.5 leading-tight">{item.name} {item.selectedVariant && <span className="text-[#F98359] ml-1">({item.selectedVariant.name})</span>}</h4>
-                                        <p className="text-[8px] font-black text-[#505530]/45 uppercase tracking-widest">Val: ${item.selectedVariant?.price !== undefined ? item.selectedVariant.price : item.price}</p>
+                        <motion.div key={idx} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="bg-white border border-[#505530]/5 rounded-[24px] p-5 shadow-sm group hover:border-[#F98359]/20 transition-all">
+                             <div className="flex justify-between items-start mb-3">
+                                <div className="flex-1">
+                                    <h3 className="font-black italic uppercase text-[#505530] text-sm tracking-tight leading-tight">{item.name}</h3>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                        {(item.selectedVariants || []).map((v, vIdx) => (
+                                            <span key={vIdx} className="text-[7px] font-black uppercase text-[#F98359] bg-[#F98359]/5 px-1.5 py-0.5 rounded border border-[#F98359]/10">{v.name}</span>
+                                        ))}
+                                        {(!item.selectedVariants || item.selectedVariants.length === 0) && item.selectedVariant && (
+                                            <span className="text-[7px] font-black uppercase text-[#F98359] bg-[#F98359]/5 px-1.5 py-0.5 rounded border border-[#F98359]/10">{item.selectedVariant.name}</span>
+                                        )}
                                     </div>
                                 </div>
-                                <span className="text-sm font-black italic text-[#505530] tracking-widest">${((item.selectedVariant?.price !== undefined ? item.selectedVariant.price : item.price) * item.quantity).toFixed(0)}</span>
+                                <span className="text-sm font-black italic text-[#505530] tracking-widest">
+                                    ${((item.selectedVariants && item.selectedVariants.length > 0 ? item.selectedVariants.reduce((s, v) => s + (v.price || 0), 0) : (item.selectedVariant?.price !== undefined ? item.selectedVariant.price : item.price)) * item.quantity).toFixed(0)}
+                                </span>
                              </div>
 
                              <input 
@@ -357,14 +366,14 @@ export const POSScreen: React.FC = () => {
                                 placeholder="Add instruction..."
                                 value={item.notes || ''}
                                 onChange={(e) => {
-                                    setCart(prev => prev.map(i => i.id === item.id ? { ...i, notes: e.target.value } : i));
+                                    setCart(prev => prev.map((it, i) => i === idx ? { ...it, notes: e.target.value } : it));
                                 }}
-                                className="w-full bg-white/[0.02] border border-white/5 rounded-lg px-3 py-2 text-[9px] placeholder:text-[#505530]/10 text-[#505530]/60 font-medium focus:outline-none focus:border-[#F98359]/20 italic transition-all"
+                                className="w-full bg-[#F0F0E8]/50 border border-[#505530]/5 rounded-lg px-3 py-2 text-[9px] placeholder:text-[#505530]/10 text-[#505530]/60 font-medium focus:outline-none focus:border-[#F98359]/20 italic transition-all"
                              />
 
                              <div className="mt-4 flex justify-end gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => updateQuantity(idx, -1)} className="w-8 h-8 bg-white/5 rounded-lg text-[#505530]/55 hover:text-[#505530] hover:bg-white/10 transition-all flex items-center justify-center"><Minus size={14} /></button>
-                                <button onClick={() => updateQuantity(idx, 1)} className="w-8 h-8 bg-white/5 rounded-lg text-[#505530]/55 hover:text-[#505530] hover:bg-white/10 transition-all flex items-center justify-center"><Plus size={14} /></button>
+                                <button onClick={() => updateQuantity(idx, -1)} className="w-8 h-8 bg-[#505530]/5 rounded-lg text-[#505530]/55 hover:text-[#505530] hover:bg-[#505530]/10 transition-all flex items-center justify-center"><Minus size={14} /></button>
+                                <button onClick={() => updateQuantity(idx, 1)} className="w-8 h-8 bg-[#505530]/5 rounded-lg text-[#505530]/55 hover:text-[#505530] hover:bg-[#505530]/10 transition-all flex items-center justify-center"><Plus size={14} /></button>
                                 <button onClick={() => setCart(prev => prev.filter((_, i) => i !== idx))} className="w-8 h-8 bg-red-500/10 rounded-lg text-red-500/40 hover:text-red-500 hover:bg-red-500/20 transition-all flex items-center justify-center"><Trash2 size={14} /></button>
                              </div>
                         </motion.div>
@@ -373,10 +382,10 @@ export const POSScreen: React.FC = () => {
             </AnimatePresence>
         </div>
 
-        <div className="p-4 md:p-8 bg-white border-t border-white/10 shadow-[0_-20px_50px_rgba(0,0,0,0.5)]">
+        <div className="p-4 md:p-8 bg-white border-t border-[#505530]/10 shadow-[0_-20px_50px_rgba(0,0,0,0.05)]">
             <div className="grid grid-cols-2 gap-2 md:gap-4 mb-6 md:mb-10">
                 {[
-                    { id: OrderSource.TO_GO, icon: ShoppingBag, label: 'Carry out', color: 'bg-white/5 border-white/5 text-[#505530]/55' },
+                    { id: OrderSource.TO_GO, icon: ShoppingBag, label: 'Carry out', color: 'bg-[#505530]/5 border-[#505530]/5 text-[#505530]/55' },
                     { id: OrderSource.RAPPI, icon: Truck, label: 'Grid/Rappi', color: 'bg-[#FF3C5C]/5 border-[#FF3C5C]/10 text-[#FF3C5C]/60' },
                     { id: OrderSource.UBER_EATS, icon: ChefHat, label: 'Uber Sys', color: 'bg-[#06C167]/5 border-[#06C167]/10 text-[#06C167]/60' },
                     { id: OrderSource.DINE_IN, icon: TableIcon, label: 'In-Node', color: 'bg-[#F98359]/10 border-[#F98359]/10 text-[#F98359]' }
@@ -384,7 +393,7 @@ export const POSScreen: React.FC = () => {
                     <button 
                         key={src.id}
                         onClick={() => setSelectedSource(src.id)}
-                        className={`py-3 md:py-4 rounded-xl md:rounded-[22px] flex items-center justify-center gap-2 md:gap-3 transition-all border ${selectedSource === src.id ? 'bg-[#F98359] text-[#FAFAF3] border-[#F98359] shadow-salmon-glow scale-[1.02]' : `${src.color} hover:bg-white/5`}`}
+                        className={`py-3 md:py-4 rounded-xl md:rounded-[22px] flex items-center justify-center gap-2 md:gap-3 transition-all border ${selectedSource === src.id ? 'bg-[#F98359] text-[#FAFAF3] border-[#F98359] shadow-salmon-glow scale-[1.02]' : `${src.color} hover:bg-[#505530]/5`}`}
                     >
                         <src.icon size={14} className="md:w-4 md:h-4" />
                         <span className="text-[8px] font-black uppercase tracking-widest">{src.label}</span>
@@ -395,7 +404,7 @@ export const POSScreen: React.FC = () => {
             <div className="flex justify-between items-end mb-6 md:mb-10 px-2">
                 <div>
                     <p className="text-[8px] font-black uppercase text-[#505530]/30 tracking-[0.4em] mb-1">Payload Value</p>
-                    <p className="text-2xl md:text-4xl font-black italic tracking-tighter text-[#505530] uppercase italic">${total.toFixed(2)}</p>
+                    <p className="text-2xl md:text-4xl font-black italic tracking-tighter text-[#505530] uppercase">${total.toFixed(2)}</p>
                 </div>
                 <div className="text-right hidden sm:block">
                     <p className="text-[8px] font-black text-[#F98359] uppercase tracking-widest mb-1 shadow-salmon-glow">Protocol Secured</p>
@@ -439,22 +448,46 @@ export const POSScreen: React.FC = () => {
                     <div className="flex justify-between items-start mb-10">
                         <div>
                             <h2 className="text-3xl font-black italic uppercase tracking-tighter text-[#505530] mb-2">{variantItem.name}</h2>
-                            <p className="text-[10px] text-[#505530]/40 font-black uppercase tracking-[0.4em] italic">Select Option / Variante</p>
+                            <p className="text-[10px] text-[#505530]/40 font-black uppercase tracking-[0.4em] italic">Select Options / Variantes</p>
                         </div>
-                        <button onClick={() => setVariantItem(null)} className="w-12 h-12 rounded-2xl bg-[#505530]/5 text-[#505530]/40 hover:text-[#505530] transition-all flex items-center justify-center"><X size={24} /></button>
+                        <button onClick={() => { setVariantItem(null); setSelectedVariants([]); }} className="w-12 h-12 rounded-2xl bg-[#505530]/5 text-[#505530]/40 hover:text-[#505530] transition-all flex items-center justify-center"><X size={24} /></button>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4">
-                        {variantItem.variants?.map((v, i) => (
-                            <button
-                                key={i}
-                                onClick={() => addToCart(variantItem, v)}
-                                className="p-6 rounded-[24px] border-2 border-[#505530]/5 hover:border-[#F98359] hover:bg-[#F98359]/5 flex justify-between items-center group transition-all"
-                            >
-                                <span className="font-black text-xl italic uppercase text-[#505530] group-hover:text-[#F98359] transition-colors">{v.name}</span>
-                                {v.price && <span className="text-lg font-black text-[#505530]/40">${v.price}</span>}
-                            </button>
-                        ))}
+                    <div className="grid grid-cols-1 gap-3 max-h-[50vh] overflow-y-auto no-scrollbar pr-2">
+                        {variantItem.variants?.map((v, i) => {
+                            const isSelected = selectedVariants.some(sv => sv.name === v.name);
+                            return (
+                                <button
+                                    key={i}
+                                    onClick={() => {
+                                        if (isSelected) {
+                                            setSelectedVariants(prev => prev.filter(sv => sv.name !== v.name));
+                                        } else {
+                                            setSelectedVariants(prev => [...prev, v]);
+                                        }
+                                    }}
+                                    className={`p-5 rounded-[24px] border-2 flex justify-between items-center group transition-all ${isSelected ? 'border-[#F98359] bg-[#F98359]/10' : 'border-[#505530]/5 hover:border-[#F98359]/30 hover:bg-[#F98359]/5'}`}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-[#F98359] border-[#F98359]' : 'border-[#505530]/20'}`}>
+                                            {isSelected && <Zap size={12} className="text-white" />}
+                                        </div>
+                                        <span className={`font-black text-lg italic uppercase transition-colors ${isSelected ? 'text-[#F98359]' : 'text-[#505530]'}`}>{v.name}</span>
+                                    </div>
+                                    {v.price && <span className={`text-lg font-black ${isSelected ? 'text-[#F98359]/60' : 'text-[#505530]/40'}`}>${v.price}</span>}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="mt-10 pt-8 border-t border-[#505530]/5">
+                        <button 
+                            onClick={() => addToCart(variantItem, selectedVariants)}
+                            disabled={selectedVariants.length === 0}
+                            className="w-full py-6 bg-[#F98359] text-[#FAFAF3] font-black uppercase tracking-[0.2em] rounded-[24px] shadow-salmon-glow hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-20 flex items-center justify-center gap-3"
+                        >
+                            Confirm Selection <Plus size={20} />
+                        </button>
                     </div>
                 </motion.div>
             </motion.div>
@@ -465,14 +498,14 @@ export const POSScreen: React.FC = () => {
       <AnimatePresence>
         {showTableModal && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-2xl p-4 sm:p-6">
-                <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-white border border-white/10 rounded-[32px] sm:rounded-[40px] w-full max-w-3xl p-6 sm:p-12 shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-solaris-orange/50 to-transparent"></div>
+                <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="bg-white border border-[#505530]/10 rounded-[32px] sm:rounded-[40px] w-full max-w-3xl p-6 sm:p-12 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#F98359]/50 to-transparent"></div>
                     <div className="flex justify-between items-center mb-8 sm:mb-12">
                         <div>
                             <h2 className="text-2xl sm:text-3xl font-black italic uppercase tracking-tighter text-[#505530]">Node Grid Matrix</h2>
                             <p className="text-[9px] text-[#505530]/30 font-black uppercase tracking-[0.4em] mt-1 italic">Select Terminal Assignment</p>
                         </div>
-                        <button onClick={() => setShowTableModal(false)} className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/5 border border-white/10 text-[#505530]/45 hover:text-[#505530] hover:bg-white/10 transition-all flex items-center justify-center"><X size={24} /></button>
+                        <button onClick={() => setShowTableModal(false)} className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#505530]/5 border border-[#505530]/10 text-[#505530]/45 hover:text-[#505530] hover:bg-[#505530]/10 transition-all flex items-center justify-center"><X size={24} /></button>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-8 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
@@ -480,9 +513,9 @@ export const POSScreen: React.FC = () => {
                             <button
                                 key={table.id}
                                 onClick={() => { setSelectedTable(table); setShowTableModal(false); }}
-                                className={`p-4 sm:p-10 rounded-solaris border-2 flex flex-col items-center gap-3 sm:gap-6 transition-all group ${selectedTable?.id === table.id ? 'border-[#F98359] bg-[#F98359]/10 text-[#F98359] shadow-salmon-glow scale-[1.02]' : 'border-white/5 text-[#505530]/30 hover:text-[#505530] hover:border-white/20 hover:bg-white/5'}`}
+                                className={`p-4 sm:p-10 rounded-solaris border-2 flex flex-col items-center gap-3 sm:gap-6 transition-all group ${selectedTable?.id === table.id ? 'border-[#F98359] bg-[#F98359]/10 text-[#F98359] shadow-salmon-glow scale-[1.02]' : 'border-[#505530]/5 text-[#505530]/30 hover:text-[#505530] hover:border-[#505530]/20 hover:bg-[#505530]/5'}`}
                             >
-                                <div className={`w-10 h-10 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center transition-all ${selectedTable?.id === table.id ? 'bg-[#F98359] text-[#FAFAF3]' : 'bg-white/5 text-[#505530]/30'}`}>
+                                <div className={`w-10 h-10 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center transition-all ${selectedTable?.id === table.id ? 'bg-[#F98359] text-[#FAFAF3]' : 'bg-[#505530]/5 text-[#505530]/30'}`}>
                                     <TableIcon size={24} className="sm:w-10 sm:h-10" />
                                 </div>
                                 <div className="text-center min-w-0 w-full">
@@ -499,3 +532,5 @@ export const POSScreen: React.FC = () => {
     </div>
   );
 };
+
+export default POSScreen;

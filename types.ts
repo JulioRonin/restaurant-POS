@@ -37,7 +37,8 @@ export interface MenuItem {
 export interface OrderItem extends MenuItem {
   quantity: number;
   notes?: string;
-  selectedVariant?: MenuItemVariant;
+  selectedVariants?: MenuItemVariant[];
+  selectedVariant?: MenuItemVariant; // Keep for compatibility
 }
 
 export enum OrderSource {

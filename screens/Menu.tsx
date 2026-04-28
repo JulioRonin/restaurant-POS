@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useMenu } from '../contexts/MenuContext';
 import { MenuItem } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -46,7 +46,7 @@ export const MenuScreen: React.FC = () => {
     const [variants, setVariants] = useState<{ name: string; price: string }[]>([]);
 
     const addVariant = () => {
-        if (variants.length < 4) setVariants(prev => [...prev, { name: '', price: '' }]);
+        if (variants.length < 10) setVariants(prev => [...prev, { name: '', price: '' }]);
     };
     const updateVariant = (idx: number, field: 'name' | 'price', val: string) => {
         setVariants(prev => prev.map((v, i) => i === idx ? { ...v, [field]: val } : v));
@@ -468,9 +468,9 @@ export const MenuScreen: React.FC = () => {
                                             <div className="flex justify-between items-center mb-4">
                                                 <div className="flex items-center gap-2">
                                                     <Layers size={14} className="text-solaris-orange" />
-                                                    <span className="text-[9px] font-black uppercase text-[#505530]/45 tracking-widest">Variantes <span className="text-solaris-orange">({variants.length}/4)</span></span>
+                                                    <span className="text-[9px] font-black uppercase text-[#505530]/45 tracking-widest">Variantes <span className="text-solaris-orange">({variants.length}/10)</span></span>
                                                 </div>
-                                                {variants.length < 4 && (
+                                                {variants.length < 10 && (
                                                     <button
                                                         type="button"
                                                         onClick={addVariant}
@@ -481,7 +481,7 @@ export const MenuScreen: React.FC = () => {
                                                 )}
                                             </div>
                                             {variants.length === 0 && (
-                                                <p className="text-[9px] text-[#505530]/10 font-black uppercase tracking-widest text-center py-3 italic">Sin variantes — añade hasta 4</p>
+                                                <p className="text-[9px] text-[#505530]/10 font-black uppercase tracking-widest text-center py-3 italic">Sin variantes — añade hasta 10</p>
                                             )}
                                             <div className="space-y-3">
                                                 {variants.map((v, idx) => (
