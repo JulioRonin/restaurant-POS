@@ -363,7 +363,7 @@ export const CashierScreen: React.FC = () => {
                                         </button>
                                         <button
                                             onClick={() => {
-                                                const rows = [['ID', 'Node', 'Method', 'Total', 'Status', 'Hora'], ...filteredByDateOrders.map(o => [o.id.slice(0, 8), o.tableId, o.paymentMethod || 'N/A', o.total.toFixed(2), o.status, new Date(o.timestamp).toLocaleTimeString('es-MX')])].map(r => r.join(',')).join('\n');
+                                                const rows = [['ID', 'Manifest', 'Method', 'Total', 'Status', 'Hora'], ...filteredByDateOrders.map(o => [o.id.slice(0, 8), '"' + (o.items || []).map(i => `${i.quantity}x ${i.name}`).join(', ') + '"', o.paymentMethod || 'N/A', o.total.toFixed(2), o.status, new Date(o.timestamp).toLocaleTimeString('es-MX')])].map(r => r.join(',')).join('\n');
                                                 const blob = new Blob([rows], { type: 'text/csv' });
                                                 const url = URL.createObjectURL(blob);
                                                 const a = document.createElement('a'); a.href = url; a.download = `reporte-${selectedDate}.csv`; a.click();
@@ -433,7 +433,7 @@ export const CashierScreen: React.FC = () => {
                                                 <tr className="text-[9px] font-black uppercase text-solaris-orange tracking-widest italic">
                                                     <th className="px-6 pb-2">TX Sequence</th>
                                                     <th className="px-6 pb-2">Temporal Node</th>
-                                                    <th className="px-6 pb-2">Origin Node</th>
+                                                    <th className="px-6 pb-2">Asset Manifest</th>
                                                     <th className="px-6 pb-2">Method</th>
                                                     <th className="px-6 pb-2">Status</th>
                                                     <th className="px-6 pb-2 text-right">Value (USD)</th>
@@ -444,7 +444,16 @@ export const CashierScreen: React.FC = () => {
                                                     <tr key={order.id} className="group hover:bg-white/[0.02] transition-all">
                                                         <td className="px-6 py-5 bg-white/[0.02] rounded-l-[24px] border-y border-l border-white/5 font-mono text-[11px] text-[#505530]/60">TX-{order.id.slice(0, 8).toUpperCase()}</td>
                                                         <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5 text-[11px] font-black italic text-[#505530]/55">{new Date(order.timestamp).toLocaleTimeString('es-MX')}</td>
-                                                        <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5 text-[13px] font-black uppercase italic tracking-tight">{order.tableId}</td>
+                                                        <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5 text-[10px] font-black uppercase italic tracking-tight max-w-[250px]">
+    <div className="flex flex-wrap gap-1">
+        {(order.items || []).map((item, idx) => (
+            <span key={idx} className="bg-solaris-orange/5 text-solaris-orange px-1.5 py-0.5 rounded-md border border-solaris-orange/10 whitespace-nowrap">
+                {item.quantity}x {item.name}
+            </span>
+        ))}
+        {(!order.items || order.items.length === 0) && <span className="text-[#505530]/20">Empty Node</span>}
+    </div>
+</td>
                                                         <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5">
                                                             <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${order.paymentMethod === PaymentMethod.CASH ? 'border-green-500/20 text-green-400 bg-green-500/5' : 'border-blue-500/20 text-blue-400 bg-blue-500/5'}`}>
                                                                 {order.paymentMethod || 'PENDING'}
