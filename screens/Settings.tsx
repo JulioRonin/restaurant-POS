@@ -249,7 +249,7 @@ export const SettingsScreen: React.FC = () => {
                         <div className="mt-12 p-8 rounded-solaris border border-solaris-orange/20 bg-solaris-orange/5 relative overflow-hidden group shadow-xl transition-all hover:bg-solaris-orange/[0.08]">
                             <div className="relative z-10">
                                 <h3 className="text-[10px] font-black uppercase text-solaris-orange tracking-[0.3em] mb-3 font-black italic">Auto-Sync Protocol</h3>
-                                <p className="text-[9px] font-black text-[#505530]/45 leading-relaxed uppercase tracking-widest">System heartbeat synchronizing with secondary nodes every 30s.</p>
+                                <p className="text-[9px] font-black text-[#505530] leading-relaxed uppercase tracking-widest">System heartbeat synchronizing with secondary nodes every 30s.</p>
                             </div>
                             <div className="absolute top-0 right-0 w-24 h-24 bg-solaris-orange/5 rounded-full -translate-y-12 translate-x-12 group-hover:scale-150 transition-transform duration-700"></div>
                         </div>
@@ -293,7 +293,7 @@ export const SettingsScreen: React.FC = () => {
                                         </div>
                                         
                                         <div className="pt-12 border-t border-white/5">
-                                             <h3 className="text-[11px] font-black italic uppercase text-solaris-orange/40 mb-8 tracking-[0.4em]">Financial Settlement Endpoints</h3>
+                                             <h3 className="text-[11px] font-black italic uppercase text-[#505530] mb-8 tracking-[0.4em]">Financial Settlement Endpoints</h3>
                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                                  <div className="space-y-3">
                                                      <label className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-2 italic">CLABE Interface Stream</label>
@@ -319,7 +319,7 @@ export const SettingsScreen: React.FC = () => {
                                         </div>
 
                                         <div className="space-y-6">
-                                            <label className="text-[11px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] px-2 italic">Interface Theme Protocol</label>
+                                            <label className="text-[11px] font-black uppercase text-[#505530] tracking-[0.4em] px-2 italic">Interface Theme Protocol</label>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                                 {[
                                                     { id: 'solaris', name: 'KOSO POS', bg: 'bg-[#F0F0E8]', accent: 'bg-solaris-orange', desc: 'Brand Master Mode' },
@@ -337,7 +337,7 @@ export const SettingsScreen: React.FC = () => {
                                                         </div>
                                                         <div className="relative z-10">
                                                             <p className="text-base font-black italic text-[#1a1c14] uppercase tracking-tighter">{t.name}</p>
-                                                            <p className="text-[9px] font-black text-solaris-orange/40 uppercase tracking-[0.2em] mt-2 italic">{t.desc}</p>
+                                                            <p className="text-[9px] font-black text-[#505530] uppercase tracking-[0.2em] mt-2 italic">{t.desc}</p>
                                                         </div>
                                                         <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-white/[0.01] rounded-full group-hover:bg-white/[0.03] transition-colors"></div>
                                                     </button>
@@ -352,7 +352,7 @@ export const SettingsScreen: React.FC = () => {
                                                 </div>
                                                 <div className="flex-1">
                                                     <h3 className="text-lg font-black italic uppercase text-[#1a1c14] mb-2 tracking-tighter">Branding Asset Injection</h3>
-                                                    <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.3em] italic mb-6">Global Logo Stream Resource URL</p>
+                                                    <p className="text-[10px] font-black uppercase text-[#505530] tracking-[0.3em] italic mb-6">Global Logo Stream Resource URL</p>
                                                     <div className="relative max-w-md">
                                                         <input value={localSettings.logoUrl || ''} onChange={e => setLocalSettings(prev => ({ ...prev, logoUrl: e.target.value }))} className="w-full bg-white/[0.04] border border-white/5 rounded-xl py-3 px-5 text-[11px] text-solaris-orange font-black italic tracking-widest focus:outline-none focus:border-solaris-orange/20 transition-all placeholder:text-[#505530]/10" placeholder="https://assets.solaris.io/logo.png" />
                                                     </div>
@@ -381,7 +381,7 @@ export const SettingsScreen: React.FC = () => {
                                                     </div>
                                                 </div>
                                                 <div className="relative z-10">
-                                                    <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] mb-2 italic">Thermal Stream Output</p>
+                                                    <p className="text-[10px] font-black uppercase text-[#505530] tracking-[0.4em] mb-2 italic">Thermal Stream Output</p>
                                                     <p className="text-xl font-black italic text-[#1a1c14] mb-10 uppercase truncate tracking-tight">{localSettings.connectedDeviceName}</p>
                                                 </div>
                                                 <div className="flex gap-4 relative z-10">
@@ -418,7 +418,7 @@ export const SettingsScreen: React.FC = () => {
                                                     </div>
                                                 </div>
                                                 <div className="relative z-10">
-                                                    <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] mb-2 italic">Transaction Logic Terminal</p>
+                                                    <p className="text-[10px] font-black uppercase text-[#505530] tracking-[0.4em] mb-2 italic">Transaction Logic Terminal</p>
                                                     <p className="text-xl font-black italic text-[#1a1c14] mb-10 uppercase truncate tracking-tight">{localSettings.connectedTerminalName}</p>
                                                 </div>
                                                 <button onClick={async () => { const d = await bluetoothTerminalService.requestTerminal(); if(d) setLocalSettings(p => ({ ...p, connectedTerminalName: d.name || 'BT TERM' })); }} className="w-full py-5 bg-white/[0.03] border border-white/10 text-[#1a1c14] font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:bg-white/5 hover:scale-[1.02] active:scale-95 transition-all italic relative z-10">Sync Peripheral Node</button>
@@ -444,32 +444,32 @@ export const SettingsScreen: React.FC = () => {
                                         {/* Printing Config */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="p-8 bg-white/[0.02] border border-white/5 rounded-[28px]">
-                                                <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] mb-6 italic">Printer Width Protocol</p>
+                                                <p className="text-[10px] font-black uppercase text-[#505530] tracking-[0.4em] mb-6 italic">Printer Width Protocol</p>
                                                 <div className="flex gap-3">
                                                     {(['58mm', '80mm'] as const).map(w => (
                                                         <button
                                                             key={w}
                                                             onClick={() => setLocalSettings(p => ({ ...p, printerWidth: w }))}
-                                                            className={`flex-1 py-4 rounded-2xl font-black italic text-sm tracking-widest transition-all ${localSettings.printerWidth === w ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'bg-white/[0.03] text-[#505530]/45 border border-white/5 hover:text-[#1a1c14]'}`}
+                                                            className={`flex-1 py-4 rounded-2xl font-black italic text-sm tracking-widest transition-all ${localSettings.printerWidth === w ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'bg-white/[0.03] text-[#505530] border border-white/5 hover:text-[#1a1c14]'}`}
                                                         >{w}</button>
                                                     ))}
                                                 </div>
                                             </div>
                                             <div className="p-8 bg-white/[0.02] border border-white/5 rounded-[28px] space-y-6">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.3em] italic">Kitchen Ticket Auto-Print</span>
+                                                    <span className="text-[10px] font-black uppercase text-[#505530] tracking-[0.3em] italic">Kitchen Ticket Auto-Print</span>
                                                     <button
                                                         onClick={() => setLocalSettings(p => ({ ...p, isKitchenPrintingEnabled: !p.isKitchenPrintingEnabled }))}
-                                                        className={`w-14 h-8 rounded-full transition-all relative ${localSettings.isKitchenPrintingEnabled ? 'bg-solaris-orange' : 'bg-white/10'}`}
+                                                        className={`w-14 h-8 rounded-full transition-all relative ${localSettings.isKitchenPrintingEnabled ? 'bg-solaris-orange' : 'bg-[#505530]/10 border border-[#505530]/20'}`}
                                                     >
                                                         <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${localSettings.isKitchenPrintingEnabled ? 'left-7' : 'left-1'}`} />
                                                     </button>
                                                 </div>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.3em] italic">Cash Drawer Pulse</span>
+                                                    <span className="text-[10px] font-black uppercase text-[#505530] tracking-[0.3em] italic">Cash Drawer Pulse</span>
                                                     <button
                                                         onClick={() => setLocalSettings(p => ({ ...p, isCashDrawerEnabled: !p.isCashDrawerEnabled }))}
-                                                        className={`w-14 h-8 rounded-full transition-all relative ${localSettings.isCashDrawerEnabled ? 'bg-solaris-orange' : 'bg-white/10'}`}
+                                                        className={`w-14 h-8 rounded-full transition-all relative ${localSettings.isCashDrawerEnabled ? 'bg-solaris-orange' : 'bg-[#505530]/10 border border-[#505530]/20'}`}
                                                     >
                                                         <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${localSettings.isCashDrawerEnabled ? 'left-7' : 'left-1'}`} />
                                                     </button>
@@ -513,7 +513,7 @@ export const SettingsScreen: React.FC = () => {
                                                                  setUserForm({ name: user.name, role: user.role?.toLowerCase() || 'mesero', pin: user.pin || '1111', area: user.area || 'Service' });
                                                                  setShowUserModal(true);
                                                              }}
-                                                             className="p-2.5 bg-white/[0.04] text-[#505530]/55 rounded-xl hover:bg-white/10 hover:text-[#1a1c14] transition-all"
+                                                             className="p-2.5 bg-white/[0.04] text-[#505530]/55 rounded-xl hover:bg-[#505530]/10 border border-[#505530]/20 hover:text-[#1a1c14] transition-all"
                                                          >
                                                              <Save size={14} />
                                                          </button>
@@ -543,7 +543,7 @@ export const SettingsScreen: React.FC = () => {
                                                              <h3 className="text-2xl font-black italic uppercase text-[#1a1c14] tracking-tighter">
                                                                  {editingUser ? 'Edit Operator' : 'New Operator'}
                                                              </h3>
-                                                             <button onClick={() => setShowUserModal(false)} className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center text-[#505530]/45 hover:text-[#1a1c14] transition-all">
+                                                             <button onClick={() => setShowUserModal(false)} className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center text-[#505530] hover:text-[#1a1c14] transition-all">
                                                                  <X size={18} />
                                                              </button>
                                                          </div>
@@ -648,7 +648,7 @@ export const SettingsScreen: React.FC = () => {
                                                         </div>
                                                     </div>
                                                     <h3 className="text-xl font-black italic text-[#1a1c14] uppercase tracking-tighter mb-2">{d.label}</h3>
-                                                    <p className="text-[9px] font-black uppercase text-solaris-orange/40 tracking-[0.3em] mb-10 italic leading-relaxed">{d.desc}</p>
+                                                    <p className="text-[9px] font-black uppercase text-[#505530] tracking-[0.3em] mb-10 italic leading-relaxed">{d.desc}</p>
                                                     <button onClick={d.action} className="w-full py-4.5 bg-white text-black font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all italic">Execute Probe</button>
                                                 </GlowCard>
                                             ))}
@@ -667,7 +667,7 @@ export const SettingsScreen: React.FC = () => {
                                             <h3 className="text-xl font-black italic uppercase text-[#1a1c14] tracking-tighter flex items-center gap-3">
                                                 <ShieldCheck size={24} className="text-solaris-orange" /> Security Override
                                             </h3>
-                                            <button onClick={() => setShowStoragePinModal(false)} className="text-[#505530]/45 hover:text-[#1a1c14] transition-all"><X size={18} /></button>
+                                            <button onClick={() => setShowStoragePinModal(false)} className="text-[#505530] hover:text-[#1a1c14] transition-all"><X size={18} /></button>
                                         </div>
                                         <div className="space-y-6 relative z-10">
                                             <div>
@@ -705,7 +705,7 @@ export const SettingsScreen: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div className="flex gap-4">
-                                                <button onClick={fetchStorageData} className="px-5 py-3 bg-white/[0.04] text-[#505530]/65 rounded-xl hover:text-[#1a1c14] hover:bg-white/10 transition-all flex items-center gap-2 font-black text-xs uppercase tracking-widest">
+                                                <button onClick={fetchStorageData} className="px-5 py-3 bg-white/[0.04] text-[#505530]/65 rounded-xl hover:text-[#1a1c14] hover:bg-[#505530]/10 border border-[#505530]/20 transition-all flex items-center gap-2 font-black text-xs uppercase tracking-widest">
                                                     <RefreshCcw size={16} className={isLoadingStorage ? 'animate-spin text-solaris-orange' : ''} /> Refresh
                                                 </button>
                                                 <button onClick={() => setShowStorageInspector(false)} className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 hover:bg-red-500/20 transition-all"><X size={20} /></button>
