@@ -126,6 +126,7 @@ export interface Employee {
   phone?: string;
   businessId: string;
   locationId?: string;
+  modules?: string[]; // Specific modules enabled for this user
 }
 
 export interface InventoryItem {

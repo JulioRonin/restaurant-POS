@@ -1,3 +1,5 @@
+import { Employee } from '../types';
+
 export const ROLES = {
   ADMIN: 'admin',
   MANAGER: 'manager',
@@ -108,15 +110,32 @@ export const normalizeRole = (role: string | undefined): AppRole | undefined => 
  * Checks if a specific role is allowed to access a path.
  * Handles exact matches or startsWith for sub-routes.
  */
-export const canAccess = (role: string | undefined, path: string): boolean => {
-  if (!role) return false;
+export const canAccess = (employeeOrRole: Employee | string | undefined, path: string): boolean => {
+  if (!employeeOrRole) return false;
   
+  let role: string | undefined;
+  let allowedModules: string[] | undefined;
+  
+  if (typeof employeeOrRole === 'string') {
+    role = employeeOrRole;
+  } else {
+    role = employeeOrRole.role;
+    allowedModules = employeeOrRole.modules;
+  }
+
   const normalizedRole = normalizeRole(role);
   if (!normalizedRole) return false;
 
-  // Admin bypass
-  if (normalizedRole === ROLES.ADMIN) return true;
+  // Admin bypass - admins can access everything, unless they have specific modules configured?
+  // User request: "desde el perfil del administrador solamanete ese perfil peuede crear y editar este tipo de funciones"
+  // It means the admin edits the modules. If an admin edits someone's modules, it applies to them. 
+  // What if an admin restricts an admin? We'll assume admin bypass stays unless specific modules are set.
+  if (normalizedRole === ROLES.ADMIN && (!allowedModules || allowedModules.length === 0)) return true;
   
+  if (allowedModules && allowedModules.length > 0) {
+    return allowedModules.some(allowedPath => path === allowedPath || path.startsWith(`${allowedPath}/`));
+  }
+
   const allowedPaths = ROLE_PERMISSIONS[normalizedRole] || [];
   
   // Exact match or sub-path check
@@ -128,7 +147,24 @@ export const canAccess = (role: string | undefined, path: string): boolean => {
 /**
  * Returns the default "landing page" for each role after unlock.
  */
-export const getDefaultRoute = (role: string | undefined): string => {
+export const getDefaultRoute = (employeeOrRole: Employee | string | undefined): string => {
+  if (!employeeOrRole) return '/';
+
+  let role: string | undefined;
+  let allowedModules: string[] | undefined;
+  
+  if (typeof employeeOrRole === 'string') {
+    role = employeeOrRole;
+  } else {
+    role = employeeOrRole.role;
+    allowedModules = employeeOrRole.modules;
+  }
+
+  if (allowedModules && allowedModules.length > 0) {
+    // If specific modules are assigned, route to the first one available
+    return allowedModules[0];
+  }
+
   const normalizedRole = normalizeRole(role);
   if (!normalizedRole) return '/';
   

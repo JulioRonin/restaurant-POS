@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
@@ -37,13 +37,13 @@ import { Activity } from 'lucide-react';
 
 const RoleGuard: React.FC<{ children: React.ReactNode; path: string }> = ({ children, path }) => {
   const { activeEmployee } = useUser();
-  const role = activeEmployee?.role;
+  const roleName = activeEmployee?.role;
   
-  console.log(`[RBAC] Checking access for role: ${role} on path: ${path}`);
+  console.log(`[RBAC] Checking access for role: ${roleName} on path: ${path}`);
   
-  if (!canAccess(role, path)) {
-    const fallback = getDefaultRoute(role);
-    console.warn(`[RBAC] Access denied for ${role} on ${path}. Redirecting to ${fallback}`);
+  if (!canAccess(activeEmployee, path)) {
+    const fallback = getDefaultRoute(activeEmployee);
+    console.warn(`[RBAC] Access denied for ${roleName} on ${path}. Redirecting to ${fallback}`);
     return <Navigate to={fallback} replace />;
   }
   return <>{children}</>;
@@ -137,7 +137,7 @@ const AppContent: React.FC = () => {
         <SubscriptionGuard>
           <Layout>
             <Routes>
-              <Route path="/" element={<Navigate to={getDefaultRoute(activeEmployee?.role)} replace />} />
+              <Route path="/" element={<Navigate to={getDefaultRoute(activeEmployee)} replace />} />
               
               <Route path="/dashboard" element={<RoleGuard path="/dashboard"><DashboardScreen /></RoleGuard>} />
               <Route path="/pos" element={<RoleGuard path="/pos"><POSScreen /></RoleGuard>} />

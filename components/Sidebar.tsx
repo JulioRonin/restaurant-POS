@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useUser } from '../contexts/UserContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -166,53 +166,53 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
       </div>
 
       <nav className="flex-1 flex flex-col w-full px-3 overflow-y-auto no-scrollbar space-y-1">
-        {canAccess(activeEmployee?.role, '/dashboard') && isFeatureEnabled('dashboard') && (
+        {canAccess(activeEmployee, '/dashboard') && isFeatureEnabled('dashboard') && (
           <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" isExpanded={isExpanded} />
         )}
         
-        {canAccess(activeEmployee?.role, '/pos') && isFeatureEnabled('pos') && (
+        {canAccess(activeEmployee, '/pos') && isFeatureEnabled('pos') && (
           <NavItem to="/pos" icon={Zap} label="POS" isExpanded={isExpanded} />
         )}
 
-        {canAccess(activeEmployee?.role, '/my-tables') && isFeatureEnabled('tables') && (
+        {canAccess(activeEmployee, '/my-tables') && isFeatureEnabled('tables') && (
           <NavItem to="/my-tables" icon={Table2} label="Mesas Activas" isExpanded={isExpanded} />
         )}
 
-        {canAccess(activeEmployee?.role, '/hostess') && isFeatureEnabled('hostess') && (
+        {canAccess(activeEmployee, '/hostess') && isFeatureEnabled('hostess') && (
           <NavItem to="/hostess" icon={MonitorCheck} label="Hostes" isExpanded={isExpanded} />
         )}
 
-        {canAccess(activeEmployee?.role, '/cashier') && isFeatureEnabled('cashier') && (
+        {canAccess(activeEmployee, '/cashier') && isFeatureEnabled('cashier') && (
           <NavItem to="/cashier" icon={Receipt} label="Caja" isExpanded={isExpanded} />
         )}
 
-        {canAccess(activeEmployee?.role, '/kitchen') && isFeatureEnabled('kitchen') && (
+        {canAccess(activeEmployee, '/kitchen') && isFeatureEnabled('kitchen') && (
           <NavItem to="/kitchen" icon={ChefHat} label="Cocina" isExpanded={isExpanded} />
         )}
 
-        {canAccess(activeEmployee?.role, '/bar') && isFeatureEnabled('bar') && (
+        {canAccess(activeEmployee, '/bar') && isFeatureEnabled('bar') && (
           <NavItem to="/bar" icon={Wine} label="Bar" isExpanded={isExpanded} />
         )}
 
-        {canAccess(activeEmployee?.role, '/remote-order') && isFeatureEnabled('remote_order') && (
+        {canAccess(activeEmployee, '/remote-order') && isFeatureEnabled('remote_order') && (
           <NavItem to="/remote-order" icon={Smartphone} label="Orden Remota" isExpanded={isExpanded} />
         )}
         
-        {canAccess(activeEmployee?.role, '/menu') && isFeatureEnabled('menu_admin') && (
+        {canAccess(activeEmployee, '/menu') && isFeatureEnabled('menu_admin') && (
           <NavItem to="/menu" icon={MenuSquare} label="Menu" isExpanded={isExpanded} />
         )}
 
         <div className={`h-px my-5 ${isExpanded ? 'w-full' : 'w-8 mx-auto'}`} style={{ background: 'rgba(250,250,243,0.1)' }}></div>
 
-        {canAccess(activeEmployee?.role, '/staff') && isFeatureEnabled('staff') && (
+        {canAccess(activeEmployee, '/staff') && isFeatureEnabled('staff') && (
           <NavItem to="/staff" icon={Users} label="Personal" isExpanded={isExpanded} />
         )}
         
-        {canAccess(activeEmployee?.role, '/inventory') && isFeatureEnabled('inventory') && (
+        {canAccess(activeEmployee, '/inventory') && isFeatureEnabled('inventory') && (
           <NavItem to="/inventory" icon={Boxes} label="Inventario" isExpanded={isExpanded} />
         )}
 
-        {canAccess(activeEmployee?.role, '/billing') && (
+        {canAccess(activeEmployee, '/billing') && (
           <NavItem to="/billing" icon={CreditCard} label="Membresia" isExpanded={isExpanded} />
         )}
 
@@ -239,7 +239,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
           </div>
         )}
 
-        {canAccess(activeEmployee?.role, '/settings') && (
+        {canAccess(activeEmployee, '/settings') && (
           <NavItem to="/settings" icon={Settings2} label="Ajustes" isExpanded={isExpanded} />
         )}
       </nav>

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSettings, BusinessSettings } from '../contexts/SettingsContext';
 import { useUser } from '../contexts/UserContext';
 import { Ticket } from '../components/Ticket';
@@ -41,7 +41,7 @@ export const SettingsScreen: React.FC = () => {
     const [showsSavedMessage, setShowsSavedMessage] = useState(false);
     const [showUserModal, setShowUserModal] = useState(false);
     const [editingUser, setEditingUser] = useState<any | null>(null);
-    const [userForm, setUserForm] = useState({ name: '', role: 'mesero', pin: '1111', area: 'Service' });
+    const [userForm, setUserForm] = useState<{ name: string; role: string; pin: string; area: string; modules?: string[] }>({ name: '', role: 'mesero', pin: '1111', area: 'Service', modules: [] });
     const [isConnecting, setIsConnecting] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
@@ -487,7 +487,7 @@ export const SettingsScreen: React.FC = () => {
                                                  <h2 className="text-3xl font-black italic uppercase text-[#1a1c14]">Personnel Gateway</h2>
                                              </div>
                                              <button
-                                                 onClick={() => { setEditingUser(null); setUserForm({ name: '', role: 'mesero', pin: '1111', area: 'Service' }); setShowUserModal(true); }}
+                                                 onClick={() => { setEditingUser(null); setUserForm({ name: '', role: 'mesero', pin: '1111', area: 'Service', modules: [] }); setShowUserModal(true); }}
                                                  className="px-6 py-2.5 bg-solaris-orange/10 border border-solaris-orange/20 rounded-xl text-[10px] font-black text-solaris-orange uppercase tracking-widest hover:bg-solaris-orange/20 transition-all flex items-center gap-2"
                                              >
                                                  <Plus size={14} /> Onboard New Unit
@@ -510,7 +510,7 @@ export const SettingsScreen: React.FC = () => {
                                                          <button
                                                              onClick={() => {
                                                                  setEditingUser(user);
-                                                                 setUserForm({ name: user.name, role: user.role?.toLowerCase() || 'mesero', pin: user.pin || '1111', area: user.area || 'Service' });
+                                                                 setUserForm({ name: user.name, role: user.role?.toLowerCase() || 'mesero', pin: user.pin || '1111', area: user.area || 'Service', modules: user.modules || [] });
                                                                  setShowUserModal(true);
                                                              }}
                                                              className="p-2.5 bg-white/[0.04] text-[#505530]/55 rounded-xl hover:bg-[#505530]/10 border border-[#505530]/20 hover:text-[#1a1c14] transition-all"
@@ -588,6 +588,47 @@ export const SettingsScreen: React.FC = () => {
                                                                      />
                                                                  </div>
                                                              </div>
+
+                                                             {currentUser?.role === 'admin' && (
+                                                                 <div className="mt-4 border-t border-white/5 pt-4">
+                                                                     <label className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-1 italic mb-2 block">Permisos de Módulos (Opcional)</label>
+                                                                     <p className="text-[9px] text-[#505530]/60 mb-4">Si seleccionas módulos, el usuario solo tendrá acceso a estos, ignorando su rol por defecto. Si lo dejas vacío, aplicarán los permisos por defecto de su rol.</p>
+                                                                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto no-scrollbar pr-2">
+                                                                         {[
+                                                                            { id: '/dashboard', label: 'Dashboard' },
+                                                                            { id: '/pos', label: 'POS' },
+                                                                            { id: '/my-tables', label: 'Mesas' },
+                                                                            { id: '/hostess', label: 'Hostes' },
+                                                                            { id: '/cashier', label: 'Caja' },
+                                                                            { id: '/kitchen', label: 'Cocina' },
+                                                                            { id: '/bar', label: 'Bar' },
+                                                                            { id: '/remote-order', label: 'Orden Remota' },
+                                                                            { id: '/menu', label: 'Menu' },
+                                                                            { id: '/staff', label: 'Personal' },
+                                                                            { id: '/inventory', label: 'Inventario' },
+                                                                            { id: '/settings', label: 'Ajustes' }
+                                                                         ].map(mod => (
+                                                                             <label key={mod.id} className="flex items-center gap-2 text-[10px] font-black text-[#1a1c14] cursor-pointer">
+                                                                                 <input 
+                                                                                    type="checkbox" 
+                                                                                    checked={userForm.modules?.includes(mod.id) || false}
+                                                                                    onChange={(e) => {
+                                                                                        const isChecked = e.target.checked;
+                                                                                        setUserForm(p => ({
+                                                                                            ...p,
+                                                                                            modules: isChecked 
+                                                                                                ? [...(p.modules || []), mod.id]
+                                                                                                : (p.modules || []).filter(m => m !== mod.id)
+                                                                                        }));
+                                                                                    }}
+                                                                                    className="w-3 h-3 accent-solaris-orange"
+                                                                                 />
+                                                                                 {mod.label}
+                                                                             </label>
+                                                                         ))}
+                                                                     </div>
+                                                                 </div>
+                                                             )}
                                                          </div>
 
                                                          <div className="flex gap-3 mt-8">
@@ -605,6 +646,7 @@ export const SettingsScreen: React.FC = () => {
                                                                          role: userForm.role.charAt(0).toUpperCase() + userForm.role.slice(1),
                                                                          area: userForm.area,
                                                                          pin: userForm.pin || '1111',
+                                                                         modules: userForm.modules,
                                                                          status: 'OFF_SHIFT',
                                                                          image: `https://ui-avatars.com/api/?name=${encodeURIComponent(userForm.name)}&background=f97316&color=fff`,
                                                                          rating: 5,
