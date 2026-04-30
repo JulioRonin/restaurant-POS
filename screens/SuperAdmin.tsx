@@ -52,6 +52,8 @@ export default function SuperAdminScreen() {
   const [saving, setSaving] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentForm, setPaymentForm] = useState({ amount: 850, method: 'Transferencia' });
+  const [payments, setPayments] = useState<any[]>([]);
+  const { membershipPrice } = useSubscription();
 
   useEffect(() => {
     if (isSuperAdmin) {
@@ -72,9 +74,11 @@ export default function SuperAdminScreen() {
         .order('created_at', { ascending: false });
         
       const { data: fData } = await supabase.from('features').select('*');
+      const { data: pData } = await supabase.from('subscription_payments').select('amount, period_start');
       
       setBusinesses(bData || []);
       setFeatures(fData || []);
+      setPayments(pData || []);
     } catch (err) {
       console.error('Error loading super admin data:', err);
     } finally {
@@ -288,7 +292,7 @@ export default function SuperAdminScreen() {
   const selectedBusinessAdmin = selectedBusiness?.profiles?.find(p => p.role === 'admin' || p.role === 'super_admin');
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 p-6 lg:p-10">
+    <div className="h-full overflow-y-auto bg-slate-950 text-slate-200 p-6 lg:p-10">
       <header className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
@@ -328,7 +332,7 @@ export default function SuperAdminScreen() {
         {/* Global Strategy Section */}
         <div className="lg:col-span-12 space-y-6 mb-4">
             <GlobalConfigPanel />
-            <PaymentsDashboard businesses={businesses} />
+            <PaymentsDashboard businesses={businesses} payments={payments} />
         </div>
 
         {/* Business List */}
@@ -414,11 +418,46 @@ export default function SuperAdminScreen() {
                         >
                             Registrar Pago
                         </button>
-                        <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${
-                        selectedBusiness.is_active ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
-                        }`}>
-                        {selectedBusiness.is_active ? 'Activa' : 'Suspendida'}
-                        </span>
+                        <select
+                          value={!selectedBusiness.is_active ? 'INACTIVO' : selectedBusiness.plan === 'demo' ? 'DEMO' : 'ACTIVO'}
+                          onChange={async (e) => {
+                              const val = e.target.value;
+                              const supabase = getSupabase();
+                              if(!supabase) return;
+                              if (!window.confirm(`¿Cambiar estado a ${val}?`)) return;
+                              setSaving(true);
+                              try {
+                                  let updates: any = {};
+                                  if(val === 'INACTIVO') {
+                                      updates.is_active = false;
+                                  } else if (val === 'DEMO') {
+                                      updates.is_active = true;
+                                      updates.plan = 'demo';
+                                  } else if (val === 'ACTIVO') {
+                                      updates.is_active = true;
+                                      if (selectedBusiness.plan === 'demo') updates.plan = 'basic';
+                                  }
+                                  await supabase.from('businesses').update(updates).eq('id', selectedBusiness.id);
+                                  const updated = { ...selectedBusiness, ...updates };
+                                  setSelectedBusiness(updated);
+                                  setBusinesses(prev => prev.map(b => b.id === selectedBusiness.id ? updated : b));
+                              } catch (err) {
+                                  alert('Error actualizando estado');
+                              } finally {
+                                  setSaving(false);
+                              }
+                          }}
+                          disabled={saving}
+                          className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest outline-none cursor-pointer ${
+                            !selectedBusiness.is_active ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 
+                            selectedBusiness.plan === 'demo' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 
+                            'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                          }`}
+                        >
+                          <option value="ACTIVO" className="bg-slate-900 text-emerald-400">ACTIVO</option>
+                          <option value="DEMO" className="bg-slate-900 text-amber-500">DEMO</option>
+                          <option value="INACTIVO" className="bg-slate-900 text-red-400">INACTIVO</option>
+                        </select>
                     </div>
                     
                     <div className="text-[10px] text-slate-500 font-bold flex flex-col md:items-end gap-1">
@@ -516,7 +555,27 @@ export default function SuperAdminScreen() {
                                 {saving ? 'Sincronizando...' : 'Guardar Precio'}
                              </button>
                         </div>
-                        <p className="text-[8px] text-slate-600 mt-2 italic">Si está vacío, se aplicará el precio global del sistema.</p>
+                        <div className="flex gap-2 mt-3">
+                            {[10, 20, 50].map(discount => (
+                                <button
+                                    key={discount}
+                                    onClick={() => {
+                                        const newPrice = Math.round(membershipPrice * (1 - discount / 100));
+                                        setSelectedBusiness({ ...selectedBusiness, custom_price: newPrice });
+                                    }}
+                                    className="px-3 py-1 bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white rounded text-[9px] font-bold"
+                                >
+                                    -{discount}%
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setSelectedBusiness({ ...selectedBusiness, custom_price: null })}
+                                className="px-3 py-1 bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white rounded text-[9px] font-bold"
+                            >
+                                Reset (Global)
+                            </button>
+                        </div>
+                        <p className="text-[8px] text-slate-600 mt-2 italic">Si está vacío, se aplicará el precio global del sistema (${membershipPrice}).</p>
                     </div>
                 </div>
 
@@ -835,26 +894,56 @@ function BoxIcon(props: any) {
   )
 }
 
-const PaymentsDashboard = ({ businesses }: { businesses: Business[] }) => {
+const PaymentsDashboard = ({ businesses, payments = [] }: { businesses: Business[], payments?: any[] }) => {
+    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
     // KPI Calculations
-    const activePro = businesses.filter(b => b.is_active && (b.plan === 'premium' || b.plan === 'enterprise' || b.plan === 'basic')).length;
-    const activeDemo = businesses.filter(b => b.plan === 'demo').length;
+    const activePro = businesses.filter(b => b.is_active && b.plan !== 'demo').length;
+    const activeDemo = businesses.filter(b => b.is_active && b.plan === 'demo').length;
     const inactive = businesses.filter(b => !b.is_active).length;
     
     // Revenue estimation: sum custom_price if exists, else 850 (assuming standard price)
     // Only count active paid plans
     const mrr = businesses.filter(b => b.is_active && b.plan !== 'demo').reduce((acc, curr) => {
-        return acc + (curr.custom_price ? curr.custom_price : 850);
+        return acc + (curr.custom_price ? curr.custom_price : 850); // Fallback standard price is 850
     }, 0);
 
+    // Calculate income for selected month based on registered payments
+    const incomeForMonth = payments.filter(p => {
+        const d = new Date(p.period_start);
+        return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+    }).reduce((acc, curr) => acc + Number(curr.amount), 0);
+
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
     return (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-5 relative overflow-hidden group">
-                <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-blue-500/5 rounded-full blur-xl group-hover:bg-blue-500/10 transition-colors" />
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><CheckCircle2 size={12} className="text-blue-500" /> Cuentas Activas</h3>
-                <p className="text-3xl font-black text-slate-200">{activePro}</p>
-                <p className="text-[8px] text-slate-600 uppercase tracking-widest mt-2">Planes de pago</p>
+        <div className="space-y-4">
+            <div className="flex justify-end items-center mb-2">
+                <div className="flex gap-2">
+                    <select 
+                        value={selectedMonth} 
+                        onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                        className="bg-slate-900 border border-slate-800 rounded-lg text-xs px-3 py-1.5 text-slate-300 outline-none"
+                    >
+                        {months.map((m, i) => <option key={i} value={i}>{m}</option>)}
+                    </select>
+                    <select 
+                        value={selectedYear} 
+                        onChange={(e) => setSelectedYear(Number(e.target.value))}
+                        className="bg-slate-900 border border-slate-800 rounded-lg text-xs px-3 py-1.5 text-slate-300 outline-none"
+                    >
+                        {[selectedYear - 1, selectedYear, selectedYear + 1].map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                </div>
             </div>
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-5 relative overflow-hidden group">
+                    <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-blue-500/5 rounded-full blur-xl group-hover:bg-blue-500/10 transition-colors" />
+                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><CheckCircle2 size={12} className="text-blue-500" /> Cuentas Activas</h3>
+                    <p className="text-3xl font-black text-slate-200">{activePro}</p>
+                    <p className="text-[8px] text-slate-600 uppercase tracking-widest mt-2">Planes de pago</p>
+                </div>
             
             <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-5 relative overflow-hidden group">
                 <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-amber-500/5 rounded-full blur-xl group-hover:bg-amber-500/10 transition-colors" />
@@ -870,11 +959,19 @@ const PaymentsDashboard = ({ businesses }: { businesses: Business[] }) => {
                 <p className="text-[8px] text-slate-600 uppercase tracking-widest mt-2">Suspendidas / Onboarding</p>
             </div>
 
-            <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-5 relative overflow-hidden group">
-                <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-colors" />
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><CreditCard size={12} className="text-emerald-500" /> Ingreso Mensual (MRR)</h3>
-                <p className="text-3xl font-black text-slate-200">${mrr.toLocaleString()}</p>
-                <p className="text-[8px] text-slate-600 uppercase tracking-widest mt-2">Proyección en MXN</p>
+                <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-5 relative overflow-hidden group">
+                    <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-emerald-500/5 rounded-full blur-xl group-hover:bg-emerald-500/10 transition-colors" />
+                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1"><CreditCard size={12} className="text-emerald-500" /> MRR Proyectado</h3>
+                    <p className="text-3xl font-black text-slate-200">${mrr.toLocaleString()}</p>
+                    <p className="text-[8px] text-slate-600 uppercase tracking-widest mt-2">Ingreso recurrente</p>
+                </div>
+
+                <div className="bg-slate-900/50 border border-emerald-800/30 rounded-3xl p-5 relative overflow-hidden group">
+                    <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-emerald-400/10 rounded-full blur-xl transition-colors" />
+                    <h3 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1 flex items-center gap-1"><Calendar size={12} /> Cobrado en Mes</h3>
+                    <p className="text-3xl font-black text-emerald-400">${incomeForMonth.toLocaleString()}</p>
+                    <p className="text-[8px] text-slate-500 uppercase tracking-widest mt-2">Pagos registrados</p>
+                </div>
             </div>
         </div>
     );

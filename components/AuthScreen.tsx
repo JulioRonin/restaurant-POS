@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowCard } from './ui/spotlight-card';
@@ -47,17 +47,16 @@ export const AuthScreen: React.FC = () => {
                 className="relative z-10 w-full max-w-xl px-6"
             >
                 {/* Branding */}
-                <div className="text-center mb-8 md:mb-12">
+                <div className="text-center mb-10">
                     <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="inline-flex items-center justify-center w-16 h-16 md:w-24 md:h-24 rounded-solaris bg-[#505530]/10 border border-[#505530]/20 mb-4 md:mb-8 overflow-hidden"
+                        transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
+                        className="inline-flex items-center justify-center w-40 h-40 md:w-56 md:h-56 mb-4 overflow-hidden"
                     >
-                        <img src="/koso-logo.jpg" alt="KŌSO" className="w-full h-full object-cover" />
+                        <img src="/koso-logo.png" alt="KŌSO" className="w-full h-full object-contain filter drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)]" />
                     </motion.div>
-                    <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter text-[#FAFAF3] !text-[#FAFAF3] uppercase mb-2 md:mb-4 drop-shadow-lg">KŌSO POS</h1>
-                    <p className="text-white/60 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.4em] md:tracking-[0.6em] italic">Restaurant Management System</p>
+                    {/* Plain text name is now redundant due to the new brand asset */}
                 </div>
 
                 <GlowCard glowColor="orange" customSize className="w-full !p-0 overflow-hidden border border-[#505530]/20 bg-white rounded-solaris shadow-2xl">

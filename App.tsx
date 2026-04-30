@@ -4,6 +4,7 @@ import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-d
 import { Sidebar } from './components/Sidebar';
 import { MobileNavbar } from './components/MobileNavbar';
 import { LockScreen } from './components/LockScreen';
+import { SplashScreen } from './components/SplashScreen';
 import { useSettings } from './contexts/SettingsContext';
 import { POSScreen } from './screens/POS';
 import { DashboardScreen } from './screens/Dashboard';
@@ -69,6 +70,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AppContent: React.FC = () => {
   const { authProfile, isAuthenticating, activeEmployee, isSuperAdmin } = useUser();
   const { settings } = useSettings();
+  const [showSplash, setShowSplash] = useState(true);
+
+  // Splash Screen Timer
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500); // 2.5 seconds for a premium feel
+    return () => clearTimeout(timer);
+  }, []);
 
   // Theme Application Logic
   useEffect(() => {
@@ -86,13 +96,8 @@ const AppContent: React.FC = () => {
     document.documentElement.style.setProperty('--primary-rgb', activeTheme.rgb);
   }, [settings.themeId]);
 
-  if (isAuthenticating) {
-    return (
-      <div className="fixed inset-0 bg-[#1f2937] flex flex-col items-center justify-center text-white">
-        <div className="w-12 h-12 border-4 border-solaris-orange/20 border-t-solaris-orange rounded-full animate-spin mb-6 shadow-solaris-glow"></div>
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-solaris-orange animate-pulse italic">KOSO POS Iniciando</p>
-      </div>
-    );
+  if (isAuthenticating || showSplash) {
+    return <SplashScreen />;
   }
 
   // 1. Not logged into the system (SaaS account)
