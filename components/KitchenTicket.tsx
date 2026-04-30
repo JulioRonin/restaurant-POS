@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Order, OrderItem } from '../types';
 import { BusinessSettings } from '../contexts/SettingsContext';
 
@@ -23,7 +23,7 @@ export const KitchenTicket: React.FC<KitchenTicketProps> = ({ order, settings })
           </div>
         )}
         <h1 className="text-3xl font-black">{order.tableId}</h1>
-        <p className="text-sm font-bold uppercase">ORDEN: #{order.id}</p>
+        <p className="text-sm font-bold uppercase">ORDEN: #{order.dailyNumber ? String(order.dailyNumber).padStart(3, '0') : order.id.slice(-6).toUpperCase()}</p>
         <div className="flex justify-center gap-2 items-center w-full mt-1 px-1 font-bold text-[11px]">
           <span>{new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           <span>|</span>

@@ -116,14 +116,20 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [orders, authProfile?.businessId]);
 
   const addOrder = async (order: Order) => {
-    // Ensure order has a unique ID if not provided
     const orderId = order.id || crypto.randomUUID();
     const bizId = authProfile?.businessId || order.businessId;
+    
+    // Calculate daily consecutive number
+    const todayStr = new Date().toLocaleDateString();
+    const todaysOrders = orders.filter(o => new Date(o.timestamp).toLocaleDateString() === todayStr);
+    const maxDailyNumber = todaysOrders.reduce((max, o) => Math.max(max, o.dailyNumber || 0), 0);
+    const dailyNumber = maxDailyNumber + 1;
     
     const finalOrder = {
       ...order,
       id: orderId,
       businessId: bizId,
+      dailyNumber,
       synced: false,
       updated_at: new Date().toISOString()
     };

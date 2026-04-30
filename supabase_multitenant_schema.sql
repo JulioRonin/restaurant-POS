@@ -129,6 +129,7 @@ create table orders (
   tip numeric(10, 2) default 0,
   invoice_details jsonb,
   source text default 'DINE_IN',
+  daily_number integer,
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );

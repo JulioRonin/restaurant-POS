@@ -72,6 +72,7 @@ export interface Order {
   isBarReady?: boolean;
   businessId?: string;
   locationId?: string;
+  dailyNumber?: number;
 }
 
 export enum PaymentStatus {
