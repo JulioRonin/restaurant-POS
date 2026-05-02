@@ -40,17 +40,28 @@ export const KitchenTicket: React.FC<KitchenTicketProps> = ({ order, settings })
                 {item.quantity}
               </span>
               <div className="flex-1">
-                                <span className="text-lg font-black uppercase leading-none">{item.name}</span>
-                {item.selectedVariant && (
-                  <div className="bg-black text-white px-2 py-0.5 mt-1 inline-block">
-                    <span className="text-sm font-black">OPCIÓN: {item.selectedVariant.name.toUpperCase()}</span>
+                <span className="text-lg font-black uppercase leading-none">{item.name}</span>
+                
+                {/* Selected Variants / Modifiers */}
+                {(item.selectedVariant || (item.selectedVariants && item.selectedVariants.length > 0)) && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {item.selectedVariant && (
+                       <span className="bg-black text-white px-2 py-0.5 text-xs font-black uppercase">
+                         {item.selectedVariant.name}
+                       </span>
+                    )}
+                    {item.selectedVariants?.map((v, i) => (
+                       <span key={i} className="bg-black text-white px-2 py-0.5 text-xs font-black uppercase">
+                         {v.name}
+                       </span>
+                    ))}
                   </div>
                 )}
                 
                 {/* Notes are critical for Kitchen */}
                 {item.notes && (
                   <div className="mt-1 p-1 border-2 border-black bg-gray-100 font-black">
-                    <p className="text-xs">*** NOTA ***</p>
+                    <p className="text-[10px]">*** NOTA ***</p>
                     <p className="text-sm">{item.notes.toUpperCase()}</p>
                   </div>
                 )}
