@@ -84,7 +84,7 @@ export const POSScreen: React.FC = () => {
           : i
         );
       }
-      return [...prev, { ...item, quantity: 1, notes: '', selectedVariants: variants, selectedVariant: variants?.[0] }];
+      return [...prev, { ...item, quantity: 1, notes: '', selectedVariants: variants }];
     });
     setVariantItem(null);
     setSelectedVariants([]);
@@ -102,7 +102,7 @@ export const POSScreen: React.FC = () => {
     const total = cart.reduce((sum, item) => { 
       const price = item.price + ((item.selectedVariants && item.selectedVariants.length > 0)
         ? item.selectedVariants.reduce((s, v) => s + (v.price || 0), 0)
-        : (item.selectedVariant?.price || 0));
+        : 0);
       return sum + (price * item.quantity); 
     }, 0);
     const newOrder: Order = {
@@ -119,11 +119,11 @@ export const POSScreen: React.FC = () => {
     };
 
     try {
-        await addOrder(newOrder);
+        const savedOrder = await addOrder(newOrder);
         if (settings.isKitchenPrintingEnabled) {
           let printSuccess = false;
-          const tableName = TABLES.find(t => t.id === newOrder.tableId)?.name || newOrder.tableId;
-          const enrichedKitchenOrder = { ...newOrder, tableId: tableName };
+          const tableName = TABLES.find(t => t.id === savedOrder.tableId)?.name || savedOrder.tableId;
+          const enrichedKitchenOrder = { ...savedOrder, tableId: tableName };
 
           if (printerService.isConnected() || (settings.connectedDeviceName && settings.connectedDeviceName !== 'None')) {
             try {
@@ -354,13 +354,10 @@ export const POSScreen: React.FC = () => {
                                         {(item.selectedVariants || []).map((v, vIdx) => (
                                             <span key={vIdx} className="text-[7px] font-black uppercase text-[#F98359] bg-[#F98359]/5 px-1.5 py-0.5 rounded border border-[#F98359]/10">{v.name}</span>
                                         ))}
-                                        {(!item.selectedVariants || item.selectedVariants.length === 0) && item.selectedVariant && (
-                                            <span className="text-[7px] font-black uppercase text-[#F98359] bg-[#F98359]/5 px-1.5 py-0.5 rounded border border-[#F98359]/10">{item.selectedVariant.name}</span>
-                                        )}
                                     </div>
                                 </div>
                                 <span className="text-sm font-black italic text-[#505530] tracking-widest">
-                                    ${((item.price + (item.selectedVariants && item.selectedVariants.length > 0 ? item.selectedVariants.reduce((s, v) => s + (v.price || 0), 0) : (item.selectedVariant?.price || 0))) * item.quantity).toFixed(0)}
+                                    ${((item.price + (item.selectedVariants && item.selectedVariants.length > 0 ? item.selectedVariants.reduce((s, v) => s + (v.price || 0), 0) : 0)) * item.quantity).toFixed(0)}
                                 </span>
                              </div>
 

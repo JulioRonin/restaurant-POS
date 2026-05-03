@@ -43,14 +43,9 @@ export const KitchenTicket: React.FC<KitchenTicketProps> = ({ order, settings })
                 <span className="text-lg font-black uppercase leading-none">{item.name}</span>
                 
                 {/* Selected Variants / Modifiers */}
-                {(item.selectedVariant || (item.selectedVariants && item.selectedVariants.length > 0)) && (
+                {item.selectedVariants && item.selectedVariants.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {item.selectedVariant && (
-                       <span className="bg-black text-white px-2 py-0.5 text-xs font-black uppercase">
-                         {item.selectedVariant.name}
-                       </span>
-                    )}
-                    {item.selectedVariants?.map((v, i) => (
+                    {item.selectedVariants.map((v, i) => (
                        <span key={i} className="bg-black text-white px-2 py-0.5 text-xs font-black uppercase">
                          {v.name}
                        </span>
@@ -71,12 +66,7 @@ export const KitchenTicket: React.FC<KitchenTicketProps> = ({ order, settings })
         ))}
       </div>
 
-      {/* Footer for kitchen */}
-      <div className="mt-4 text-center border-t-2 border-black pt-2">
-        <p className="text-[10px] font-bold">--- FIN DE COMANDA ---</p>
-        <p className="text-[9px] mt-1">KŌSO POS</p>
-        <p className="text-[9px]">Ronin Studio</p>
-      </div>
+      {/* Footer removed per user request */}
 
       <style>{`
         @media print {

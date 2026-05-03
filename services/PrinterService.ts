@@ -354,9 +354,6 @@ class PrinterService {
               result = result.text(`${qty}${name}${price}`).newline();
             }
 
-            if (item.selectedVariant) {
-                result = result.text(`   - ${item.selectedVariant.name.toUpperCase()}`).newline();
-            }
             if (item.selectedVariants && item.selectedVariants.length > 0) {
                 item.selectedVariants.forEach((v: any) => {
                     result = result.text(`   - ${v.name.toUpperCase()}`).newline();
@@ -624,9 +621,6 @@ class PrinterService {
            result = result.text(`   ${nameText.slice(lineChars / 2 - 4)}`).newline();
         }
 
-        if (item.selectedVariant) {
-            result = result.text(`   >> ${item.selectedVariant.name.toUpperCase()}`).newline();
-        }
         if (item.selectedVariants && item.selectedVariants.length > 0) {
             item.selectedVariants.forEach((v: any) => {
                 result = result.text(`   >> ${v.name.toUpperCase()}`).newline();
@@ -651,13 +645,6 @@ class PrinterService {
       });
 
       result = result
-        .newline()
-        .text(center('--- FIN DE COMANDA ---'))
-        .newline()
-        .text(center('KŌSO POS'))
-        .newline()
-        .text(center('Ronin Studio'))
-        .newline()
         .newline()
         .cut()
         .encode();

@@ -72,7 +72,6 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
             </div>
             {(item.selectedVariant || (item.selectedVariants && item.selectedVariants.length > 0) || item.notes) && (
               <div className="pl-8 flex flex-col text-[10px] leading-tight">
-                {item.selectedVariant && <span className="uppercase">- {item.selectedVariant.name}</span>}
                 {item.selectedVariants?.map((v, i) => (
                   <span key={i} className="uppercase">- {v.name}</span>
                 ))}

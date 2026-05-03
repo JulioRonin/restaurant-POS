@@ -115,7 +115,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     localStorage.setItem(key, JSON.stringify(orders));
   }, [orders, authProfile?.businessId]);
 
-  const addOrder = async (order: Order) => {
+  const addOrder = async (order: Order): Promise<Order> => {
     const orderId = order.id || crypto.randomUUID();
     const bizId = authProfile?.businessId || order.businessId;
     
@@ -185,6 +185,8 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // Trigger immediate sync
     triggerSync().catch(console.error);
+
+    return finalOrder as Order;
   };
 
   const updateOrderStatus = async (orderId: string, status: OrderStatus, updatedOrder?: Order) => {
