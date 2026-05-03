@@ -122,14 +122,17 @@ export const POSScreen: React.FC = () => {
         await addOrder(newOrder);
         if (settings.isKitchenPrintingEnabled) {
           let printSuccess = false;
+          const tableName = TABLES.find(t => t.id === newOrder.tableId)?.name || newOrder.tableId;
+          const enrichedKitchenOrder = { ...newOrder, tableId: tableName };
+
           if (printerService.isConnected() || (settings.connectedDeviceName && settings.connectedDeviceName !== 'None')) {
             try {
-                printSuccess = await printerService.printKitchenTicket(newOrder, settings);
+                printSuccess = await printerService.printKitchenTicket(enrichedKitchenOrder, settings);
             } catch (err) { printSuccess = false; }
           }
           if (!printSuccess) {
             document.body.classList.add('print-mode');
-            setKitchenOrderToPrint(newOrder);
+            setKitchenOrderToPrint(enrichedKitchenOrder);
             setTimeout(() => { window.print(); setKitchenOrderToPrint(null); document.body.classList.remove('print-mode'); }, 1200);
           }
         }
