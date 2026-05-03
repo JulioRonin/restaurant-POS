@@ -32,7 +32,7 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
       <div className="border-t border-b border-black border-dashed py-2 mb-4">
         <div className="flex justify-between">
           <span>ORDEN:</span>
-          <span className="font-bold">#{order.dailyNumber ? String(order.dailyNumber).padStart(3, '0') : order.id.slice(-6).toUpperCase()}</span>
+          <span className="font-bold">#{order.dailyNumber ? String(order.dailyNumber).padStart(6, '0') : order.id.slice(-6).toUpperCase()}</span>
         </div>
         <div className="flex justify-between">
           <span>FECHA:</span>

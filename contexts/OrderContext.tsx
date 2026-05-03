@@ -143,14 +143,28 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // 2. Save and Track Individual Order Items
     if (order.items && order.items.length > 0) {
       for (const item of order.items) {
+        const variantPrice = (item.selectedVariants && item.selectedVariants.length > 0)
+            ? item.selectedVariants.reduce((sum: number, v: any) => sum + (v.price || 0), 0)
+            : (item.selectedVariant?.price || 0);
+        const finalPrice = item.price + variantPrice;
+
+        const variantNames = (item.selectedVariants && item.selectedVariants.length > 0)
+            ? item.selectedVariants.map((v: any) => v.name).join(', ')
+            : (item.selectedVariant ? item.selectedVariant.name : '');
+        
+        let combinedNotes = item.notes || '';
+        if (variantNames) {
+            combinedNotes = combinedNotes ? `${combinedNotes} | Variantes: ${variantNames}` : `Variantes: ${variantNames}`;
+        }
+
         const orderItemId = item.id || crypto.randomUUID();
         const orderItemRecord = {
           id: orderItemId,
           orderId: orderId,
           menuItemId: (item as any).menuItemId || (item as any).menu_item_id || item.id,
           quantity: item.quantity,
-          priceAtTime: item.price,
-          notes: item.notes || '',
+          priceAtTime: finalPrice,
+          notes: combinedNotes,
           businessId: bizId, // CRITICAL: Map to businessId which transformForSupabase converts to business_id
           locationId: authProfile?.locationId || (order as any).locationId || '',
           synced: false,
@@ -197,18 +211,46 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             const dbItem = orderItems.find(i => (i.menuItemId === item.id || i.id === item.id));
             
             if (dbItem) {
+                const variantPrice = (item.selectedVariants && item.selectedVariants.length > 0)
+                    ? item.selectedVariants.reduce((sum: number, v: any) => sum + (v.price || 0), 0)
+                    : (item.selectedVariant?.price || 0);
+                const finalPrice = item.price + variantPrice;
+
+                const variantNames = (item.selectedVariants && item.selectedVariants.length > 0)
+                    ? item.selectedVariants.map((v: any) => v.name).join(', ')
+                    : (item.selectedVariant ? item.selectedVariant.name : '');
+                
+                let combinedNotes = item.notes || '';
+                if (variantNames) {
+                    combinedNotes = combinedNotes ? `${combinedNotes} | Variantes: ${variantNames}` : `Variantes: ${variantNames}`;
+                }
+
                 // UPDATE existing item record
                 const updatedItemRecord = {
                     ...dbItem,
                     quantity: item.quantity,
-                    priceAtTime: item.price,
-                    notes: item.notes || '',
+                    priceAtTime: finalPrice,
+                    notes: combinedNotes,
                     synced: false,
                     updated_at: new Date().toISOString()
                 };
                 await put('order_items', updatedItemRecord);
                 await trackChange('order_items', 'UPDATE', updatedItemRecord.id, updatedItemRecord);
             } else {
+                const variantPrice = (item.selectedVariants && item.selectedVariants.length > 0)
+                    ? item.selectedVariants.reduce((sum: number, v: any) => sum + (v.price || 0), 0)
+                    : (item.selectedVariant?.price || 0);
+                const finalPrice = item.price + variantPrice;
+
+                const variantNames = (item.selectedVariants && item.selectedVariants.length > 0)
+                    ? item.selectedVariants.map((v: any) => v.name).join(', ')
+                    : (item.selectedVariant ? item.selectedVariant.name : '');
+                
+                let combinedNotes = item.notes || '';
+                if (variantNames) {
+                    combinedNotes = combinedNotes ? `${combinedNotes} | Variantes: ${variantNames}` : `Variantes: ${variantNames}`;
+                }
+
                 // INSERT new item record
                 const newItemId = crypto.randomUUID();
                 const newItemRecord = {
@@ -216,8 +258,8 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                     orderId: orderId,
                     menuItemId: item.id,
                     quantity: item.quantity,
-                    priceAtTime: item.price,
-                    notes: item.notes || '',
+                    priceAtTime: finalPrice,
+                    notes: combinedNotes,
                     businessId: bizId,
                     synced: false,
                     updated_at: new Date().toISOString()
