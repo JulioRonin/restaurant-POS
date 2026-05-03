@@ -353,6 +353,18 @@ class PrinterService {
               const price = (item.price * item.quantity).toFixed(2).padStart(10);
               result = result.text(`${qty}${name}${price}`).newline();
             }
+
+            if (item.selectedVariant) {
+                result = result.text(`   - ${item.selectedVariant.name.toUpperCase()}`).newline();
+            }
+            if (item.selectedVariants && item.selectedVariants.length > 0) {
+                item.selectedVariants.forEach((v: any) => {
+                    result = result.text(`   - ${v.name.toUpperCase()}`).newline();
+                });
+            }
+            if (item.notes) {
+                result = result.text(`   * ${item.notes.toUpperCase()}`).newline();
+            }
           });
 
           result = result.text('-'.repeat(lineChars)).newline();
@@ -610,6 +622,15 @@ class PrinterService {
         // If name was truncated, print the rest in normal size
         if (nameText.length > (lineChars / 2 - 4)) {
            result = result.text(`   ${nameText.slice(lineChars / 2 - 4)}`).newline();
+        }
+
+        if (item.selectedVariant) {
+            result = result.text(`   >> ${item.selectedVariant.name.toUpperCase()}`).newline();
+        }
+        if (item.selectedVariants && item.selectedVariants.length > 0) {
+            item.selectedVariants.forEach((v: any) => {
+                result = result.text(`   >> ${v.name.toUpperCase()}`).newline();
+            });
         }
 
         // Notes (Emphasized) - Ensure it's not undefined or empty

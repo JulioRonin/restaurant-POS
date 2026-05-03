@@ -64,10 +64,21 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
           <span className="w-16 text-right">TOTAL</span>
         </div>
         {order.items.map((item: OrderItem, idx: number) => (
-          <div key={idx} className="flex">
-            <span className="w-8">{item.quantity}</span>
-            <span className="flex-1 uppercase">{item.name}</span>
-            <span className="w-16 text-right">${(item.price * item.quantity).toFixed(2)}</span>
+          <div key={idx} className="flex flex-col mb-1">
+            <div className="flex">
+              <span className="w-8">{item.quantity}</span>
+              <span className="flex-1 uppercase">{item.name}</span>
+              <span className="w-16 text-right">${(item.price * item.quantity).toFixed(2)}</span>
+            </div>
+            {(item.selectedVariant || (item.selectedVariants && item.selectedVariants.length > 0) || item.notes) && (
+              <div className="pl-8 flex flex-col text-[10px] leading-tight">
+                {item.selectedVariant && <span className="uppercase">- {item.selectedVariant.name}</span>}
+                {item.selectedVariants?.map((v, i) => (
+                  <span key={i} className="uppercase">- {v.name}</span>
+                ))}
+                {item.notes && <span className="uppercase italic">*{item.notes}</span>}
+              </div>
+            )}
           </div>
         ))}
       </div>
