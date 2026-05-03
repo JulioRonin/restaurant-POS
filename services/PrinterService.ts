@@ -325,7 +325,7 @@ class PrinterService {
           if (settings.phone) wrapCenter(settings.phone).forEach(l => result = result.text(l).newline());
 
           result = result.text('-'.repeat(lineChars)).newline();
-          const orderNum = order.dailyNumber ? String(order.dailyNumber).padStart(6, '0') : order.id.slice(-6).toUpperCase();
+          const orderNum = order.dailyNumber !== undefined ? String(order.dailyNumber).padStart(6, '0') : order.id.slice(-6).toUpperCase();
           result = result.text(`ORDEN: #${orderNum}`).newline();
           
           const timestamp = order.timestamp || new Date();
@@ -587,7 +587,7 @@ class PrinterService {
         .text(center(order.tableId.toUpperCase()))
         .newline()
         .size('normal')
-        .text(center(`ORDEN: #${order.dailyNumber ? String(order.dailyNumber).padStart(6, '0') : order.id.slice(-6).toUpperCase()}`))
+        .text(center(`ORDEN: #${order.dailyNumber !== undefined ? String(order.dailyNumber).padStart(6, '0') : order.id.slice(-6).toUpperCase()}`))
         .newline()
         .text(center(`${new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} | ${order.waiterName || 'MESERO'}`))
         .newline()

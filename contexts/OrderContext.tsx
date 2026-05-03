@@ -122,8 +122,15 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // Calculate daily consecutive number
     const todayStr = new Date().toLocaleDateString();
     const todaysOrders = orders.filter(o => new Date(o.timestamp).toLocaleDateString() === todayStr);
-    const maxDailyNumber = todaysOrders.reduce((max, o) => Math.max(max, o.dailyNumber || 0), 0);
-    const dailyNumber = maxDailyNumber + 1;
+    
+    let maxDailyNumber = -1;
+    todaysOrders.forEach(o => {
+        if (o.dailyNumber !== undefined && o.dailyNumber > maxDailyNumber) {
+            maxDailyNumber = o.dailyNumber;
+        }
+    });
+    
+    const dailyNumber = (maxDailyNumber + 1) % 1000000;
     
     const finalOrder = {
       ...order,

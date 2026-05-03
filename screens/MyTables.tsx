@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { useUser } from '../contexts/UserContext';
 import { OrderStatus, TableStatus, OrderSource, MenuItem } from '../types';
@@ -196,9 +196,17 @@ export const MyTablesScreen: React.FC = () => {
                                             </button>
                                         </>
                                     ) : (
-                                        <div className="w-full py-3 bg-solaris-orange/10 border border-solaris-orange/20 text-solaris-orange font-black italic uppercase tracking-[0.3em] text-[9px] rounded-2xl flex items-center justify-center gap-2 animate-pulse">
-                                            Awaiting Reception Hub...
-                                        </div>
+                                        <>
+                                            <button
+                                                onClick={() => handleCancelOrder(order.id)}
+                                                className="w-11 h-11 bg-white/[0.03] border border-white/5 rounded-2xl flex items-center justify-center text-red-500/30 hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-90"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                            <div className="flex-1 py-3 bg-solaris-orange/10 border border-solaris-orange/20 text-solaris-orange font-black italic uppercase tracking-[0.3em] text-[9px] rounded-2xl flex items-center justify-center gap-2 animate-pulse">
+                                                Awaiting Reception Hub...
+                                            </div>
+                                        </>
                                     )}
                                 </div>
                             </div>
