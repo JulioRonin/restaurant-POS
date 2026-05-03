@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icons/icon.svg', 'icons/*.png'],
+        includeAssets: ['koso-logo.png', 'koso-logo.jpg', 'icons/icon.svg', 'icons/*.png'],
         manifest: false, // We provide our own in public/manifest.json
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB

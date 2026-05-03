@@ -100,9 +100,9 @@ export const POSScreen: React.FC = () => {
   const handleSendOrder = async () => {
     if (cart.length === 0) return;
     const total = cart.reduce((sum, item) => { 
-      const price = (item.selectedVariants && item.selectedVariants.length > 0)
+      const price = item.price + ((item.selectedVariants && item.selectedVariants.length > 0)
         ? item.selectedVariants.reduce((s, v) => s + (v.price || 0), 0)
-        : (item.selectedVariant?.price !== undefined ? item.selectedVariant.price : item.price);
+        : (item.selectedVariant?.price || 0));
       return sum + (price * item.quantity); 
     }, 0);
     const newOrder: Order = {
@@ -142,9 +142,9 @@ export const POSScreen: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   const total = cart.reduce((sum, item) => { 
-    const price = (item.selectedVariants && item.selectedVariants.length > 0)
+    const price = item.price + ((item.selectedVariants && item.selectedVariants.length > 0)
       ? item.selectedVariants.reduce((s, v) => s + (v.price || 0), 0)
-      : (item.selectedVariant?.price !== undefined ? item.selectedVariant.price : item.price);
+      : (item.selectedVariant?.price || 0));
     return sum + (price * item.quantity); 
   }, 0);
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -357,7 +357,7 @@ export const POSScreen: React.FC = () => {
                                     </div>
                                 </div>
                                 <span className="text-sm font-black italic text-[#505530] tracking-widest">
-                                    ${((item.selectedVariants && item.selectedVariants.length > 0 ? item.selectedVariants.reduce((s, v) => s + (v.price || 0), 0) : (item.selectedVariant?.price !== undefined ? item.selectedVariant.price : item.price)) * item.quantity).toFixed(0)}
+                                    ${((item.price + (item.selectedVariants && item.selectedVariants.length > 0 ? item.selectedVariants.reduce((s, v) => s + (v.price || 0), 0) : (item.selectedVariant?.price || 0))) * item.quantity).toFixed(0)}
                                 </span>
                              </div>
 

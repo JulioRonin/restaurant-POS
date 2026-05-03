@@ -1,4 +1,4 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -182,7 +182,7 @@ body {
   background-size: calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)));
   background-position: 50% 50%;
   border: calc(var(--border) * 1px) solid transparent;
-  touch-action: none;
+  touch-action: auto;
 }
 
 [data-glow]::before,
