@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { SubscriptionStatus, PaymentRecord } from '../types';
 import { getSupabase } from '../services/auth';
 import { useUser } from './UserContext';
@@ -18,7 +18,7 @@ interface SubscriptionContextType {
   posStatus: PosStatus;
   enabledFeatures: string[];
   isFeatureEnabled: (key: string) => boolean;
-  paySubscription: () => Promise<boolean>;
+  paySubscription: (priceId?: string, planName?: string) => Promise<boolean>;
   payEquipment: (amount: number, planName: string) => Promise<boolean>;
   isExpired: boolean;
   isDebtBlocked: boolean; // New: Block for hardware debt
@@ -218,7 +218,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     return enabledFeatures.includes(key);
   };
 
-  const paySubscription = async () => {
+  const paySubscription = async (priceId?: string, planName: string = 'KŌSO POS - Renovación Mensual') => {
     if (!authProfile?.businessId) return false;
     
     try {
@@ -229,8 +229,10 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
           businessId: authProfile.businessId,
           businessName: authProfile.full_name,
           amount: membershipPrice,
+          priceId: priceId,
+          mode: priceId ? 'subscription' : 'payment',
           type: 'SUBSCRIPTION',
-          planName: 'KŌSO POS - Renovación Mensual'
+          planName: planName
         }),
       });
 

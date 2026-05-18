@@ -1,4 +1,4 @@
-﻿import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
@@ -15,7 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { businessId, businessName, type = 'SUBSCRIPTION', planName = 'KŌSO POS Premium' } = req.body;
+  const { businessId, businessName, type = 'SUBSCRIPTION', planName = 'KŌSO POS Premium', priceId, mode } = req.body;
 
   if (!businessId) {
     return res.status(400).json({ error: 'Missing businessId' });
@@ -42,9 +42,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           .single();
         if (globalConfig) finalAmount = Number(globalConfig.value);
     }
-    const session = await stripe.checkout.sessions.create({
+
+    const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
-      line_items: [
+      success_url: `${req.headers.origin}/#/billing?success=true`,
+      cancel_url: `${req.headers.origin}/#/billing?canceled=true`,
+      client_reference_id: businessId,
+      metadata: {
+        businessId,
+        businessName: businessName || 'Unknown',
+        paymentType: type,
+        planName
+      },
+    };
+
+    if (priceId) {
+      sessionConfig.line_items = [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ];
+      sessionConfig.mode = mode || 'subscription';
+    } else {
+      sessionConfig.line_items = [
         {
           price_data: {
             currency: 'mxn',
@@ -56,18 +77,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           },
           quantity: 1,
         },
-      ],
-      mode: 'payment',
-      success_url: `${req.headers.origin}/#/billing?success=true`,
-      cancel_url: `${req.headers.origin}/#/billing?canceled=true`,
-      client_reference_id: businessId,
-      metadata: {
-        businessId,
-        businessName: businessName || 'Unknown',
-        paymentType: type,
-        planName
-      },
-    });
+      ];
+      sessionConfig.mode = 'payment';
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     return res.status(200).json({ url: session.url });
   } catch (err: any) {
