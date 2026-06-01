@@ -1,0 +1,2754 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ServiRest · Propuesta maestra · v3 · 2026-05-26</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    /* Paleta Sobremesa Lúcida — decisión founder 2026-05-26 PM */
+    --bg: #1A1E2E;             /* Midnight Tinto — Primary */
+    --bg-soft: #232839;
+    --bg-card: #2A2F42;
+    --line: rgba(255, 255, 255, 0.08);
+    --line-strong: rgba(255, 255, 255, 0.16);
+    --text: #FAF8F4;           /* Blanco Hueso — Surface usado como text del doc */
+    --text-mute: #A8A599;
+    --text-low: #6B6960;
+    --accent: #C4633F;         /* Terracota — Secondary */
+    --accent-2: #C9A24A;       /* Mostaza Mate — Accent */
+    --gris-carbon: #2A2826;    /* Gris Carbón — Text body sobre crema */
+
+    /* Tipografía oficial v3 (Opción A recomendada) */
+    --font-serif: "Fraunces", "Tiempos Headline", ui-serif, Georgia, "Times New Roman", serif;
+    --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv01";
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .doc {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 80px 56px 120px;
+  }
+
+  /* ═══════════ HEADER / COVER ═══════════ */
+  .doc-header {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 56px;
+    margin-bottom: 96px;
+  }
+  .doc-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-low);
+    margin-bottom: 28px;
+    font-family: var(--font-sans);
+    font-weight: 500;
+  }
+  .doc-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 72px;
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    margin-bottom: 24px;
+    font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 1;
+  }
+  .doc-title em {
+    font-style: italic;
+    color: var(--accent-2);
+    font-variation-settings: "opsz" 144, "SOFT" 80, "WONK" 1;
+  }
+  .doc-sub {
+    font-size: 18px;
+    color: var(--text-mute);
+    max-width: 720px;
+    line-height: 1.65;
+    font-family: var(--font-sans);
+  }
+  .doc-sub strong { color: var(--accent-2); font-weight: 500; }
+  .doc-meta {
+    margin-top: 40px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    font-size: 12px;
+    color: var(--text-low);
+    font-family: var(--font-sans);
+  }
+  .doc-meta strong {
+    color: var(--text);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 10px;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .doc-meta code {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent-2);
+  }
+
+  /* Big tagline below cover */
+  .cover-tagline {
+    margin-top: 64px;
+    padding: 48px 56px;
+    background: var(--bg-soft);
+    border-left: 3px solid var(--accent);
+  }
+  .cover-tagline-label {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .cover-tagline-h1 {
+    font-family: var(--font-serif);
+    font-size: 38px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-weight: 400;
+    color: var(--text);
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+    margin-bottom: 12px;
+  }
+  .cover-tagline-h2 {
+    font-family: var(--font-sans);
+    font-size: 18px;
+    line-height: 1.5;
+    color: var(--accent-2);
+    font-weight: 500;
+    font-style: italic;
+  }
+
+  /* ═══════════ SECTIONS ═══════════ */
+  .section {
+    margin-bottom: 112px;
+  }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 32px;
+    margin-bottom: 48px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  .section-num {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    color: var(--accent-2);
+    letter-spacing: 0.1em;
+    font-style: italic;
+    font-weight: 400;
+  }
+  .section-title {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 38px;
+    letter-spacing: -0.015em;
+    font-variation-settings: "opsz" 96, "SOFT" 30;
+  }
+  .section-blurb {
+    margin-top: 12px;
+    font-size: 16px;
+    color: var(--text-mute);
+    max-width: 760px;
+    line-height: 1.65;
+    font-family: var(--font-sans);
+  }
+  .section-blurb strong { color: var(--text); font-weight: 500; }
+
+  /* ═══════════ MOODBOARD ═══════════ */
+  .moodboard {
+    background: var(--bg-soft);
+    border-left: 2px solid var(--accent);
+    padding: 36px 44px;
+    margin-bottom: 48px;
+    font-size: 15px;
+    color: var(--text-mute);
+    line-height: 1.75;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+  }
+  .moodboard-label {
+    color: var(--accent-2);
+    font-style: normal;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 16px;
+  }
+  .moodboard strong {
+    color: var(--text);
+    font-style: normal;
+    font-weight: 500;
+    font-family: var(--font-sans);
+  }
+
+  /* ═══════════ PALETA HERO ═══════════ */
+  .palette-hero {
+    background: var(--bg-card);
+    border: 1px solid var(--accent);
+    padding: 48px;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 48px;
+    margin-bottom: 32px;
+  }
+  .palette-hero-left { display: flex; flex-direction: column; }
+  .palette-hero-right { display: flex; flex-direction: column; gap: 24px; }
+  .palette-hero-tag {
+    align-self: flex-start;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    background: var(--accent);
+    color: var(--bg);
+    padding: 5px 12px;
+    margin-bottom: 20px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+  }
+  .palette-hero-name {
+    font-family: var(--font-serif);
+    font-size: 48px;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
+    font-weight: 400;
+    font-variation-settings: "opsz" 144, "SOFT" 40;
+  }
+  .palette-hero-name em { color: var(--accent-2); font-style: italic; font-weight: 400; }
+  .palette-hero-sub {
+    font-size: 14px;
+    color: var(--text-mute);
+    font-style: italic;
+    line-height: 1.6;
+    margin-bottom: 32px;
+    max-width: 460px;
+    font-family: var(--font-serif);
+  }
+  .palette-hero-swatches {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .palette-hero-swatch { display: flex; flex-direction: column; }
+  .palette-hero-swatch-block {
+    aspect-ratio: 1 / 1.15;
+    border: 1px solid var(--line);
+    position: relative;
+  }
+  .palette-hero-swatch-block::after {
+    content: attr(data-role);
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-family: var(--font-sans);
+  }
+  .palette-hero-swatch-meta {
+    margin-top: 10px;
+    font-size: 10px;
+    line-height: 1.4;
+    color: var(--text-mute);
+    font-family: var(--font-sans);
+  }
+  .palette-hero-swatch-meta strong {
+    display: block;
+    color: var(--text);
+    font-weight: 500;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0;
+    margin-bottom: 3px;
+  }
+
+  .palette-rationale {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .palette-rationale-item {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--text-mute);
+    line-height: 1.6;
+    font-family: var(--font-sans);
+  }
+  .palette-rationale-num {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    color: var(--accent-2);
+    font-style: italic;
+    padding-top: 1px;
+  }
+  .palette-rationale-item strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .palette-usage {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+  }
+  .palette-usage-box {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 110px;
+  }
+  .palette-usage-label {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-family: var(--font-sans);
+  }
+  .palette-usage-demo {
+    font-family: var(--font-serif);
+    font-size: 15px;
+    letter-spacing: -0.005em;
+    line-height: 1.35;
+    font-weight: 400;
+  }
+  .palette-usage-note {
+    font-size: 10px;
+    color: var(--text-mute);
+    line-height: 1.5;
+    margin-top: auto;
+    font-family: var(--font-sans);
+  }
+
+  /* ═══════════ MINI UI MOCKUP ═══════════ */
+  .mockup {
+    margin-bottom: 20px;
+    padding: 14px;
+    font-size: 11px;
+    line-height: 1.4;
+    border: 1px solid;
+    font-family: var(--font-sans);
+  }
+  .mockup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid;
+  }
+  .mockup-tag {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.7;
+    font-weight: 600;
+  }
+  .mockup-title {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    line-height: 1.2;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  .mockup-body {
+    font-size: 11px;
+    line-height: 1.45;
+    opacity: 0.78;
+    margin-bottom: 12px;
+  }
+  .mockup-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .mockup-btn {
+    padding: 6px 12px;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .mockup-price {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 3px 8px;
+  }
+
+  /* ═══════════ TIPOGRAFÍA SHOWCASE ═══════════ */
+  .typo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 40px;
+  }
+  .typo-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    padding: 32px;
+  }
+  .typo-card.recommended { border-color: var(--accent); }
+  .typo-card-label {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    font-weight: 600;
+    margin-bottom: 12px;
+    font-family: var(--font-sans);
+  }
+  .typo-card-name {
+    font-size: 36px;
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .typo-card-name.serif {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-variation-settings: "opsz" 144, "SOFT" 50, "WONK" 1;
+  }
+  .typo-card-name.sans {
+    font-family: var(--font-sans);
+    font-weight: 500;
+  }
+  .typo-card-name.mono {
+    font-family: var(--font-mono);
+    font-weight: 500;
+  }
+  .typo-card-meta {
+    font-size: 11px;
+    color: var(--text-low);
+    margin-bottom: 20px;
+    font-family: var(--font-sans);
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .typo-card-role {
+    font-size: 12px;
+    color: var(--text-mute);
+    line-height: 1.6;
+    font-family: var(--font-sans);
+  }
+  .typo-card-role strong { color: var(--text); font-weight: 500; }
+
+  .typo-samples {
+    background: var(--bg-soft);
+    padding: 40px 48px;
+    border: 1px solid var(--line);
+  }
+  .typo-sample {
+    padding: 24px 0;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 32px;
+    align-items: baseline;
+  }
+  .typo-sample:last-child { border-bottom: none; }
+  .typo-sample-label {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-low);
+    font-family: var(--font-sans);
+    font-weight: 600;
+  }
+  .typo-sample-label code {
+    display: block;
+    margin-top: 6px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent-2);
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 400;
+  }
+  .typo-sample-text { color: var(--text); }
+  .typo-h1 {
+    font-family: var(--font-serif);
+    font-size: 64px;
+    font-weight: 500;
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    font-variation-settings: "opsz" 144, "SOFT" 30, "WONK" 1;
+    font-style: italic;
+  }
+  .typo-h2 {
+    font-family: var(--font-serif);
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    font-variation-settings: "opsz" 96, "SOFT" 50";
+  }
+  .typo-body {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+  .typo-kpi {
+    font-family: var(--font-mono);
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--accent-2);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .typo-label {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-mute);
+  }
+
+  /* ═══════════ LOGO VARIATIONS ═══════════ */
+  .plato-variation {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+  .plato-variation.recommended { border-color: var(--accent); }
+  .plato-variation-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .plato-variation-title {
+    font-family: var(--font-serif);
+    font-size: 26px;
+    letter-spacing: -0.015em;
+    font-weight: 500;
+  }
+  .plato-variation-title small {
+    display: block;
+    font-family: var(--font-sans);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-low);
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+  .plato-variation-tag {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 4px 9px;
+    background: var(--line-strong);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-weight: 600;
+  }
+  .plato-variation.recommended .plato-variation-tag {
+    background: var(--accent);
+    color: var(--bg);
+  }
+  .plato-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text-mute);
+    font-family: var(--font-sans);
+  }
+  .plato-meta-cell strong {
+    display: block;
+    color: var(--text);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 8px;
+  }
+
+  .variants {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .variant {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    border: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .variant-label {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    background: var(--bg);
+    padding: 2px 6px;
+    font-family: var(--font-sans);
+    font-weight: 600;
+  }
+  .variant svg { width: 60%; height: 60%; }
+  .variant.favicon svg { width: 32px; height: 32px; }
+  .variant.avatar { border-radius: 50%; }
+  .variant.avatar svg { width: 56%; height: 56%; }
+  .variant-bg-cream { background: #FAF8F4; }
+  .variant-bg-midnight { background: #1A1E2E; }
+  .variant-bg-gradient { background: linear-gradient(135deg, #C4633F 0%, #C9A24A 100%); }
+
+  /* ═══════════ APPLICATIONS ═══════════ */
+  .applications {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 36px;
+  }
+  .app {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+  .app-label {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-low);
+    margin-bottom: 14px;
+    font-family: var(--font-sans);
+    font-weight: 600;
+  }
+  .app-visual {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #FAF8F4;
+    min-height: 180px;
+    position: relative;
+  }
+  .app-visual.app-icon {
+    background: linear-gradient(135deg, #1A1E2E 0%, #2A3148 100%);
+    border-radius: 36px;
+  }
+  .app-visual.app-icon svg { width: 96px; height: 96px; }
+  .app-visual.business-card {
+    background: #FAF8F4;
+    padding: 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    min-height: 160px;
+  }
+  .business-card-top { display: flex; align-items: center; gap: 10px; }
+  .business-card-top svg { width: 28px; height: 28px; }
+  .business-card-name {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    color: #1A1E2E;
+    letter-spacing: -0.01em;
+    font-weight: 500;
+  }
+  .business-card-bottom {
+    color: #2A2826;
+    font-size: 9px;
+    letter-spacing: 0.02em;
+    line-height: 1.5;
+    font-family: var(--font-sans);
+  }
+  .business-card-bottom div:first-child { font-weight: 600; margin-bottom: 2px; }
+  .app-visual.loading-screen {
+    background: #1A1E2E;
+    flex-direction: column;
+    gap: 20px;
+  }
+  .app-visual.loading-screen svg { width: 56px; height: 56px; }
+  .loading-name {
+    font-family: var(--font-serif);
+    color: #FAF8F4;
+    font-size: 17px;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+  }
+  .loading-dots { display: flex; gap: 4px; margin-top: 8px; }
+  .loading-dot {
+    width: 4px; height: 4px;
+    background: #C9A24A;
+    border-radius: 50%;
+    opacity: 0.4;
+  }
+
+  .concept {
+    background: var(--bg-soft);
+    padding: 28px;
+    border-left: 2px solid var(--accent-2);
+  }
+  .concept-row {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 24px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .concept-row:last-child { border-bottom: none; }
+  .concept-label {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-low);
+    padding-top: 4px;
+    font-family: var(--font-sans);
+    font-weight: 600;
+  }
+  .concept-body {
+    font-size: 14px;
+    color: var(--text-mute);
+    line-height: 1.7;
+    font-family: var(--font-sans);
+  }
+  .concept-body strong { color: var(--text); font-weight: 500; }
+
+  /* ═══════════ VOZ / ARCHETYPE ═══════════ */
+  .archetype-card {
+    background: var(--bg-card);
+    border: 1px solid var(--accent);
+    padding: 48px;
+    margin-bottom: 32px;
+  }
+  .archetype-name {
+    font-family: var(--font-serif);
+    font-size: 48px;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+    font-weight: 400;
+    font-variation-settings: "opsz" 144, "SOFT" 50;
+  }
+  .archetype-name em { color: var(--accent-2); font-style: italic; }
+  .archetype-formula {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent-2);
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  .archetype-body {
+    font-size: 15px;
+    color: var(--text-mute);
+    line-height: 1.7;
+    margin-bottom: 32px;
+    font-family: var(--font-sans);
+  }
+  .archetype-body strong { color: var(--text); font-weight: 500; }
+
+  .voice-keywords {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .voice-keyword {
+    padding: 14px 16px;
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    text-align: center;
+    font-family: var(--font-serif);
+    font-size: 16px;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  /* ═══════════ TAGLINE TABLE ═══════════ */
+  .tagline-master {
+    background: var(--bg-card);
+    border: 1px solid var(--accent);
+    padding: 56px 64px;
+    margin-bottom: 32px;
+    text-align: center;
+  }
+  .tagline-master-label {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 20px;
+    font-family: var(--font-sans);
+  }
+  .tagline-master-text {
+    font-family: var(--font-serif);
+    font-size: 36px;
+    line-height: 1.25;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    font-weight: 400;
+    font-variation-settings: "opsz" 144, "SOFT" 50;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  .tagline-master-text em { color: var(--accent-2); font-style: italic; }
+  .tagline-master-note {
+    margin-top: 24px;
+    font-size: 12px;
+    color: var(--text-mute);
+    font-style: italic;
+    font-family: var(--font-sans);
+  }
+
+  .tagline-alts {
+    display: grid;
+    grid-template-columns: 200px 1fr 240px;
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+  }
+  .tagline-alt-row {
+    display: contents;
+  }
+  .tagline-alt-cell {
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-sans);
+  }
+  .tagline-alt-row:last-child .tagline-alt-cell { border-bottom: none; }
+  .tagline-alt-cell.head {
+    background: var(--bg-card);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-low);
+    font-weight: 600;
+  }
+  .tagline-alt-cell.use {
+    font-size: 12px;
+    color: var(--text-mute);
+    font-weight: 500;
+  }
+  .tagline-alt-cell.tag {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    color: var(--text);
+    font-weight: 400;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+  }
+  .tagline-alt-cell.tag em { color: var(--accent-2); font-style: italic; }
+  .tagline-alt-cell.when {
+    font-size: 11px;
+    color: var(--text-mute);
+    line-height: 1.55;
+  }
+
+  /* ═══════════ TRIADA PILARES ═══════════ */
+  .triada {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .pilar {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--accent);
+    padding: 36px;
+  }
+  .pilar:nth-child(2) { border-top-color: var(--accent-2); }
+  .pilar:nth-child(3) { border-top-color: var(--text-mute); }
+  .pilar-num {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 12px;
+    letter-spacing: 0.06em;
+  }
+  .pilar:nth-child(2) .pilar-num { color: var(--accent-2); }
+  .pilar-name {
+    font-family: var(--font-serif);
+    font-size: 32px;
+    margin-bottom: 16px;
+    letter-spacing: -0.015em;
+    font-weight: 500;
+    font-variation-settings: "opsz" 96, "SOFT" 30;
+  }
+  .pilar-features {
+    font-size: 13px;
+    color: var(--text-mute);
+    line-height: 1.65;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-sans);
+  }
+  .pilar-persona {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    font-weight: 600;
+    margin-bottom: 12px;
+    font-family: var(--font-sans);
+  }
+  .pilar-copy {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    color: var(--text);
+    line-height: 1.45;
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  /* ═══════════ ICP PERSONAS ═══════════ */
+  .personas {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+  .persona {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    padding: 40px;
+  }
+  .persona-num {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent-2);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+  }
+  .persona-name {
+    font-family: var(--font-serif);
+    font-size: 30px;
+    margin-bottom: 6px;
+    letter-spacing: -0.015em;
+    font-weight: 500;
+  }
+  .persona-name em { color: var(--accent); font-style: italic; }
+  .persona-age {
+    font-size: 12px;
+    color: var(--text-low);
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-sans);
+    letter-spacing: 0.05em;
+  }
+  .persona-attrs {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .persona-attr {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 16px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-mute);
+    font-family: var(--font-sans);
+  }
+  .persona-attr-label {
+    color: var(--text);
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .persona-attr-value strong { color: var(--text); font-weight: 500; }
+  .persona-attr-value code {
+    font-family: var(--font-mono);
+    color: var(--accent-2);
+    font-size: 12px;
+  }
+
+  /* ═══════════ FUNNEL MATH ═══════════ */
+  .funnel {
+    background: var(--bg-card);
+    border: 1px solid var(--accent);
+    padding: 48px;
+    margin-bottom: 28px;
+  }
+  .funnel-headline {
+    font-family: var(--font-serif);
+    font-size: 32px;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+    font-weight: 500;
+  }
+  .funnel-headline em { color: var(--accent-2); font-style: italic; }
+  .funnel-sub {
+    font-size: 13px;
+    color: var(--text-mute);
+    margin-bottom: 36px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-sans);
+  }
+  .funnel-flow {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+  .funnel-step {
+    text-align: center;
+    padding: 24px 16px;
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    position: relative;
+  }
+  .funnel-step-arrow {
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent);
+    font-size: 20px;
+    font-family: var(--font-mono);
+    z-index: 2;
+  }
+  .funnel-step:last-child .funnel-step-arrow { display: none; }
+  .funnel-step-num {
+    font-family: var(--font-mono);
+    font-size: 36px;
+    color: var(--accent-2);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+  .funnel-step:last-child .funnel-step-num { color: var(--accent); }
+  .funnel-step-label {
+    font-size: 11px;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    margin-bottom: 6px;
+  }
+  .funnel-step-meta {
+    font-size: 10px;
+    color: var(--text-low);
+    font-family: var(--font-sans);
+  }
+
+  .channels {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    padding: 32px;
+    margin-bottom: 28px;
+  }
+  .channels-head {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    font-weight: 600;
+    margin-bottom: 20px;
+    font-family: var(--font-sans);
+  }
+  .channel-row {
+    display: grid;
+    grid-template-columns: 220px 90px 1fr 80px;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+    align-items: center;
+    font-family: var(--font-sans);
+  }
+  .channel-row:last-child { border-bottom: none; }
+  .channel-name { color: var(--text); font-weight: 500; font-size: 13px; }
+  .channel-vis {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-mute);
+  }
+  .channel-bar {
+    height: 4px;
+    background: var(--line);
+    position: relative;
+  }
+  .channel-fill {
+    position: absolute;
+    height: 100%;
+    background: var(--accent);
+    top: 0; left: 0;
+  }
+  .channel-pct {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent-2);
+    text-align: right;
+    font-weight: 600;
+  }
+
+  .mrr-summary {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent-2);
+    padding: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+  }
+  .mrr-stat-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-low);
+    margin-bottom: 8px;
+    font-family: var(--font-sans);
+    font-weight: 600;
+  }
+  .mrr-stat-value {
+    font-family: var(--font-mono);
+    font-size: 28px;
+    color: var(--text);
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .mrr-stat-value.accent { color: var(--accent-2); }
+  .mrr-stat-meta {
+    font-size: 11px;
+    color: var(--text-mute);
+    font-family: var(--font-sans);
+  }
+
+  /* ═══════════ CONTENT PILLARS ═══════════ */
+  .content-pillars {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  .content-pillar {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    padding: 24px;
+  }
+  .content-pillar-pct {
+    font-family: var(--font-mono);
+    font-size: 32px;
+    color: var(--accent);
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+  .content-pillar-name {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    color: var(--text);
+    margin-bottom: 12px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .content-pillar-desc {
+    font-size: 12px;
+    color: var(--text-mute);
+    line-height: 1.6;
+    font-family: var(--font-sans);
+  }
+
+  .channels-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+  .channel-card {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    padding: 20px;
+    text-align: center;
+  }
+  .channel-card-name {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    color: var(--text);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .channel-card-posts {
+    font-family: var(--font-mono);
+    font-size: 26px;
+    color: var(--accent-2);
+    margin-bottom: 4px;
+    font-weight: 700;
+  }
+  .channel-card-meta {
+    font-size: 10px;
+    color: var(--text-low);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-family: var(--font-sans);
+    font-weight: 600;
+  }
+
+  .video-ideas {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    padding: 32px;
+  }
+  .video-ideas-head {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    font-weight: 600;
+    margin-bottom: 20px;
+    font-family: var(--font-sans);
+  }
+  .video-idea {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 32px 1fr 60px;
+    gap: 16px;
+    align-items: baseline;
+    font-family: var(--font-sans);
+  }
+  .video-idea:last-child { border-bottom: none; }
+  .video-idea-num {
+    font-family: var(--font-mono);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .video-idea-text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .video-idea-text strong { color: var(--accent-2); font-weight: 500; }
+  .video-idea-pilar {
+    font-size: 10px;
+    color: var(--text-low);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: right;
+    font-weight: 600;
+  }
+
+  /* ═══════════ PRODUCT FEATURES ═══════════ */
+  .features-table {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+  }
+  .feature-row {
+    display: grid;
+    grid-template-columns: 50px 240px 1fr 200px;
+    gap: 24px;
+    padding: 24px 32px;
+    border-bottom: 1px solid var(--line);
+    align-items: baseline;
+    font-family: var(--font-sans);
+  }
+  .feature-row:last-child { border-bottom: none; }
+  .feature-row.head {
+    background: var(--bg-soft);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-low);
+    font-weight: 600;
+    padding: 16px 32px;
+  }
+  .feature-rank {
+    font-family: var(--font-mono);
+    font-size: 24px;
+    color: var(--accent-2);
+    font-weight: 700;
+  }
+  .feature-row.killer .feature-rank { color: var(--accent); }
+  .feature-name {
+    color: var(--text);
+    font-weight: 500;
+    font-size: 14px;
+  }
+  .feature-name strong { color: var(--accent-2); font-weight: 600; }
+  .feature-why {
+    color: var(--text-mute);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .feature-why strong { color: var(--text); font-weight: 500; }
+  .feature-persona {
+    font-size: 11px;
+    color: var(--text-low);
+    letter-spacing: 0.04em;
+    font-style: italic;
+  }
+
+  /* ═══════════ PRICING TABLE ═══════════ */
+  .pricing-final {
+    background: var(--bg-card);
+    border: 1px solid var(--accent);
+    padding: 40px;
+    margin-bottom: 32px;
+  }
+  .pricing-final-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--line);
+  }
+  .pricing-final-title {
+    font-family: var(--font-serif);
+    font-size: 28px;
+    letter-spacing: -0.015em;
+    font-weight: 500;
+  }
+  .pricing-final-title em { color: var(--accent-2); font-style: italic; }
+  .pricing-final-label {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-family: var(--font-sans);
+  }
+  .pricing-final-tag {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 600;
+    font-family: var(--font-sans);
+  }
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1fr 1fr 1.5fr;
+    font-size: 13px;
+    font-family: var(--font-sans);
+  }
+  .pricing-cell {
+    padding: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .pricing-cell.head {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-low);
+    font-weight: 600;
+  }
+  .pricing-cell.plan strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .pricing-cell.price {
+    font-family: var(--font-mono);
+    color: var(--accent-2);
+    font-weight: 600;
+  }
+  .pricing-cell.price.premium { color: var(--accent); }
+  .pricing-cell.note {
+    color: var(--text-mute);
+    font-size: 12px;
+  }
+  .pricing-row-premium .pricing-cell { background: rgba(196, 99, 63, 0.06); }
+
+  /* ═══════════ DECISION BOX ═══════════ */
+  .decisions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+  .decision-box {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    padding: 32px;
+  }
+  .decision-label {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    font-weight: 600;
+    margin-bottom: 12px;
+    font-family: var(--font-sans);
+  }
+  .decision-name {
+    font-family: var(--font-serif);
+    font-size: 24px;
+    margin-bottom: 14px;
+    letter-spacing: -0.01em;
+    font-weight: 500;
+  }
+  .decision-body {
+    font-size: 13px;
+    color: var(--text-mute);
+    line-height: 1.65;
+    font-family: var(--font-sans);
+  }
+  .decision-body strong { color: var(--text); font-weight: 500; }
+  .decision-note {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--text-low);
+    line-height: 1.55;
+    font-family: var(--font-sans);
+  }
+
+  /* ═══════════ FILOSOFIA ═══════════ */
+  .filosofia {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .nunca-box {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    padding: 36px;
+  }
+  .nunca-label {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 16px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .nunca-title {
+    font-family: var(--font-serif);
+    font-size: 22px;
+    color: var(--text);
+    margin-bottom: 14px;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    font-weight: 500;
+  }
+  .nunca-body {
+    font-size: 13px;
+    color: var(--text-mute);
+    line-height: 1.7;
+    font-family: var(--font-sans);
+  }
+  .nunca-body strong { color: var(--accent-2); font-weight: 500; }
+
+  /* ═══════════ FOOTER ═══════════ */
+  .doc-footer {
+    border-top: 1px solid var(--line);
+    margin-top: 96px;
+    padding-top: 40px;
+    font-size: 11px;
+    color: var(--text-low);
+    letter-spacing: 0.06em;
+    font-family: var(--font-sans);
+    line-height: 1.7;
+  }
+  .doc-footer strong { color: var(--text); font-weight: 500; }
+  .doc-footer em { color: var(--accent-2); font-style: italic; }
+  .doc-footer code { font-family: var(--font-mono); color: var(--accent-2); }
+
+  /* ═══════════ RESPONSIVE ═══════════ */
+  @media (max-width: 1100px) {
+    .doc { padding: 56px 32px; }
+    .doc-title { font-size: 52px; }
+    .palette-hero { grid-template-columns: 1fr; padding: 32px; gap: 32px; }
+    .palette-hero-name { font-size: 36px; }
+    .palette-usage { grid-template-columns: 1fr; }
+    .variants { grid-template-columns: repeat(2, 1fr); }
+    .applications { grid-template-columns: 1fr; }
+    .plato-meta { grid-template-columns: 1fr; }
+    .typo-grid { grid-template-columns: 1fr; }
+    .typo-sample { grid-template-columns: 1fr; gap: 8px; }
+    .triada { grid-template-columns: 1fr; }
+    .personas { grid-template-columns: 1fr; }
+    .funnel-flow { grid-template-columns: 1fr 1fr; }
+    .funnel-step-arrow { display: none; }
+    .channel-row { grid-template-columns: 1fr; gap: 8px; }
+    .mrr-summary { grid-template-columns: 1fr; }
+    .content-pillars { grid-template-columns: 1fr; }
+    .channels-grid { grid-template-columns: 1fr 1fr; }
+    .feature-row { grid-template-columns: 40px 1fr; gap: 12px; }
+    .feature-row .feature-why, .feature-row .feature-persona { grid-column: 2; }
+    .pricing-grid { grid-template-columns: 1fr; }
+    .decisions, .filosofia { grid-template-columns: 1fr; }
+    .tagline-master-text { font-size: 26px; }
+    .tagline-alts { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="doc">
+
+<!-- ═══════════════════════ HEADER / COVER ═══════════════════════ -->
+<header class="doc-header">
+  <div class="doc-eyebrow">Propuesta maestra · ServiRest · v3 · 2026-05-26 PM</div>
+  <h1 class="doc-title">Una paleta. Un plato.<br><em>Una marca para los dos turnos.</em></h1>
+  <p class="doc-sub">
+    Todo lo que ServiRest decidió: <strong>paleta única Sobremesa Lúcida</strong>,
+    <strong>El Plato</strong> en cinco variaciones, <strong>tríada Administración / Atención / Operación</strong>,
+    archetype <strong>Hermano del Rubro</strong> y pricing v3 con AI Assistant por minuto. Este documento se
+    abre con doble-click — son los fundamentos de marca + estrategia para revisar con Julio en una sentada
+    y cerrar las decisiones que faltan.
+  </p>
+
+  <div class="doc-meta">
+    <div><strong>Cliente</strong>ServiRest · <code>id_cliente = in_rest</code></div>
+    <div><strong>Founder</strong>Julio Rodríguez</div>
+    <div><strong>Acompaña</strong>ABSU Agency · Sebastián Prieto</div>
+    <div><strong>Versión</strong>v3.0 · post-feedback founder</div>
+    <div><strong>Stack visual</strong>HTML standalone · Google Fonts · SVG inline</div>
+  </div>
+
+  <div class="cover-tagline">
+    <div class="cover-tagline-label">Tagline master · landing hero</div>
+    <h2 class="cover-tagline-h1">Administración, atención y operación de tu restaurante en un solo lugar.</h2>
+    <p class="cover-tagline-h2">Aliados del rubro. No proveedores carísimos.</p>
+  </div>
+</header>
+
+<!-- ═══════════════════════ SECCIÓN 01 — MOODBOARD ═══════════════════════ -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">01</span>
+    <div>
+      <h2 class="section-title">Moodboard · sobremesa al cierre, claridad al amanecer.</h2>
+      <p class="section-blurb">
+        La marca no tiene "modo claro" y "modo oscuro" como afterthought técnico. Los dos modos cuentan
+        una historia distinta del mismo negocio. <strong>Midnight</strong> es ServiRest cerrando el día.
+        <strong>Blanco Hueso</strong> es ServiRest empezándolo.
+      </p>
+    </div>
+  </div>
+
+  <div class="moodboard">
+    <span class="moodboard-label">Moodboard · Sobremesa Lúcida</span>
+    Imaginá la sobremesa después de una cena larga en Roma Norte: jueves 22:45, ya bajaron las luces,
+    queda un poco de tinto en la copa, alguien acaba de pedir un café cortado.
+    <strong>"Sobremesa"</strong> es ese momento — la calidez tinta del Midnight, la terracota del barro
+    cocido, un detalle de mostaza en el mantel. Pero le agregamos <strong>"Lúcida"</strong> porque el
+    dueño que vamos a buscar ya pasó la fase emocional — está mirando food cost, ticket promedio,
+    márgenes. La capa Línea Blanca (blanco hueso + gris carbón + mostaza mate) le da el filo
+    Apollo+Notion que la sobremesa sola no tiene. <strong>Resultado:</strong> calidez artesanal de noche
+    + claridad operativa de día. La misma marca a las 11pm cerrando caja y a las 10am revisando KPIs.
+  </div>
+
+  <div class="moodboard" style="border-left-color: var(--accent-2);">
+    <span class="moodboard-label" style="color: var(--accent);">Inspiración cruzada · tres referencias</span>
+    <strong>Apollo.io</strong> aporta el rigor técnico — tipografía limpia, espacios negativos generosos,
+    data legible. <strong>Google</strong> aporta la universalidad — que se sienta familiar al primer click,
+    que no haya curva visual. <strong>Artistica Brewing</strong> aporta el alma — la calidez, la atemporalidad,
+    el detalle artesanal que dice "esto fue hecho por gente, no por agencia". El anti-moodboard también
+    importa: <strong>NO</strong> Soft Restaurante 2008 con gradientes celestes; <strong>NO</strong> Applebee's
+    con rojo saturado; <strong>NO</strong> Toast clínico blanco-negro; <strong>NO</strong> cliché latino
+    (sombreros, cactus, calaveritas, mariachis). Lo latino vive en la calidez del crema, la textura del cobre,
+    el espaciado generoso.
+  </div>
+</section>
+
+<!-- ═══════════════════════ SECCIÓN 02 — PALETA SOBREMESA LÚCIDA ═══════════════════════ -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">02</span>
+    <div>
+      <h2 class="section-title">Una paleta. Cinco colores. Dos turnos del día.</h2>
+      <p class="section-blurb">
+        El founder combinó las DNA de Paleta A (Sobremesa) + Paleta C (Línea Blanca) en una sola identidad.
+        <strong>Sobremesa Lúcida</strong> es la paleta final: warm de noche, lúcida de día. Los 5 hex de
+        abajo son los únicos colores que va a respirar ServiRest en landing, app, RRSS, sello y documentos.
+      </p>
+    </div>
+  </div>
+
+  <article class="palette-hero">
+    <div class="palette-hero-left">
+      <span class="palette-hero-tag">Paleta final v3 · decisión founder</span>
+      <h3 class="palette-hero-name">Sobremesa <em>Lúcida</em></h3>
+      <p class="palette-hero-sub">
+        La sobremesa de las 22:45 (Midnight Tinto + Terracota) se encuentra con la clínica gastronómica
+        de las 10:00 (Blanco Hueso + Gris Carbón + Mostaza Mate). Una sola marca para los dos turnos del dueño.
+      </p>
+
+      <div class="palette-hero-swatches">
+        <div class="palette-hero-swatch">
+          <div class="palette-hero-swatch-block" data-role="01" style="background:#1A1E2E; color:#FAF8F4;"></div>
+          <div class="palette-hero-swatch-meta"><strong>#1A1E2E</strong>Midnight Tinto<br><span style="opacity:0.6;">Primary</span></div>
+        </div>
+        <div class="palette-hero-swatch">
+          <div class="palette-hero-swatch-block" data-role="02" style="background:#C4633F; color:#FAF8F4;"></div>
+          <div class="palette-hero-swatch-meta"><strong>#C4633F</strong>Terracota<br><span style="opacity:0.6;">Secondary</span></div>
+        </div>
+        <div class="palette-hero-swatch">
+          <div class="palette-hero-swatch-block" data-role="03" style="background:#C9A24A; color:#1A1E2E;"></div>
+          <div class="palette-hero-swatch-meta"><strong>#C9A24A</strong>Mostaza Mate<br><span style="opacity:0.6;">Accent</span></div>
+        </div>
+        <div class="palette-hero-swatch">
+          <div class="palette-hero-swatch-block" data-role="04" style="background:#FAF8F4; color:#2A2826; border-color:rgba(42,40,38,0.18);"></div>
+          <div class="palette-hero-swatch-meta"><strong>#FAF8F4</strong>Blanco Hueso<br><span style="opacity:0.6;">Surface</span></div>
+        </div>
+        <div class="palette-hero-swatch">
+          <div class="palette-hero-swatch-block" data-role="05" style="background:#2A2826; color:#FAF8F4;"></div>
+          <div class="palette-hero-swatch-meta"><strong>#2A2826</strong>Gris Carbón<br><span style="opacity:0.6;">Text</span></div>
+        </div>
+      </div>
+
+      <div class="palette-rationale">
+        <div class="palette-rationale-item">
+          <span class="palette-rationale-num">01</span>
+          <span><strong>Tinto + hueso = un sello que cambia de turno.</strong> Midnight Tinto da la calidez nocturna que pide la sobremesa. Blanco Hueso entrega la clínica diurna que pide el dashboard. Cero negro puro, cero blanco puro — todo respira.</span>
+        </div>
+        <div class="palette-rationale-item">
+          <span class="palette-rationale-num">02</span>
+          <span><strong>Terracota y mostaza no compiten — se complementan.</strong> Terracota es emoción (CTA, hero, foto). Mostaza es información (badges, números importantes, accent rate). La regla es función, no gusto.</span>
+        </div>
+        <div class="palette-rationale-item">
+          <span class="palette-rationale-num">03</span>
+          <span><strong>Cinco colores soportan light + dark sin agregar nada.</strong> En dark mode: midnight como BG, blanco hueso como text. En light mode: invertido. Mostaza y terracota son los mismos en ambos modos — la paleta no se rompe.</span>
+        </div>
+      </div>
+
+      <div class="palette-usage">
+        <div class="palette-usage-box" style="background:#1A1E2E; color:#FAF8F4; border:1px solid rgba(255,255,255,0.08);">
+          <div class="palette-usage-label" style="color:#C4633F;">CTA principal</div>
+          <div class="palette-usage-demo">Probar 14 días gratis →</div>
+          <div class="palette-usage-note" style="color:rgba(250,248,244,0.55);">Botón terracota sobre midnight. Hover: shift a mostaza.</div>
+        </div>
+        <div class="palette-usage-box" style="background:#FAF8F4; color:#2A2826; border:1px solid rgba(42,40,38,0.12);">
+          <div class="palette-usage-label" style="color:#1A1E2E;">Texto sobre crema</div>
+          <div class="palette-usage-demo" style="color:#2A2826;">Domingo 23:08. Cierre listo.</div>
+          <div class="palette-usage-note" style="color:rgba(42,40,38,0.6);">Gris carbón sobre blanco hueso. Body text default. Reads como papel.</div>
+        </div>
+        <div class="palette-usage-box" style="background:#FAF8F4; color:#2A2826; border:1px solid rgba(42,40,38,0.12);">
+          <div class="palette-usage-label" style="color:#1A1E2E;">Notification dot</div>
+          <div class="palette-usage-demo" style="color:#2A2826;">3 alertas inventario <span style="display:inline-block; width:8px; height:8px; background:#C9A24A; border-radius:50%; vertical-align:middle; margin-left:4px;"></span></div>
+          <div class="palette-usage-note" style="color:rgba(42,40,38,0.6);">Mostaza mate como signal. Llama atención sin ser rojo de pánico.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="palette-hero-right">
+      <div class="mockup" style="background:#FAF8F4; border-color:#1A1E2E; color:#2A2826;">
+        <div class="mockup-header" style="border-color:rgba(42,40,38,0.16);">
+          <span class="mockup-tag" style="color:#C9A24A;">Inventario · Mesa 04</span>
+          <span class="mockup-tag" style="color:#2A2826; opacity:0.5;">21:34</span>
+        </div>
+        <div class="mockup-title">Pasta cacio e pepe</div>
+        <div class="mockup-body">Food cost real <strong style="color:#C4633F; font-weight: 600;">18.2%</strong> · margen $182 MXN · stock para 12 platos.</div>
+        <div class="mockup-row">
+          <span class="mockup-btn" style="background:#1A1E2E; color:#FAF8F4;">Ajustar</span>
+          <span class="mockup-price" style="background:#C9A24A; color:#1A1E2E;">$220</span>
+        </div>
+      </div>
+
+      <div class="mockup" style="background:#1A1E2E; border-color:#C4633F; color:#FAF8F4;">
+        <div class="mockup-header" style="border-color:rgba(250,248,244,0.16);">
+          <span class="mockup-tag" style="color:#C9A24A;">Dashboard · Hoy</span>
+          <span class="mockup-tag" style="color:#FAF8F4; opacity:0.5;">10:18</span>
+        </div>
+        <div class="mockup-title" style="color:#FAF8F4;">Ticket promedio</div>
+        <div class="mockup-body" style="color:rgba(250,248,244,0.75);">Subió <strong style="color:#C9A24A; font-weight: 600;">+12%</strong> vs sem pasada. Mayor margen: Pastas.</div>
+        <div class="mockup-row">
+          <span class="mockup-btn" style="background:#C4633F; color:#FAF8F4;">Ver detalle</span>
+          <span class="mockup-price" style="background:#FAF8F4; color:#1A1E2E;">$418</span>
+        </div>
+      </div>
+
+      <div style="font-size: 11px; color: var(--text-mute); line-height: 1.6; padding-top: 4px; font-family: var(--font-sans);">
+        <strong style="color: var(--text); font-weight: 500;">Cómo respira la marca:</strong>
+        arriba el modo noche (sobremesa, dueño cerrando caja). Abajo el modo día (dashboard, dueño revisando KPIs).
+        Los 5 colores se rotan según contexto — nunca compiten.
+      </div>
+    </div>
+  </article>
+</section>
+
+<!-- ═══════════════════════ SECCIÓN 03 — TIPOGRAFÍA ═══════════════════════ -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">03</span>
+    <div>
+      <h2 class="section-title">Tipografía · tres familias, una conversación.</h2>
+      <p class="section-blurb">
+        <strong>Fraunces</strong> aporta el alma editorial — serif variable open source con axis italic/soft/wonk.
+        <strong>Inter</strong> entrega legibilidad universal en body. <strong>JetBrains Mono</strong> da feel
+        "data seria" en KPIs sin caer en frío. Las tres están cargadas en este doc desde Google Fonts —
+        lo que ves abajo es lo que va a respirar la landing y el app.
+      </p>
+    </div>
+  </div>
+
+  <div class="typo-grid">
+    <div class="typo-card recommended">
+      <div class="typo-card-label">Heading · pieza maestra</div>
+      <div class="typo-card-name serif">Fraunces</div>
+      <div class="typo-card-meta">Variable · Open Source · Google Fonts · italic/soft/wonk axis</div>
+      <div class="typo-card-role">
+        Serif moderno con personalidad italiana. <strong>Apollo no usa serif pero Artistica Brewing sí</strong> —
+        Fraunces es el puente. Headings de landing pueden ir wonky-italic para personalidad; headers del app
+        soft-regular para legibilidad. Una sola fuente, mil expresiones.
+      </div>
+    </div>
+
+    <div class="typo-card">
+      <div class="typo-card-label">Body · universal</div>
+      <div class="typo-card-name sans">Inter</div>
+      <div class="typo-card-meta">Variable · Open Source · Google Fonts · 9 weights</div>
+      <div class="typo-card-role">
+        Cubre 100% de los casos body. Es gratis, está en todas las plataformas, escala perfecto en mobile.
+        <strong>Apollo y Google lo usan o equivalentes.</strong> Nunca compite con Fraunces — Fraunces narra,
+        Inter explica.
+      </div>
+    </div>
+
+    <div class="typo-card">
+      <div class="typo-card-label">Data · KPIs + tablas</div>
+      <div class="typo-card-name mono">JetBrains Mono</div>
+      <div class="typo-card-meta">Open Source · Google Fonts · ligatures opcionales</div>
+      <div class="typo-card-role">
+        Para tablas de food cost, ticket promedio, márgenes. <strong>Un monospace bien escogido le da feel
+        "esto es data seria"</strong> sin caer en frío de Roboto Mono. Aparece en KPIs grandes del dashboard
+        y en pricing.
+      </div>
+    </div>
+  </div>
+
+  <div class="typo-samples">
+    <div class="typo-sample">
+      <div class="typo-sample-label">H1 · Landing hero<code>Fraunces 64px · wght 500 · italic wonk 20%</code></div>
+      <div class="typo-sample-text"><span class="typo-h1">Cierra el domingo en 30 minutos.</span></div>
+    </div>
+
+    <div class="typo-sample">
+      <div class="typo-sample-label">H2 · Sección<code>Fraunces 32px · wght 600 · soft 50%</code></div>
+      <div class="typo-sample-text"><span class="typo-h2">Administración, atención y operación.</span></div>
+    </div>
+
+    <div class="typo-sample">
+      <div class="typo-sample-label">Body · Párrafo<code>Inter 16px · wght 400 · line 1.6</code></div>
+      <div class="typo-sample-text"><span class="typo-body">Centraliza inventario, finanzas, reservas y app de meseros. Como Toast pero hecho para tu restaurante chico. Como Soft Restaurante pero del 2026.</span></div>
+    </div>
+
+    <div class="typo-sample">
+      <div class="typo-sample-label">KPI · Número grande<code>JetBrains Mono 48px · wght 700</code></div>
+      <div class="typo-sample-text"><span class="typo-kpi">$193,750</span></div>
+    </div>
+
+    <div class="typo-sample">
+      <div class="typo-sample-label">Label · Categoría<code>Inter 12px · wght 700 · uppercase · ls 0.08em</code></div>
+      <div class="typo-sample-text"><span class="typo-label">Margen real por plato</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ SECCIÓN 04 — EL PLATO · 5 VARIACIONES ═══════════════════════ -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">04</span>
+    <div>
+      <h2 class="section-title">El Plato · cinco maneras de cocinarlo.</h2>
+      <p class="section-blurb">
+        El founder eligió <strong>El Plato</strong> como concepto ganador. Lo que sigue son <strong>cinco
+        variaciones del mismo plato</strong> — todas con la paleta Sobremesa Lúcida — para que Julio elija
+        la versión que mejor lo represente. Cada variación tiene SVG inline production-grade (cubic-bezier
+        real, viewBox 100×100) y se renderiza en 4 contextos: color sobre crema, color sobre midnight,
+        favicon 32&nbsp;px, avatar redondo RRSS.
+      </p>
+    </div>
+  </div>
+
+  <!-- VARIACIÓN 01 — ORIGINAL -->
+  <article class="plato-variation recommended">
+    <div class="plato-variation-head">
+      <div>
+        <h3 class="plato-variation-title"><small>Variación 01 · default</small>El Plato Original</h3>
+        <p style="font-size:12px; color:var(--text-mute); margin-top:4px; font-family:var(--font-sans);">Círculo monoline + espiral cubic-bezier de 1.5 vueltas. El sello canónico.</p>
+      </div>
+      <span class="plato-variation-tag">Default</span>
+    </div>
+    <div class="variants">
+      <div class="variant variant-bg-cream">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="El Plato Original sobre crema">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#1A1E2E" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,42 58,42 58,50 C 58,60 46,60 46,46 C 46,32 64,32 64,52 C 64,72 38,72 38,46" fill="none" stroke="#C4633F" stroke-width="4.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">A. Color/Crema</span>
+      </div>
+      <div class="variant variant-bg-midnight">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="El Plato Original sobre midnight">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#FAF8F4" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,42 58,42 58,50 C 58,60 46,60 46,46 C 46,32 64,32 64,52 C 64,72 38,72 38,46" fill="none" stroke="#C9A24A" stroke-width="4.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">B. Color/Midnight</span>
+      </div>
+      <div class="variant variant-bg-cream favicon">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Favicon 32px">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#1A1E2E" stroke-width="9" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,42 58,42 58,50 C 58,60 46,60 46,46 C 46,32 64,32 64,52 C 64,72 38,72 38,46" fill="none" stroke="#C4633F" stroke-width="7" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">C. Favicon 32px</span>
+      </div>
+      <div class="variant variant-bg-gradient avatar">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Avatar RRSS">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#FAF8F4" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,42 58,42 58,50 C 58,60 46,60 46,46 C 46,32 64,32 64,52 C 64,72 38,72 38,46" fill="none" stroke="#FAF8F4" stroke-width="4.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">D. Avatar RRSS</span>
+      </div>
+    </div>
+    <div class="plato-meta">
+      <div class="plato-meta-cell"><strong>Cuándo brilla</strong>Sello canónico para app icon principal, favicon de landing, business cards. La espiral cuenta una historia clara en 5 segundos: "plato + pasta enrollándose".</div>
+      <div class="plato-meta-cell"><strong>Cuándo arriesga</strong>A 16&nbsp;px la espiral pierde densidad — favicon usa stroke engrosado (4.5 → 7). En B/N puro la jerarquía círculo+espiral se mantiene.</div>
+    </div>
+  </article>
+
+  <!-- VARIACIÓN 02 — COMPACTO -->
+  <article class="plato-variation">
+    <div class="plato-variation-head">
+      <div>
+        <h3 class="plato-variation-title"><small>Variación 02 · denso</small>El Plato Compacto</h3>
+        <p style="font-size:12px; color:var(--text-mute); margin-top:4px; font-family:var(--font-sans);">Espiral más cerrada — 2.5 vueltas dentro del círculo. Más densidad gráfica.</p>
+      </div>
+      <span class="plato-variation-tag">Denso</span>
+    </div>
+    <div class="variants">
+      <div class="variant variant-bg-cream">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="El Plato Compacto sobre crema">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#1A1E2E" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,44 56,44 56,50 C 56,57 44,57 44,48 C 44,38 60,38 60,52 C 60,67 38,67 38,46 C 38,28 66,28 66,54 C 66,77 32,77 32,44" fill="none" stroke="#C4633F" stroke-width="3.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">A. Color/Crema</span>
+      </div>
+      <div class="variant variant-bg-midnight">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="El Plato Compacto sobre midnight">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#FAF8F4" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,44 56,44 56,50 C 56,57 44,57 44,48 C 44,38 60,38 60,52 C 60,67 38,67 38,46 C 38,28 66,28 66,54 C 66,77 32,77 32,44" fill="none" stroke="#C9A24A" stroke-width="3.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">B. Color/Midnight</span>
+      </div>
+      <div class="variant variant-bg-cream favicon">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Favicon 32px">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#1A1E2E" stroke-width="9" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,44 56,44 56,50 C 56,57 44,57 44,48 C 44,38 60,38 60,52 C 60,67 38,67 38,46 C 38,28 66,28 66,54 C 66,77 32,77 32,44" fill="none" stroke="#C4633F" stroke-width="5.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">C. Favicon 32px</span>
+      </div>
+      <div class="variant variant-bg-gradient avatar">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Avatar RRSS">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#FAF8F4" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,44 56,44 56,50 C 56,57 44,57 44,48 C 44,38 60,38 60,52 C 60,67 38,67 38,46 C 38,28 66,28 66,54 C 66,77 32,77 32,44" fill="none" stroke="#FAF8F4" stroke-width="3.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">D. Avatar RRSS</span>
+      </div>
+    </div>
+    <div class="plato-meta">
+      <div class="plato-meta-cell"><strong>Cuándo brilla</strong>Más presencia visual a media distancia (poster, billboard, IG feed cuadrado). La espiral densa lee como rosca de pan, espiral de salsa, disco rayado.</div>
+      <div class="plato-meta-cell"><strong>Cuándo arriesga</strong>A 16&nbsp;px favicon la espiral 2.5 vueltas se convierte en mancha. Reservar para tamaños ≥ 48&nbsp;px. Para favicon, usar Variación 05.</div>
+    </div>
+  </article>
+
+  <!-- VARIACIÓN 03 — ASIMÉTRICO -->
+  <article class="plato-variation">
+    <div class="plato-variation-head">
+      <div>
+        <h3 class="plato-variation-title"><small>Variación 03 · orgánico</small>El Plato Asimétrico</h3>
+        <p style="font-size:12px; color:var(--text-mute); margin-top:4px; font-family:var(--font-sans);">Espiral arrancando off-center (8 en punto). Gesto más manual, menos rígido.</p>
+      </div>
+      <span class="plato-variation-tag">Orgánico</span>
+    </div>
+    <div class="variants">
+      <div class="variant variant-bg-cream">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="El Plato Asimétrico sobre crema">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#1A1E2E" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 35,62 C 30,52 42,44 50,48 C 60,52 58,68 46,66 C 30,64 28,42 50,38 C 72,34 74,68 50,72" fill="none" stroke="#C4633F" stroke-width="4.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">A. Color/Crema</span>
+      </div>
+      <div class="variant variant-bg-midnight">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="El Plato Asimétrico sobre midnight">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#FAF8F4" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 35,62 C 30,52 42,44 50,48 C 60,52 58,68 46,66 C 30,64 28,42 50,38 C 72,34 74,68 50,72" fill="none" stroke="#C9A24A" stroke-width="4.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">B. Color/Midnight</span>
+      </div>
+      <div class="variant variant-bg-cream favicon">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Favicon 32px">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#1A1E2E" stroke-width="9" vector-effect="non-scaling-stroke"/>
+          <path d="M 35,62 C 30,52 42,44 50,48 C 60,52 58,68 46,66 C 30,64 28,42 50,38 C 72,34 74,68 50,72" fill="none" stroke="#C4633F" stroke-width="6.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">C. Favicon 32px</span>
+      </div>
+      <div class="variant variant-bg-gradient avatar">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Avatar RRSS">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#FAF8F4" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 35,62 C 30,52 42,44 50,48 C 60,52 58,68 46,66 C 30,64 28,42 50,38 C 72,34 74,68 50,72" fill="none" stroke="#FAF8F4" stroke-width="4.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">D. Avatar RRSS</span>
+      </div>
+    </div>
+    <div class="plato-meta">
+      <div class="plato-meta-cell"><strong>Cuándo brilla</strong>La más "humana" del set — asimetría como gesto a mano alzada de chef. Diferenciador frente a Toast y Soft (rígidos geométricos). Funciona genial en marca personal del founder.</div>
+      <div class="plato-meta-cell"><strong>Cuándo arriesga</strong>Puede leerse como "logo en draft, no terminado" si el cliente no entiende la intención. La narrativa del gesto manual tiene que estar en el brand book.</div>
+    </div>
+  </article>
+
+  <!-- VARIACIÓN 04 — DOBLE TRAZO -->
+  <article class="plato-variation">
+    <div class="plato-variation-head">
+      <div>
+        <h3 class="plato-variation-title"><small>Variación 04 · sistémico</small>El Plato Doble Trazo</h3>
+        <p style="font-size:12px; color:var(--text-mute); margin-top:4px; font-family:var(--font-sans);">Espiral principal (terracota) + acompañante en mostaza, ambas paralelas.</p>
+      </div>
+      <span class="plato-variation-tag">Sistémico</span>
+    </div>
+    <div class="variants">
+      <div class="variant variant-bg-cream">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="El Plato Doble Trazo sobre crema">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#1A1E2E" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,53 C 50,45 61,45 61,53 C 61,63 49,63 49,49 C 49,35 67,35 67,55 C 67,75 41,75 41,49" fill="none" stroke="#C9A24A" stroke-width="3" stroke-linecap="round" stroke-opacity="0.75" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,42 58,42 58,50 C 58,60 46,60 46,46 C 46,32 64,32 64,52 C 64,72 38,72 38,46" fill="none" stroke="#C4633F" stroke-width="4.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">A. Color/Crema</span>
+      </div>
+      <div class="variant variant-bg-midnight">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="El Plato Doble Trazo sobre midnight">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#FAF8F4" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,53 C 50,45 61,45 61,53 C 61,63 49,63 49,49 C 49,35 67,35 67,55 C 67,75 41,75 41,49" fill="none" stroke="#C4633F" stroke-width="3" stroke-linecap="round" stroke-opacity="0.75" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,42 58,42 58,50 C 58,60 46,60 46,46 C 46,32 64,32 64,52 C 64,72 38,72 38,46" fill="none" stroke="#C9A24A" stroke-width="4.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">B. Color/Midnight</span>
+      </div>
+      <div class="variant variant-bg-cream favicon">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Favicon 32px">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#1A1E2E" stroke-width="9" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,42 58,42 58,50 C 58,60 46,60 46,46 C 46,32 64,32 64,52 C 64,72 38,72 38,46" fill="none" stroke="#C4633F" stroke-width="7" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">C. Favicon 32px*</span>
+      </div>
+      <div class="variant variant-bg-gradient avatar">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Avatar RRSS">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#FAF8F4" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,53 C 50,45 61,45 61,53 C 61,63 49,63 49,49 C 49,35 67,35 67,55 C 67,75 41,75 41,49" fill="none" stroke="#FAF8F4" stroke-width="3" stroke-linecap="round" stroke-opacity="0.55" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,42 58,42 58,50 C 58,60 46,60 46,46 C 46,32 64,32 64,52 C 64,72 38,72 38,46" fill="none" stroke="#FAF8F4" stroke-width="4.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">D. Avatar RRSS</span>
+      </div>
+    </div>
+    <div class="plato-meta">
+      <div class="plato-meta-cell"><strong>Cuándo brilla</strong>Activa los 3 colores del sistema (midnight outline + terracota main + mostaza accent) en un mismo símbolo. Define el "doble trazo" como signature gráfica del brand kit — replicable en ilustraciones, separadores, UI.</div>
+      <div class="plato-meta-cell"><strong>Cuándo arriesga</strong>En B/N puro las dos espirales pueden colisionar. Mitigación: la acompañante baja stroke-opacity a 0.4. *Para favicon 32&nbsp;px se cae automáticamente a Variación 01.</div>
+    </div>
+  </article>
+
+  <!-- VARIACIÓN 05 — MÍNIMO -->
+  <article class="plato-variation">
+    <div class="plato-variation-head">
+      <div>
+        <h3 class="plato-variation-title"><small>Variación 05 · clean</small>El Plato Mínimo</h3>
+        <p style="font-size:12px; color:var(--text-mute); margin-top:4px; font-family:var(--font-sans);">Círculo + espiral de 1 sola vuelta. Ultra clean, lectura SaaS pura.</p>
+      </div>
+      <span class="plato-variation-tag">Clean</span>
+    </div>
+    <div class="variants">
+      <div class="variant variant-bg-cream">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="El Plato Mínimo sobre crema">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#1A1E2E" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,40 62,40 62,52 C 62,66 38,66 38,48 C 38,30 66,30 66,54" fill="none" stroke="#C4633F" stroke-width="5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">A. Color/Crema</span>
+      </div>
+      <div class="variant variant-bg-midnight">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="El Plato Mínimo sobre midnight">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#FAF8F4" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,40 62,40 62,52 C 62,66 38,66 38,48 C 38,30 66,30 66,54" fill="none" stroke="#C9A24A" stroke-width="5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">B. Color/Midnight</span>
+      </div>
+      <div class="variant variant-bg-cream favicon">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Favicon 32px">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#1A1E2E" stroke-width="9" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,40 62,40 62,52 C 62,66 38,66 38,48 C 38,30 66,30 66,54" fill="none" stroke="#C4633F" stroke-width="7.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">C. Favicon 32px</span>
+      </div>
+      <div class="variant variant-bg-gradient avatar">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Avatar RRSS">
+          <circle cx="50" cy="50" r="38" fill="none" stroke="#FAF8F4" stroke-width="6" vector-effect="non-scaling-stroke"/>
+          <path d="M 50,50 C 50,40 62,40 62,52 C 62,66 38,66 38,48 C 38,30 66,30 66,54" fill="none" stroke="#FAF8F4" stroke-width="5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+        </svg>
+        <span class="variant-label">D. Avatar RRSS</span>
+      </div>
+    </div>
+    <div class="plato-meta">
+      <div class="plato-meta-cell"><strong>Cuándo brilla</strong>Ganador absoluto para favicon, app icon iOS, email signature, watermark. La espiral de 1 vuelta lee como gota de salsa, "@" estilizado, nota musical — más universal que la canónica.</div>
+      <div class="plato-meta-cell"><strong>Cuándo arriesga</strong>Puede leerse "demasiado clean" / "demasiado SaaS-genérico". Pierde el feel artesanal del Original. Mejor como variación secundaria (favicon + small-scale) y no como sello principal en hero.</div>
+    </div>
+  </article>
+
+  <!-- APLICACIONES REALES -->
+  <article class="plato-variation" style="margin-top: 32px; border-color: var(--accent-2);">
+    <div class="plato-variation-head">
+      <div>
+        <h3 class="plato-variation-title"><small>El Plato · aplicado en uso real</small>Tres aplicaciones</h3>
+        <p style="font-size:12px; color:var(--text-mute); margin-top:4px; font-family:var(--font-sans);">App icon iOS, business card de Julio y loading screen móvil — los 3 contextos donde el sello aguanta solo.</p>
+      </div>
+      <span class="plato-variation-tag" style="background: var(--accent-2); color: var(--bg);">Variación 01 referencia</span>
+    </div>
+    <div class="applications">
+      <div class="app">
+        <div class="app-label">App icon iOS (180×180)</div>
+        <div class="app-visual app-icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="38" fill="none" stroke="#FAF8F4" stroke-width="6" vector-effect="non-scaling-stroke"/>
+            <path d="M 50,50 C 50,42 58,42 58,50 C 58,60 46,60 46,46 C 46,32 64,32 64,52 C 64,72 38,72 38,46" fill="none" stroke="#C9A24A" stroke-width="4.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+          </svg>
+        </div>
+      </div>
+      <div class="app">
+        <div class="app-label">Business card</div>
+        <div class="app-visual business-card">
+          <div class="business-card-top">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#1A1E2E" stroke-width="6" vector-effect="non-scaling-stroke"/>
+              <path d="M 50,50 C 50,42 58,42 58,50 C 58,60 46,60 46,46 C 46,32 64,32 64,52 C 64,72 38,72 38,46" fill="none" stroke="#C4633F" stroke-width="4.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+            </svg>
+            <div class="business-card-name">ServiRest</div>
+          </div>
+          <div class="business-card-bottom">
+            <div>Julio Rodríguez · Founder</div>
+            <div>julio@servirest.mx · servirest.mx</div>
+          </div>
+        </div>
+      </div>
+      <div class="app">
+        <div class="app-label">Loading screen móvil</div>
+        <div class="app-visual loading-screen">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="38" fill="none" stroke="#FAF8F4" stroke-width="6" vector-effect="non-scaling-stroke"/>
+            <path d="M 50,50 C 50,42 58,42 58,50 C 58,60 46,60 46,46 C 46,32 64,32 64,52 C 64,72 38,72 38,46" fill="none" stroke="#C9A24A" stroke-width="4.5" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+          </svg>
+          <div class="loading-name">ServiRest</div>
+          <div class="loading-dots">
+            <div class="loading-dot" style="opacity:1;"></div>
+            <div class="loading-dot" style="opacity:0.6;"></div>
+            <div class="loading-dot" style="opacity:0.3;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="concept">
+      <div class="concept-row">
+        <span class="concept-label">Concepto madre</span>
+        <p class="concept-body"><strong>El Plato</strong> es un plato visto desde arriba con algo enrollándose dentro. La espiral lee como pasta en el tenedor, salsa goteando, o una "S" abstracta que sugiere el monogram de la casa. Funciona como sello — el tipo de marca que ves en frascos de mermelada artesanal o en menús impresos en papel grueso.</p>
+      </div>
+      <div class="concept-row">
+        <span class="concept-label">Inspiración cruzada</span>
+        <p class="concept-body"><strong>Apollo.io</strong> aporta el rigor del círculo perfecto y el commitment al monoline. <strong>Google</strong> aporta la legibilidad universal. <strong>Artistica Brewing</strong> aporta el feel de "sello de la casa" — ornamental pero funcional.</p>
+      </div>
+      <div class="concept-row">
+        <span class="concept-label">Sistema combinado</span>
+        <p class="concept-body"><strong>Original</strong> para sello canónico + hero. <strong>Compacto</strong> para poster + IG feed. <strong>Asimétrico</strong> para personal brand del founder en cámara. <strong>Doble Trazo</strong> como pattern de UI. <strong>Mínimo</strong> para favicon + email signature. Un sistema, cinco voces.</p>
+      </div>
+    </div>
+  </article>
+</section>
+
+<!-- ═══════════════════════ SECCIÓN 05 — VOZ + ARCHETYPE ═══════════════════════ -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">05</span>
+    <div>
+      <h2 class="section-title">Voz · el hermano del rubro.</h2>
+      <p class="section-blurb">
+        ServiRest no es elitista ni startup-bro. Pelea contra Toast/Soft Restaurante con datos honestos y
+        tono de peer-to-peer. <strong>Hero</strong> por la combatividad anti-incumbent, <strong>Regular Guy</strong>
+        por el "uno más del rubro", <strong>Sage</strong> por los datos. Tres archetypes en uno.
+      </p>
+    </div>
+  </div>
+
+  <article class="archetype-card">
+    <h3 class="archetype-name">El <em>Hermano del Rubro</em></h3>
+    <div class="archetype-formula">Hero + Regular Guy + dash de Sage</div>
+    <p class="archetype-body">
+      <strong>Hero</strong> porque el founder ya decidió jugar anti-incumbent: "aliados del rubro, no proveedores
+      carísimos". Combatividad sin perder humildad. <strong>Regular Guy</strong> porque la decisión "tú/vos" +
+      "humanos para humanos" + "uno más del rubro" es central. <strong>Sage dash</strong> porque ServiRest agrega
+      datos concretos: ahorrá 8 horas/semana, reduce food cost 6-12%. Eso es Sage — saber del rubro, datos honestos.
+      <br><br>
+      <strong>Por qué para MX + USA Hispano:</strong> MX adora el luchador-aliado (cultura "echarle ganas juntos");
+      USA Hispano adora la combo "we're different, we're affordable, we get you". Sage le da credibilidad B2B —
+      Persona 2 (Dueño-CEO) necesita ver datos para confiar.
+    </p>
+
+    <div style="font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-low); margin-bottom: 14px; font-weight: 600; font-family: var(--font-sans);">Voice keywords · 8 palabras que respiran en todo copy</div>
+    <div class="voice-keywords">
+      <div class="voice-keyword">cálido</div>
+      <div class="voice-keyword">accesible</div>
+      <div class="voice-keyword">honesto</div>
+      <div class="voice-keyword">operativo</div>
+      <div class="voice-keyword">luchador</div>
+      <div class="voice-keyword">directo</div>
+      <div class="voice-keyword">hermano-del-rubro</div>
+      <div class="voice-keyword">con-datos</div>
+    </div>
+  </article>
+
+  <div style="background: var(--bg-soft); border: 1px solid var(--line); padding: 28px 32px; font-size: 13px; color: var(--text-mute); line-height: 1.7; font-family: var(--font-sans);">
+    <strong style="color: var(--text); font-weight: 500; display: block; margin-bottom: 10px;">Lingüística regional:</strong>
+    <strong>MX + USA Hispano:</strong> español neutro con sabor mexicano sutil. Permitido: "platillo", "checa",
+    "órale" muy ocasional. NO: "wey/güey", "chido", "padrísimo" (demasiado regional, espanta USA Hispano no-MX).
+    <strong style="color: var(--text);">"Restaurante"</strong> (no "resto") · <strong style="color: var(--text);">"Dueño"</strong>
+    (no "owner") · <strong style="color: var(--text);">"Mesero"</strong> (MX) / "Mozo" (AR) según geo ·
+    <strong style="color: var(--text);">"Cierre del día"</strong> (no "cuadre" — más profesional B2B).
+  </div>
+</section>
+
+<!-- ═══════════════════════ SECCIÓN 06 — TAGLINE + ALTERNATIVOS ═══════════════════════ -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">06</span>
+    <div>
+      <h2 class="section-title">Tagline · una frase para el hero, cuatro para campañas.</h2>
+      <p class="section-blurb">
+        El master tagline va en landing hero + brand identity. Los cuatro alternativos son específicos por canal —
+        cada uno tiene un trigger emocional distinto. <strong>NO inventar otros</strong>: estos cinco cubren el 100%
+        de los casos de uso.
+      </p>
+    </div>
+  </div>
+
+  <div class="tagline-master">
+    <div class="tagline-master-label">Master · landing hero + brand identity</div>
+    <h3 class="tagline-master-text">ServiRest: administración, atención y operación de tu restaurante en <em>un solo lugar</em>.</h3>
+    <p class="tagline-master-note">Frase del founder. Tríada de pilares (admin / atención / operación). Descriptiva sin ser aburrida. MX y USA Hispano. Larga pero tolerable como H1 si la tipografía respira.</p>
+  </div>
+
+  <div class="tagline-alts">
+    <div class="tagline-alt-row">
+      <div class="tagline-alt-cell head">Uso</div>
+      <div class="tagline-alt-cell head">Tagline</div>
+      <div class="tagline-alt-cell head">Cuándo desplegarlo</div>
+    </div>
+    <div class="tagline-alt-row">
+      <div class="tagline-alt-cell use">Anti-incumbent quick-pitch</div>
+      <div class="tagline-alt-cell tag">"El <em>GoHighLevel</em> de restaurantes"</div>
+      <div class="tagline-alt-cell when">LinkedIn cold outreach, podcast intros, networking en vivo. Asume audiencia conoce GoHighLevel.</div>
+    </div>
+    <div class="tagline-alt-row">
+      <div class="tagline-alt-cell use">Hero punch</div>
+      <div class="tagline-alt-cell tag">"<em>Aliados</em> del rubro. <em>No proveedores</em> carísimos."</div>
+      <div class="tagline-alt-cell when">Ads paid (Meta + LinkedIn), landing hero subtítulo, ad copy display.</div>
+    </div>
+    <div class="tagline-alt-row">
+      <div class="tagline-alt-cell use">Servicio cálido</div>
+      <div class="tagline-alt-cell tag">"Te <em>servimos</em> para que <em>sirvas</em> mejor."</div>
+      <div class="tagline-alt-cell when">Email marketing, customer success, onboarding screens, retención.</div>
+    </div>
+    <div class="tagline-alt-row">
+      <div class="tagline-alt-cell use">Tríada expandida</div>
+      <div class="tagline-alt-cell tag">"Administración, atención y operación. <em>Sin Excel</em>. <em>Sin Soft Restaurante</em>. <em>Sin pagar lo que cobran los gigantes</em>."</div>
+      <div class="tagline-alt-cell when">SEO meta description, ads search Google, ads texto largo Meta.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ SECCIÓN 07 — TRÍADA PILARES ═══════════════════════ -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">07</span>
+    <div>
+      <h2 class="section-title">Tríada · administración, atención, operación.</h2>
+      <p class="section-blurb">
+        Los 3 pilares de toda comunicación. Cualquier feature, post, video, ad o email se ancla a uno (o a la
+        combinación). <strong>Regla:</strong> cada pieza menciona al menos UN pilar. Cuando el mensaje es genérico,
+        citarlos en serie es muy potente. <strong>NO inventar 4to pilar — la tríada es la marca.</strong>
+      </p>
+    </div>
+  </div>
+
+  <div class="triada">
+    <div class="pilar">
+      <div class="pilar-num">PILAR 01</div>
+      <h3 class="pilar-name">Administración</h3>
+      <p class="pilar-features">Finanzas, inventario, food cost, dashboard ejecutivo, reportes, alertas. Todo lo que el dueño revisa para tomar decisiones — pero sin Excel.</p>
+      <div class="pilar-persona">Persona dominante · Dueño-CEO</div>
+      <p class="pilar-copy">"Cierra el domingo en 30 minutos. No en 2 horas."</p>
+    </div>
+
+    <div class="pilar">
+      <div class="pilar-num">PILAR 02</div>
+      <h3 class="pilar-name">Atención</h3>
+      <p class="pilar-features">App de meseros, AI assistant reservas, gestión de mesas, propinas, status pedidos. El frente del salón — donde la marca toca al cliente final.</p>
+      <div class="pilar-persona">Persona dominante · Dueño-Chef</div>
+      <p class="pilar-copy">"Tu mesero ya sabe qué mesa pidió antes. Y la cocina también."</p>
+    </div>
+
+    <div class="pilar">
+      <div class="pilar-num">PILAR 03</div>
+      <h3 class="pilar-name">Operación</h3>
+      <p class="pilar-features">Workflow mesero→cocina→caja, inventario tracking, importador SoftRest/Excel, integraciones POS. La maquinaria invisible que hace que todo funcione.</p>
+      <div class="pilar-persona">Persona dominante · Ambas</div>
+      <p class="pilar-copy">"Todo lo que hoy haces en 4 sistemas, en una sola pantalla."</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ SECCIÓN 08 — ICP DOBLE PERSONA ═══════════════════════ -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">08</span>
+    <div>
+      <h2 class="section-title">ICP · doble persona, doble decisión.</h2>
+      <p class="section-blurb">
+        Dos perfiles, ambos LATAM MX + USA Hispano. <strong>Persona 1 decide rápido</strong> (1-2 semanas con
+        demo + caso de éxito). <strong>Persona 2 decide despacio</strong> (2-6 semanas con pilot + ROI calc).
+        Cada copy + cada feature debe saber a cuál persona le está hablando.
+      </p>
+    </div>
+  </div>
+
+  <div class="personas">
+    <article class="persona">
+      <div class="persona-num">PERSONA 01</div>
+      <h3 class="persona-name">Dueño-Chef <em>"Pilas"</em></h3>
+      <div class="persona-age">35-50 años · MX o USA Hispano · hands-on</div>
+      <div class="persona-attrs">
+        <div class="persona-attr">
+          <span class="persona-attr-label">Operación</span>
+          <span class="persona-attr-value">Está <strong>EN la cocina</strong>, EN el salón. 1-2 sucursales. Equipo 5-15.</span>
+        </div>
+        <div class="persona-attr">
+          <span class="persona-attr-label">Volumen</span>
+          <span class="persona-attr-value">Ticket promedio <code>$250-500 MXN</code> / <code>$25-45 USD</code>. 20-60 mesas/noche.</span>
+        </div>
+        <div class="persona-attr">
+          <span class="persona-attr-label">Tech</span>
+          <span class="persona-attr-value">WhatsApp Business, Excel intermedio, IG Business. <strong>NO usa Notion</strong>, NO usa Toast.</span>
+        </div>
+        <div class="persona-attr">
+          <span class="persona-attr-label">Stack actual</span>
+          <span class="persona-attr-value">$0 (Excel + WA) o $30-60 USD/mes (Soft Restaurante legacy MX / Square Lite USA).</span>
+        </div>
+        <div class="persona-attr">
+          <span class="persona-attr-label">Decisión</span>
+          <span class="persona-attr-value"><strong>1-2 semanas.</strong> Demo en vivo + caso de éxito de otro dueño igual = cierra.</span>
+        </div>
+        <div class="persona-attr">
+          <span class="persona-attr-label">Geo MX</span>
+          <span class="persona-attr-value">CDMX (Roma Norte, Polanco, Coyoacán, Condesa), Guadalajara, Monterrey, Puebla, Querétaro, Mérida.</span>
+        </div>
+        <div class="persona-attr">
+          <span class="persona-attr-label">Geo USA</span>
+          <span class="persona-attr-value">Los Angeles, Houston, Dallas, Miami, Chicago, San Antonio, Phoenix, San Diego.</span>
+        </div>
+      </div>
+    </article>
+
+    <article class="persona">
+      <div class="persona-num">PERSONA 02</div>
+      <h3 class="persona-name">Dueño-Monitor <em>"CEO Operativo"</em></h3>
+      <div class="persona-age">40-60 años · MX o USA Hispano · supervisión</div>
+      <div class="persona-attrs">
+        <div class="persona-attr">
+          <span class="persona-attr-label">Operación</span>
+          <span class="persona-attr-value"><strong>NO está en cocina/salón.</strong> Tiene 1-3 administradores que operan. Otros negocios paralelos.</span>
+        </div>
+        <div class="persona-attr">
+          <span class="persona-attr-label">Volumen</span>
+          <span class="persona-attr-value">2-5 sucursales O un solo restaurante grande (<code>60+ mesas</code>).</span>
+        </div>
+        <div class="persona-attr">
+          <span class="persona-attr-label">Tech</span>
+          <span class="persona-attr-value">LinkedIn activo, Notion básico, dashboards del contador.</span>
+        </div>
+        <div class="persona-attr">
+          <span class="persona-attr-label">Stack actual</span>
+          <span class="persona-attr-value">$60-200 USD/mes (Soft full + Konfio MX o QuickBooks USA).</span>
+        </div>
+        <div class="persona-attr">
+          <span class="persona-attr-label">Decisión</span>
+          <span class="persona-attr-value"><strong>2-6 semanas.</strong> Demo personalizada + pilot 1 sucursal + ROI calc.</span>
+        </div>
+        <div class="persona-attr">
+          <span class="persona-attr-label">Geo MX</span>
+          <span class="persona-attr-value">Business districts: Santa Fe, Polanco, Guadalajara Centro.</span>
+        </div>
+        <div class="persona-attr">
+          <span class="persona-attr-label">Geo USA</span>
+          <span class="persona-attr-value">Hispanos con 2+ sucursales en LA, Houston, Miami.</span>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ═══════════════════════ SECCIÓN 09 — FUNNEL MATH ═══════════════════════ -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">09</span>
+    <div>
+      <h2 class="section-title">Funnel · 250 clientes activos en 6 meses.</h2>
+      <p class="section-blurb">
+        North Star Metric definida por el founder: <strong>250 clientes activos al mes 6</strong>. Math reverso
+        del funnel con precios v3 (Basic $550 + Premium $850 + AI add-on por minuto). Asunciones críticas a
+        validar a 30 días: conversion trial→paid &ge; 18%, CAC paid &le; $30 USD/cliente, churn &le; 4%/mes.
+      </p>
+    </div>
+  </div>
+
+  <div class="funnel">
+    <h3 class="funnel-headline">Visits → MQL → Trial → Paid → <em>Cliente activo</em></h3>
+    <p class="funnel-sub">Cohort math: mes 1 ramping a 20 paid · mes 2 a 30 · mes 3 a 40 · mes 4 a 50 · mes 5-6 a 55. Acumulado mes 6: <strong style="color: var(--accent-2);">250 ✓</strong></p>
+
+    <div class="funnel-flow">
+      <div class="funnel-step">
+        <div class="funnel-step-num">15.2K</div>
+        <div class="funnel-step-label">Visits / mes</div>
+        <div class="funnel-step-meta">A landing optimizada</div>
+        <span class="funnel-step-arrow">→</span>
+      </div>
+      <div class="funnel-step">
+        <div class="funnel-step-num">610</div>
+        <div class="funnel-step-label">MQL / mes</div>
+        <div class="funnel-step-meta">4% conv visit→lead</div>
+        <span class="funnel-step-arrow">→</span>
+      </div>
+      <div class="funnel-step">
+        <div class="funnel-step-num">170</div>
+        <div class="funnel-step-label">Trial / mes</div>
+        <div class="funnel-step-meta">28% conv lead→trial</div>
+        <span class="funnel-step-arrow">→</span>
+      </div>
+      <div class="funnel-step">
+        <div class="funnel-step-num">42</div>
+        <div class="funnel-step-label">Paid / mes</div>
+        <div class="funnel-step-meta">25% conv trial→paid</div>
+        <span class="funnel-step-arrow">→</span>
+      </div>
+      <div class="funnel-step">
+        <div class="funnel-step-num">250</div>
+        <div class="funnel-step-label">Activos m6</div>
+        <div class="funnel-step-meta">North Star Metric</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="channels">
+    <div class="channels-head">De dónde salen los 15,250 visits/mes · channel mix</div>
+    <div class="channel-row">
+      <span class="channel-name">Orgánico social (IG + TikTok + FB)</span>
+      <span class="channel-vis">7,000</span>
+      <div class="channel-bar"><div class="channel-fill" style="width:41%;"></div></div>
+      <span class="channel-pct">41%</span>
+    </div>
+    <div class="channel-row">
+      <span class="channel-name">Paid Meta (MX + USA Hispano)</span>
+      <span class="channel-vis">3,000</span>
+      <div class="channel-bar"><div class="channel-fill" style="width:18%;"></div></div>
+      <span class="channel-pct">18%</span>
+    </div>
+    <div class="channel-row">
+      <span class="channel-name">YouTube orgánico (long-tail SEO)</span>
+      <span class="channel-vis">2,000</span>
+      <div class="channel-bar"><div class="channel-fill" style="width:12%;"></div></div>
+      <span class="channel-pct">12%</span>
+    </div>
+    <div class="channel-row">
+      <span class="channel-name">LinkedIn orgánico</span>
+      <span class="channel-vis">1,500</span>
+      <div class="channel-bar"><div class="channel-fill" style="width:9%;"></div></div>
+      <span class="channel-pct">9%</span>
+    </div>
+    <div class="channel-row">
+      <span class="channel-name">SEO blog (founder + ghostwriter)</span>
+      <span class="channel-vis">1,500</span>
+      <div class="channel-bar"><div class="channel-fill" style="width:9%;"></div></div>
+      <span class="channel-pct">9%</span>
+    </div>
+    <div class="channel-row">
+      <span class="channel-name">Paid Google search</span>
+      <span class="channel-vis">1,500</span>
+      <div class="channel-bar"><div class="channel-fill" style="width:9%;"></div></div>
+      <span class="channel-pct">9%</span>
+    </div>
+    <div class="channel-row">
+      <span class="channel-name">Referrals + partnerships</span>
+      <span class="channel-vis">500</span>
+      <div class="channel-bar"><div class="channel-fill" style="width:3%;"></div></div>
+      <span class="channel-pct">3%</span>
+    </div>
+  </div>
+
+  <div class="mrr-summary">
+    <div>
+      <div class="mrr-stat-label">MRR mes 6 (base + AI)</div>
+      <div class="mrr-stat-value accent">$193,750</div>
+      <div class="mrr-stat-meta">MXN · ~$9,900 USD · mix 70% Basic + 30% Premium</div>
+    </div>
+    <div>
+      <div class="mrr-stat-label">ARPU efectivo (con AI)</div>
+      <div class="mrr-stat-value">$775</div>
+      <div class="mrr-stat-meta">MXN/cliente activo · ~$40 USD</div>
+    </div>
+    <div>
+      <div class="mrr-stat-label">AI add-on revenue</div>
+      <div class="mrr-stat-value">$33,750</div>
+      <div class="mrr-stat-meta">MXN/mes · 30% adopción × 150 min × $3 MXN</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ SECCIÓN 10 — ESTRATEGIA DE CONTENIDO ═══════════════════════ -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">10</span>
+    <div>
+      <h2 class="section-title">Contenido · cuatro pilares, cinco canales, 18 posts por semana.</h2>
+      <p class="section-blurb">
+        Pilar 4 redefinido por founder: ya no es "behind-the-scenes desarrollo" — ahora es <strong>USO REAL del
+        app</strong>. Domingo 11pm cerrando caja, la comanda perdida en papel, tracking en vivo, AI atendiendo
+        reserva mientras el dueño cocina. Pilar más viral del set.
+      </p>
+    </div>
+  </div>
+
+  <div class="content-pillars">
+    <div class="content-pillar">
+      <div class="content-pillar-pct">35%</div>
+      <h4 class="content-pillar-name">Tips Operativos Honestos</h4>
+      <p class="content-pillar-desc">Educational utility: food cost, KPIs, robo hormiga, inventario, importador. <strong style="color:var(--text);">KPI:</strong> saves + DM preguntas.</p>
+    </div>
+    <div class="content-pillar">
+      <div class="content-pillar-pct">25%</div>
+      <h4 class="content-pillar-name">Realidad del Rubro LATAM</h4>
+      <p class="content-pillar-desc">Empathy / relatability: memes, comparativas, "esto me pasa". <strong style="color:var(--text);">KPI:</strong> shares + comments.</p>
+    </div>
+    <div class="content-pillar">
+      <div class="content-pillar-pct">15%</div>
+      <h4 class="content-pillar-name">Caso de Éxito UGC</h4>
+      <p class="content-pillar-desc">Social proof: antes/después, métricas reales. Ramping mes 3+ cuando hay casos. <strong style="color:var(--text);">KPI:</strong> tag-mentions + DMs.</p>
+    </div>
+    <div class="content-pillar">
+      <div class="content-pillar-pct">25%</div>
+      <h4 class="content-pillar-name">Behind-scenes USO REAL</h4>
+      <p class="content-pillar-desc">El corte del domingo 11pm, comanda perdida, tracking en vivo, AI atendiendo. <strong style="color:var(--text);">KPI:</strong> saves + "quiero esto".</p>
+    </div>
+  </div>
+
+  <div class="channels-grid">
+    <div class="channel-card">
+      <h4 class="channel-card-name">Instagram</h4>
+      <div class="channel-card-posts">5/sem</div>
+      <div class="channel-card-meta">4:5 feed + 9:16 reels</div>
+    </div>
+    <div class="channel-card">
+      <h4 class="channel-card-name">Facebook</h4>
+      <div class="channel-card-posts">5/sem</div>
+      <div class="channel-card-meta">Dueños 40+ años MX</div>
+    </div>
+    <div class="channel-card">
+      <h4 class="channel-card-name">LinkedIn</h4>
+      <div class="channel-card-posts">3/sem</div>
+      <div class="channel-card-meta">Persona 2 dominante</div>
+    </div>
+    <div class="channel-card">
+      <h4 class="channel-card-name">TikTok</h4>
+      <div class="channel-card-posts">4/sem</div>
+      <div class="channel-card-meta">Humor del rubro</div>
+    </div>
+    <div class="channel-card">
+      <h4 class="channel-card-name">YouTube</h4>
+      <div class="channel-card-posts">1/sem</div>
+      <div class="channel-card-meta">Long-form SEO</div>
+    </div>
+  </div>
+
+  <div class="video-ideas">
+    <div class="video-ideas-head">18 ideas de video · 10 founder + 8 behind-scenes USO REAL</div>
+    <div class="video-idea"><span class="video-idea-num">01</span><span class="video-idea-text"><strong>"Domingo 11pm cerrando caja: Excel vs ServiRest"</strong> — split screen. Izquierda dueño encorvado con Excel, derecha cerrando en 4 toques.</span><span class="video-idea-pilar">P4 · 30s</span></div>
+    <div class="video-idea"><span class="video-idea-num">02</span><span class="video-idea-text"><strong>"La comanda perdida en papel"</strong> — POV cocinero recibe comandas, una se cae, plato no se prepara, mesa enojada.</span><span class="video-idea-pilar">P4+P2 · 45s</span></div>
+    <div class="video-idea"><span class="video-idea-num">03</span><span class="video-idea-text"><strong>"Tracking de comandas en vivo: 5 min en hora pico"</strong> — screen recording app real, comandas entrando, mesero asignado, cocina.</span><span class="video-idea-pilar">P4 · 60s</span></div>
+    <div class="video-idea"><span class="video-idea-num">04</span><span class="video-idea-text"><strong>"Tracking de eficiencia: lo que tu admin no te muestra"</strong> — dashboard ejecutivo voiceover Persona 2. Ticket promedio por mesero, rotación, gaps.</span><span class="video-idea-pilar">P4+P1 · 90s</span></div>
+    <div class="video-idea"><span class="video-idea-num">05</span><span class="video-idea-text"><strong>"Alerta de low-stock viernes 19:00"</strong> — dueño en sala recibe push. Llama proveedor. Crisis evitada.</span><span class="video-idea-pilar">P4 · 30s</span></div>
+    <div class="video-idea"><span class="video-idea-num">06</span><span class="video-idea-text"><strong>"AI Assistant atendiendo reserva mientras dueño cocina"</strong> — split screen. Izquierda dueño con manos llenas, derecha WhatsApp AI cerrando reserva.</span><span class="video-idea-pilar">P4 killer · 45s</span></div>
+    <div class="video-idea"><span class="video-idea-num">07</span><span class="video-idea-text"><strong>"Importando 200 productos de Soft Restaurante en 3 min"</strong> — screen recording del importador. ASMR para dueños que cambian de software.</span><span class="video-idea-pilar">P4 · 60s</span></div>
+    <div class="video-idea"><span class="video-idea-num">08</span><span class="video-idea-text"><strong>"Mesero usando app sábado 21:00: 30 seg de operación real"</strong> — POV handheld del app. Toma comanda, manda a cocina, atiende otra mesa.</span><span class="video-idea-pilar">P4 · 30s</span></div>
+    <div class="video-idea"><span class="video-idea-num">09</span><span class="video-idea-text"><strong>"Análisis del panorama económico de tu restaurante"</strong> — long-form 5-15min. Dashboard ejecutivo evergreen. SEO long-tail.</span><span class="video-idea-pilar">P1 · YouTube</span></div>
+    <div class="video-idea"><span class="video-idea-num">10</span><span class="video-idea-text">Más ideas onboarding: cómo agregar menú · inventario · pedidos · food cost · gastos · KPIs. <strong>9 tutoriales evergreen</strong>.</span><span class="video-idea-pilar">P1 · YouTube</span></div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ SECCIÓN 11 — PRODUCTO + FEATURES KILLER ═══════════════════════ -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">11</span>
+    <div>
+      <h2 class="section-title">Producto · 7 features killer + un diferenciador absoluto.</h2>
+      <p class="section-blurb">
+        El #1 (AI Assistant) está atado al hook anti-incumbent ("AI moderna que Soft no tiene"). El #4 (Importador)
+        es la condición de switch — sin esto nadie se mueve. El resto son features que cualquier POS moderno tiene,
+        pero ServiRest las hace bien.
+      </p>
+    </div>
+  </div>
+
+  <div class="features-table">
+    <div class="feature-row head">
+      <div>RANK</div>
+      <div>FEATURE</div>
+      <div>POR QUÉ ES KILLER</div>
+      <div>PERSONA</div>
+    </div>
+    <div class="feature-row killer">
+      <div class="feature-rank">01</div>
+      <div class="feature-name"><strong>AI Assistant</strong> Reservas + Pedidos + Preguntas</div>
+      <div class="feature-why">Único en el segmento LATAM. Resuelve pain #3 (reservas perdidas). Visible en demo. <strong>Diferenciador absoluto</strong> vs Soft Restaurante y Excel. Cross-tier por minuto = +ARPU.</div>
+      <div class="feature-persona">Persona 1 · alivio operativo</div>
+    </div>
+    <div class="feature-row">
+      <div class="feature-rank">02</div>
+      <div class="feature-name">Dashboard Ejecutivo Mobile</div>
+      <div class="feature-why">Persona 2 abre celular cualquier hora y ve estado del negocio en 30 seg. Pain #5 (decisiones intuición). <strong>Justifica upsell a Premium</strong>.</div>
+      <div class="feature-persona">Persona 2 · peace of mind</div>
+    </div>
+    <div class="feature-row">
+      <div class="feature-rank">03</div>
+      <div class="feature-name">Inventario Centralizado con Food Cost Real</div>
+      <div class="feature-why">Pain #2 (inventario descontrolado). Resuelve "¿cuál plato me deja margen real?". Para Persona 1 es ROI inmediato.</div>
+      <div class="feature-persona">Persona 1 · control</div>
+    </div>
+    <div class="feature-row killer">
+      <div class="feature-rank">04</div>
+      <div class="feature-name"><strong>Importador</strong> Soft Restaurante + Excel</div>
+      <div class="feature-why">Cero fricción para migrar del incumbent. <strong>Sin esto, el dueño no se mueve.</strong> Es la condición de switch.</div>
+      <div class="feature-persona">Ambas · switch cost killer</div>
+    </div>
+    <div class="feature-row">
+      <div class="feature-rank">05</div>
+      <div class="feature-name">App Meseros Workflow Mesa→Cocina→Caja</div>
+      <div class="feature-why">Pain #4 (fragmentación). Lo que ya hacen con papel pero digital. Día 1 ven la diferencia.</div>
+      <div class="feature-persona">Persona 1 · operación</div>
+    </div>
+    <div class="feature-row">
+      <div class="feature-rank">06</div>
+      <div class="feature-name">Reportes Automáticos al Contador</div>
+      <div class="feature-why">Persona 2 sale del software con PDF mensual que su contador acepta. Trust + retention.</div>
+      <div class="feature-persona">Persona 2 · trust</div>
+    </div>
+    <div class="feature-row">
+      <div class="feature-rank">07</div>
+      <div class="feature-name">Alertas Push Inteligentes</div>
+      <div class="feature-why">Low-stock, food cost out-of-range, reserva sin confirmar. Sutil pero adictivo.</div>
+      <div class="feature-persona">Ambas · engagement diario</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ SECCIÓN 12 — DECISIONES + PRICING V3 ═══════════════════════ -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">12</span>
+    <div>
+      <h2 class="section-title">Decisiones cerradas + pricing v3 final.</h2>
+      <p class="section-blurb">
+        El founder cerró las decisiones de marca (paleta + logo). Lo que queda para revisar con Julio es el pricing
+        v3 y el roadmap Plan Elite a 1-2 meses. Todo en MXN con conversión USD aproximada.
+      </p>
+    </div>
+  </div>
+
+  <div class="decisions">
+    <div class="decision-box">
+      <div class="decision-label">✓ Decisión cerrada · paleta</div>
+      <h4 class="decision-name">Sobremesa Lúcida</h4>
+      <p class="decision-body">Híbrido <strong>Paleta A (Sobremesa)</strong> + <strong>Paleta C (Línea Blanca)</strong>. 5 colores finales: midnight tinto, terracota, mostaza mate, blanco hueso, gris carbón.</p>
+      <p class="decision-note">Tarde de Cocina (B) y Línea Blanca standalone (C) archivadas. Cero alternativas adicionales.</p>
+    </div>
+    <div class="decision-box">
+      <div class="decision-label">✓ Decisión cerrada · logo</div>
+      <h4 class="decision-name">El Plato + 5 variaciones</h4>
+      <p class="decision-body">Concepto El Plato confirmado. <strong>Julio elige 1 de las 5 variaciones</strong> (Original, Compacto, Asimétrico, Doble Trazo, Mínimo).</p>
+      <p class="decision-note">La Cresta y La Mecha archivadas. Si Julio quiere combinar variaciones, el sistema lo permite (ej: Original como sello + Mínimo como favicon).</p>
+    </div>
+  </div>
+
+  <div class="pricing-final">
+    <div class="pricing-final-head">
+      <div>
+        <div class="pricing-final-label">Pricing v3 · decisión founder · 2 planes + AI cross-tier</div>
+        <h4 class="pricing-final-title">$550 Basic · $850 Premium · AI <em>$3 MXN o $0.25 USD por minuto</em></h4>
+      </div>
+      <span class="pricing-final-tag">Final v3</span>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="pricing-cell head">Plan</div>
+      <div class="pricing-cell head">MXN/mes</div>
+      <div class="pricing-cell head">USD aprox</div>
+      <div class="pricing-cell head">Dispositivos</div>
+      <div class="pricing-cell head">Notas</div>
+
+      <div class="pricing-cell plan"><strong>Trial</strong></div>
+      <div class="pricing-cell price">$0</div>
+      <div class="pricing-cell" style="font-family: var(--font-mono); color: var(--text-mute);">—</div>
+      <div class="pricing-cell" style="font-family: var(--font-mono); color: var(--text-mute);">5</div>
+      <div class="pricing-cell note">14 días sin tarjeta. Features Basic. Sin AI.</div>
+
+      <div class="pricing-cell plan"><strong>Basic</strong></div>
+      <div class="pricing-cell price" style="font-weight: 600;">$550</div>
+      <div class="pricing-cell" style="font-family: var(--font-mono); color: var(--text-mute);">~$28</div>
+      <div class="pricing-cell" style="font-family: var(--font-mono); color: var(--text-mute);">3</div>
+      <div class="pricing-cell note">Plan de entrada. Onboarding GRATIS incluido.</div>
+
+      <div class="pricing-cell plan" style="background:rgba(196,99,63,0.06);"><strong>Premium</strong></div>
+      <div class="pricing-cell price premium" style="background:rgba(196,99,63,0.06); font-weight: 600;">$850</div>
+      <div class="pricing-cell" style="font-family: var(--font-mono); color: var(--text-mute); background:rgba(196,99,63,0.06);">~$44</div>
+      <div class="pricing-cell" style="font-family: var(--font-mono); color: var(--text-mute); background:rgba(196,99,63,0.06);">5</div>
+      <div class="pricing-cell note" style="background:rgba(196,99,63,0.06);">Multi-sucursal. Onboarding GRATIS incluido.</div>
+
+      <div class="pricing-cell plan" style="border-bottom: none;"><strong>+ AI Add-on</strong><div style="font-size:10px; color:var(--text-low); margin-top:4px; letter-spacing:0.04em;">cross-tier · reservas + pedidos + preguntas</div></div>
+      <div class="pricing-cell price" style="border-bottom: none;">$3/min</div>
+      <div class="pricing-cell" style="font-family: var(--font-mono); color: var(--text-mute); border-bottom: none;">$0.25/min</div>
+      <div class="pricing-cell" style="font-family: var(--font-mono); color: var(--text-mute); border-bottom: none;">—</div>
+      <div class="pricing-cell note" style="border-bottom: none;">Costo Twilio $0.80 MXN/min. Margen <strong style="color:var(--accent-2);">73% MX · 84% USA</strong>. Atiende WhatsApp/voice completo.</div>
+    </div>
+
+    <div style="margin-top:24px; padding-top:20px; border-top:1px solid var(--line); display:grid; grid-template-columns: 1fr 1fr; gap:24px; font-size:12px; color:var(--text-mute); line-height:1.65; font-family: var(--font-sans);">
+      <div>
+        <strong style="color:var(--text); font-weight:500; display:block; margin-bottom:6px;">Cambio v2 → v3</strong>
+        Basic baja de $850 a <strong style="color:var(--accent-2);">$550</strong>. Premium baja de $1,000 a <strong style="color:var(--accent-2);">$850</strong>. AI cambia de <strong>por reserva</strong> a <strong style="color:var(--accent-2);">por minuto</strong> + scope expandido. MRR mes 6 ≈ <strong style="color:var(--accent-2);">$193,750 MXN</strong> (~$9,700 USD).
+      </div>
+      <div>
+        <strong style="color:var(--text); font-weight:500; display:block; margin-bottom:6px;">Twilio confirmado</strong>
+        $0.04 USD/min ≈ $0.80 MXN/min. ServiRest cobra $3 MXN/min (margen 73%) y $0.25 USD/min (margen 84%). <strong style="color:var(--accent-2);">Scope expandido:</strong> el AI atiende reservas + pedidos + preguntas vía WhatsApp/voice.
+      </div>
+    </div>
+  </div>
+
+  <!-- Plan Elite -->
+  <div style="background:var(--bg-soft); border:1px solid var(--line); border-left: 3px solid var(--accent-2); padding: 32px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px;">
+      <div>
+        <div style="font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent-2); margin-bottom:6px; font-weight:600; font-family: var(--font-sans);">Roadmap · próximos 1-2 meses</div>
+        <h4 style="font-family:var(--font-serif); font-size:26px; letter-spacing:-0.015em; font-weight: 500;">Plan Elite</h4>
+      </div>
+      <span style="font-size:10px; letter-spacing:0.14em; text-transform:uppercase; padding:5px 12px; background:var(--line-strong); color:var(--text); font-weight:600; font-family: var(--font-sans);">Pendiente definir</span>
+    </div>
+    <p style="font-size:13px; color:var(--text-mute); line-height:1.7; margin-bottom:20px; font-family: var(--font-sans);">
+      Tier por encima de Premium con <strong style="color:var(--text); font-weight:500;">capacitación de lujo</strong> + features premium adicionales. Para Persona 2 multi-sucursal que necesita onboarding presencial + servicio diferenciado. <strong style="color:var(--accent-2);">Promo lanzamiento: 1 mes de prueba gratis del plan Elite.</strong>
+    </p>
+    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:16px; padding-top:18px; border-top:1px solid var(--line); font-size:12px; color:var(--text-low); line-height:1.65; font-family: var(--font-sans);">
+      <div><strong style="color:var(--text); font-weight:500; display:block; margin-bottom:4px;">Pricing</strong>Por definir. Probable ≥ $2,500 MXN (~$130 USD) basado en benchmarks Toast Enterprise.</div>
+      <div><strong style="color:var(--text); font-weight:500; display:block; margin-bottom:4px;">Features</strong>Capacitación in-person + soporte 24/7 + dedicated account manager + features premium TBD.</div>
+      <div><strong style="color:var(--text); font-weight:500; display:block; margin-bottom:4px;">Trial</strong>1 mes free de Plan Elite como promo de lanzamiento. Convierte directo a paid Elite o downgrade Premium.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ SECCIÓN 13 — FILOSOFÍA "NUNCA" ═══════════════════════ -->
+<section class="section">
+  <div class="section-head">
+    <span class="section-num">13</span>
+    <div>
+      <h2 class="section-title">Filosofía · qué ServiRest <em style="color: var(--accent); font-style: italic;">nunca</em> va a tener.</h2>
+      <p class="section-blurb">
+        Dos compromisos no-negociables. Estas dos cosas <strong>NO ESTÁN A DEBATE</strong> en la mesa con
+        clientes ni con inversores. Definen tanto qué es ServiRest como qué no quiere ser.
+      </p>
+    </div>
+  </div>
+
+  <div class="filosofia">
+    <div class="nunca-box">
+      <div class="nunca-label">Nunca · 01</div>
+      <h3 class="nunca-title">Tendremos sales reps que llamen para vender.</h3>
+      <p class="nunca-body">
+        El dueño se entera por contenido + recomendación + trial. Si necesita ayuda, hay chat en vivo con soporte
+        humano. <strong>Cero cold calls.</strong> Por respeto a su tiempo y porque CAC con sales tradicional es
+        10× lo que cuesta self-service.
+      </p>
+    </div>
+    <div class="nunca-box">
+      <div class="nunca-label">Nunca · 02</div>
+      <h3 class="nunca-title">Cobraremos setup, instalación, ni capacitación inicial.</h3>
+      <p class="nunca-body">
+        Toast cobra $1,000-3,000 USD setup. Soft Restaurante cobra $5,000 USD setup. <strong>ServiRest: $0 setup,
+        ever.</strong> La instalación es self-service. La capacitación está en YouTube + onboarding in-app. Si el
+        dueño quiere capacitación premium presencial, eso es un servicio aparte — no obligatorio.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+<footer class="doc-footer">
+  <strong>ServiRest · Propuesta maestra · v3.0</strong> · Generado 2026-05-26 PM por
+  <em>Sebastián Prieto</em> (founder ABSU) + Claude (Agents Orchestrator). Standalone HTML — abrí en cualquier
+  navegador sin servidor. Todos los SVGs inline editables. Fuentes Fraunces + Inter + JetBrains Mono cargadas
+  desde Google Fonts. Cambios v2 → v3: paleta única <em>Sobremesa Lúcida</em> + 5 variaciones El Plato +
+  pricing $550/$850 + AI $3 MXN/min o $0.25 USD/min (scope: reservas + pedidos + preguntas).<br><br>
+  <strong>Decisiones cerradas:</strong> paleta + concepto logo. <strong>Decisiones pendientes con Julio:</strong> qué variación del Plato es el sello principal + cuándo activar Plan Elite. <strong>Próximos docs:</strong>
+  <code>PROPUESTA-PARA-JULIO-2026-05-26.md</code> (detalle técnico interno) · <code>SQL-pendiente-2026-05-26.sql</code>
+  (backend In-Rest) · <code>RESEARCH-twilio-ai-cost-2026-05-26.md</code> (math costos AI).
+</footer>
+
+</div>
+</body>
+</html>
