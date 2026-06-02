@@ -8,7 +8,7 @@
  */
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, X } from 'lucide-react';
+import { ArrowRight, X, AlertCircle, CheckCircle2, Info, AlertTriangle } from 'lucide-react';
 
 /* -------------------------------------------------------------------------- */
 /* SrCard — default card surface (24px radius, hairline border, soft shadow)  */
@@ -370,3 +370,156 @@ export function SrSeg<T extends string>({ options, value, onChange, className = 
     </div>
   );
 }
+
+/* -------------------------------------------------------------------------- */
+/* SrAlert — inline notice (info / success / warning / danger)                 */
+/* -------------------------------------------------------------------------- */
+type AlertTone = 'info' | 'success' | 'warning' | 'danger';
+type AlertProps = {
+  tone?: AlertTone;
+  title?: string;
+  children?: React.ReactNode;
+  className?: string;
+};
+export const SrAlert: React.FC<AlertProps> = ({ tone = 'info', title, children, className = '' }) => {
+  const tones: Record<AlertTone, { bg: string; border: string; text: string; icon: React.ReactNode }> = {
+    info:    { bg: 'bg-[rgba(26,30,46,0.04)]',  border: 'border-[rgba(26,30,46,0.12)]',  text: 'text-servirest-midnight',  icon: <Info size={18} /> },
+    success: { bg: 'bg-[rgba(34,160,107,0.06)]', border: 'border-servirest-success/30',   text: 'text-servirest-success',  icon: <CheckCircle2 size={18} /> },
+    warning: { bg: 'bg-[rgba(201,162,74,0.08)]', border: 'border-servirest-mostaza/40',   text: 'text-servirest-mostaza',  icon: <AlertTriangle size={18} /> },
+    danger:  { bg: 'bg-[rgba(225,85,75,0.06)]',  border: 'border-servirest-danger/30',    text: 'text-servirest-danger',   icon: <AlertCircle size={18} /> },
+  };
+  const t = tones[tone];
+  return (
+    <div className={`flex items-start gap-3 p-4 rounded-sr-lg border ${t.bg} ${t.border} ${className}`}>
+      <span className={t.text}>{t.icon}</span>
+      <div className={`flex-1 ${t.text}`}>
+        {title && <div className="font-extrabold text-sm tracking-tight mb-1">{title}</div>}
+        {children && <div className="text-[13px] font-medium leading-relaxed">{children}</div>}
+      </div>
+    </div>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/* SrSpinner — terracota loader                                                 */
+/* -------------------------------------------------------------------------- */
+export const SrSpinner: React.FC<{ size?: number; className?: string }> = ({ size = 20, className = '' }) => (
+  <span
+    className={`inline-block rounded-full border-[3px] border-current/20 border-t-current animate-spin ${className}`}
+    style={{ width: size, height: size, borderTopColor: 'currentColor' }}
+    aria-label="Cargando"
+  />
+);
+
+/* -------------------------------------------------------------------------- */
+/* SrEmptyState — branded empty state (Lucide icon + serif title + sub + CTA)  */
+/* -------------------------------------------------------------------------- */
+type EmptyProps = {
+  icon?: React.ReactNode;
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+  className?: string;
+};
+export const SrEmptyState: React.FC<EmptyProps> = ({ icon, title, description, action, className = '' }) => (
+  <div className={`flex flex-col items-center justify-center text-center py-16 px-6 ${className}`}>
+    {icon && (
+      <div className="w-16 h-16 rounded-full bg-[rgba(42,40,38,0.05)] text-[rgba(42,40,38,0.4)] flex items-center justify-center mb-6">
+        {icon}
+      </div>
+    )}
+    <h3 className="font-serif italic font-medium text-[22px] text-servirest-midnight tracking-tight m-0 mb-2 leading-tight">
+      {title}
+    </h3>
+    {description && (
+      <p className="text-[13px] text-[rgba(42,40,38,0.6)] font-medium m-0 mb-6 max-w-sm leading-relaxed">
+        {description}
+      </p>
+    )}
+    {action}
+  </div>
+);
+
+/* -------------------------------------------------------------------------- */
+/* SrTabs — underline tabs (the pattern used in POS for menu categories)        */
+/* -------------------------------------------------------------------------- */
+type TabsProps<T extends string> = {
+  tabs: readonly { id: T; label: string; count?: number }[];
+  active: T;
+  onChange: (id: T) => void;
+  className?: string;
+};
+export function SrTabs<T extends string>({ tabs, active, onChange, className = '' }: TabsProps<T>) {
+  return (
+    <div
+      className={`flex gap-[26px] overflow-x-auto sr-no-scrollbar border-b border-[rgba(42,40,38,0.12)] ${className}`}
+    >
+      {tabs.map((t) => {
+        const on = t.id === active;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => onChange(t.id)}
+            className={`flex-shrink-0 bg-transparent border-none px-0.5 pt-3 pb-4 font-bold text-sm whitespace-nowrap transition-colors relative ${on ? 'text-servirest-terracota font-extrabold' : 'text-[rgba(42,40,38,0.6)] hover:text-servirest-carbon'}`}
+          >
+            {t.label}
+            {typeof t.count === 'number' && (
+              <span className={`ml-2 text-[10px] font-black tracking-normal ${on ? 'text-servirest-terracota' : 'text-[rgba(42,40,38,0.4)]'}`}>
+                {t.count}
+              </span>
+            )}
+            {on && <span className="absolute left-0 right-0 -bottom-[1px] h-[3px] bg-servirest-terracota rounded-t" />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* SrTierBadge — shows the current plan or the plan that gates a feature       */
+/* -------------------------------------------------------------------------- */
+type Tier = 'esencial' | 'profesional' | 'prestige' | 'enterprise';
+type TierProps = { tier: Tier; size?: 'sm' | 'md'; className?: string };
+const TIER_DISPLAY: Record<Tier, { label: string; tone: ChipTone }> = {
+  esencial:    { label: 'Esencial',    tone: 'neutral' },
+  profesional: { label: 'Profesional', tone: 'terracota' },
+  prestige:    { label: 'Prestige',    tone: 'mostaza' },
+  enterprise:  { label: 'Enterprise',  tone: 'midnight' },
+};
+export const SrTierBadge: React.FC<TierProps> = ({ tier, size = 'sm', className = '' }) => {
+  const d = TIER_DISPLAY[tier];
+  return (
+    <SrChip tone={d.tone} size={size === 'sm' ? 'xs' : 'sm'} className={className}>
+      {d.label}
+    </SrChip>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/* SrPanel — section wrapper with optional kicker + title (replaces handrolled  */
+/* h2/h3 + divider patterns scattered across screens)                           */
+/* -------------------------------------------------------------------------- */
+type PanelProps = {
+  title?: string;
+  kicker?: string;
+  right?: React.ReactNode;
+  className?: string;
+  bodyClassName?: string;
+  children: React.ReactNode;
+};
+export const SrPanel: React.FC<PanelProps> = ({ title, kicker, right, className = '', bodyClassName = '', children }) => (
+  <SrCard variant="solaris" className={`p-7 ${className}`}>
+    {(title || kicker || right) && (
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div>
+          {kicker && <div className="sr-kicker mb-1.5">{kicker}</div>}
+          {title && <h3 className="sr-h-brutal text-[19px] m-0">{title}</h3>}
+        </div>
+        {right}
+      </div>
+    )}
+    <div className={bodyClassName}>{children}</div>
+  </SrCard>
+);

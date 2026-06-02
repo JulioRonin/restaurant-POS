@@ -90,6 +90,64 @@
 }
 
 /* ============================================================================
+   TIER OVERRIDES — Sobremesa Editorial (Prestige)
+   See docs/business-plan/koso-pos/TIER_STRATEGY_AND_VISUAL_DIFFERENTIATION.md
+   Esencial + Profesional inherit the defaults above ("Sobremesa Operativa").
+   Prestige applies an editorial layer: bigger radii, more breath, longer
+   motion, optional gold accent over mostaza, optional night canvas.
+   ============================================================================ */
+
+[data-tier="prestige"] {
+  --sr-r-xl:    32px;
+  --sr-r-2xl:   40px;
+  --sr-dur-fast: 0.30s;
+  --sr-dur:      0.45s;
+  --sr-dur-slow: 0.60s;
+  --sr-mostaza-gold: #D4A857;   /* premium insignia accent, applied on hover/active */
+}
+
+[data-tier="prestige"] .sr-h1 {
+  font-size: clamp(48px, 5vw, 64px);
+  line-height: 1.05;
+  font-variation-settings: "opsz" 144, "SOFT" 60;
+}
+
+[data-tier="prestige"] .sr-h2 {
+  font-size: 36px;
+  font-variation-settings: "opsz" 96, "SOFT" 50;
+}
+
+[data-tier="prestige"] .sr-card,
+[data-tier="prestige"] .sr-card-solaris {
+  border-radius: 32px;
+}
+
+[data-tier="prestige"] .sr-kicker {
+  font-family: var(--sr-font-serif);
+  font-weight: 500;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+}
+
+/* Prestige optional night canvas (persisted via data-prestige-night="true") */
+[data-tier="prestige"][data-prestige-night="true"] {
+  --sr-bg:         var(--sr-midnight);
+  --sr-bg-sunken:  var(--sr-midnight-soft);
+  --sr-surface:    var(--sr-midnight-card);
+  --sr-fg:         var(--sr-hueso);
+  --sr-fg-mute:    rgba(250, 248, 244, 0.65);
+  --sr-fg-low:     rgba(250, 248, 244, 0.40);
+  --sr-line:       var(--sr-line-dark);
+  --sr-line-strong: var(--sr-line-dark-str);
+}
+
+[data-tier="prestige"][data-prestige-night="true"] body {
+  background-color: var(--sr-midnight);
+  color: var(--sr-hueso);
+}
+
+/* ============================================================================
    GLOBAL BASE
    ============================================================================ */
 * { box-sizing: border-box; }

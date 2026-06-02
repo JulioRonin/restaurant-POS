@@ -16,7 +16,7 @@ import { SettingsScreen } from './screens/Settings';
 import { CashierScreen } from './screens/Cashier';
 import { OrderProvider } from './contexts/OrderContext';
 import { UserProvider, useUser } from './contexts/UserContext';
-import { SubscriptionProvider } from './contexts/SubscriptionContext';
+import { SubscriptionProvider, useSubscription } from './contexts/SubscriptionContext';
 import { SubscriptionGuard } from './components/SubscriptionGuard';
 import { ExpenseProvider } from './contexts/ExpenseContext';
 import { BillingScreen } from './screens/Billing';
@@ -70,7 +70,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AppContent: React.FC = () => {
   const { authProfile, isAuthenticating, activeEmployee, isSuperAdmin } = useUser();
   const { settings } = useSettings();
+  const { tier } = useSubscription();
   const [showSplash, setShowSplash] = useState(true);
+
+  // Apply commercial tier to <body> so CSS overrides in index.css can
+  // promote Prestige to its editorial typography/spacing/radii layer.
+  useEffect(() => {
+    document.body.dataset.tier = tier;
+    return () => { delete document.body.dataset.tier; };
+  }, [tier]);
 
   // Splash Screen Timer
   useEffect(() => {
