@@ -30,7 +30,7 @@ El portafolio está compuesto por **dos negocios estructuralmente distintos**, a
 | Tiempo a $5K USD/mes neto | M5 (Oct 2026) en MRR | M9–M12 (Feb–May 2027) |
 | Curva | Lineal-acelerada por adquisición pagada | Compuesta por catálogo + reseñas |
 | Cuello de botella | CAC, churn, soporte | Velocidad de catálogo, cold-start reseñas |
-| Capital requerido (Q3–Q4) | **MXN $1.85M (~USD $109K)** | **~USD $1.05K** (bootstrappable) |
+| Capital requerido (Q3–Q4) | **MXN $1.78M (~USD $105K)** *(recalibrado, ver §3.5)* | **~USD $1.05K** (bootstrappable) |
 | Salida potencial | Adquisición estratégica (3–5 años) | Cash-cow autosostenido + spin-off |
 
 **Tesis de portafolio:**
@@ -162,6 +162,23 @@ JUN ──────────► JUL ──────────► AGO 
 
 > **Decisión clave de portafolio:** Lore Books **NO debe consumir capital externo en Q3**. El capital se canaliza 100 % a KŌSO. Lore demuestra tracción con bootstrap; si en M6 muestra ROAS positivo, se aprueba inyección de $5–10K para ads.
 
+### 3.5 Recalibración del capital KŌSO (2026-06-02)
+
+Auditoría PMO detectó incoherencia entre el budget de ads del plan original ($460K MXN para Jun–Dic) y la curva de adquisición de clientes (CAC implícito $2,910 vs prometido $1,300). Ver documento completo: `koso-pos/MARKETING_CAPITAL_RECALIBRATION.md`.
+
+**Cambios materiales sobre el portafolio:**
+
+| Item | Plan original | **Plan recalibrado** | Impacto |
+|---|---|---|---|
+| Gasto ads KŌSO 7 m | $460K MXN | **$269K MXN** | −$191K MXN (−41 %) |
+| Gasto outbound KŌSO 7 m | $0 (no separado) | **$136K MXN** (SDR + comisiones + partners) | +$136K MXN nuevo concepto |
+| Adquisición total KŌSO 7 m | $586K MXN | **$405K MXN** | −$181K MXN |
+| **Capital KŌSO a levantar** | **$1.85M MXN (~$109K USD)** | **$1.78M MXN (~$105K USD)** | **−$71K MXN / −$4K USD** |
+| CAC blended honesto | $1,300 (irreal) | **$3,059 (realista MX)** | Honestidad operativa |
+| LTV/CAC | 8.7× (inflado) | **4.27× (sano y real)** | Defendible ante inversor |
+
+**Recomendación PMO al Steering 16-jun:** Camino **Híbrido (C)** — bootstrap-outbound los primeros 60 días, levantamiento gateado **escalonado en 3 tramos** ($30K firma · $40K en QBR 1-sep si CAC < $3,200 · $35K en 1-nov si MRR > $80K MXN y churn < 5 %). Esto **de-risquea al inversor** y **disciplina a Julio**: el capital se libera contra hitos verificables, no contra promesas.
+
 ---
 
 ## 4. ESCENARIOS DE PORTAFOLIO
@@ -247,11 +264,11 @@ Riesgos que **trascienden cada proyecto** y son responsabilidad del PMO. Cada pr
 
 | Concepto | Monto USD | Justificación |
 |---|---|---|
-| KŌSO operativo + ads + nómina | $97,000 | Plan financiero §8 de KŌSO Dossier |
+| KŌSO operativo + ads + nómina | $93,000 | Plan financiero recalibrado (ver `MARKETING_CAPITAL_RECALIBRATION.md`) |
 | Lore tentpoles + ads M4 | $5,000 | Pre-aprobado contra hito QBR Q4 |
 | PMO + legal + contabilidad cruzada | $4,000 | Asesoría compartida |
 | **Reserva de contingencia portafolio** | **$10,000** | **No tocar salvo trigger** |
-| **Total Q3–Q4** | **~$116,000 USD** | — |
+| **Total Q3–Q4** | **~$112,000 USD** | — |
 
 ---
 
