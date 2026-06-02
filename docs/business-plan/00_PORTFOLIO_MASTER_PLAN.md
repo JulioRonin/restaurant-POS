@@ -30,7 +30,7 @@ El portafolio está compuesto por **dos negocios estructuralmente distintos**, a
 | Tiempo a $5K USD/mes neto | M5 (Oct 2026) en MRR | M9–M12 (Feb–May 2027) |
 | Curva | Lineal-acelerada por adquisición pagada | Compuesta por catálogo + reseñas |
 | Cuello de botella | CAC, churn, soporte | Velocidad de catálogo, cold-start reseñas |
-| Capital requerido (Q3–Q4) | **MXN $1.78M (~USD $105K)** *(recalibrado, ver §3.5)* | **~USD $1.05K** (bootstrappable) |
+| Capital requerido (Q3–Q4) | **MXN $78.8K (~USD $4.6K, founder bootstrap)** *(plan v2, ver §3.5)* | **~USD $1.05K** (bootstrappable) |
 | Salida potencial | Adquisición estratégica (3–5 años) | Cash-cow autosostenido + spin-off |
 
 **Tesis de portafolio:**
@@ -39,11 +39,11 @@ El portafolio está compuesto por **dos negocios estructuralmente distintos**, a
 
 **Compromisos de portafolio al 1-sep-2026:**
 
-| Proyecto | Hito 90 d | Owner |
+| Proyecto | Hito 90 d (plan v2 BOOTSTRAP-LEAN) | Owner |
 |---|---|---|
-| KŌSO POS | **30+ clientes pagando · MRR ≥ MXN $23,400** | Julio |
+| KŌSO POS | **28+ clientes activos · MRR ≥ MXN $21,700 · EBITDA mensual positivo desde julio** | Julio |
 | Lore Books | **35–40 títulos publicados · ≥150 reseñas 5★ · PT-BR vivo · EBITDA positivo desde M2** | Sebastián |
-| Portafolio | **Caja consolidada positiva en cash-flow operativo de Lore + plan de fondeo cerrado para KŌSO Q4** | PMO |
+| Portafolio | **EBITDA consolidado positivo al 1-sep · sin capital externo · veredicto de aceleración Q4 con cash flow propio** | PMO |
 
 ---
 
@@ -129,55 +129,68 @@ JUN ──────────► JUL ──────────► AGO 
 - Período: Jun – Dic 2026 (7 meses).
 - Escenario default: **BASE** (ambos proyectos) — pesimista y optimista en §4.
 
-### 3.2 Forecast consolidado escenario BASE (todo en USD para comparar)
+### 3.2 Forecast consolidado escenario BASE — v2 BOOTSTRAP-LEAN (USD a 17 MXN)
 
-| Mes | KŌSO Ingresos (USD)¹ | Lore Ingresos (USD) | **Ingresos Portafolio** | KŌSO Egresos (USD) | Lore Egresos (USD) | **Egresos Portafolio** | **EBITDA Portafolio** |
-|---|---|---|---|---|---|---|---|
-| Jun-26 | 0 | 194 | 194 | 8,676 | 650 | 9,326 | **(9,132)** |
-| Jul-26 | 1,727 | 540 | 2,267 | 10,008 | 300 | 10,308 | **(8,041)** |
-| Ago-26 | 2,738 | 1,026 | 3,764 | 11,514 | 360 | 11,874 | **(8,110)** |
-| **Sep-26** | **3,818** | **1,652** | **5,470** | **13,360** | **410** | **13,770** | **(8,300)** |
-| Oct-26 | 5,565 | 2,419 | 7,984 | 15,312 | 1,170 | 16,482 | **(8,498)** |
-| Nov-26 | 7,518 | 3,326 | 10,844 | 18,531 | 1,580 | 20,111 | **(9,267)** |
-| Dic-26 | 10,092 | 4,374 | 14,466 | 19,827 | 2,430 | 22,257 | **(7,791)** |
-| **Total 7 m** | **31,458** | **13,531** | **44,989** | **97,228** | **6,900** | **104,128** | **(59,139)** |
+| Mes | KŌSO Ingresos¹ | Lore Ingresos | **Ingresos Portafolio** | KŌSO Egresos¹ | Lore Egresos | **Egresos Portafolio** | **EBITDA Portafolio** |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| Jun-26 | 369 | 194 | 563 | 593 | 650 | 1,243 | **(680)** |
+| Jul-26 | 892 | 540 | 1,432 | 868 | 300 | 1,168 | **+264** |
+| Ago-26 | 1,672 | 1,026 | 2,698 | 1,253 | 360 | 1,613 | **+1,085** |
+| **Sep-26** | **2,560** | **1,652** | **4,212** | **1,583** | **410** | **1,993** | **+2,219** |
+| Oct-26 | 3,539 | 2,419 | 5,958 | 2,400 | 1,170 | 3,570 | **+2,388** |
+| Nov-26 | 4,598 | 3,326 | 7,924 | 2,803 | 1,580 | 4,383 | **+3,541** |
+| Dic-26 | 5,749 | 4,374 | 10,123 | 3,254 | 2,430 | 5,684 | **+4,439** |
+| **Total 7 m** | **19,379** | **13,531** | **32,910** | **12,754** | **6,900** | **19,654** | **+13,256** |
 
-¹ KŌSO en MXN convertido a USD a 17.
+¹ KŌSO en MXN convertido a USD a 17. Plan v2 BOOTSTRAP-LEAN (sin nómina hasta sep, 1 empleado $7K MXN desde oct, ads ServiRest LEAN, sin outbound/partnerships/legal mensual).
 
-### 3.3 Conclusiones del forecast consolidado
+### 3.3 Conclusiones del forecast consolidado v2
 
-- **Ingresos brutos consolidados Jun–Dic 2026 (base): ~USD $45K** (KŌSO 70 % · Lore 30 %).
-- **EBITDA consolidado del semestre (base): ~USD −$59K** (~MXN −$1M).
-- **Cash burn driven 100 % por KŌSO** (Lore es EBITDA-positivo desde M2 con ~+$6.6K acumulado al cierre).
-- **MRR exit Dic 2026 (recurrente):** KŌSO ~$7K USD + Lore ~$4.4K USD = **~$11.4K USD/mes** combinado.
-- **Trayectoria break-even del portafolio:** Q2 2027 (Abr–May), driven por KŌSO escalando a > 280 clientes.
+- **Ingresos brutos consolidados Jun–Dic 2026 (base v2): ~USD $33K** (KŌSO 59 % · Lore 41 %).
+- **EBITDA consolidado del semestre (base v2): ~USD +$13K** (positivo).
+- **Ambos proyectos son EBITDA-positivos desde el mes 2** (KŌSO jul · Lore jul).
+- **MRR exit Dic 2026 (recurrente):** KŌSO ~$5K USD + Lore ~$4.4K USD = **~$9.4K USD/mes combinado**.
+- **Trayectoria break-even del portafolio:** **agosto 2026 (mes 3)** — sin necesidad de capital externo.
 
-### 3.4 Necesidad de capital del portafolio
+### 3.4 Necesidad de capital del portafolio v2
 
 | Concepto | Monto USD | Origen propuesto |
 |---|---|---|
-| Burn KŌSO 7 m + colchón 3 m + hardware inicial + buffer legal | ~$109,000 | **Capital externo (pre-seed / friends&family / socio)** |
-| Burn Lore (legal + stack + tentpoles + ads M4) | ~$1,050 | **Bootstrap founder Sebastián** |
-| **Total a levantar** | **~$110,000 USD** | **Solo para KŌSO** |
+| KŌSO bootstrap (constitución + 5 kits HW + reserva) | $4,640 | **Founder Julio (aporte one-time)** |
+| Lore bootstrap (legal + stack + tentpoles + ads M4) | $1,050 | **Founder Sebastián** |
+| Reserva de contingencia portafolio | $5,000 | Pool de founders (no tocar salvo trigger) |
+| **Total aporte founders** | **~$10,700 USD** | **Sin capital externo** |
 
-> **Decisión clave de portafolio:** Lore Books **NO debe consumir capital externo en Q3**. El capital se canaliza 100 % a KŌSO. Lore demuestra tracción con bootstrap; si en M6 muestra ROAS positivo, se aprueba inyección de $5–10K para ads.
+> **Decisión clave de portafolio v2:** Ningún proyecto requiere capital externo en 2026. Ambos son bootstrappables. El capital externo queda como **opción**, no necesidad. Trigger para evaluar levantamiento: post-QBR 1-sep si ambos proyectos cumplen criterio "Base" y hay demanda probada para acelerar.
 
-### 3.5 Recalibración del capital KŌSO (2026-06-02)
+### 3.5 Recalibración del capital KŌSO — versión v2 BOOTSTRAP-LEAN (2026-06-02)
 
-Auditoría PMO detectó incoherencia entre el budget de ads del plan original ($460K MXN para Jun–Dic) y la curva de adquisición de clientes (CAC implícito $2,910 vs prometido $1,300). Ver documento completo: `koso-pos/MARKETING_CAPITAL_RECALIBRATION.md`.
+Tras dos rondas de recalibración (ver `koso-pos/MARKETING_CAPITAL_RECALIBRATION_V2.md`, que anula la v1), el plan financiero de KŌSO se simplifica radicalmente al aplicar:
+
+- **Plan de marketing ServiRest LEAN del 2026-06-01** (ABSU): ads de $800 → $7,500 MXN/mes en lugar de $20K → $100K.
+- **Decisión del founder de NO contratar equipo Q3:** 0 nómina hasta sep, 1 empleado a $7,000 MXN/mes desde oct.
+- **Eliminación de líneas de gasto:** outbound formal, partnerships con presupuesto, legal recurrente.
+- **Hosting fijo:** $1,800 → $2,400 MXN.
 
 **Cambios materiales sobre el portafolio:**
 
-| Item | Plan original | **Plan recalibrado** | Impacto |
+| Item | Plan v1 (recalibrado) | **Plan v2 (BOOTSTRAP-LEAN)** | Impacto |
 |---|---|---|---|
-| Gasto ads KŌSO 7 m | $460K MXN | **$269K MXN** | −$191K MXN (−41 %) |
-| Gasto outbound KŌSO 7 m | $0 (no separado) | **$136K MXN** (SDR + comisiones + partners) | +$136K MXN nuevo concepto |
-| Adquisición total KŌSO 7 m | $586K MXN | **$405K MXN** | −$181K MXN |
-| **Capital KŌSO a levantar** | **$1.85M MXN (~$109K USD)** | **$1.78M MXN (~$105K USD)** | **−$71K MXN / −$4K USD** |
-| CAC blended honesto | $1,300 (irreal) | **$3,059 (realista MX)** | Honestidad operativa |
-| LTV/CAC | 8.7× (inflado) | **4.27× (sano y real)** | Defendible ante inversor |
+| Gasto ads KŌSO 7 m | $269K MXN | **$32.8K MXN** | −$236K MXN |
+| Nómina + outbound + partnerships + legal 7 m | $1,165K MXN | **$21K MXN** (1 empleado × 3 m) | **−$1,144K MXN** |
+| Marketing infra (Apify + CF + WA API + ABSU OS) 7 m | $0 (no separado) | **$40.4K MXN** | +$40K MXN nueva línea |
+| **Gastos totales 7 m** | **~$1,629K MXN** | **$216.8K MXN** | **−$1,412K MXN (−87 %)** |
+| **EBITDA acumulado 7 m** | **(−$1.12M MXN)** | **+$112.6K MXN** | **Pasa a positivo** |
+| **Capital externo necesario** | **~$105K USD** | **$0 (founder $4.6K)** | **−$100K USD** |
+| MRR exit dic 2026 | $119K MXN | **$85.2K MXN** | −$34K MXN (curva más lenta) |
+| Clientes activos dic | 153 | **110** | −43 (curva LEAN ServiRest) |
 
-**Recomendación PMO al Steering 16-jun:** Camino **Híbrido (C)** — bootstrap-outbound los primeros 60 días, levantamiento gateado **escalonado en 3 tramos** ($30K firma · $40K en QBR 1-sep si CAC < $3,200 · $35K en 1-nov si MRR > $80K MXN y churn < 5 %). Esto **de-risquea al inversor** y **disciplina a Julio**: el capital se libera contra hitos verificables, no contra promesas.
+**Recomendación PMO al Steering 16-jun:** ratificar el plan **BOOTSTRAP-LEAN** y archivar la opción de levantamiento masivo. Si en el QBR 1-sep el funnel valida (≥ 45 clientes activos + EBITDA positivo Q3), el founder puede optar por:
+
+- Reinvertir cash flow positivo en el escenario ACELERADO del plan ServiRest (clientes M6 saltan de 86 → 239).
+- Tomar un ticket pequeño de socio (USD $5–10K) si quiere acelerar más allá del cash flow operativo.
+
+> **Insight clave:** El proyecto **NO necesita capital externo en 2026**. La tesis de "levantar $105K USD para encender ads y nómina" se desmonta cuando aplicas (a) costos de marketing realistas y (b) la decisión racional de no contratar equipo antes de validar.
 
 ---
 
@@ -264,11 +277,10 @@ Riesgos que **trascienden cada proyecto** y son responsabilidad del PMO. Cada pr
 
 | Concepto | Monto USD | Justificación |
 |---|---|---|
-| KŌSO operativo + ads + nómina | $93,000 | Plan financiero recalibrado (ver `MARKETING_CAPITAL_RECALIBRATION.md`) |
-| Lore tentpoles + ads M4 | $5,000 | Pre-aprobado contra hito QBR Q4 |
-| PMO + legal + contabilidad cruzada | $4,000 | Asesoría compartida |
-| **Reserva de contingencia portafolio** | **$10,000** | **No tocar salvo trigger** |
-| **Total Q3–Q4** | **~$112,000 USD** | — |
+| KŌSO bootstrap (constitución + 5 kits HW + reserva) | $4,640 | Plan v2 BOOTSTRAP-LEAN (ver `MARKETING_CAPITAL_RECALIBRATION_V2.md`) — aportado por founder |
+| Lore tentpoles + ads M4 | $1,050 | Bootstrap founder Sebastián |
+| **Reserva de contingencia portafolio** | **$5,000** | Founder pool · solo trigger |
+| **Total Q3–Q4 (aporte founders)** | **~$10,700 USD** | **Sin capital externo** |
 
 ---
 

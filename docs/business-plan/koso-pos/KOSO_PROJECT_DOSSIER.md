@@ -12,7 +12,7 @@
 | Horizonte | 12 meses (Jun–Dic 2026) · Detalle granular 90 días (Jun–Sep) |
 | Próxima revisión PMO | 2026-09-01 (cierre del trimestre comprometido) |
 | Reporting cadence | Daily standup 9:00 · Demo viernes 16:00 · Steering quincenal con PMO |
-| ⚠️ Adenda crítica | `MARKETING_CAPITAL_RECALIBRATION.md` — anula §5.1, §8.3, §8.5 sobre marketing/CAC/capital |
+| ⚠️ Adenda crítica v2 | `MARKETING_CAPITAL_RECALIBRATION_V2.md` — **plan BOOTSTRAP-LEAN sin capital externo**; anula v1 y §8 del Dossier |
 
 > **Mandato del Project Leader (Julio):** Llevar a KŌSO POS de pre-comercial a **30+ clientes pagando y MRR ≥ MXN $23,400 al 1-sep-2026**, cerrando las 3 brechas técnicas críticas (CFDI, webhook, landing) antes del 1-jul-2026, y dejando el motor de adquisición Meta/Google calibrado para acelerar en Q4.
 
