@@ -51,7 +51,7 @@ export const LockScreen: React.FC = () => {
                     >
                         ServiRest Terminal
                     </h1>
-                    <p className="text-white/50 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.5em]">Identidad de Operador Requerida</p>
+                    <p className="text-white/50 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.5em]">Toca tu foto para abrir el turno</p>
                 </div>
 
                 <div className="grid grid-cols-2 xs:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
@@ -104,7 +104,7 @@ export const LockScreen: React.FC = () => {
                         onClick={signOut}
                         className="flex items-center gap-2 text-red-500/40 hover:text-red-500 transition-colors text-[10px] font-black uppercase tracking-widest"
                     >
-                        Salir del Nodo <LogOut size={16} />
+                        Cerrar sesión <LogOut size={16} />
                     </button>
                 </div>
             </div>
@@ -116,7 +116,7 @@ export const LockScreen: React.FC = () => {
                         <div className={`inline-flex items-center justify-center w-14 h-14 md:w-20 md:h-20 rounded-[24px] md:rounded-[32px] bg-[#1A1E2E]/[0.02] border border-[#1A1E2E]/10 mb-4 md:mb-6 ${error ? 'border-red-500/50 bg-red-500/5 text-red-500' : 'text-[#C4633F] shadow-solaris-glow'}`}>
                            {error ? <ShieldAlert size={24} /> : <Lock size={24} />}
                         </div>
-                        <h2 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-[#2A2826]/50 mb-6 md:mb-10 italic">Protocolo de Seguridad</h2>
+                        <h2 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-[#2A2826]/50 mb-6 md:mb-10 italic">Ingresa tu PIN</h2>
                         
                         <div className="flex justify-center gap-4 md:gap-5">
                             {[0, 1, 2, 3].map((i) => (

@@ -168,9 +168,9 @@ export const MenuScreen: React.FC = () => {
                         className="text-4xl font-medium tracking-tighter uppercase mb-1"
                         style={{ fontFamily: '"Fraunces", Georgia, serif' }}
                     >
-                        ServiRest Menu
+                        Menú
                     </h1>
-                    <p className="text-[#2A2826]/40 font-bold text-[10px] uppercase tracking-[0.4em] italic">Node Inventory & Asset Registry</p>
+                    <p className="text-[#2A2826]/40 font-bold text-[10px] uppercase tracking-[0.4em] italic">Catálogo de platillos</p>
                 </div>
                 <div className="flex gap-3">
                     <button
@@ -183,13 +183,13 @@ export const MenuScreen: React.FC = () => {
                         onClick={() => setIsImportModalOpen(true)}
                         className="flex items-center gap-2 px-5 py-3 bg-white/[0.03] border border-white/5 text-[#2A2826]/45 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/[0.06] transition-all"
                     >
-                        <Upload size={15} /> Bulk Import
+                        <Upload size={15} /> Importar CSV
                     </button>
                     <button
                         onClick={handleOpenAdd}
                         className="flex items-center gap-2 px-6 py-3 bg-[#C4633F] text-[#1a1c14] text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-105 transition-all"
                     >
-                        <Plus size={15} /> Register Asset
+                        <Plus size={15} /> Nuevo platillo
                     </button>
                 </div>
             </header>
@@ -227,8 +227,8 @@ export const MenuScreen: React.FC = () => {
 
                 {/* Counter */}
                 <div className="shrink-0 ml-auto text-right">
-                    <p className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest">Total Registry</p>
-                    <p className="text-2xl font-black italic text-solaris-orange leading-tight">{menuItems.length}</p>
+                    <p className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest">Total platillos</p>
+                    <p className="text-2xl font-black italic text-servirest-terracota leading-tight">{menuItems.length}</p>
                 </div>
             </div>
 
@@ -237,7 +237,7 @@ export const MenuScreen: React.FC = () => {
                 {filteredItems.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 opacity-10">
                         <Utensils size={64} className="mb-4" />
-                        <p className="text-[11px] font-black uppercase tracking-widest">No assets in registry</p>
+                        <p className="text-[11px] font-black uppercase tracking-widest">Aún no tienes platillos</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-8">
@@ -270,7 +270,7 @@ export const MenuScreen: React.FC = () => {
                                     <div className="p-5 flex flex-col flex-1">
                                         <div className="flex justify-between items-start mb-1">
                                             <h3 className="font-black italic text-[#1a1c14] uppercase tracking-tight text-base leading-tight flex-1 mr-2 truncate">{item.name}</h3>
-                                            <span className="text-solaris-orange font-black italic text-lg shrink-0">${item.price.toFixed(0)}</span>
+                                            <span className="text-servirest-terracota font-black italic text-lg shrink-0">${item.price.toFixed(0)}</span>
                                         </div>
                                         <p className="text-[9px] font-black uppercase tracking-widest text-[#2A2826]/30 mb-4 flex items-center gap-1.5">
                                             <Tag size={9} /> {item.category}
@@ -317,9 +317,9 @@ export const MenuScreen: React.FC = () => {
                             <div className="flex justify-between items-center px-10 py-7 border-b border-white/5 shrink-0">
                                 <div>
                                     <h2 className="text-3xl font-black italic uppercase tracking-tighter text-[#1a1c14]">
-                                        {editingItem ? 'Edit Asset' : 'New Menu Registry'}
+                                        {editingItem ? 'Editar platillo' : 'Nuevo platillo'}
                                     </h2>
-                                    <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] mt-1 italic">
+                                    <p className="text-[10px] font-black uppercase text-servirest-terracota/40 tracking-[0.4em] mt-1 italic">
                                         {editingItem ? `Recalibrating: ${editingItem.name}` : 'Register new gastronomical asset'}
                                     </p>
                                 </div>
@@ -344,7 +344,7 @@ export const MenuScreen: React.FC = () => {
                                                 <img src={imagePreview} alt="" className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="text-center">
-                                                    <Plus className="mx-auto text-[#2A2826]/10 mb-3 group-hover:text-solaris-orange transition-colors" size={36} />
+                                                    <Plus className="mx-auto text-[#2A2826]/10 mb-3 group-hover:text-servirest-terracota transition-colors" size={36} />
                                                     <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2A2826]/10 group-hover:text-[#2A2826]/45 transition-colors">Upload Image</p>
                                                 </div>
                                             )}
@@ -430,7 +430,7 @@ export const MenuScreen: React.FC = () => {
                                                     <button
                                                         type="button"
                                                         onClick={() => setIsAddingNewCategory(true)}
-                                                        className="px-4 bg-[#C4633F]/10 border border-solaris-orange/20 text-solaris-orange rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-[#C4633F]/20 transition-all whitespace-nowrap"
+                                                        className="px-4 bg-[#C4633F]/10 border border-solaris-orange/20 text-servirest-terracota rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-[#C4633F]/20 transition-all whitespace-nowrap"
                                                     >
                                                         + New
                                                     </button>
@@ -472,14 +472,14 @@ export const MenuScreen: React.FC = () => {
                                         <div className="border border-white/5 rounded-2xl p-5 bg-white/[0.01]">
                                             <div className="flex justify-between items-center mb-4">
                                                 <div className="flex items-center gap-2">
-                                                    <Layers size={14} className="text-solaris-orange" />
-                                                    <span className="text-[9px] font-black uppercase text-[#2A2826]/45 tracking-widest">Variantes <span className="text-solaris-orange">({variants.length}/10)</span></span>
+                                                    <Layers size={14} className="text-servirest-terracota" />
+                                                    <span className="text-[9px] font-black uppercase text-[#2A2826]/45 tracking-widest">Variantes <span className="text-servirest-terracota">({variants.length}/10)</span></span>
                                                 </div>
                                                 {variants.length < 10 && (
                                                     <button
                                                         type="button"
                                                         onClick={addVariant}
-                                                        className="flex items-center gap-1.5 px-3 py-2 bg-[#C4633F]/10 border border-solaris-orange/20 text-solaris-orange rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-[#C4633F]/20 transition-all"
+                                                        className="flex items-center gap-1.5 px-3 py-2 bg-[#C4633F]/10 border border-solaris-orange/20 text-servirest-terracota rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-[#C4633F]/20 transition-all"
                                                     >
                                                         <Plus size={10} /> Variante
                                                     </button>
@@ -544,7 +544,7 @@ export const MenuScreen: React.FC = () => {
                     >
                         <div className="w-full max-w-2xl bg-[#FAF8F4] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden">
                             <div className="flex justify-between items-center px-10 py-7 border-b border-white/5">
-                                <h2 className="text-2xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Bulk Import CSV</h2>
+                                <h2 className="text-2xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Importar CSV CSV</h2>
                                 <button onClick={() => setIsImportModalOpen(false)} className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">
                                     <XCircle size={22} />
                                 </button>
@@ -552,7 +552,7 @@ export const MenuScreen: React.FC = () => {
                             <div className="p-10 space-y-6">
                                 <div className="flex justify-between items-center">
                                     <p className="text-[10px] text-[#2A2826]/45 font-black uppercase tracking-widest">
-                                        Format: <span className="text-solaris-orange">name, category, price, description</span>
+                                        Format: <span className="text-servirest-terracota">name, category, price, description</span>
                                     </p>
                                     <button
                                         onClick={() => csvFileInputRef.current?.click()}

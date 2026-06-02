@@ -129,7 +129,7 @@ export const InventoryScreen: React.FC = () => {
     const getStockStatus = (qty: number, max: number, min: number) => {
         const pct = (qty / (max || 100)) * 100;
         if (qty <= min) return { label: 'CRITICAL', color: 'text-red-500', bar: 'bg-red-500', pct };
-        if (pct < 40) return { label: 'LOW', color: 'text-solaris-orange', bar: 'bg-[#C4633F]', pct };
+        if (pct < 40) return { label: 'LOW', color: 'text-servirest-terracota', bar: 'bg-[#C4633F]', pct };
         return { label: 'STABLE', color: 'text-green-500', bar: 'bg-green-500', pct };
     };
 
@@ -139,17 +139,17 @@ export const InventoryScreen: React.FC = () => {
                 {/* Header */}
                 <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
                     <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">ServiRest Logistics</h1>
-                        <p className="text-gray-600 font-bold text-[10px] uppercase tracking-[0.4em]">Resource Flow & Inventory Architecture</p>
+                        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">Inventario</h1>
+                        <p className="text-gray-600 font-bold text-[10px] uppercase tracking-[0.4em]">Stock, mermas y proveedores</p>
                     </motion.div>
                     
                     <div className="flex gap-4">
                         <div className="bg-white/[0.03] border border-white/5 p-1 rounded-2xl flex">
-                            <button onClick={() => setActiveTab('stock')} className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'stock' ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-gray-500'}`}>
-                                <Package size={14} /> Stock Matrix
+                            <button onClick={() => setActiveTab('stock')} className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'stock' ? 'bg-white/[0.05] text-servirest-terracota border border-solaris-orange/20' : 'text-gray-500'}`}>
+                                <Package size={14} /> Inventario
                             </button>
-                            <button onClick={() => setActiveTab('orders')} className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'orders' ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-gray-500'}`}>
-                                <Truck size={14} /> Procurement
+                            <button onClick={() => setActiveTab('orders')} className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'orders' ? 'bg-white/[0.05] text-servirest-terracota border border-solaris-orange/20' : 'text-gray-500'}`}>
+                                <Truck size={14} /> Compras
                             </button>
                         </div>
 
@@ -162,7 +162,7 @@ export const InventoryScreen: React.FC = () => {
                             onClick={() => { setEditingItem(null); setIsAddModalOpen(true); }}
                             className="bg-[#C4633F] text-[#1a1c14] px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-solaris-glow hover:scale-105 transition-all"
                         >
-                             <Plus size={16} /> Add Supply
+                             <Plus size={16} /> Agregar producto
                         </button>
                     </div>
                 </header>
@@ -172,15 +172,15 @@ export const InventoryScreen: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
                              <div className="md:col-span-3 bg-white/[0.02] border border-white/5 p-2 rounded-2xl flex items-center gap-2 overflow-x-auto no-scrollbar">
                                 {INVENTORY_CATEGORIES.map(cat => (
-                                    <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeCategory === cat ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-gray-500'}`}>
+                                    <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeCategory === cat ? 'bg-white/[0.05] text-servirest-terracota border border-solaris-orange/20' : 'text-gray-500'}`}>
                                         {cat}
                                     </button>
                                 ))}
                              </div>
                              <div className="bg-white/[0.02] border border-white/5 p-4 rounded-solaris flex items-center justify-between">
                                  <div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-700">Stock Assets</p>
-                                    <p className="text-2xl font-black italic text-solaris-orange">{inventory.length}</p>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-700">Productos</p>
+                                    <p className="text-2xl font-black italic text-servirest-terracota">{inventory.length}</p>
                                  </div>
                                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: 'linear' }} className="text-gray-800">
                                     <Package size={28} />
@@ -192,10 +192,10 @@ export const InventoryScreen: React.FC = () => {
                             <table className="w-full text-left">
                                 <thead>
                                     <tr className="border-b border-white/5 text-gray-600 text-[9px] font-black uppercase tracking-[0.3em]">
-                                        <th className="py-6 px-8">Asset Name / Category</th>
-                                        <th className="py-6 px-4">Level Indicator</th>
-                                        <th className="py-6 px-4 text-center">Unit Valuation</th>
-                                        <th className="py-6 px-4">Supplier Origin</th>
+                                        <th className="py-6 px-8">Producto / Categoría</th>
+                                        <th className="py-6 px-4">Stock</th>
+                                        <th className="py-6 px-4 text-center">Costo</th>
+                                        <th className="py-6 px-4">Proveedor</th>
                                         <th className="py-6 px-8 text-right">Actions</th>
                                     </tr>
                                 </thead>
@@ -206,7 +206,7 @@ export const InventoryScreen: React.FC = () => {
                                             <tr key={item.id} className="border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors group">
                                                 <td className="py-6 px-8">
                                                     <div className="cursor-pointer" onClick={() => { setEditingItem(item); setIsAddModalOpen(true); }}>
-                                                        <p className="font-bold text-[#1a1c14] group-hover:text-solaris-orange transition-colors uppercase italic">{item.name}</p>
+                                                        <p className="font-bold text-[#1a1c14] group-hover:text-servirest-terracota transition-colors uppercase italic">{item.name}</p>
                                                         <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest">{item.category}</p>
                                                     </div>
                                                 </td>
@@ -235,7 +235,7 @@ export const InventoryScreen: React.FC = () => {
                                                         </button>
                                                         <button 
                                                             onClick={() => { setEditingItem(item); setIsAddModalOpen(true); }}
-                                                            className="p-2 text-gray-700 hover:text-solaris-orange transition-colors"
+                                                            className="p-2 text-gray-700 hover:text-servirest-terracota transition-colors"
                                                         >
                                                             <Edit3 size={16} />
                                                         </button>
@@ -260,7 +260,7 @@ export const InventoryScreen: React.FC = () => {
                                             <h3 className="text-xl font-black italic text-[#1a1c14] uppercase tracking-tight mb-1">Order #{order.id.slice(0, 8)}</h3>
                                             <p className="text-[9px] font-black uppercase tracking-widest text-gray-600 italic">{new Date(order.date).toLocaleDateString()} • {order.supplier}</p>
                                         </div>
-                                        <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.3em] border ${order.status === 'RECEIVED' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-[#C4633F]/10 text-solaris-orange border-solaris-orange/20'}`}>
+                                        <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.3em] border ${order.status === 'RECEIVED' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-[#C4633F]/10 text-servirest-terracota border-solaris-orange/20'}`}>
                                             {order.status}
                                         </div>
                                     </div>
@@ -372,7 +372,7 @@ export const InventoryScreen: React.FC = () => {
                          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-white/10 rounded-solaris w-full max-w-sm overflow-hidden shadow-2xl">
                              <div className="p-8">
                                  <h3 className="text-xl font-black italic uppercase text-[#1a1c14] mb-2">Restock Payload</h3>
-                                 <p className="text-[9px] font-black uppercase text-solaris-orange tracking-[0.3em] mb-10">{restockItem.name}</p>
+                                 <p className="text-[9px] font-black uppercase text-servirest-terracota tracking-[0.3em] mb-10">{restockItem.name}</p>
                                  
                                  <div className="flex items-center gap-6 mb-10">
                                      <button onClick={() => setRestockQty(Math.max(0, restockQty - 1))} className="w-14 h-14 rounded-2xl border border-white/5 flex items-center justify-center text-xl hover:bg-white/5 transition-all">-</button>
@@ -393,8 +393,8 @@ export const InventoryScreen: React.FC = () => {
                     <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed inset-y-0 right-0 w-full md:w-[450px] bg-white border-l border-white/10 shadow-2xl z-50 flex flex-col">
                         <div className="p-10 border-b border-white/5 flex justify-between items-center">
                             <div>
-                                <h2 className="text-2xl font-black italic text-[#1a1c14] uppercase tracking-tight">Procurement Loop</h2>
-                                <p className="text-[9px] font-black uppercase text-solaris-orange tracking-widest mt-1">{cart.length} Assets Enqueued</p>
+                                <h2 className="text-2xl font-black italic text-[#1a1c14] uppercase tracking-tight">Compras Loop</h2>
+                                <p className="text-[9px] font-black uppercase text-servirest-terracota tracking-widest mt-1">{cart.length} Assets Enqueued</p>
                             </div>
                             <X onClick={() => setIsCartOpen(false)} className="text-gray-700 hover:text-[#1a1c14] cursor-pointer" size={24} />
                         </div>
@@ -411,8 +411,8 @@ export const InventoryScreen: React.FC = () => {
                             ).map(([supplier, items]) => (
                                 <div key={supplier}>
                                     <div className="flex items-center gap-3 mb-3">
-                                        <Truck size={12} className="text-solaris-orange" />
-                                        <span className="text-[9px] font-black uppercase text-solaris-orange tracking-widest">{supplier}</span>
+                                        <Truck size={12} className="text-servirest-terracota" />
+                                        <span className="text-[9px] font-black uppercase text-servirest-terracota tracking-widest">{supplier}</span>
                                         <span className="ml-auto text-[9px] font-black text-gray-600">${items.reduce((s, i) => s + i.costPerUnit * i.orderQuantity, 0).toFixed(2)}</span>
                                     </div>
                                     <div className="space-y-3 pl-4 border-l border-solaris-orange/20">
@@ -423,7 +423,7 @@ export const InventoryScreen: React.FC = () => {
                                                     <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest">{item.orderQuantity} {item.unit} · ${item.costPerUnit}/{item.unit}</p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="font-black text-solaris-orange italic">${(item.costPerUnit * item.orderQuantity).toFixed(2)}</p>
+                                                    <p className="font-black text-servirest-terracota italic">${(item.costPerUnit * item.orderQuantity).toFixed(2)}</p>
                                                     <button onClick={() => setCart(prev => prev.filter(c => c.id !== item.id))} className="text-[8px] font-black uppercase text-red-500/60 hover:text-red-500 transition-colors">Quitar</button>
                                                 </div>
                                             </div>
@@ -439,7 +439,7 @@ export const InventoryScreen: React.FC = () => {
                                 <span className="text-3xl font-black italic text-[#1a1c14] tracking-tighter">${cartTotal.toFixed(2)}</span>
                             </div>
                             <button onClick={handleCreateOrder} disabled={cart.length === 0} className="w-full bg-[#C4633F] text-[#1a1c14] font-black uppercase tracking-[0.2em] py-6 rounded-2xl shadow-solaris-glow disabled:opacity-30 flex items-center justify-center gap-3">
-                                <ShoppingCart size={20} /> Authorize Procurement
+                                <ShoppingCart size={20} /> Authorize Compras
                             </button>
                         </div>
                     </motion.div>

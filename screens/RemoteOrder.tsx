@@ -102,12 +102,12 @@ export const RemoteOrderScreen: React.FC = () => {
                 {/* Header */}
                 <header className="px-8 pt-8 pb-6 border-b border-white/5 shrink-0">
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 rounded-2xl bg-solaris-orange/10 border border-solaris-orange/20 flex items-center justify-center">
-                            <Smartphone size={18} className="text-solaris-orange" />
+                        <div className="w-10 h-10 rounded-2xl bg-servirest-terracota/10 border border-servirest-terracota/20 flex items-center justify-center">
+                            <Smartphone size={18} className="text-servirest-terracota" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-none">Remote Order</h1>
-                            <p className="text-[#2A2826]/30 font-bold text-[9px] uppercase tracking-[0.4em]">Drive-Thru & Remote Dispatch</p>
+                            <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-none">Orden Rápida</h1>
+                            <p className="text-[#2A2826]/30 font-bold text-[9px] uppercase tracking-[0.4em]">Drive-Thru y mostrador</p>
                         </div>
                     </div>
 
@@ -116,13 +116,13 @@ export const RemoteOrderScreen: React.FC = () => {
                         <div className="bg-white/[0.03] border border-white/5 p-1 rounded-2xl flex">
                             <button
                                 onClick={() => { setActiveMode('DRIVE_THRU'); setSelectedTable(null); }}
-                                className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeMode === 'DRIVE_THRU' ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/45 hover:text-[#1a1c14]'}`}
+                                className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeMode === 'DRIVE_THRU' ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/45 hover:text-[#1a1c14]'}`}
                             >
                                 <Smartphone size={14} /> Drive-Thru
                             </button>
                             <button
                                 onClick={() => setActiveMode('TABLES')}
-                                className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeMode === 'TABLES' ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/45 hover:text-[#1a1c14]'}`}
+                                className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeMode === 'TABLES' ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/45 hover:text-[#1a1c14]'}`}
                             >
                                 <Table2 size={14} /> {selectedTable ? selectedTable.name : 'Mesas'}
                             </button>
@@ -136,7 +136,7 @@ export const RemoteOrderScreen: React.FC = () => {
                                 placeholder="Buscar producto..."
                                 value={searchQuery}
                                 onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 pl-10 pr-4 text-sm font-bold text-[#1a1c14] outline-none focus:border-solaris-orange/40 placeholder:text-[#2A2826]/10 transition-all"
+                                className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 pl-10 pr-4 text-sm font-bold text-[#1a1c14] outline-none focus:border-servirest-terracota/40 placeholder:text-[#2A2826]/10 transition-all"
                             />
                         </div>
                     </div>
@@ -148,7 +148,7 @@ export const RemoteOrderScreen: React.FC = () => {
                         <button
                             key={cat}
                             onClick={() => setActiveCategory(cat)}
-                            className={`px-5 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'bg-white/[0.03] border border-white/5 text-[#2A2826]/45 hover:text-[#1a1c14] hover:border-white/20'}`}
+                            className={`px-5 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'bg-white/[0.03] border border-white/5 text-[#2A2826]/45 hover:text-[#1a1c14] hover:border-white/20'}`}
                         >
                             {cat}
                         </button>
@@ -167,19 +167,19 @@ export const RemoteOrderScreen: React.FC = () => {
                                 <button
                                     key={item.id}
                                     onClick={() => addToCart(item)}
-                                    className="bg-white/[0.02] border border-white/5 p-4 rounded-[28px] text-left hover:border-solaris-orange/30 hover:bg-white/[0.04] hover:scale-[1.02] active:scale-95 transition-all group relative overflow-hidden"
+                                    className="bg-white/[0.02] border border-white/5 p-4 rounded-[28px] text-left hover:border-servirest-terracota/30 hover:bg-white/[0.04] hover:scale-[1.02] active:scale-95 transition-all group relative overflow-hidden"
                                 >
                                     <div className="h-28 w-full mb-4 bg-white/[0.02] rounded-2xl overflow-hidden relative">
                                         {item.image
                                             ? <img src={item.image} alt={item.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                                             : <div className="w-full h-full flex items-center justify-center"><Zap size={32} className="text-[#2A2826]/10" /></div>
                                         }
-                                        <div className="absolute inset-0 bg-solaris-orange/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <div className="absolute inset-0 bg-servirest-terracota/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                             <Plus size={32} className="text-[#1a1c14]" />
                                         </div>
                                     </div>
                                     <h3 className="font-black italic text-[#1a1c14] text-sm leading-tight mb-1 uppercase line-clamp-2">{item.name}</h3>
-                                    <p className="text-solaris-orange font-black italic text-base">${item.price.toFixed(2)}</p>
+                                    <p className="text-servirest-terracota font-black italic text-base">${item.price.toFixed(2)}</p>
                                 </button>
                             ))}
                         </div>
@@ -214,7 +214,7 @@ export const RemoteOrderScreen: React.FC = () => {
                                     <Minus size={12} />
                                 </button>
                                 <span className="font-black italic text-base text-[#1a1c14] w-5 text-center">{item.quantity}</span>
-                                <button onClick={() => updateQuantity(item.id, 1)} className="w-7 h-7 rounded-lg bg-white/[0.04] text-[#2A2826]/55 hover:bg-solaris-orange/20 hover:text-solaris-orange transition-all flex items-center justify-center">
+                                <button onClick={() => updateQuantity(item.id, 1)} className="w-7 h-7 rounded-lg bg-white/[0.04] text-[#2A2826]/55 hover:bg-servirest-terracota/20 hover:text-servirest-terracota transition-all flex items-center justify-center">
                                     <Plus size={12} />
                                 </button>
                             </div>
@@ -231,7 +231,7 @@ export const RemoteOrderScreen: React.FC = () => {
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="text-[#1a1c14] font-black italic text-xl uppercase">Total</span>
-                        <span className="text-solaris-orange font-black italic text-2xl">${cartTotal.toFixed(2)}</span>
+                        <span className="text-servirest-terracota font-black italic text-2xl">${cartTotal.toFixed(2)}</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
@@ -254,7 +254,7 @@ export const RemoteOrderScreen: React.FC = () => {
                     <button
                         disabled={cart.length === 0 || isProcessing}
                         onClick={() => handlePayment(PaymentMethod.CASH)}
-                        className="w-full py-4 bg-solaris-orange text-[#1a1c14] rounded-2xl font-black italic uppercase text-[10px] tracking-widest shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-servirest-terracota text-[#1a1c14] rounded-2xl font-black italic uppercase text-[10px] tracking-widest shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
                     >
                         <Wallet size={16} /> Pagar en Efectivo
                     </button>
@@ -271,14 +271,14 @@ export const RemoteOrderScreen: React.FC = () => {
                     >
                         <div className="bg-[#FAF8F4] border border-white/10 w-full max-w-sm rounded-[40px] p-10 text-center shadow-2xl">
                             <div className="w-20 h-20 mx-auto mb-8 relative">
-                                <div className="absolute inset-0 border-4 border-solaris-orange/20 rounded-full" />
-                                <div className="absolute inset-0 border-4 border-solaris-orange rounded-full border-t-transparent animate-spin" />
+                                <div className="absolute inset-0 border-4 border-servirest-terracota/20 rounded-full" />
+                                <div className="absolute inset-0 border-4 border-servirest-terracota rounded-full border-t-transparent animate-spin" />
                                 <div className="absolute inset-0 flex items-center justify-center">
-                                    <CreditCard size={32} className="text-solaris-orange" />
+                                    <CreditCard size={32} className="text-servirest-terracota" />
                                 </div>
                             </div>
                             <h3 className="text-2xl font-black italic uppercase text-[#1a1c14] mb-2 tracking-tighter">Procesando Pago</h3>
-                            <p className="text-solaris-orange font-bold animate-pulse text-[10px] uppercase tracking-widest mb-6">{terminalStep}</p>
+                            <p className="text-servirest-terracota font-bold animate-pulse text-[10px] uppercase tracking-widest mb-6">{terminalStep}</p>
                             <p className="text-[9px] text-[#2A2826]/30 font-bold uppercase tracking-widest">No apagues la terminal</p>
                         </div>
                     </motion.div>
@@ -365,7 +365,7 @@ export const RemoteOrderScreen: React.FC = () => {
                                     <button
                                         key={table.id}
                                         onClick={() => { setSelectedTable(table); setShowTableModal(false); }}
-                                        className={`p-6 rounded-[28px] border-2 flex flex-col items-center gap-2 transition-all ${selectedTable?.id === table.id ? 'border-solaris-orange bg-solaris-orange/10 text-solaris-orange' : 'border-white/5 bg-white/[0.02] text-[#2A2826]/55 hover:border-white/20 hover:text-[#1a1c14]'}`}
+                                        className={`p-6 rounded-[28px] border-2 flex flex-col items-center gap-2 transition-all ${selectedTable?.id === table.id ? 'border-servirest-terracota bg-servirest-terracota/10 text-servirest-terracota' : 'border-white/5 bg-white/[0.02] text-[#2A2826]/55 hover:border-white/20 hover:text-[#1a1c14]'}`}
                                     >
                                         <Table2 size={28} />
                                         <span className="font-black italic text-lg">{table.name}</span>

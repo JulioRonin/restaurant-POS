@@ -165,7 +165,7 @@ export const CashierScreen: React.FC = () => {
                     >
                         <div
                             onClick={() => { setSelectedTableId(activeRequests[0].tableId); setActiveTab('tables'); }}
-                            className="bg-solaris-orange px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-orange-500 transition-colors"
+                            className="bg-servirest-terracota px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-orange-500 transition-colors"
                         >
                             <div className="flex items-center gap-4">
                                 <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center animate-pulse shrink-0">
@@ -195,7 +195,7 @@ export const CashierScreen: React.FC = () => {
                     <div className="p-6 md:p-8 space-y-6 md:space-y-8">
                         <div>
                            <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase mb-2">Terminal Ops</h1>
-                           <p className="text-solaris-orange/40 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.4em]">Transaction Settlement & Assets</p>
+                           <p className="text-servirest-terracota/40 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.4em]">Cobros y caja</p>
                         </div>
                         <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-2xl">
                              {[
@@ -204,7 +204,7 @@ export const CashierScreen: React.FC = () => {
                                 { id: 'expenses', icon: TrendingDown, label: 'Burden' },
                                 { id: 'history', icon: History, label: 'Logs' }
                              ].map(tab => (
-                                <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex-1 flex flex-col items-center gap-2 py-3 rounded-xl transition-all ${activeTab === tab.id ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/30 hover:text-[#1a1c14]'}`}>
+                                <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex-1 flex flex-col items-center gap-2 py-3 rounded-xl transition-all ${activeTab === tab.id ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/30 hover:text-[#1a1c14]'}`}>
                                     <tab.icon size={16} />
                                     <span className="text-[8px] font-black uppercase tracking-widest">{tab.label}</span>
                                 </button>
@@ -221,29 +221,29 @@ export const CashierScreen: React.FC = () => {
                                 <motion.div
                                     key={table.id}
                                     onClick={() => order && setSelectedTableId(table.id)}
-                                    className={`p-5 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden ${isSelected ? 'bg-solaris-orange/10 border-solaris-orange shadow-solaris-glow' : order ? 'bg-white/[0.03] border-white/10 hover:border-white/20' : 'bg-transparent border-dashed border-white/5 opacity-30 cursor-default'}`}
+                                    className={`p-5 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden ${isSelected ? 'bg-servirest-terracota/10 border-servirest-terracota shadow-solaris-glow' : order ? 'bg-white/[0.03] border-white/10 hover:border-white/20' : 'bg-transparent border-dashed border-white/5 opacity-30 cursor-default'}`}
                                 >
                                     {isRequested && (
-                                        <div className="absolute top-0 right-0 bg-solaris-orange text-[#1a1c14] px-3 py-1 text-[8px] font-black tracking-widest uppercase animate-pulse italic">
+                                        <div className="absolute top-0 right-0 bg-servirest-terracota text-[#1a1c14] px-3 py-1 text-[8px] font-black tracking-widest uppercase animate-pulse italic">
                                             REQ_BILL
                                         </div>
                                     )}
                                     <div className="flex justify-between items-end">
                                         <div>
                                             <p className="text-lg font-black italic uppercase tracking-tighter text-[#1a1c14]">{table.name}</p>
-                                            <p className="text-[8px] font-black uppercase text-solaris-orange/40 tracking-widest mt-0.5">{order ? `TX: ${order.id.slice(0,6)}` : 'Node Idle'}</p>
+                                            <p className="text-[8px] font-black uppercase text-servirest-terracota/40 tracking-widest mt-0.5">{order ? `TX: ${order.id.slice(0,6)}` : 'Sin actividad'}</p>
                                         </div>
-                                        {order && <p className="text-lg font-black italic text-solaris-orange tracking-tighter">${order.total.toFixed(0)}</p>}
+                                        {order && <p className="text-lg font-black italic text-servirest-terracota tracking-tighter">${order.total.toFixed(0)}</p>}
                                     </div>
                                 </motion.div>
                              );
                         })}
 
                         {activeTab === 'delivery' && orders.filter(o => o.source && o.source !== OrderSource.DINE_IN && o.status !== 'COMPLETED').map(order => (
-                             <div key={order.id} onClick={() => setSelectedTableId(order.id)} className={`p-5 rounded-2xl border cursor-pointer transition-all ${selectedTableId === order.id ? 'border-solaris-orange bg-solaris-orange/10' : 'border-white/5 bg-white/[0.03] hover:border-white/20'}`}>
+                             <div key={order.id} onClick={() => setSelectedTableId(order.id)} className={`p-5 rounded-2xl border cursor-pointer transition-all ${selectedTableId === order.id ? 'border-servirest-terracota bg-servirest-terracota/10' : 'border-white/5 bg-white/[0.03] hover:border-white/20'}`}>
                                  <div className="flex justify-between items-start">
                                      <div>
-                                         <p className="text-[10px] font-black uppercase text-solaris-orange tracking-widest mb-1 italic">{order.source}</p>
+                                         <p className="text-[10px] font-black uppercase text-servirest-terracota tracking-widest mb-1 italic">{order.source}</p>
                                          <p className="text-lg font-black italic uppercase tracking-tighter text-[#1a1c14] leading-none">{TABLES.find(t=>t.id===order.tableId)?.name || order.tableId}</p>
                                      </div>
                                      <p className="text-xl font-black italic text-[#1a1c14] tracking-tighter">${order.total.toFixed(0)}</p>
@@ -255,11 +255,11 @@ export const CashierScreen: React.FC = () => {
                             <div className="space-y-4">
                                 {/* Add expense form */}
                                 <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-3">
-                                    <p className="text-[9px] font-black uppercase text-solaris-orange/40 tracking-widest italic">Register Expense</p>
-                                    <input value={newExpenseDesc} onChange={e => setNewExpenseDesc(e.target.value)} placeholder="Description..." className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-solaris-orange/40" />
+                                    <p className="text-[9px] font-black uppercase text-servirest-terracota/40 tracking-widest italic">Register Expense</p>
+                                    <input value={newExpenseDesc} onChange={e => setNewExpenseDesc(e.target.value)} placeholder="Description..." className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40" />
                                     <div className="grid grid-cols-2 gap-2">
-                                        <input value={newExpenseAmount} onChange={e => setNewExpenseAmount(e.target.value)} type="number" placeholder="$0.00" className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-solaris-orange/40" />
-                                        <select value={newExpenseCategory} onChange={e => setNewExpenseCategory(e.target.value as any)} className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-solaris-orange/40 appearance-none">
+                                        <input value={newExpenseAmount} onChange={e => setNewExpenseAmount(e.target.value)} type="number" placeholder="$0.00" className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40" />
+                                        <select value={newExpenseCategory} onChange={e => setNewExpenseCategory(e.target.value as any)} className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40 appearance-none">
                                             {['Insumos','Renta','Servicios','Nómina','Mantenimiento','Otros'].map(c => <option key={c} value={c} className="bg-[#FAF8F4]">{c}</option>)}
                                         </select>
                                     </div>
@@ -269,7 +269,7 @@ export const CashierScreen: React.FC = () => {
                                             type="date" 
                                             value={newExpenseDate} 
                                             onChange={e => setNewExpenseDate(e.target.value)} 
-                                            className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-2 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-solaris-orange/40" 
+                                            className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-2 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40" 
                                         />
                                     </div>
                                     <button
@@ -285,7 +285,7 @@ export const CashierScreen: React.FC = () => {
                                             );
                                             setNewExpenseDesc(''); setNewExpenseAmount('');
                                         }}
-                                        className="w-full py-3 bg-solaris-orange text-[#1a1c14] font-black uppercase tracking-widest text-[9px] rounded-xl shadow-solaris-glow hover:scale-[1.02] transition-all"
+                                        className="w-full py-3 bg-servirest-terracota text-[#1a1c14] font-black uppercase tracking-widest text-[9px] rounded-xl shadow-solaris-glow hover:scale-[1.02] transition-all"
                                     >
                                         + Add Expense
                                     </button>
@@ -317,7 +317,7 @@ export const CashierScreen: React.FC = () => {
                                             type="date"
                                             value={selectedDate}
                                             onChange={e => setSelectedDate(e.target.value)}
-                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-5 text-[#1a1c14] text-xs font-bold outline-none focus:border-solaris-orange/40"
+                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-5 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40"
                                         />
                                     </div>
 
@@ -360,7 +360,7 @@ export const CashierScreen: React.FC = () => {
                                             }}
                                             className="w-full flex items-center justify-center gap-3 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-[#2A2826]/60 hover:text-[#1a1c14] hover:border-white/20 transition-all font-black text-[10px] uppercase tracking-widest"
                                         >
-                                            <Printer size={16} /> Asset Hardcopy
+                                            <Printer size={16} /> Reimprimir ticket
                                         </button>
                                         <button
                                             onClick={() => {
@@ -370,14 +370,14 @@ export const CashierScreen: React.FC = () => {
                                                 const a = document.createElement('a'); a.href = url; a.download = `reporte-${selectedDate}.csv`; a.click();
                                                 URL.revokeObjectURL(url);
                                             }}
-                                            className="w-full flex items-center justify-center gap-3 py-4 bg-solaris-orange text-[#1a1c14] rounded-2xl shadow-solaris-glow hover:scale-[1.02] transition-all font-black text-[10px] uppercase tracking-widest"
+                                            className="w-full flex items-center justify-center gap-3 py-4 bg-servirest-terracota text-[#1a1c14] rounded-2xl shadow-solaris-glow hover:scale-[1.02] transition-all font-black text-[10px] uppercase tracking-widest"
                                         >
-                                            <Download size={16} /> Data Payload (CSV)
+                                            <Download size={16} /> Exportar CSV
                                         </button>
                                     </div>
                                 </div>
-                                <div className="p-4 bg-solaris-orange/5 border border-solaris-orange/10 rounded-2xl">
-                                    <p className="text-[9px] font-black italic text-solaris-orange uppercase tracking-widest text-center">Select history mode in main cluster for full metrics view</p>
+                                <div className="p-4 bg-servirest-terracota/5 border border-servirest-terracota/10 rounded-2xl">
+                                    <p className="text-[9px] font-black italic text-servirest-terracota uppercase tracking-widest text-center">Select history mode in main cluster for full metrics view</p>
                                 </div>
                             </div>
                         )}
@@ -392,8 +392,8 @@ export const CashierScreen: React.FC = () => {
                             {/* Logs Panoramic View */}
                             <div className="flex justify-between items-center">
                                 <div>
-                                    <h2 className="text-5xl font-black italic tracking-tighter uppercase text-[#1a1c14]">Network Sales Manifest</h2>
-                                    <p className="text-[12px] font-black uppercase text-solaris-orange/60 tracking-[0.5em] mt-3 italic">Temporal Node: {selectedDate} • Sync Sequence Active</p>
+                                    <h2 className="text-5xl font-black italic tracking-tighter uppercase text-[#1a1c14]">Ventas del día</h2>
+                                    <p className="text-[12px] font-black uppercase text-servirest-terracota/60 tracking-[0.5em] mt-3 italic">Hoy: {selectedDate} • sincronización al día</p>
                                 </div>
                                 <div className="flex gap-4">
                                     <div className="px-6 py-3 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center gap-4">
@@ -403,13 +403,13 @@ export const CashierScreen: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* KPI Metrics Matrix */}
+                            {/* Métricas del día */}
                             <div className="grid grid-cols-4 gap-6 shrink-0">
                                 {[
                                     { label: 'Aggregated Revenue', value: salesMetrics.totalRevenue, color: 'text-[#1a1c14]', icon: DollarSign, glow: 'orange' },
-                                    { label: 'Liquid Assets (Cash)', value: salesMetrics.cashSales, color: 'text-green-400', icon: Wallet, glow: 'green' },
-                                    { label: 'Spectral Assets (Card)', value: salesMetrics.cardSales, color: 'text-blue-400', icon: CreditCard, glow: 'blue' },
-                                    { label: 'Net Synthesis', value: salesMetrics.totalRevenue - expenses.filter(e => e.date.startsWith(selectedDate)).reduce((s, e) => s + Number(e.amount || 0), 0), color: 'text-solaris-orange', icon: TrendingUp, glow: 'orange' }
+                                    { label: 'Efectivo (Cash)', value: salesMetrics.cashSales, color: 'text-green-400', icon: Wallet, glow: 'green' },
+                                    { label: 'Tarjeta (Card)', value: salesMetrics.cardSales, color: 'text-blue-400', icon: CreditCard, glow: 'blue' },
+                                    { label: 'Total', value: salesMetrics.totalRevenue - expenses.filter(e => e.date.startsWith(selectedDate)).reduce((s, e) => s + Number(e.amount || 0), 0), color: 'text-servirest-terracota', icon: TrendingUp, glow: 'orange' }
                                 ].map((kpi, i) => (
                                     <GlowCard key={i} glowColor={kpi.glow as any} customSize className="w-full !p-8 bg-white/[0.01] border-white/5 rounded-[32px]">
                                         <div className="flex items-center gap-4 mb-3 opacity-30">
@@ -431,10 +431,10 @@ export const CashierScreen: React.FC = () => {
                                      <div className="flex-1 overflow-y-auto no-scrollbar p-10">
                                         <table className="w-full text-left border-separate border-spacing-y-4">
                                             <thead>
-                                                <tr className="text-[9px] font-black uppercase text-solaris-orange tracking-widest italic">
+                                                <tr className="text-[9px] font-black uppercase text-servirest-terracota tracking-widest italic">
                                                     <th className="px-6 pb-2">TX Sequence</th>
-                                                    <th className="px-6 pb-2">Temporal Node</th>
-                                                    <th className="px-6 pb-2">Asset Manifest</th>
+                                                    <th className="px-6 pb-2">Hora</th>
+                                                    <th className="px-6 pb-2">Productos</th>
                                                     <th className="px-6 pb-2">Method</th>
                                                     <th className="px-6 pb-2">Status</th>
                                                     <th className="px-6 pb-2 text-right">Value (USD)</th>
@@ -448,7 +448,7 @@ export const CashierScreen: React.FC = () => {
                                                         <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5 text-[10px] font-black uppercase italic tracking-tight max-w-[250px]">
     <div className="flex flex-wrap gap-1">
         {(order.items || []).map((item, idx) => (
-            <span key={idx} className="bg-solaris-orange/5 text-solaris-orange px-1.5 py-0.5 rounded-md border border-solaris-orange/10 whitespace-nowrap">
+            <span key={idx} className="bg-servirest-terracota/5 text-servirest-terracota px-1.5 py-0.5 rounded-md border border-servirest-terracota/10 whitespace-nowrap">
                 {item.quantity}x {item.name}
             </span>
         ))}
@@ -461,7 +461,7 @@ export const CashierScreen: React.FC = () => {
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5">
-                                                            <span className={`text-[10px] font-black uppercase tracking-tighter ${order.status === 'COMPLETED' ? 'text-solaris-orange' : 'text-[#2A2826]/30'}`}>
+                                                            <span className={`text-[10px] font-black uppercase tracking-tighter ${order.status === 'COMPLETED' ? 'text-servirest-terracota' : 'text-[#2A2826]/30'}`}>
                                                                 {order.status}
                                                             </span>
                                                         </td>
@@ -493,8 +493,8 @@ export const CashierScreen: React.FC = () => {
                                                     <X size={20} />
                                                 </button>
                                                 <div>
-                                                    <h2 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Asset Console</h2>
-                                                    <p className="text-[9px] md:text-[11px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] mt-1 md:mt-2">Node: {selectedOrder.tableId} • Local TX Sequence</p>
+                                                    <h2 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Acciones</h2>
+                                                    <p className="text-[9px] md:text-[11px] font-black uppercase text-servirest-terracota/40 tracking-[0.4em] mt-1 md:mt-2">Node: {selectedOrder.tableId} • Movimientos locales</p>
                                                 </div>
                                             </div>
                                             <div className="flex gap-2 md:gap-3">
@@ -510,7 +510,7 @@ export const CashierScreen: React.FC = () => {
                                                 <div className="flex gap-1.5 md:gap-2">
                                                     {[1, 2, 3, 4].map(num => (
                                                         <button key={num} onClick={() => setSplitCount(num)}
-                                                            className={`flex-1 py-2 md:py-3 rounded-xl md:rounded-2xl font-black italic text-sm md:text-base transition-all ${splitCount === num ? 'bg-solaris-orange text-[#1a1c14]' : 'bg-white/[0.03] text-[#2A2826]/30 border border-white/5 hover:text-[#1a1c14]'}`}
+                                                            className={`flex-1 py-2 md:py-3 rounded-xl md:rounded-2xl font-black italic text-sm md:text-base transition-all ${splitCount === num ? 'bg-servirest-terracota text-[#1a1c14]' : 'bg-white/[0.03] text-[#2A2826]/30 border border-white/5 hover:text-[#1a1c14]'}`}
                                                         >{num}</button>
                                                     ))}
                                                 </div>
@@ -530,11 +530,11 @@ export const CashierScreen: React.FC = () => {
 
                                     {/* Console Body: The Manifest */}
                                     <div className="flex-1 overflow-y-auto no-scrollbar p-10 space-y-4">
-                                        <p className="text-[10px] font-black uppercase text-solaris-orange tracking-[0.5em] mb-6 italic">Verified Items Manifest</p>
+                                        <p className="text-[10px] font-black uppercase text-servirest-terracota tracking-[0.5em] mb-6 italic">Verified Items Manifest</p>
                                         {(selectedOrder.items || []).map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-center py-6 px-10 bg-white/[0.015] rounded-[32px] border border-white/5 group hover:border-solaris-orange/20 hover:bg-white/[0.03] transition-all">
+                                            <div key={idx} className="flex justify-between items-center py-6 px-10 bg-white/[0.015] rounded-[32px] border border-white/5 group hover:border-servirest-terracota/20 hover:bg-white/[0.03] transition-all">
                                                 <div className="flex items-center gap-8 flex-1">
-                                                    <span className="text-2xl font-black italic text-solaris-orange/40 group-hover:text-solaris-orange transition-colors min-w-[1.5em]">{item.quantity}</span>
+                                                    <span className="text-2xl font-black italic text-servirest-terracota/40 group-hover:text-servirest-terracota transition-colors min-w-[1.5em]">{item.quantity}</span>
                                                     <div className="w-px h-8 bg-white/10" />
                                                     <span className="font-black italic text-[#2A2826]/90 uppercase tracking-tight text-xl truncate pr-4">{item.name}</span>
                                                 </div>
@@ -559,8 +559,8 @@ export const CashierScreen: React.FC = () => {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-widest mb-1 italic">Per Person Asset Value</p>
-                                            <p className="text-3xl font-black italic text-solaris-orange">${(total / splitCount).toFixed(2)}</p>
+                                            <p className="text-[9px] font-black uppercase text-servirest-terracota/60 tracking-widest mb-1 italic">Per Person Asset Value</p>
+                                            <p className="text-3xl font-black italic text-servirest-terracota">${(total / splitCount).toFixed(2)}</p>
                                         </div>
                                     </div>
                                 </GlowCard>
@@ -572,7 +572,7 @@ export const CashierScreen: React.FC = () => {
                                     <div className="flex-1 flex flex-col min-h-0">
                                         {/* Payload Display */}
                                         <div className="mb-8 md:mb-12">
-                                            <p className="text-[9px] md:text-[11px] font-black uppercase text-solaris-orange/60 tracking-[0.4em] mb-2 md:mb-4 italic">Aggregate Payload</p>
+                                            <p className="text-[9px] md:text-[11px] font-black uppercase text-servirest-terracota/60 tracking-[0.4em] mb-2 md:mb-4 italic">Aggregate Payload</p>
                                             <p className="text-5xl md:text-8xl font-black italic tracking-tighter text-[#1a1c14] leading-none">${total.toFixed(2)}</p>
                                             {tipAmount > 0 && (
                                                 <p className="text-[9px] md:text-[10px] font-black uppercase text-[#2A2826]/30 tracking-widest mt-4 md:mt-6 italic">Includes ${tipAmount.toFixed(2)} network gratuity</p>
@@ -615,7 +615,7 @@ export const CashierScreen: React.FC = () => {
                         <div className="h-full flex flex-col items-center justify-center opacity-20 p-6 text-center">
                              <div className="relative">
                                 <Zap size={80} className="md:w-[140px] md:h-[140px] text-[#1a1c14]" />
-                                <div className="absolute inset-0 bg-solaris-orange blur-3xl opacity-20" />
+                                <div className="absolute inset-0 bg-servirest-terracota blur-3xl opacity-20" />
                              </div>
                              <p className="text-[10px] md:text-[14px] font-black uppercase text-[#1a1c14] tracking-[0.4em] md:tracking-[0.8em] mt-8 md:mt-12 animate-pulse font-mono">Awaiting Node Selection</p>
                         </div>
@@ -637,7 +637,7 @@ export const CashierScreen: React.FC = () => {
                             <div className="flex justify-between items-center px-6 md:px-10 py-5 md:py-7 border-b border-white/5 bg-white/[0.01] shrink-0">
                                 <div>
                                     <h2 className="text-xl md:text-3xl font-black italic tracking-tighter uppercase text-[#1a1c14]">Authorize Payout</h2>
-                                    <p className="text-[8px] md:text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.4em] mt-1 italic">Table: {selectedOrder?.tableId} • Amount due: ${(total / splitCount).toFixed(2)}</p>
+                                    <p className="text-[8px] md:text-[10px] font-black uppercase text-servirest-terracota/60 tracking-[0.4em] mt-1 italic">Table: {selectedOrder?.tableId} • Amount due: ${(total / splitCount).toFixed(2)}</p>
                                 </div>
                                 <button
                                     onClick={() => setIsPaymentModalOpen(false)}
@@ -679,7 +679,7 @@ export const CashierScreen: React.FC = () => {
                                         ))}
                                         <button
                                             onClick={() => setCashReceived((total / splitCount).toFixed(2))}
-                                            className="py-3 md:py-4 rounded-xl md:rounded-2xl bg-solaris-orange/10 border border-solaris-orange/20 text-solaris-orange hover:bg-solaris-orange/20 font-black italic text-[9px] md:text-[10px] uppercase tracking-widest transition-all col-span-2"
+                                            className="py-3 md:py-4 rounded-xl md:rounded-2xl bg-servirest-terracota/10 border border-servirest-terracota/20 text-servirest-terracota hover:bg-servirest-terracota/20 font-black italic text-[9px] md:text-[10px] uppercase tracking-widest transition-all col-span-2"
                                         >
                                             Exact Amount
                                         </button>
@@ -695,9 +695,9 @@ export const CashierScreen: React.FC = () => {
                                                 <p className="text-2xl md:text-4xl font-black italic text-[#1a1c14] tracking-tighter leading-none">${(total / splitCount).toFixed(2)}</p>
                                             </div>
 
-                                            <div className="bg-solaris-orange/5 rounded-xl md:rounded-2xl p-4 md:p-6 border border-solaris-orange/10">
-                                                <p className="text-[8px] md:text-[9px] font-black uppercase text-solaris-orange/60 tracking-widest mb-1 md:mb-2 italic">Change</p>
-                                                <p className="text-2xl md:text-4xl font-black italic text-solaris-orange tracking-tighter leading-none">
+                                            <div className="bg-servirest-terracota/5 rounded-xl md:rounded-2xl p-4 md:p-6 border border-servirest-terracota/10">
+                                                <p className="text-[8px] md:text-[9px] font-black uppercase text-servirest-terracota/60 tracking-widest mb-1 md:mb-2 italic">Change</p>
+                                                <p className="text-2xl md:text-4xl font-black italic text-servirest-terracota tracking-tighter leading-none">
                                                     ${Math.max(0, (parseFloat(cashReceived) || 0) - (total / splitCount)).toFixed(2)}
                                                 </p>
                                             </div>

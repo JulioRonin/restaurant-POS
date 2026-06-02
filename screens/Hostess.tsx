@@ -17,7 +17,7 @@ export const HostessScreen: React.FC = () => {
     const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'floor' | 'list'>('floor');
 
-    // Waitlist State (Kanban cards)
+    // Lista de espera State (Kanban cards)
     const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([
         { id: 'W1', customerName: 'Juan Perez', partySize: 4, timestamp: '12:30', status: 'WAITING' },
         { id: 'W2', customerName: 'María García', partySize: 2, timestamp: '12:45', status: 'WAITING' }
@@ -280,12 +280,12 @@ export const HostessScreen: React.FC = () => {
                 <header className="flex flex-wrap justify-between items-center gap-3 p-4 md:p-8 shrink-0">
                     <div className="flex items-center gap-4">
                         <div>
-                            <h1 className="text-2xl md:text-4xl font-black italic tracking-tighter uppercase text-[#1a1c14]">Floor Plan</h1>
-                            <p className="text-solaris-orange/40 font-bold text-[9px] md:text-[10px] uppercase tracking-[0.4em]">Active Node Orchestration</p>
+                            <h1 className="text-2xl md:text-4xl font-black italic tracking-tighter uppercase text-[#1a1c14]">Plano del salón</h1>
+                            <p className="text-servirest-terracota/40 font-bold text-[9px] md:text-[10px] uppercase tracking-[0.4em]">Coordinación del piso</p>
                         </div>
                         <button
                             onClick={() => setIsAddTableModalOpen(true)}
-                            className="flex items-center gap-2 px-4 py-3 bg-solaris-orange text-[#1a1c14] rounded-xl shadow-solaris-glow hover:scale-105 transition-all text-[9px] font-black uppercase tracking-widest"
+                            className="flex items-center gap-2 px-4 py-3 bg-servirest-terracota text-[#1a1c14] rounded-xl shadow-solaris-glow hover:scale-105 transition-all text-[9px] font-black uppercase tracking-widest"
                         >
                             <Plus size={14} />
                             Mesa
@@ -311,28 +311,28 @@ export const HostessScreen: React.FC = () => {
                         <div className="hidden md:flex gap-4">
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-green-500" />
-                                <span className="text-[9px] text-solaris-orange/40 font-black uppercase tracking-widest italic">Libre</span>
+                                <span className="text-[9px] text-servirest-terracota/40 font-black uppercase tracking-widest italic">Libre</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-red-500" />
-                                <span className="text-[9px] text-solaris-orange/40 font-black uppercase tracking-widest italic">Ocupada</span>
+                                <span className="text-[9px] text-servirest-terracota/40 font-black uppercase tracking-widest italic">Ocupada</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                                <span className="text-[9px] text-solaris-orange/40 font-black uppercase tracking-widest italic">Reservada</span>
+                                <span className="text-[9px] text-servirest-terracota/40 font-black uppercase tracking-widest italic">Reservada</span>
                             </div>
                         </div>
                     </div>
                 </header>
 
-                {/* Map + Waitlist area */}
+                {/* Map + Lista de espera area */}
                 <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0 overflow-hidden px-4 md:px-8 pb-4">
                     {/* WAITLIST KANBAN SIDEBAR — hidden on mobile, drawer on tablet+ */}
                     <div className="hidden md:flex w-64 bg-white/[0.02] rounded-2xl p-5 border border-white/5 flex-col shrink-0 overflow-hidden shadow-2xl">
-                        <h3 className="font-black text-solaris-orange/40 text-[9px] uppercase tracking-[0.4em] mb-5 flex items-center gap-2 italic">
+                        <h3 className="font-black text-servirest-terracota/40 text-[9px] uppercase tracking-[0.4em] mb-5 flex items-center gap-2 italic">
                              <Hourglass size={12} />
-                             Waitlist
-                             <span className="ml-auto bg-solaris-orange text-[#1a1c14] px-2 py-0.5 rounded-lg text-[8px] font-black">{waitlist.length}</span>
+                             Lista de espera
+                             <span className="ml-auto bg-servirest-terracota text-[#1a1c14] px-2 py-0.5 rounded-lg text-[8px] font-black">{waitlist.length}</span>
                         </h3>
                         
                         <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar pr-1">
@@ -345,7 +345,7 @@ export const HostessScreen: React.FC = () => {
                                 >
                                     <div className="flex justify-between items-start mb-4">
                                         <h4 className="font-black italic text-[#1a1c14] text-sm uppercase tracking-tight leading-tight">{entry.customerName}</h4>
-                                        <span className="text-[8px] font-black text-solaris-orange bg-solaris-orange/10 px-2 py-1 rounded-lg border border-solaris-orange/20">{entry.timestamp}</span>
+                                        <span className="text-[8px] font-black text-servirest-terracota bg-servirest-terracota/10 px-2 py-1 rounded-lg border border-solaris-orange/20">{entry.timestamp}</span>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <div className="flex items-center gap-2 text-[10px] text-[#2A2826]/55 font-black italic">
@@ -360,7 +360,7 @@ export const HostessScreen: React.FC = () => {
                             )) : (
                                 <div className="h-full flex flex-col items-center justify-center text-center opacity-10">
                                     <Hourglass size={48} className="mb-4 text-[#1a1c14]" />
-                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#1a1c14]">Zero Queue</p>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#1a1c14]">Sin lista de espera</p>
                                 </div>
                             )}
                         </div>
@@ -408,7 +408,7 @@ export const HostessScreen: React.FC = () => {
                                             {session ? (
                                                 <div className="text-center mt-2 px-3">
                                                     <p className="font-black italic text-[10px] text-[#1a1c14] uppercase tracking-tight truncate w-full">{session.name}</p>
-                                                    <p className="text-[8px] font-black text-solaris-orange/60 uppercase tracking-widest italic">{session.pax} Guests</p>
+                                                    <p className="text-[8px] font-black text-servirest-terracota/60 uppercase tracking-widest italic">{session.pax} Guests</p>
                                                 </div>
                                             ) : reservation ? (
                                                 <div className="text-center mt-2 px-3">
@@ -434,11 +434,11 @@ export const HostessScreen: React.FC = () => {
                                 <table className="w-full text-left border-separate border-spacing-y-4">
                                     <thead>
                                         <tr>
-                                            <th className="pb-4 px-6 text-[10px] font-black text-solaris-orange/40 uppercase tracking-[0.4em] italic">Designación Nodo</th>
-                                            <th className="pb-4 px-6 text-[10px] font-black text-solaris-orange/40 uppercase tracking-[0.4em] italic">Protocolo Estado</th>
-                                            <th className="pb-4 px-6 text-[10px] font-black text-solaris-orange/40 uppercase tracking-[0.4em] italic">Métrica Pax</th>
-                                            <th className="pb-4 px-6 text-[10px] font-black text-solaris-orange/40 uppercase tracking-[0.4em] italic">Asignación Cliente</th>
-                                            <th className="pb-4 px-6 text-[10px] font-black text-solaris-orange/40 uppercase tracking-[0.4em] italic">Unidad de Servicio</th>
+                                            <th className="pb-4 px-6 text-[10px] font-black text-servirest-terracota/40 uppercase tracking-[0.4em] italic">Designación Nodo</th>
+                                            <th className="pb-4 px-6 text-[10px] font-black text-servirest-terracota/40 uppercase tracking-[0.4em] italic">Protocolo Estado</th>
+                                            <th className="pb-4 px-6 text-[10px] font-black text-servirest-terracota/40 uppercase tracking-[0.4em] italic">Métrica Pax</th>
+                                            <th className="pb-4 px-6 text-[10px] font-black text-servirest-terracota/40 uppercase tracking-[0.4em] italic">Asignación Cliente</th>
+                                            <th className="pb-4 px-6 text-[10px] font-black text-servirest-terracota/40 uppercase tracking-[0.4em] italic">Unidad de Servicio</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -454,8 +454,8 @@ export const HostessScreen: React.FC = () => {
                                                     className={`transition-all cursor-pointer group ${isSelected ? 'scale-[1.01]' : ''}`}
                                                     onClick={() => setSelectedTableId(table.id)}
                                                 >
-                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-l border-white/5 rounded-l-[24px] font-black italic text-[#1a1c14] uppercase tracking-tight group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-solaris-orange/10' : ''}`}>{table.name}</td>
-                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-solaris-orange/10' : ''}`}>
+                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-l border-white/5 rounded-l-[24px] font-black italic text-[#1a1c14] uppercase tracking-tight group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>{table.name}</td>
+                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>
                                                         <span className={`inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
                                                             table.status === TableStatus.AVAILABLE ? 'bg-green-500/10 text-green-500' :
                                                             table.status === TableStatus.OCCUPIED ? 'bg-red-500/10 text-red-500' :
@@ -471,16 +471,16 @@ export const HostessScreen: React.FC = () => {
                                                             {table.status}
                                                         </span>
                                                     </td>
-                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 font-black italic text-[#2A2826]/60 text-xs tracking-widest group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-solaris-orange/10' : ''}`}>{table.seats} PERS.</td>
-                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-solaris-orange/10' : ''}`}>
+                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 font-black italic text-[#2A2826]/60 text-xs tracking-widest group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>{table.seats} PERS.</td>
+                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>
                                                         {session ? (
                                                             <div>
                                                                 <p className="text-xs font-black italic text-[#1a1c14] uppercase tracking-tight">{session.name}</p>
-                                                                <p className="text-[9px] text-solaris-orange/40 uppercase font-black tracking-widest mt-1 italic">{session.pax} PAX • {session.time}</p>
+                                                                <p className="text-[9px] text-servirest-terracota/40 uppercase font-black tracking-widest mt-1 italic">{session.pax} PAX • {session.time}</p>
                                                             </div>
                                                         ) : <span className="text-[#2A2826]/10 font-black tracking-widest opacity-20">---</span>}
                                                     </td>
-                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-r border-white/5 rounded-r-[24px] group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-solaris-orange/10' : ''}`}>
+                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-r border-white/5 rounded-r-[24px] group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>
                                                         {waiter ? (
                                                             <div className="flex items-center gap-3">
                                                                 <img src={waiter.image} className="w-8 h-8 rounded-full border border-white/10" alt="" />
@@ -508,7 +508,7 @@ export const HostessScreen: React.FC = () => {
                 {/* Walk-in terminal — compact on mobile */}
                 <div className="mb-5 p-5 bg-white/[0.02] rounded-2xl border border-white/5 shadow-inner relative overflow-hidden">
                     <h3 className="font-black italic text-[#1a1c14] text-xs uppercase tracking-tight mb-4 flex items-center gap-2">
-                        <UserPlus size={14} className="text-solaris-orange" />
+                        <UserPlus size={14} className="text-servirest-terracota" />
                         Walk-in
                     </h3>
                     <div className="flex gap-3">
@@ -521,7 +521,7 @@ export const HostessScreen: React.FC = () => {
                         />
                         <div className="flex items-center gap-2 bg-white/[0.02] px-3 rounded-xl border border-white/5">
                             <button onClick={() => setPartySize(Math.max(1, partySize - 1))} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center font-black text-[#1a1c14] text-lg">-</button>
-                            <span className="font-black italic text-lg text-solaris-orange w-6 text-center">{partySize}</span>
+                            <span className="font-black italic text-lg text-servirest-terracota w-6 text-center">{partySize}</span>
                             <button onClick={() => setPartySize(partySize + 1)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center font-black text-[#1a1c14] text-lg">+</button>
                         </div>
                     </div>
@@ -529,7 +529,7 @@ export const HostessScreen: React.FC = () => {
                         <button
                             onClick={handleAddToWaitlist}
                             disabled={!customerName}
-                            className="flex-1 py-3 bg-solaris-orange text-[#1a1c14] rounded-xl font-black italic uppercase text-[9px] tracking-widest shadow-solaris-glow hover:scale-[1.02] transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-20"
+                            className="flex-1 py-3 bg-servirest-terracota text-[#1a1c14] rounded-xl font-black italic uppercase text-[9px] tracking-widest shadow-solaris-glow hover:scale-[1.02] transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-20"
                         >
                             <Hourglass size={14} />
                             En Espera
@@ -539,16 +539,16 @@ export const HostessScreen: React.FC = () => {
 
                 <div className="mb-4 pb-4 border-b border-white/10">
                     <h2 className="text-xl font-black italic text-[#1a1c14] tracking-tighter uppercase">{selectedTable ? selectedTable.name : 'Sin selección'}</h2>
-                    <p className="text-solaris-orange/40 text-[8px] font-black uppercase tracking-[0.4em] italic">Consola de Mesa</p>
+                    <p className="text-servirest-terracota/40 text-[8px] font-black uppercase tracking-[0.4em] italic">Consola de Mesa</p>
                 </div>
 
                 {selectedTable ? (
                     <div className="flex flex-col gap-6 animate-in fade-in">
                         {/* Status Card */}
                         <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/5 flex justify-between items-center relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-solaris-orange"></div>
+                            <div className="absolute top-0 left-0 w-1 h-full bg-servirest-terracota"></div>
                             <div>
-                                <span className="text-[9px] text-solaris-orange/40 uppercase font-black tracking-widest block mb-2 italic">Vector de Estado</span>
+                                <span className="text-[9px] text-servirest-terracota/40 uppercase font-black tracking-widest block mb-2 italic">Vector de Estado</span>
                                 <div className={`text-xl font-black italic uppercase tracking-tight ${selectedTable.status === TableStatus.AVAILABLE ? 'text-green-500' :
                                     selectedTable.status === TableStatus.OCCUPIED ? 'text-red-500' :
                                         selectedTable.status === TableStatus.RESERVED ? 'text-yellow-500' :
@@ -558,7 +558,7 @@ export const HostessScreen: React.FC = () => {
                             </div>
                             {currentSession && (
                                 <div className="text-right">
-                                    <div className="text-[9px] text-solaris-orange/40 font-black uppercase tracking-widest mb-2 italic">Tiempo de Sesión</div>
+                                    <div className="text-[9px] text-servirest-terracota/40 font-black uppercase tracking-widest mb-2 italic">Tiempo de Sesión</div>
                                     <div className="text-xl font-mono text-[#1a1c14] font-black">{currentSession.time}</div>
                                 </div>
                             )}
@@ -573,15 +573,15 @@ export const HostessScreen: React.FC = () => {
                                 </h3>
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                        <span className="text-solaris-orange/40 text-[10px] uppercase font-black tracking-widest italic">Huésped</span>
+                                        <span className="text-servirest-terracota/40 text-[10px] uppercase font-black tracking-widest italic">Huésped</span>
                                         <span className="font-black italic text-[#1a1c14] uppercase text-sm tracking-tight">{currentReservation.name}</span>
                                     </div>
                                     <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                        <span className="text-solaris-orange/40 text-[10px] uppercase font-black tracking-widest italic">Cronograma</span>
+                                        <span className="text-servirest-terracota/40 text-[10px] uppercase font-black tracking-widest italic">Cronograma</span>
                                         <span className="font-black italic text-[#1a1c14] uppercase text-sm tracking-tight">{currentReservation.time}</span>
                                     </div>
                                     <div className="flex justify-between items-center py-2 border-b border-white/5">
-                                        <span className="text-solaris-orange/40 text-[10px] uppercase font-black tracking-widest italic">Métrica Pax</span>
+                                        <span className="text-servirest-terracota/40 text-[10px] uppercase font-black tracking-widest italic">Métrica Pax</span>
                                         <span className="font-black italic text-[#1a1c14] uppercase text-sm tracking-tight">{currentReservation.pax} PAX</span>
                                     </div>
                                 </div>
@@ -614,12 +614,12 @@ export const HostessScreen: React.FC = () => {
                         {selectedTable.status === TableStatus.AVAILABLE && !currentSession && (
                             <div className="space-y-4">
                                 <div className="p-6 bg-white/[0.02] rounded-2xl border border-white/10">
-                                    <p className="text-[10px] text-solaris-orange/40 font-black uppercase tracking-widest mb-6 italic">Asignar mesa a <b className="text-solaris-orange underline decoration-orange-500/30 underline-offset-4">{customerName || 'Designación Vacía'}</b> con <b className="text-[#1a1c14]">{partySize}</b> personas.</p>
+                                    <p className="text-[10px] text-servirest-terracota/40 font-black uppercase tracking-widest mb-6 italic">Asignar mesa a <b className="text-servirest-terracota underline decoration-orange-500/30 underline-offset-4">{customerName || 'Designación Vacía'}</b> con <b className="text-[#1a1c14]">{partySize}</b> personas.</p>
                                     <div className="grid grid-cols-1 gap-4">
                                         <button
                                             onClick={handleCheckIn}
                                             disabled={!customerName}
-                                            className="w-full py-5 bg-solaris-orange text-[#1a1c14] rounded-[24px] font-black italic uppercase text-[11px] tracking-[0.3em] shadow-solaris-glow hover:scale-[1.02] transition-all transform active:scale-95 flex items-center justify-center gap-4 disabled:opacity-20 disabled:grayscale"
+                                            className="w-full py-5 bg-servirest-terracota text-[#1a1c14] rounded-[24px] font-black italic uppercase text-[11px] tracking-[0.3em] shadow-solaris-glow hover:scale-[1.02] transition-all transform active:scale-95 flex items-center justify-center gap-4 disabled:opacity-20 disabled:grayscale"
                                         >
                                             <Users size={18} />
                                             Ocupar Mesa (Seat)
@@ -642,11 +642,11 @@ export const HostessScreen: React.FC = () => {
                             <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-6">
                                 <h3 className="font-black italic text-blue-500 mb-4 uppercase text-[10px] tracking-widest">Log de Sesión</h3>
                                 <div className="flex justify-between items-center mb-1">
-                                    <span className="text-solaris-orange/40 text-[10px] font-black uppercase tracking-widest italic">Huésped</span>
+                                    <span className="text-servirest-terracota/40 text-[10px] font-black uppercase tracking-widest italic">Huésped</span>
                                     <span className="font-black italic text-[#1a1c14] uppercase text-sm tracking-tight">{currentSession.name}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-solaris-orange/40 text-[10px] font-black uppercase tracking-widest italic">Métrica Pax</span>
+                                    <span className="text-servirest-terracota/40 text-[10px] font-black uppercase tracking-widest italic">Métrica Pax</span>
                                     <span className="font-black italic text-[#1a1c14] uppercase text-sm tracking-tight">{currentSession.pax} Guests</span>
                                 </div>
                             </div>
@@ -655,14 +655,14 @@ export const HostessScreen: React.FC = () => {
                         {/* Waiter Assignment Section */}
                         {selectedTable.status === TableStatus.OCCUPIED && (
                             <div>
-                                <span className="text-[9px] text-solaris-orange/40 uppercase font-black tracking-[0.4em] block mb-4 italic">Asignación de Unidad</span>
+                                <span className="text-[9px] text-servirest-terracota/40 uppercase font-black tracking-[0.4em] block mb-4 italic">Asignación de Unidad</span>
                                 <div className="grid grid-cols-3 gap-3">
                                     {availableWaiters.map(waiter => (
                                         <button
                                             key={waiter.id}
                                             onClick={() => handleAssignWaiter(waiter.id)}
                                             className={`flex flex-col items-center p-3 rounded-2xl border transition-all ${assignedWaiterId === waiter.id
-                                                ? 'border-solaris-orange bg-solaris-orange/10'
+                                                ? 'border-solaris-orange bg-servirest-terracota/10'
                                                 : 'border-white/5 bg-white/[0.02] hover:border-white/20'
                                                 }`}
                                         >
@@ -734,7 +734,7 @@ export const HostessScreen: React.FC = () => {
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
                             className="bg-white border border-white/10 rounded-[32px] p-10 w-full max-w-[420px] shadow-2xl relative overflow-hidden"
                         >
-                            <div className="absolute top-0 left-0 w-full h-1 bg-solaris-orange"></div>
+                            <div className="absolute top-0 left-0 w-full h-1 bg-servirest-terracota"></div>
                             <div className="flex justify-between items-center mb-10">
                                 <h2 className="text-2xl font-black italic text-[#1a1c14] uppercase tracking-tighter">Desplegar Nuevo Nodo</h2>
                                 <button onClick={() => setIsAddTableModalOpen(false)} className="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">
@@ -757,13 +757,13 @@ export const HostessScreen: React.FC = () => {
                                     <label className="text-[9px] font-black text-[#2A2826]/30 uppercase tracking-[0.5em] block mb-6 text-center">Capacidad Máxima PAX</label>
                                     <div className="flex items-center justify-center gap-10">
                                         <button onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-[#1a1c14] transition-all border border-white/5">-</button>
-                                        <span className="font-black italic text-5xl text-solaris-orange w-16 text-center">{newTableSeats}</span>
+                                        <span className="font-black italic text-5xl text-servirest-terracota w-16 text-center">{newTableSeats}</span>
                                         <button onClick={() => setNewTableSeats(newTableSeats + 1)} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-[#1a1c14] transition-all border border-white/5">+</button>
                                     </div>
                                 </div>
                                 <div className="flex gap-4 mt-10">
                                     <button onClick={() => setIsAddTableModalOpen(false)} className="flex-1 py-5 bg-white/5 text-[#2A2826]/30 rounded-[20px] font-black italic uppercase text-[10px] tracking-widest hover:text-[#1a1c14] transition-all">Cancelar</button>
-                                    <button onClick={handleAddTable} disabled={!newTableName} className="flex-1 py-5 bg-solaris-orange text-[#1a1c14] rounded-[20px] font-black italic uppercase text-[10px] tracking-widest shadow-solaris-glow hover:scale-[1.05] transition-all disabled:opacity-20">Confirmar Nodo</button>
+                                    <button onClick={handleAddTable} disabled={!newTableName} className="flex-1 py-5 bg-servirest-terracota text-[#1a1c14] rounded-[20px] font-black italic uppercase text-[10px] tracking-widest shadow-solaris-glow hover:scale-[1.05] transition-all disabled:opacity-20">Confirmar Nodo</button>
                                 </div>
                             </div>
                         </motion.div>
