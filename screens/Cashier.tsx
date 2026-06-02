@@ -147,7 +147,7 @@ export const CashierScreen: React.FC = () => {
     const activeRequests = orders.filter(o => o.status === OrderStatus.BILL_REQUESTED && !dismissedBillRequests.includes(o.id));
 
     return (
-        <div className="h-full bg-[#FAFAF3] text-[#1a1c14] flex flex-col overflow-hidden antialiased">
+        <div className="h-full bg-[#FAF8F4] text-[#1a1c14] flex flex-col overflow-hidden antialiased">
             <div id="print-area" className="hidden print:block absolute inset-0 bg-white text-black p-10 z-[5000]">
                 {orderToPrint && <Ticket order={orderToPrint} settings={settings} />}
                 {cashCutToPrint && <CashCutTicket {...cashCutToPrint} settings={settings} />}
@@ -172,7 +172,7 @@ export const CashierScreen: React.FC = () => {
                                     <Bell size={18} />
                                 </div>
                                 <div>
-                                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#505530]/80">Bill Request Pipeline • Active Alert</p>
+                                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2A2826]/80">Bill Request Pipeline • Active Alert</p>
                                     <p className="text-sm font-black italic uppercase tracking-tight text-[#1a1c14] leading-tight">
                                         Node: {activeRequests.map(o => o.tableId).join(', ')} — Cuenta solicitada
                                     </p>
@@ -204,7 +204,7 @@ export const CashierScreen: React.FC = () => {
                                 { id: 'expenses', icon: TrendingDown, label: 'Burden' },
                                 { id: 'history', icon: History, label: 'Logs' }
                              ].map(tab => (
-                                <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex-1 flex flex-col items-center gap-2 py-3 rounded-xl transition-all ${activeTab === tab.id ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-[#505530]/30 hover:text-[#1a1c14]'}`}>
+                                <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex-1 flex flex-col items-center gap-2 py-3 rounded-xl transition-all ${activeTab === tab.id ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/30 hover:text-[#1a1c14]'}`}>
                                     <tab.icon size={16} />
                                     <span className="text-[8px] font-black uppercase tracking-widest">{tab.label}</span>
                                 </button>
@@ -260,11 +260,11 @@ export const CashierScreen: React.FC = () => {
                                     <div className="grid grid-cols-2 gap-2">
                                         <input value={newExpenseAmount} onChange={e => setNewExpenseAmount(e.target.value)} type="number" placeholder="$0.00" className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-solaris-orange/40" />
                                         <select value={newExpenseCategory} onChange={e => setNewExpenseCategory(e.target.value as any)} className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-solaris-orange/40 appearance-none">
-                                            {['Insumos','Renta','Servicios','Nómina','Mantenimiento','Otros'].map(c => <option key={c} value={c} className="bg-[#FAFAF3]">{c}</option>)}
+                                            {['Insumos','Renta','Servicios','Nómina','Mantenimiento','Otros'].map(c => <option key={c} value={c} className="bg-[#FAF8F4]">{c}</option>)}
                                         </select>
                                     </div>
                                     <div className="flex flex-col gap-1">
-                                        <p className="text-[8px] font-black uppercase text-[#505530]/30 tracking-widest pl-1">Expsense Date</p>
+                                        <p className="text-[8px] font-black uppercase text-[#2A2826]/30 tracking-widest pl-1">Expsense Date</p>
                                         <input 
                                             type="date" 
                                             value={newExpenseDate} 
@@ -294,8 +294,8 @@ export const CashierScreen: React.FC = () => {
                                 {expenses.map(exp => (
                                     <div key={exp.id} className="flex justify-between items-center p-4 bg-white/[0.02] border border-white/5 rounded-xl group">
                                         <div>
-                                            <p className="text-xs font-black italic text-[#505530]/80 uppercase tracking-tight">{exp.description}</p>
-                                            <p className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest">{exp.category}</p>
+                                            <p className="text-xs font-black italic text-[#2A2826]/80 uppercase tracking-tight">{exp.description}</p>
+                                            <p className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest">{exp.category}</p>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <span className="font-black italic text-red-400 text-sm">${exp.amount.toFixed(2)}</span>
@@ -312,7 +312,7 @@ export const CashierScreen: React.FC = () => {
                                 {/* Control Hub for Logs */}
                                 <div className="bg-white/[0.02] border border-white/5 rounded-[32px] p-6 space-y-6">
                                     <div>
-                                        <p className="text-[10px] font-black uppercase text-[#505530]/30 tracking-widest mb-3 italic">Temporal Range</p>
+                                        <p className="text-[10px] font-black uppercase text-[#2A2826]/30 tracking-widest mb-3 italic">Temporal Range</p>
                                         <input
                                             type="date"
                                             value={selectedDate}
@@ -322,7 +322,7 @@ export const CashierScreen: React.FC = () => {
                                     </div>
 
                                     <div className="space-y-3">
-                                        <p className="text-[10px] font-black uppercase text-[#505530]/30 tracking-widest italic">Data Export</p>
+                                        <p className="text-[10px] font-black uppercase text-[#2A2826]/30 tracking-widest italic">Data Export</p>
                                         <button
                                             onClick={async () => {
                                                 const completedOrders = filteredByDateOrders.filter(o => o.status === 'COMPLETED');
@@ -358,7 +358,7 @@ export const CashierScreen: React.FC = () => {
                                                     setSuccessMessage('CASH_CUT_PRINTED'); setTimeout(() => setSuccessMessage(null), 2000);
                                                 }
                                             }}
-                                            className="w-full flex items-center justify-center gap-3 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-[#505530]/60 hover:text-[#1a1c14] hover:border-white/20 transition-all font-black text-[10px] uppercase tracking-widest"
+                                            className="w-full flex items-center justify-center gap-3 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-[#2A2826]/60 hover:text-[#1a1c14] hover:border-white/20 transition-all font-black text-[10px] uppercase tracking-widest"
                                         >
                                             <Printer size={16} /> Asset Hardcopy
                                         </button>
@@ -398,7 +398,7 @@ export const CashierScreen: React.FC = () => {
                                 <div className="flex gap-4">
                                     <div className="px-6 py-3 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center gap-4">
                                         <div className={`w-3 h-3 rounded-full ${navigator.onLine ? 'bg-green-500 shadow-[0_0_10px_green]' : 'bg-red-500 animate-pulse'}`} />
-                                        <span className="text-[10px] font-black uppercase text-[#505530]/55 tracking-widest">{navigator.onLine ? 'Uplink Stable' : 'Offline Mode'}</span>
+                                        <span className="text-[10px] font-black uppercase text-[#2A2826]/55 tracking-widest">{navigator.onLine ? 'Uplink Stable' : 'Offline Mode'}</span>
                                     </div>
                                 </div>
                             </div>
@@ -425,8 +425,8 @@ export const CashierScreen: React.FC = () => {
                             <div className="flex-1 flex flex-col min-h-0">
                                 <GlowCard customSize glowColor="orange" className="w-full h-full !p-0 bg-white/[0.01] border-white/5 rounded-[40px] flex flex-col overflow-hidden">
                                      <div className="px-10 py-6 border-b border-white/5 bg-white/[0.02] flex justify-between items-center shrink-0">
-                                        <p className="text-[10px] font-black uppercase text-[#505530]/45 tracking-widest italic font-mono">Detailed Transaction Ledger</p>
-                                        <p className="text-[10px] font-black uppercase text-[#505530]/45 tracking-widest italic font-mono">Count: {filteredByDateOrders.length} Events</p>
+                                        <p className="text-[10px] font-black uppercase text-[#2A2826]/45 tracking-widest italic font-mono">Detailed Transaction Ledger</p>
+                                        <p className="text-[10px] font-black uppercase text-[#2A2826]/45 tracking-widest italic font-mono">Count: {filteredByDateOrders.length} Events</p>
                                      </div>
                                      <div className="flex-1 overflow-y-auto no-scrollbar p-10">
                                         <table className="w-full text-left border-separate border-spacing-y-4">
@@ -443,8 +443,8 @@ export const CashierScreen: React.FC = () => {
                                             <tbody>
                                                 {filteredByDateOrders.map(order => (
                                                     <tr key={order.id} className="group hover:bg-white/[0.02] transition-all">
-                                                        <td className="px-6 py-5 bg-white/[0.02] rounded-l-[24px] border-y border-l border-white/5 font-mono text-[11px] text-[#505530]/60">TX-{order.id.slice(0, 8).toUpperCase()}</td>
-                                                        <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5 text-[11px] font-black italic text-[#505530]/55">{new Date(order.timestamp).toLocaleTimeString('es-MX')}</td>
+                                                        <td className="px-6 py-5 bg-white/[0.02] rounded-l-[24px] border-y border-l border-white/5 font-mono text-[11px] text-[#2A2826]/60">TX-{order.id.slice(0, 8).toUpperCase()}</td>
+                                                        <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5 text-[11px] font-black italic text-[#2A2826]/55">{new Date(order.timestamp).toLocaleTimeString('es-MX')}</td>
                                                         <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5 text-[10px] font-black uppercase italic tracking-tight max-w-[250px]">
     <div className="flex flex-wrap gap-1">
         {(order.items || []).map((item, idx) => (
@@ -452,7 +452,7 @@ export const CashierScreen: React.FC = () => {
                 {item.quantity}x {item.name}
             </span>
         ))}
-        {(!order.items || order.items.length === 0) && <span className="text-[#505530]/20">Empty Node</span>}
+        {(!order.items || order.items.length === 0) && <span className="text-[#2A2826]/20">Empty Node</span>}
     </div>
 </td>
                                                         <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5">
@@ -461,7 +461,7 @@ export const CashierScreen: React.FC = () => {
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5">
-                                                            <span className={`text-[10px] font-black uppercase tracking-tighter ${order.status === 'COMPLETED' ? 'text-solaris-orange' : 'text-[#505530]/30'}`}>
+                                                            <span className={`text-[10px] font-black uppercase tracking-tighter ${order.status === 'COMPLETED' ? 'text-solaris-orange' : 'text-[#2A2826]/30'}`}>
                                                                 {order.status}
                                                             </span>
                                                         </td>
@@ -488,7 +488,7 @@ export const CashierScreen: React.FC = () => {
                                             <div className="flex items-center gap-4">
                                                 <button 
                                                     onClick={() => setSelectedTableId(null)}
-                                                    className="lg:hidden p-3 bg-white/5 rounded-xl text-[#505530]/55 active:text-[#1a1c14] transition-all"
+                                                    className="lg:hidden p-3 bg-white/5 rounded-xl text-[#2A2826]/55 active:text-[#1a1c14] transition-all"
                                                 >
                                                     <X size={20} />
                                                 </button>
@@ -498,29 +498,29 @@ export const CashierScreen: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div className="flex gap-2 md:gap-3">
-                                                <button onClick={() => printerService.openCashDrawer(settings)} className="p-3 md:p-4 bg-white/[0.03] border border-white/5 rounded-xl md:rounded-2xl text-[#505530]/55 hover:text-[#1a1c14] hover:bg-white/[0.08] transition-all"><Zap size={18} /></button>
-                                                <button onClick={() => handlePrintTicket(selectedOrder)} className="p-3 md:p-4 bg-white/[0.03] border border-white/5 rounded-xl md:rounded-2xl text-[#505530]/55 hover:text-[#1a1c14] hover:bg-white/[0.08] transition-all"><Printer size={18} /></button>
+                                                <button onClick={() => printerService.openCashDrawer(settings)} className="p-3 md:p-4 bg-white/[0.03] border border-white/5 rounded-xl md:rounded-2xl text-[#2A2826]/55 hover:text-[#1a1c14] hover:bg-white/[0.08] transition-all"><Zap size={18} /></button>
+                                                <button onClick={() => handlePrintTicket(selectedOrder)} className="p-3 md:p-4 bg-white/[0.03] border border-white/5 rounded-xl md:rounded-2xl text-[#2A2826]/55 hover:text-[#1a1c14] hover:bg-white/[0.08] transition-all"><Printer size={18} /></button>
                                             </div>
                                         </div>
 
                                         {/* Adjustment Layer: Split & Tip side-by-side */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
                                             <div>
-                                                <h3 className="text-[9px] md:text-[10px] font-black uppercase text-[#505530]/30 tracking-widest mb-3 md:mb-4 italic">Quantum Split</h3>
+                                                <h3 className="text-[9px] md:text-[10px] font-black uppercase text-[#2A2826]/30 tracking-widest mb-3 md:mb-4 italic">Quantum Split</h3>
                                                 <div className="flex gap-1.5 md:gap-2">
                                                     {[1, 2, 3, 4].map(num => (
                                                         <button key={num} onClick={() => setSplitCount(num)}
-                                                            className={`flex-1 py-2 md:py-3 rounded-xl md:rounded-2xl font-black italic text-sm md:text-base transition-all ${splitCount === num ? 'bg-solaris-orange text-[#1a1c14]' : 'bg-white/[0.03] text-[#505530]/30 border border-white/5 hover:text-[#1a1c14]'}`}
+                                                            className={`flex-1 py-2 md:py-3 rounded-xl md:rounded-2xl font-black italic text-sm md:text-base transition-all ${splitCount === num ? 'bg-solaris-orange text-[#1a1c14]' : 'bg-white/[0.03] text-[#2A2826]/30 border border-white/5 hover:text-[#1a1c14]'}`}
                                                         >{num}</button>
                                                     ))}
                                                 </div>
                                             </div>
                                             <div>
-                                                <h3 className="text-[9px] md:text-[10px] font-black uppercase text-[#505530]/30 tracking-widest mb-3 md:mb-4 italic">Operator Gratuity</h3>
+                                                <h3 className="text-[9px] md:text-[10px] font-black uppercase text-[#2A2826]/30 tracking-widest mb-3 md:mb-4 italic">Operator Gratuity</h3>
                                                 <div className="flex gap-1.5 md:gap-2">
                                                     {[0, 10, 15, 20].map(pct => (
                                                         <button key={pct} onClick={() => setTipAmount(subtotal * (pct/100))}
-                                                            className={`flex-1 py-2 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-widest transition-all ${Math.abs(tipAmount - subtotal*(pct/100)) < 1 ? 'bg-white text-black' : 'bg-white/[0.03] text-[#505530]/30 border border-white/5'}`}
+                                                            className={`flex-1 py-2 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-widest transition-all ${Math.abs(tipAmount - subtotal*(pct/100)) < 1 ? 'bg-white text-black' : 'bg-white/[0.03] text-[#2A2826]/30 border border-white/5'}`}
                                                         >{pct}%</button>
                                                     ))}
                                                 </div>
@@ -536,11 +536,11 @@ export const CashierScreen: React.FC = () => {
                                                 <div className="flex items-center gap-8 flex-1">
                                                     <span className="text-2xl font-black italic text-solaris-orange/40 group-hover:text-solaris-orange transition-colors min-w-[1.5em]">{item.quantity}</span>
                                                     <div className="w-px h-8 bg-white/10" />
-                                                    <span className="font-black italic text-[#505530]/90 uppercase tracking-tight text-xl truncate pr-4">{item.name}</span>
+                                                    <span className="font-black italic text-[#2A2826]/90 uppercase tracking-tight text-xl truncate pr-4">{item.name}</span>
                                                 </div>
                                                 <div className="flex items-end flex-col">
-                                                    <p className="text-[9px] font-black uppercase text-[#505530]/10 tracking-[0.3em] mb-1">Asset Value</p>
-                                                    <span className="text-2xl font-black italic text-[#505530]/55 tracking-tighter">${(item.price * item.quantity).toFixed(0)}</span>
+                                                    <p className="text-[9px] font-black uppercase text-[#2A2826]/10 tracking-[0.3em] mb-1">Asset Value</p>
+                                                    <span className="text-2xl font-black italic text-[#2A2826]/55 tracking-tighter">${(item.price * item.quantity).toFixed(0)}</span>
                                                 </div>
                                             </div>
                                         ))}
@@ -550,12 +550,12 @@ export const CashierScreen: React.FC = () => {
                                     <div className="px-10 py-6 bg-white/[0.01] border-t border-white/5 flex justify-between items-center shadow-inner">
                                         <div className="flex gap-12">
                                             <div>
-                                                <p className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest mb-1">Subtotal Baseline</p>
-                                                <p className="text-xl font-black italic text-[#505530]/70">${subtotal.toFixed(2)}</p>
+                                                <p className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest mb-1">Subtotal Baseline</p>
+                                                <p className="text-xl font-black italic text-[#2A2826]/70">${subtotal.toFixed(2)}</p>
                                             </div>
                                             <div>
-                                                <p className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest mb-1">Tax / Adjustments</p>
-                                                <p className="text-xl font-black italic text-[#505530]/70">$0.00</p>
+                                                <p className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest mb-1">Tax / Adjustments</p>
+                                                <p className="text-xl font-black italic text-[#2A2826]/70">$0.00</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
@@ -575,23 +575,23 @@ export const CashierScreen: React.FC = () => {
                                             <p className="text-[9px] md:text-[11px] font-black uppercase text-solaris-orange/60 tracking-[0.4em] mb-2 md:mb-4 italic">Aggregate Payload</p>
                                             <p className="text-5xl md:text-8xl font-black italic tracking-tighter text-[#1a1c14] leading-none">${total.toFixed(2)}</p>
                                             {tipAmount > 0 && (
-                                                <p className="text-[9px] md:text-[10px] font-black uppercase text-[#505530]/30 tracking-widest mt-4 md:mt-6 italic">Includes ${tipAmount.toFixed(2)} network gratuity</p>
+                                                <p className="text-[9px] md:text-[10px] font-black uppercase text-[#2A2826]/30 tracking-widest mt-4 md:mt-6 italic">Includes ${tipAmount.toFixed(2)} network gratuity</p>
                                             )}
                                         </div>
 
                                         <div className="flex-1 space-y-3 md:space-y-4">
-                                            <p className="text-[9px] md:text-[10px] font-black uppercase text-[#505530]/30 tracking-widest italic mb-4 md:mb-6">Execution Method</p>
+                                            <p className="text-[9px] md:text-[10px] font-black uppercase text-[#2A2826]/30 tracking-widest italic mb-4 md:mb-6">Execution Method</p>
                                             <GlowButton 
                                                 onClick={() => setPaymentMethod(PaymentMethod.CASH)}
                                                 variant={paymentMethod === PaymentMethod.CASH ? 'primary' : 'secondary'}
-                                                className="w-full py-6 md:py-8 rounded-[24px] md:rounded-[32px] flex items-center justify-center gap-4 md:gap-6 !text-[#505530]"
+                                                className="w-full py-6 md:py-8 rounded-[24px] md:rounded-[32px] flex items-center justify-center gap-4 md:gap-6 !text-[#2A2826]"
                                             >
                                                 <Wallet size={20} className="md:w-7 md:h-7" /> <span className="text-[11px] md:text-sm font-black uppercase tracking-widest">Liquid Asset</span>
                                             </GlowButton>
                                             <GlowButton 
                                                 onClick={() => setPaymentMethod(PaymentMethod.CARD)}
                                                 variant={paymentMethod === PaymentMethod.CARD ? 'primary' : 'secondary'}
-                                                className="w-full py-6 md:py-8 rounded-[24px] md:rounded-[32px] flex items-center justify-center gap-4 md:gap-6 !text-[#505530]"
+                                                className="w-full py-6 md:py-8 rounded-[24px] md:rounded-[32px] flex items-center justify-center gap-4 md:gap-6 !text-[#2A2826]"
                                             >
                                                 <CreditCard size={20} className="md:w-7 md:h-7" /> <span className="text-[11px] md:text-sm font-black uppercase tracking-widest">Spectral Card</span>
                                             </GlowButton>
@@ -602,7 +602,7 @@ export const CashierScreen: React.FC = () => {
                                     <div className="space-y-4 pt-8 md:pt-10 border-t border-white/5">
                                         <GlowButton
                                             onClick={() => setIsPaymentModalOpen(true)}
-                                            className="w-full py-8 md:py-12 rounded-[28px] md:rounded-[40px] tracking-[0.2em] md:tracking-[0.4em] text-xl md:text-3xl flex items-center justify-center gap-4 md:gap-8 group !text-[#505530]"
+                                            className="w-full py-8 md:py-12 rounded-[28px] md:rounded-[40px] tracking-[0.2em] md:tracking-[0.4em] text-xl md:text-3xl flex items-center justify-center gap-4 md:gap-8 group !text-[#2A2826]"
                                         >
                                             Execute <ArrowRight size={24} className="md:w-10 md:h-10 group-hover:translate-x-2 transition-transform" />
                                         </GlowButton>
@@ -632,7 +632,7 @@ export const CashierScreen: React.FC = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[600] flex items-center justify-center bg-black/95 backdrop-blur-3xl p-4"
                     >
-                        <div className="w-full max-w-5xl bg-[#FAFAF3] border border-white/10 rounded-solaris md:rounded-[40px] shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+                        <div className="w-full max-w-5xl bg-[#FAF8F4] border border-white/10 rounded-solaris md:rounded-[40px] shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
                             {/* Modal Header */}
                             <div className="flex justify-between items-center px-6 md:px-10 py-5 md:py-7 border-b border-white/5 bg-white/[0.01] shrink-0">
                                 <div>
@@ -641,7 +641,7 @@ export const CashierScreen: React.FC = () => {
                                 </div>
                                 <button
                                     onClick={() => setIsPaymentModalOpen(false)}
-                                    className="w-10 h-10 md:w-12 md:h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-[#505530]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
+                                    className="w-10 h-10 md:w-12 md:h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
                                 >
                                     <X size={20} />
                                 </button>
@@ -651,16 +651,16 @@ export const CashierScreen: React.FC = () => {
                             <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] flex-1 overflow-y-auto custom-scrollbar">
                                 {/* Left — Cash Input */}
                                 <div className="flex flex-col items-center justify-center p-8 md:p-12 border-b xl:border-b-0 xl:border-r border-white/5">
-                                    <p className="text-[9px] md:text-[10px] font-black uppercase text-[#505530]/30 tracking-[0.5em] mb-6 md:mb-8 italic">Cash Received</p>
+                                    <p className="text-[9px] md:text-[10px] font-black uppercase text-[#2A2826]/30 tracking-[0.5em] mb-6 md:mb-8 italic">Cash Received</p>
                                     <div className="relative w-full flex items-center justify-center">
-                                        <span className="text-3xl md:text-5xl font-black italic text-[#505530]/45 mr-2 md:mr-3 leading-none">$</span>
+                                        <span className="text-3xl md:text-5xl font-black italic text-[#2A2826]/45 mr-2 md:mr-3 leading-none">$</span>
                                         <input
                                             type="number"
                                             autoFocus
                                             value={cashReceived}
                                             onChange={e => setCashReceived(e.target.value)}
                                             placeholder="0.00"
-                                            className="bg-transparent border-none text-5xl md:text-7xl font-black italic tracking-tighter text-[#1a1c14] outline-none placeholder:text-[#505530]/10 w-full text-left leading-none"
+                                            className="bg-transparent border-none text-5xl md:text-7xl font-black italic tracking-tighter text-[#1a1c14] outline-none placeholder:text-[#2A2826]/10 w-full text-left leading-none"
                                             style={{maxWidth: '220px'}}
                                         />
                                     </div>
@@ -672,7 +672,7 @@ export const CashierScreen: React.FC = () => {
                                             <button
                                                 key={amt}
                                                 onClick={() => setCashReceived(amt.toString())}
-                                                className="py-3 md:py-4 rounded-xl md:rounded-2xl bg-white/[0.03] border border-white/5 text-[#505530]/55 hover:text-[#1a1c14] hover:bg-white/[0.08] font-black italic text-xs md:text-sm transition-all"
+                                                className="py-3 md:py-4 rounded-xl md:rounded-2xl bg-white/[0.03] border border-white/5 text-[#2A2826]/55 hover:text-[#1a1c14] hover:bg-white/[0.08] font-black italic text-xs md:text-sm transition-all"
                                             >
                                                 ${amt}
                                             </button>
@@ -691,7 +691,7 @@ export const CashierScreen: React.FC = () => {
                                     <div className="flex-1 space-y-4">
                                         <div className="grid grid-cols-2 xl:grid-cols-1 gap-4">
                                             <div className="bg-white/[0.03] rounded-xl md:rounded-2xl p-4 md:p-6 border border-white/5">
-                                                <p className="text-[8px] md:text-[9px] font-black uppercase text-[#505530]/45 tracking-widest mb-1 md:mb-2 italic">To Pay</p>
+                                                <p className="text-[8px] md:text-[9px] font-black uppercase text-[#2A2826]/45 tracking-widest mb-1 md:mb-2 italic">To Pay</p>
                                                 <p className="text-2xl md:text-4xl font-black italic text-[#1a1c14] tracking-tighter leading-none">${(total / splitCount).toFixed(2)}</p>
                                             </div>
 
@@ -704,19 +704,19 @@ export const CashierScreen: React.FC = () => {
                                         </div>
 
                                         <div className="space-y-2 md:space-y-3 pt-2">
-                                            <p className="text-[8px] md:text-[9px] font-black uppercase text-[#505530]/30 tracking-widest italic">Payment Method</p>
+                                            <p className="text-[8px] md:text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest italic">Payment Method</p>
                                             <div className="grid grid-cols-2 xl:grid-cols-1 gap-2">
                                                 <GlowButton
                                                     onClick={() => setPaymentMethod(PaymentMethod.CASH)}
                                                     variant={paymentMethod === PaymentMethod.CASH ? 'primary' : 'secondary'}
-                                                    className="w-full text-[10px] py-4 !text-[#505530]"
+                                                    className="w-full text-[10px] py-4 !text-[#2A2826]"
                                                 >
                                                     <Wallet size={16} /> <span className="hidden xs:inline">Liquid Asset</span>
                                                 </GlowButton>
                                                 <GlowButton
                                                     onClick={() => setPaymentMethod(PaymentMethod.CARD)}
                                                     variant={paymentMethod === PaymentMethod.CARD ? 'primary' : 'secondary'}
-                                                    className="w-full text-[10px] py-4 !text-[#505530]"
+                                                    className="w-full text-[10px] py-4 !text-[#2A2826]"
                                                 >
                                                     <CreditCard size={16} /> <span className="hidden xs:inline">Spectral Card</span>
                                                 </GlowButton>
@@ -727,7 +727,7 @@ export const CashierScreen: React.FC = () => {
                                     <GlowButton
                                         onClick={handleProcessPayment}
                                         disabled={paymentMethod === PaymentMethod.CASH && (parseFloat(cashReceived) || 0) < (total / splitCount)}
-                                        className="w-full py-5 md:py-7 tracking-[0.2em] md:tracking-[0.3em] text-base md:text-lg mb-8 md:mb-0 !text-[#505530]"
+                                        className="w-full py-5 md:py-7 tracking-[0.2em] md:tracking-[0.3em] text-base md:text-lg mb-8 md:mb-0 !text-[#2A2826]"
                                     >
                                         <CheckCircle2 size={20} className="md:w-6 md:h-6" /> Confirm Transmission
                                     </GlowButton>
@@ -747,7 +747,7 @@ export const CashierScreen: React.FC = () => {
                         exit={{ opacity: 0, y: 20 }}
                         className="fixed bottom-8 right-8 z-[800] no-print"
                     >
-                        <div className="flex items-center gap-4 bg-[#FAFAF3] border border-green-500/30 px-8 py-5 rounded-[28px] shadow-2xl shadow-green-500/10">
+                        <div className="flex items-center gap-4 bg-[#FAF8F4] border border-green-500/30 px-8 py-5 rounded-[28px] shadow-2xl shadow-green-500/10">
                             <div className="w-10 h-10 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-center">
                                 <CheckCircle2 size={20} className="text-green-500" />
                             </div>

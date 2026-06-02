@@ -228,7 +228,7 @@ export const SettingsScreen: React.FC = () => {
                 <header className="mb-14">
                      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
                         <h1 className="text-5xl font-black italic tracking-tighter uppercase mb-4 text-[#1a1c14]">Core Configuration</h1>
-                        <p className="text-[#505530]/30 font-black text-[11px] uppercase tracking-[0.5em] italic">System Parameters & Interface Logic • ServiRest v1</p>
+                        <p className="text-[#2A2826]/30 font-black text-[11px] uppercase tracking-[0.5em] italic">System Parameters & Interface Logic • ServiRest v1</p>
                     </motion.div>
                 </header>
 
@@ -239,9 +239,9 @@ export const SettingsScreen: React.FC = () => {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex items-center gap-5 px-8 py-5 rounded-[28px] text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${activeTab === tab.id ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow border-solaris-orange scale-[1.02]' : 'bg-white/[0.02] text-[#505530]/55 border-white/5 hover:bg-white/5 hover:text-[#1a1c14]'}`}
+                                className={`flex items-center gap-5 px-8 py-5 rounded-[28px] text-[10px] font-black uppercase tracking-[0.2em] transition-all border ${activeTab === tab.id ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow border-solaris-orange scale-[1.02]' : 'bg-white/[0.02] text-[#2A2826]/55 border-white/5 hover:bg-white/5 hover:text-[#1a1c14]'}`}
                             >
-                                <tab.icon size={22} className={activeTab === tab.id ? 'text-[#1a1c14]' : 'text-[#505530]/30'} />
+                                <tab.icon size={22} className={activeTab === tab.id ? 'text-[#1a1c14]' : 'text-[#2A2826]/30'} />
                                 {tab.label}
                             </button>
                         ))}
@@ -249,7 +249,7 @@ export const SettingsScreen: React.FC = () => {
                         <div className="mt-12 p-8 rounded-solaris border border-solaris-orange/20 bg-solaris-orange/5 relative overflow-hidden group shadow-xl transition-all hover:bg-solaris-orange/[0.08]">
                             <div className="relative z-10">
                                 <h3 className="text-[10px] font-black uppercase text-solaris-orange tracking-[0.3em] mb-3 font-black italic">Auto-Sync Protocol</h3>
-                                <p className="text-[9px] font-black text-[#505530] leading-relaxed uppercase tracking-widest">System heartbeat synchronizing with secondary nodes every 30s.</p>
+                                <p className="text-[9px] font-black text-[#2A2826] leading-relaxed uppercase tracking-widest">System heartbeat synchronizing with secondary nodes every 30s.</p>
                             </div>
                             <div className="absolute top-0 right-0 w-24 h-24 bg-solaris-orange/5 rounded-full -translate-y-12 translate-x-12 group-hover:scale-150 transition-transform duration-700"></div>
                         </div>
@@ -276,32 +276,32 @@ export const SettingsScreen: React.FC = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-2 italic">Node Identifier</label>
-                                                <input value={localSettings.name} onChange={e => setLocalSettings(prev => ({ ...prev, name: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-[#1a1c14] outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-[#505530]/10" />
+                                                <input value={localSettings.name} onChange={e => setLocalSettings(prev => ({ ...prev, name: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-[#1a1c14] outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-[#2A2826]/10" />
                                             </div>
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-2 italic">Legal Protocol Entity</label>
-                                                <input value={localSettings.legalName} onChange={e => setLocalSettings(prev => ({ ...prev, legalName: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-[#1a1c14] outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-[#505530]/10" />
+                                                <input value={localSettings.legalName} onChange={e => setLocalSettings(prev => ({ ...prev, legalName: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-[#1a1c14] outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-[#2A2826]/10" />
                                             </div>
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-2 italic">Tax / Nexus Hash Code</label>
-                                                <input value={localSettings.rfc} onChange={e => setLocalSettings(prev => ({ ...prev, rfc: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-[#1a1c14] outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-[#505530]/10" />
+                                                <input value={localSettings.rfc} onChange={e => setLocalSettings(prev => ({ ...prev, rfc: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-[#1a1c14] outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-[#2A2826]/10" />
                                             </div>
                                             <div className="space-y-3">
                                                 <label className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-2 italic">Geospatial Coordinates</label>
-                                                <input value={localSettings.address} onChange={e => setLocalSettings(prev => ({ ...prev, address: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-[#1a1c14] outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-[#505530]/10" />
+                                                <input value={localSettings.address} onChange={e => setLocalSettings(prev => ({ ...prev, address: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-[#1a1c14] outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-[#2A2826]/10" />
                                             </div>
                                         </div>
                                         
                                         <div className="pt-12 border-t border-white/5">
-                                             <h3 className="text-[11px] font-black italic uppercase text-[#505530] mb-8 tracking-[0.4em]">Financial Settlement Endpoints</h3>
+                                             <h3 className="text-[11px] font-black italic uppercase text-[#2A2826] mb-8 tracking-[0.4em]">Financial Settlement Endpoints</h3>
                                              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                                  <div className="space-y-3">
                                                      <label className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-2 italic">CLABE Interface Stream</label>
-                                                     <input value={localSettings.bankCLABE || ''} onChange={e => setLocalSettings(prev => ({ ...prev, bankCLABE: e.target.value }))} placeholder="18-digit digital signature" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-[#1a1c14] outline-none font-black italic tracking-[0.4em] transition-all placeholder:text-[#505530]/10" />
+                                                     <input value={localSettings.bankCLABE || ''} onChange={e => setLocalSettings(prev => ({ ...prev, bankCLABE: e.target.value }))} placeholder="18-digit digital signature" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-[#1a1c14] outline-none font-black italic tracking-[0.4em] transition-all placeholder:text-[#2A2826]/10" />
                                                  </div>
                                                  <div className="space-y-3">
                                                      <label className="text-[10px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-2 italic">Primary Node Beneficiary</label>
-                                                     <input value={localSettings.bankBeneficiary || ''} onChange={e => setLocalSettings(prev => ({ ...prev, bankBeneficiary: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-[#1a1c14] outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-[#505530]/10" />
+                                                     <input value={localSettings.bankBeneficiary || ''} onChange={e => setLocalSettings(prev => ({ ...prev, bankBeneficiary: e.target.value }))} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-5 px-8 text-[#1a1c14] outline-none focus:border-solaris-orange/40 font-black italic tracking-tight transition-all placeholder:text-[#2A2826]/10" />
                                                  </div>
                                              </div>
                                         </div>
@@ -319,7 +319,7 @@ export const SettingsScreen: React.FC = () => {
                                         </div>
 
                                         <div className="space-y-6">
-                                            <label className="text-[11px] font-black uppercase text-[#505530] tracking-[0.4em] px-2 italic">Interface Theme Protocol</label>
+                                            <label className="text-[11px] font-black uppercase text-[#2A2826] tracking-[0.4em] px-2 italic">Interface Theme Protocol</label>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                                 {[
                                                     { id: 'solaris', name: 'ServiRest', bg: 'bg-[#FAF8F4]', accent: 'bg-[#C4633F]', desc: 'Brand Master Mode' },
@@ -337,7 +337,7 @@ export const SettingsScreen: React.FC = () => {
                                                         </div>
                                                         <div className="relative z-10">
                                                             <p className="text-base font-black italic text-[#1a1c14] uppercase tracking-tighter">{t.name}</p>
-                                                            <p className="text-[9px] font-black text-[#505530] uppercase tracking-[0.2em] mt-2 italic">{t.desc}</p>
+                                                            <p className="text-[9px] font-black text-[#2A2826] uppercase tracking-[0.2em] mt-2 italic">{t.desc}</p>
                                                         </div>
                                                         <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-white/[0.01] rounded-full group-hover:bg-white/[0.03] transition-colors"></div>
                                                     </button>
@@ -348,17 +348,17 @@ export const SettingsScreen: React.FC = () => {
                                         <div className="p-10 rounded-[32px] border border-white/5 bg-white/[0.01] flex items-center justify-between group overflow-hidden relative shadow-inner">
                                             <div className="flex items-center gap-8 relative z-10">
                                                 <div className="w-24 h-24 bg-white/[0.03] border border-white/10 rounded-[28px] flex items-center justify-center overflow-hidden transition-all group-hover:scale-105 group-hover:border-solaris-orange/40 shadow-2xl">
-                                                    {localSettings.logoUrl ? <img src={localSettings.logoUrl} className="w-full h-full object-cover filter contrast-125 saturate-150" /> : <Building2 size={40} className="text-[#505530]/10" />}
+                                                    {localSettings.logoUrl ? <img src={localSettings.logoUrl} className="w-full h-full object-cover filter contrast-125 saturate-150" /> : <Building2 size={40} className="text-[#2A2826]/10" />}
                                                 </div>
                                                 <div className="flex-1">
                                                     <h3 className="text-lg font-black italic uppercase text-[#1a1c14] mb-2 tracking-tighter">Branding Asset Injection</h3>
-                                                    <p className="text-[10px] font-black uppercase text-[#505530] tracking-[0.3em] italic mb-6">Global Logo Stream Resource URL</p>
+                                                    <p className="text-[10px] font-black uppercase text-[#2A2826] tracking-[0.3em] italic mb-6">Global Logo Stream Resource URL</p>
                                                     <div className="relative max-w-md">
-                                                        <input value={localSettings.logoUrl || ''} onChange={e => setLocalSettings(prev => ({ ...prev, logoUrl: e.target.value }))} className="w-full bg-white/[0.04] border border-white/5 rounded-xl py-3 px-5 text-[11px] text-solaris-orange font-black italic tracking-widest focus:outline-none focus:border-solaris-orange/20 transition-all placeholder:text-[#505530]/10" placeholder="https://assets.solaris.io/logo.png" />
+                                                        <input value={localSettings.logoUrl || ''} onChange={e => setLocalSettings(prev => ({ ...prev, logoUrl: e.target.value }))} className="w-full bg-white/[0.04] border border-white/5 rounded-xl py-3 px-5 text-[11px] text-solaris-orange font-black italic tracking-widest focus:outline-none focus:border-solaris-orange/20 transition-all placeholder:text-[#2A2826]/10" placeholder="https://assets.solaris.io/logo.png" />
                                                     </div>
                                                 </div>
                                             </div>
-                                            <Zap className="absolute right-10 top-1/2 -translate-y-1/2 text-[#505530]/[0.01] -rotate-12 transition-all group-hover:text-[#505530]/[0.02]" size={140} />
+                                            <Zap className="absolute right-10 top-1/2 -translate-y-1/2 text-[#2A2826]/[0.01] -rotate-12 transition-all group-hover:text-[#2A2826]/[0.02]" size={140} />
                                         </div>
                                     </div>
                                 )}
@@ -376,12 +376,12 @@ export const SettingsScreen: React.FC = () => {
                                                     <div className="p-4 bg-solaris-orange/10 rounded-2xl text-solaris-orange border border-solaris-orange/20 shadow-solaris-glow animate-pulse">
                                                         <PrinterIcon size={32} />
                                                     </div>
-                                                    <div className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] border shadow-lg italic transition-all ${localSettings.connectedDeviceName !== 'None' ? 'bg-green-500/10 text-green-500 border-green-500/20 shadow-green-900/10' : 'bg-white/5 text-[#505530]/30 border-white/5'}`}>
+                                                    <div className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] border shadow-lg italic transition-all ${localSettings.connectedDeviceName !== 'None' ? 'bg-green-500/10 text-green-500 border-green-500/20 shadow-green-900/10' : 'bg-white/5 text-[#2A2826]/30 border-white/5'}`}>
                                                         {localSettings.connectedDeviceName !== 'None' ? 'SYNCHRONIZED' : 'NODE_IDLE'}
                                                     </div>
                                                 </div>
                                                 <div className="relative z-10">
-                                                    <p className="text-[10px] font-black uppercase text-[#505530] tracking-[0.4em] mb-2 italic">Thermal Stream Output</p>
+                                                    <p className="text-[10px] font-black uppercase text-[#2A2826] tracking-[0.4em] mb-2 italic">Thermal Stream Output</p>
                                                     <p className="text-xl font-black italic text-[#1a1c14] mb-10 uppercase truncate tracking-tight">{localSettings.connectedDeviceName}</p>
                                                 </div>
                                                 <div className="flex gap-4 relative z-10">
@@ -405,7 +405,7 @@ export const SettingsScreen: React.FC = () => {
                                                         <span className="text-solaris-orange">TIP:</span> El protocolo Web Bluetooth requiere dispositivos <span className="text-[#1a1c14]">BLE (Bluetooth Low Energy)</span>. Si tu impresora es Bluetooth "Clásico", usa la aplicación de escritorio para una vinculación nativa. 
                                                     </p>
                                                 </div>
-                                                <Bluetooth className="absolute -bottom-10 -left-10 text-[#505530]/[0.01] rotate-45" size={160} />
+                                                <Bluetooth className="absolute -bottom-10 -left-10 text-[#2A2826]/[0.01] rotate-45" size={160} />
                                             </GlowCard>
 
                                             <GlowCard className="bg-white/[0.01] border border-white/5 !p-10 flex flex-col justify-between group rounded-[32px] shadow-2xl relative overflow-hidden">
@@ -413,16 +413,16 @@ export const SettingsScreen: React.FC = () => {
                                                     <div className="p-4 bg-blue-500/10 rounded-2xl text-blue-400 border border-blue-500/20 shadow-blue-500/20 shadow-lg">
                                                         <Smartphone size={32} />
                                                     </div>
-                                                    <div className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] border shadow-lg italic transition-all ${localSettings.isTerminalEnabled ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 shadow-blue-900/10' : 'bg-white/5 text-[#505530]/30 border-white/5'}`}>
+                                                    <div className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] border shadow-lg italic transition-all ${localSettings.isTerminalEnabled ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 shadow-blue-900/10' : 'bg-white/5 text-[#2A2826]/30 border-white/5'}`}>
                                                         {localSettings.isTerminalEnabled ? 'STREAM_LIVE' : 'IDLE'}
                                                     </div>
                                                 </div>
                                                 <div className="relative z-10">
-                                                    <p className="text-[10px] font-black uppercase text-[#505530] tracking-[0.4em] mb-2 italic">Transaction Logic Terminal</p>
+                                                    <p className="text-[10px] font-black uppercase text-[#2A2826] tracking-[0.4em] mb-2 italic">Transaction Logic Terminal</p>
                                                     <p className="text-xl font-black italic text-[#1a1c14] mb-10 uppercase truncate tracking-tight">{localSettings.connectedTerminalName}</p>
                                                 </div>
                                                 <button onClick={async () => { const d = await bluetoothTerminalService.requestTerminal(); if(d) setLocalSettings(p => ({ ...p, connectedTerminalName: d.name || 'BT TERM' })); }} className="w-full py-5 bg-white/[0.03] border border-white/10 text-[#1a1c14] font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl hover:bg-white/5 hover:scale-[1.02] active:scale-95 transition-all italic relative z-10">Sync Peripheral Node</button>
-                                                <Smartphone className="absolute -bottom-10 -right-10 text-[#505530]/[0.01] -rotate-12" size={160} />
+                                                <Smartphone className="absolute -bottom-10 -right-10 text-[#2A2826]/[0.01] -rotate-12" size={160} />
                                             </GlowCard>
                                         </div>
 
@@ -444,32 +444,32 @@ export const SettingsScreen: React.FC = () => {
                                         {/* Printing Config */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="p-8 bg-white/[0.02] border border-white/5 rounded-[28px]">
-                                                <p className="text-[10px] font-black uppercase text-[#505530] tracking-[0.4em] mb-6 italic">Printer Width Protocol</p>
+                                                <p className="text-[10px] font-black uppercase text-[#2A2826] tracking-[0.4em] mb-6 italic">Printer Width Protocol</p>
                                                 <div className="flex gap-3">
                                                     {(['58mm', '80mm'] as const).map(w => (
                                                         <button
                                                             key={w}
                                                             onClick={() => setLocalSettings(p => ({ ...p, printerWidth: w }))}
-                                                            className={`flex-1 py-4 rounded-2xl font-black italic text-sm tracking-widest transition-all ${localSettings.printerWidth === w ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'bg-white/[0.03] text-[#505530] border border-white/5 hover:text-[#1a1c14]'}`}
+                                                            className={`flex-1 py-4 rounded-2xl font-black italic text-sm tracking-widest transition-all ${localSettings.printerWidth === w ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'bg-white/[0.03] text-[#2A2826] border border-white/5 hover:text-[#1a1c14]'}`}
                                                         >{w}</button>
                                                     ))}
                                                 </div>
                                             </div>
                                             <div className="p-8 bg-white/[0.02] border border-white/5 rounded-[28px] space-y-6">
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-black uppercase text-[#505530] tracking-[0.3em] italic">Kitchen Ticket Auto-Print</span>
+                                                    <span className="text-[10px] font-black uppercase text-[#2A2826] tracking-[0.3em] italic">Kitchen Ticket Auto-Print</span>
                                                     <button
                                                         onClick={() => setLocalSettings(p => ({ ...p, isKitchenPrintingEnabled: !p.isKitchenPrintingEnabled }))}
-                                                        className={`w-14 h-8 rounded-full transition-all relative ${localSettings.isKitchenPrintingEnabled ? 'bg-solaris-orange' : 'bg-[#505530]/10 border border-[#505530]/20'}`}
+                                                        className={`w-14 h-8 rounded-full transition-all relative ${localSettings.isKitchenPrintingEnabled ? 'bg-solaris-orange' : 'bg-[#2A2826]/10 border border-[#2A2826]/20'}`}
                                                     >
                                                         <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${localSettings.isKitchenPrintingEnabled ? 'left-7' : 'left-1'}`} />
                                                     </button>
                                                 </div>
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-black uppercase text-[#505530] tracking-[0.3em] italic">Cash Drawer Pulse</span>
+                                                    <span className="text-[10px] font-black uppercase text-[#2A2826] tracking-[0.3em] italic">Cash Drawer Pulse</span>
                                                     <button
                                                         onClick={() => setLocalSettings(p => ({ ...p, isCashDrawerEnabled: !p.isCashDrawerEnabled }))}
-                                                        className={`w-14 h-8 rounded-full transition-all relative ${localSettings.isCashDrawerEnabled ? 'bg-solaris-orange' : 'bg-[#505530]/10 border border-[#505530]/20'}`}
+                                                        className={`w-14 h-8 rounded-full transition-all relative ${localSettings.isCashDrawerEnabled ? 'bg-solaris-orange' : 'bg-[#2A2826]/10 border border-[#2A2826]/20'}`}
                                                     >
                                                         <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all ${localSettings.isCashDrawerEnabled ? 'left-7' : 'left-1'}`} />
                                                     </button>
@@ -504,7 +504,7 @@ export const SettingsScreen: React.FC = () => {
                                                      <div className="flex-1 min-w-0">
                                                          <p className="text-base font-black italic text-[#1a1c14] uppercase tracking-tight truncate">{user.name}</p>
                                                          <p className="text-[10px] font-black text-solaris-orange uppercase tracking-widest mt-0.5">{user.role}</p>
-                                                         <p className="text-[9px] font-black text-[#505530]/30 uppercase tracking-widest">PIN: {user.pin} • {user.area}</p>
+                                                         <p className="text-[9px] font-black text-[#2A2826]/30 uppercase tracking-widest">PIN: {user.pin} • {user.area}</p>
                                                      </div>
                                                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
                                                          <button
@@ -513,7 +513,7 @@ export const SettingsScreen: React.FC = () => {
                                                                  setUserForm({ name: user.name, role: user.role?.toLowerCase() || 'mesero', pin: user.pin || '1111', area: user.area || 'Service', modules: user.modules || [] });
                                                                  setShowUserModal(true);
                                                              }}
-                                                             className="p-2.5 bg-white/[0.04] text-[#505530]/55 rounded-xl hover:bg-[#505530]/10 border border-[#505530]/20 hover:text-[#1a1c14] transition-all"
+                                                             className="p-2.5 bg-white/[0.04] text-[#2A2826]/55 rounded-xl hover:bg-[#2A2826]/10 border border-[#2A2826]/20 hover:text-[#1a1c14] transition-all"
                                                          >
                                                              <Save size={14} />
                                                          </button>
@@ -537,13 +537,13 @@ export const SettingsScreen: React.FC = () => {
                                                      <motion.div
                                                          initial={{ scale: 0.9, y: 20 }}
                                                          animate={{ scale: 1, y: 0 }}
-                                                         className="w-full max-w-lg bg-[#FAFAF3] border border-white/10 rounded-[40px] p-10 shadow-2xl"
+                                                         className="w-full max-w-lg bg-[#FAF8F4] border border-white/10 rounded-[40px] p-10 shadow-2xl"
                                                      >
                                                          <div className="flex justify-between items-center mb-8">
                                                              <h3 className="text-2xl font-black italic uppercase text-[#1a1c14] tracking-tighter">
                                                                  {editingUser ? 'Edit Operator' : 'New Operator'}
                                                              </h3>
-                                                             <button onClick={() => setShowUserModal(false)} className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center text-[#505530] hover:text-[#1a1c14] transition-all">
+                                                             <button onClick={() => setShowUserModal(false)} className="w-10 h-10 rounded-full bg-white/[0.04] flex items-center justify-center text-[#2A2826] hover:text-[#1a1c14] transition-all">
                                                                  <X size={18} />
                                                              </button>
                                                          </div>
@@ -566,14 +566,14 @@ export const SettingsScreen: React.FC = () => {
                                                                          onChange={e => setUserForm(p => ({ ...p, role: e.target.value, area: ['cocina', 'chef'].includes(e.target.value) ? 'Kitchen' : e.target.value === 'bar' ? 'Bar' : 'Service' }))}
                                                                          className="mt-2 w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/40 font-bold italic transition-all appearance-none"
                                                                      >
-                                                                         <option value="mesero" className="bg-[#FAFAF3]">Mesero</option>
-                                                                         <option value="cajero" className="bg-[#FAFAF3]">Cajero</option>
-                                                                         <option value="cocina" className="bg-[#FAFAF3]">Cocina</option>
-                                                                         <option value="chef" className="bg-[#FAFAF3]">Chef</option>
-                                                                         <option value="bar" className="bg-[#FAFAF3]">Bar</option>
-                                                                         <option value="hostess" className="bg-[#FAFAF3]">Hostess</option>
-                                                                         <option value="gerente" className="bg-[#FAFAF3]">Gerente</option>
-                                                                         <option value="admin" className="bg-[#FAFAF3]">Admin</option>
+                                                                         <option value="mesero" className="bg-[#FAF8F4]">Mesero</option>
+                                                                         <option value="cajero" className="bg-[#FAF8F4]">Cajero</option>
+                                                                         <option value="cocina" className="bg-[#FAF8F4]">Cocina</option>
+                                                                         <option value="chef" className="bg-[#FAF8F4]">Chef</option>
+                                                                         <option value="bar" className="bg-[#FAF8F4]">Bar</option>
+                                                                         <option value="hostess" className="bg-[#FAF8F4]">Hostess</option>
+                                                                         <option value="gerente" className="bg-[#FAF8F4]">Gerente</option>
+                                                                         <option value="admin" className="bg-[#FAF8F4]">Admin</option>
                                                                      </select>
                                                                  </div>
                                                                  <div>
@@ -592,7 +592,7 @@ export const SettingsScreen: React.FC = () => {
                                                              {currentUser?.role === 'admin' && (
                                                                  <div className="mt-4 border-t border-white/5 pt-4">
                                                                      <label className="text-[9px] font-black uppercase text-solaris-orange/60 tracking-[0.3em] px-1 italic mb-2 block">Permisos de Módulos (Opcional)</label>
-                                                                     <p className="text-[9px] text-[#505530]/60 mb-4">Si seleccionas módulos, el usuario solo tendrá acceso a estos, ignorando su rol por defecto. Si lo dejas vacío, aplicarán los permisos por defecto de su rol.</p>
+                                                                     <p className="text-[9px] text-[#2A2826]/60 mb-4">Si seleccionas módulos, el usuario solo tendrá acceso a estos, ignorando su rol por defecto. Si lo dejas vacío, aplicarán los permisos por defecto de su rol.</p>
                                                                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto no-scrollbar pr-2">
                                                                          {[
                                                                             { id: '/dashboard', label: 'Dashboard' },
@@ -634,7 +634,7 @@ export const SettingsScreen: React.FC = () => {
                                                          <div className="flex gap-3 mt-8">
                                                              <button
                                                                  onClick={() => setShowUserModal(false)}
-                                                                 className="flex-1 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-[#505530]/55 font-black uppercase text-[10px] tracking-widest hover:text-[#1a1c14] transition-all"
+                                                                 className="flex-1 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-[#2A2826]/55 font-black uppercase text-[10px] tracking-widest hover:text-[#1a1c14] transition-all"
                                                              >
                                                                  Cancel
                                                              </button>
@@ -690,7 +690,7 @@ export const SettingsScreen: React.FC = () => {
                                                         </div>
                                                     </div>
                                                     <h3 className="text-xl font-black italic text-[#1a1c14] uppercase tracking-tighter mb-2">{d.label}</h3>
-                                                    <p className="text-[9px] font-black uppercase text-[#505530] tracking-[0.3em] mb-10 italic leading-relaxed">{d.desc}</p>
+                                                    <p className="text-[9px] font-black uppercase text-[#2A2826] tracking-[0.3em] mb-10 italic leading-relaxed">{d.desc}</p>
                                                     <button onClick={d.action} className="w-full py-4.5 bg-white text-black font-black uppercase text-[10px] tracking-[0.3em] rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all italic">Execute Probe</button>
                                                 </GlowCard>
                                             ))}
@@ -704,12 +704,12 @@ export const SettingsScreen: React.FC = () => {
                         <AnimatePresence>
                             {showStoragePinModal && (
                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
-                                    <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-sm bg-[#FAFAF3] border border-white/10 rounded-[40px] p-10 shadow-2xl relative overflow-hidden">
+                                    <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-sm bg-[#FAF8F4] border border-white/10 rounded-[40px] p-10 shadow-2xl relative overflow-hidden">
                                         <div className="flex justify-between items-center mb-8 relative z-10">
                                             <h3 className="text-xl font-black italic uppercase text-[#1a1c14] tracking-tighter flex items-center gap-3">
                                                 <ShieldCheck size={24} className="text-solaris-orange" /> Security Override
                                             </h3>
-                                            <button onClick={() => setShowStoragePinModal(false)} className="text-[#505530] hover:text-[#1a1c14] transition-all"><X size={18} /></button>
+                                            <button onClick={() => setShowStoragePinModal(false)} className="text-[#2A2826] hover:text-[#1a1c14] transition-all"><X size={18} /></button>
                                         </div>
                                         <div className="space-y-6 relative z-10">
                                             <div>
@@ -735,7 +735,7 @@ export const SettingsScreen: React.FC = () => {
                         <AnimatePresence>
                             {showStorageInspector && (
                                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[300] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6">
-                                    <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-4xl bg-[#FAFAF3] border border-white/10 rounded-[40px] p-10 shadow-2xl flex flex-col max-h-[90vh]">
+                                    <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-4xl bg-[#FAF8F4] border border-white/10 rounded-[40px] p-10 shadow-2xl flex flex-col max-h-[90vh]">
                                         <div className="flex justify-between items-center mb-8 shrink-0">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-500 shadow-solaris-glow">
@@ -747,7 +747,7 @@ export const SettingsScreen: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div className="flex gap-4">
-                                                <button onClick={fetchStorageData} className="px-5 py-3 bg-white/[0.04] text-[#505530]/65 rounded-xl hover:text-[#1a1c14] hover:bg-[#505530]/10 border border-[#505530]/20 transition-all flex items-center gap-2 font-black text-xs uppercase tracking-widest">
+                                                <button onClick={fetchStorageData} className="px-5 py-3 bg-white/[0.04] text-[#2A2826]/65 rounded-xl hover:text-[#1a1c14] hover:bg-[#2A2826]/10 border border-[#2A2826]/20 transition-all flex items-center gap-2 font-black text-xs uppercase tracking-widest">
                                                     <RefreshCcw size={16} className={isLoadingStorage ? 'animate-spin text-solaris-orange' : ''} /> Refresh
                                                 </button>
                                                 <button onClick={() => setShowStorageInspector(false)} className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 hover:bg-red-500/20 transition-all"><X size={20} /></button>
@@ -763,7 +763,7 @@ export const SettingsScreen: React.FC = () => {
                                             ) : (
                                                 <table className="w-full text-left">
                                                     <thead>
-                                                        <tr className="border-b border-white/10 text-[10px] font-black uppercase text-[#505530]/55 tracking-[0.3em] italic">
+                                                        <tr className="border-b border-white/10 text-[10px] font-black uppercase text-[#2A2826]/55 tracking-[0.3em] italic">
                                                             <th className="pb-4 pl-4">Storage Sector</th>
                                                             <th className="pb-4 text-center">
                                                                 <div className="flex flex-col items-center gap-2 text-[#1a1c14]">

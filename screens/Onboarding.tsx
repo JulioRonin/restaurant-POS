@@ -214,7 +214,7 @@ export default function OnboardingScreen() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[#FAFAF3] flex items-center justify-center p-6 sm:p-12">
+      <div className="min-h-screen bg-[#FAF8F4] flex items-center justify-center p-6 sm:p-12">
         <div className="max-w-md w-full bg-gray-800 rounded-3xl p-8 border border-white/5 text-center shadow-2xl">
           <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
             <span className="material-icons-round text-4xl text-emerald-500">check_circle</span>
@@ -234,7 +234,7 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF3] flex flex-col font-sans text-[#1a1c14]">
+    <div className="min-h-screen bg-[#FAF8F4] flex flex-col font-sans text-[#1a1c14]">
       {/* Header */}
       <header className="bg-white border-b px-8 py-4 flex justify-between items-center sticky top-0 z-10">
         <div className="flex items-center gap-3">
