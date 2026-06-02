@@ -4,170 +4,311 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base Styles */
+/* ============================================================================
+   ServiRest — Sobremesa Lúcida · Design Tokens
+   Source of truth: design_handoff_linea_de_ordenes/tokens/colors_and_type.css
+   Mirrors tailwind.config.js → colors.servirest.* so we have one truth.
+   ============================================================================ */
 :root {
-  --primary-color: #C4633F; /* Terracota */
-  --secondary-color: #C9A24A; /* Mostaza Mate */
-  --olive-color: #1A1E2E; /* Midnight Tinto */
-  --cream-color: #FAF8F4; /* Blanco Hueso */
-  --primary-rgb: 196, 99, 63;
-  --koso-bg: #FAF8F4;
-  --koso-surface: #FAF8F4;
-  --koso-olive: #2A2826; /* Gris Carbón */
-  --koso-text: #2A2826;
+  /* ---- Brand core: 5 colores Sobremesa Lúcida ------------------------- */
+  --sr-midnight:   #1A1E2E;
+  --sr-terracota:  #C4633F;
+  --sr-mostaza:    #C9A24A;
+  --sr-hueso:      #FAF8F4;
+  --sr-carbon:     #2A2826;
+
+  /* ---- Extended brand ramps ------------------------------------------- */
+  --sr-terracota-dark:  #A14C2D;
+  --sr-terracota-light: #DCA08A;
+  --sr-midnight-soft:   #232839;
+  --sr-midnight-card:   #2A2F42;
+
+  /* ---- Surfaces & lines ----------------------------------------------- */
+  --sr-bg:            var(--sr-hueso);
+  --sr-bg-sunken:     #F0F0E8;
+  --sr-surface:       #FFFFFF;
+  --sr-line:          rgba(42, 40, 38, 0.12);
+  --sr-line-strong:   rgba(42, 40, 38, 0.20);
+  --sr-line-dark:     rgba(250, 248, 244, 0.08);
+  --sr-line-dark-str: rgba(250, 248, 244, 0.16);
+
+  /* ---- Text roles ----------------------------------------------------- */
+  --sr-fg:        var(--sr-carbon);
+  --sr-fg-mute:   rgba(42, 40, 38, 0.60);
+  --sr-fg-low:    rgba(42, 40, 38, 0.40);
+  --sr-fg-on-dark:      var(--sr-hueso);
+  --sr-fg-on-dark-mute: rgba(250, 248, 244, 0.55);
+
+  /* ---- Semantic ------------------------------------------------------- */
+  --sr-success: #22A06B;
+  --sr-warning: var(--sr-mostaza);
+  --sr-danger:  #E1554B;
+  --sr-info:    var(--sr-midnight);
+
+  /* ---- Type families -------------------------------------------------- */
+  --sr-font-serif: "Fraunces", "Tiempos Headline", ui-serif, Georgia, "Times New Roman", serif;
+  --sr-font-sans:  "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --sr-font-mono:  "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* ---- Radii ---------------------------------------------------------- */
+  --sr-r-sm:   8px;
+  --sr-r-md:   12px;
+  --sr-r-lg:   16px;
+  --sr-r-xl:   24px;
+  --sr-r-2xl:  32px;
+  --sr-r-pill: 999px;
+
+  /* ---- Shadows & glow ------------------------------------------------- */
+  --sr-shadow-card:    0 2px 20px rgba(42, 40, 38, 0.08);
+  --sr-shadow-lift:    0 4px 24px rgba(42, 40, 38, 0.10);
+  --sr-shadow-modal:   0 30px 80px rgba(26, 30, 46, 0.35);
+  --sr-glow:           0 0 20px rgba(196, 99, 63, 0.40);
+  --sr-glow-soft:      0 0 40px rgba(196, 99, 63, 0.12);
+  --sr-glow-midnight:  0 0 20px rgba(42, 40, 38, 0.50);
+
+  /* ---- Motion --------------------------------------------------------- */
+  --sr-ease-solaris: cubic-bezier(0.23, 1, 0.32, 1);
+  --sr-ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
+  --sr-dur-fast: 0.18s;
+  --sr-dur:      0.30s;
+  --sr-dur-slow: 0.50s;
+
+  /* ---- Tracking ------------------------------------------------------- */
+  --sr-track-label:  0.3em;
+  --sr-track-kicker: 0.4em;
+
+  /* ---- Legacy aliases (kept for already-shipped screens) -------------- */
+  --primary-color:   var(--sr-terracota);
+  --secondary-color: var(--sr-mostaza);
+  --olive-color:     var(--sr-midnight);
+  --cream-color:     var(--sr-hueso);
+  --primary-rgb:     196, 99, 63;
+  --koso-bg:         var(--sr-hueso);
+  --koso-surface:    var(--sr-hueso);
+  --koso-olive:      var(--sr-carbon);
+  --koso-text:       var(--sr-carbon);
 }
+
+/* ============================================================================
+   GLOBAL BASE
+   ============================================================================ */
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--sr-font-sans);
+  font-feature-settings: "ss01", "cv01";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #FAF8F4;
-  color: #2A2826;
+  background-color: var(--sr-hueso);
+  color: var(--sr-carbon);
 }
 
-/* ── KŌSO Design Tokens ──────────────────────────────────────── */
-/* Distribution: 35% #FAFAF3, 40% #505530, 20% #F98359, 5% #C694DB */
+img { display: block; }
 
+::selection {
+  background: var(--sr-terracota);
+  color: var(--sr-hueso);
+}
+
+/* ============================================================================
+   SEMANTIC TYPE STYLES — .sr-* type primitives
+   ============================================================================ */
+.sr-display {
+  font-family: var(--sr-font-serif);
+  font-weight: 500;
+  font-style: italic;
+  font-size: clamp(40px, 6vw, 72px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  font-variation-settings: "opsz" 144, "SOFT" 40, "WONK" 1;
+  color: var(--sr-midnight);
+}
+
+.sr-h1 {
+  font-family: var(--sr-font-serif);
+  font-weight: 500;
+  font-size: 38px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variation-settings: "opsz" 96, "SOFT" 30;
+  color: var(--sr-midnight);
+}
+
+.sr-h2 {
+  font-family: var(--sr-font-serif);
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--sr-midnight);
+}
+
+.sr-h-brutal {
+  font-family: var(--sr-font-sans);
+  font-weight: 900;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--sr-midnight);
+}
+
+.sr-body {
+  font-family: var(--sr-font-sans);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--sr-fg);
+}
+
+.sr-body-sm {
+  font-family: var(--sr-font-sans);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--sr-fg-mute);
+}
+
+.sr-label {
+  font-family: var(--sr-font-sans);
+  font-weight: 900;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: var(--sr-track-label);
+  color: var(--sr-fg-mute);
+}
+
+.sr-kicker {
+  font-family: var(--sr-font-sans);
+  font-weight: 900;
+  font-size: 10px;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: var(--sr-track-kicker);
+  color: var(--sr-terracota);
+}
+
+.sr-kpi {
+  font-family: var(--sr-font-sans);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.03em;
+  font-size: 32px;
+  line-height: 1;
+  color: var(--sr-midnight);
+}
+
+.sr-mono {
+  font-family: var(--sr-font-mono);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -0.01em;
+  color: var(--sr-carbon);
+}
+
+/* ============================================================================
+   PRIMITIVES — building blocks reused by cards & kits
+   ============================================================================ */
+.sr-card {
+  background: var(--sr-surface);
+  border: 1px solid var(--sr-line);
+  border-radius: var(--sr-r-xl);
+  box-shadow: var(--sr-shadow-card);
+}
+
+.sr-card-solaris {
+  background: var(--sr-surface);
+  border: 1px solid var(--sr-line);
+  border-radius: var(--sr-r-2xl);
+  box-shadow: var(--sr-shadow-lift);
+}
+
+.sr-glass {
+  background: rgba(250, 248, 244, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--sr-line);
+  border-radius: var(--sr-r-xl);
+  box-shadow: var(--sr-shadow-lift);
+}
+
+.sr-sidebar-bg {
+  background: linear-gradient(160deg, #1A1E2E 0%, #232839 60%, #1A1E2E 100%);
+}
+
+.sr-chip {
+  font-family: var(--sr-font-sans);
+  font-weight: 900;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  padding: 5px 10px;
+  border-radius: var(--sr-r-sm);
+  border: 1px solid var(--sr-line);
+  color: var(--sr-fg-mute);
+  background: var(--sr-surface);
+}
+
+.sr-no-scrollbar::-webkit-scrollbar { display: none; }
+.sr-no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ============================================================================
+   LEGACY KŌSO CLASSES — kept for screens not yet refactored
+   They now map to Sobremesa Lúcida values so old code looks new for free.
+   ============================================================================ */
 .koso-card {
   background: rgba(250, 248, 244, 0.85);
-  border: 1px solid rgba(42, 40, 38, 0.15);
-  border-radius: 1.5rem;
-  box-shadow: 0 2px 20px rgba(42, 40, 38, 0.08);
+  border: 1px solid var(--sr-line);
+  border-radius: var(--sr-r-xl);
+  box-shadow: var(--sr-shadow-card);
 }
-
 .koso-surface {
   background: rgba(250, 248, 244, 0.7);
-  border: 1px solid rgba(42, 40, 38, 0.1);
+  border: 1px solid var(--sr-line);
 }
-
 .koso-label {
-  color: #2A2826;
+  color: var(--sr-carbon);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.3em;
   font-size: 0.6rem;
 }
-
-.koso-accent {
-  color: #C4633F;
-}
-
-.koso-purple {
-  color: #C9A24A;
-}
-
-/* ── Global: default text to Gris Carbón on Blanco Hueso screens ── */
-/* All content inside .koso-app (main layout) defaults to Gris Carbón text */
-.koso-app {
-  color: #2A2826;
-}
-
-/* Dashboard cards over background image */
+.koso-accent { color: var(--sr-terracota); }
+.koso-purple { color: var(--sr-mostaza); }
+.koso-app    { color: var(--sr-carbon); }
 .koso-glass-card {
   background: rgba(250, 248, 244, 0.88);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(42, 40, 38, 0.15);
-  border-radius: 1.25rem;
-  box-shadow: 0 4px 24px rgba(42, 40, 38, 0.1);
+  border: 1px solid var(--sr-line);
+  border-radius: var(--sr-r-xl);
+  box-shadow: var(--sr-shadow-lift);
 }
 
-/* Custom Scrollbars */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
+/* ============================================================================
+   CUSTOM SCROLLBARS (unchanged)
+   ============================================================================ */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(42, 40, 38, 0.15); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(42, 40, 38, 0.30); }
 
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
-  border-radius: 10px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #9CA3AF;
-}
-
-/* Print Styles */
-@media print {
-  /* Common hide class */
-  .no-print, .print\:hidden {
-    display: none !important;
-  }
-
-  /* Global Reset for Print */
-  body, html {
-    width: 100% !important;
-    height: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
-  }
-
-  /* When print-mode is active, hide the entire React app structure */
-  body.print-mode #root {
-    display: none !important;
-  }
-
-  /* When print-mode is active, ONLY show the #print-root portal */
-  #print-root {
-    display: none;
-  }
-
-  body.print-mode #print-root {
-    display: block !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-  }
-
-  /* Ensure the print container inside the portal is visible */
-  .print-only-container, .print-only-content {
-    display: block !important;
-    width: 100% !important;
-  }
-
-  /* Restore layout resets */
-  #root, main, .flex, .h-screen {
-    overflow: visible !important;
-    height: auto !important;
-  }
-
-  /* Reset background for printing */
-  body {
-    background-color: white !important;
-  }
-
-  /* Ensure colors are printed */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* Page breaks */
-  .page-break {
-    page-break-before: always;
-  }
-}
-
-/* Animation Utilities */
+/* ============================================================================
+   ANIMATIONS
+   ============================================================================ */
 .animate-soft-fade-in {
   animation: soft-fade-in 0.4s ease-out forwards;
 }
-
 @keyframes soft-fade-in {
   from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── SOLARIS GLOW ENGINE ────────────────────────────────────── */
-/* Global implementation of the spotlight/glow effect for all components */
-
+/* ============================================================================
+   SOLARIS GLOW ENGINE — cursor-following radial highlight on [data-glow]
+   Unchanged. Drives the spotlight cards in components/ui/spotlight-card.tsx.
+   ============================================================================ */
 [data-glow] {
   --radius: 32;
   --border: 1;
@@ -178,7 +319,7 @@ body {
   --hue: 210;
   --saturation: 100;
   --lightness: 70;
-  
+
   position: relative;
   background-attachment: fixed;
   background-size: calc(100% + (2 * var(--border-size))) calc(100% + (2 * var(--border-size)));
@@ -206,27 +347,21 @@ body {
   -webkit-mask-clip: padding-box, border-box;
   -webkit-mask-composite: source-in, xor;
 }
-
 [data-glow]::before {
   background-image: radial-gradient(
     calc(var(--size) * 0.75px) calc(var(--size) * 0.75px) at
-    calc(var(--x, 0) * 1px)
-    calc(var(--y, 0) * 1px),
+    calc(var(--x, 0) * 1px) calc(var(--y, 0) * 1px),
     hsl(var(--hue) var(--saturation) var(--lightness) / var(--border-spot-opacity)), transparent 100%
   );
   filter: brightness(1.5);
 }
-
 [data-glow]::after {
   background-image: radial-gradient(
     calc(var(--size) * 0.5px) calc(var(--size) * 0.5px) at
-    calc(var(--x, 0) * 1px)
-    calc(var(--y, 0) * 1px),
+    calc(var(--x, 0) * 1px) calc(var(--y, 0) * 1px),
     hsl(0 100% 100% / var(--border-light-opacity)), transparent 100%
   );
 }
-
-/* Background spotlight effect */
 [data-glow] > [data-glow-bg] {
   position: absolute;
   inset: 0;
@@ -234,29 +369,68 @@ body {
   pointer-events: none;
   background-image: radial-gradient(
     calc(var(--size) * 1px) calc(var(--size) * 1px) at
-    calc(var(--x, 0) * 1px)
-    calc(var(--y, 0) * 1px),
+    calc(var(--x, 0) * 1px) calc(var(--y, 0) * 1px),
     hsl(var(--hue) var(--saturation) var(--lightness) / var(--bg-spot-opacity)), transparent
   );
   z-index: 0;
 }
 
-/* Visibility Helpers */
-.force-cream { color: #FAF8F4 !important; }
-.force-olive { color: #2A2826 !important; }
-.force-salmon { color: #C4633F !important; }
+/* ============================================================================
+   VISIBILITY HELPERS (legacy — kept)
+   ============================================================================ */
+.force-cream  { color: var(--sr-hueso) !important; }
+.force-olive  { color: var(--sr-carbon) !important; }
+.force-salmon { color: var(--sr-terracota) !important; }
 
-.shadow-salmon-glow {
-  box-shadow: 0 0 20px rgba(196, 99, 63, 0.3);
-}
+.shadow-salmon-glow { box-shadow: 0 0 20px rgba(196, 99, 63, 0.3); }
+.shadow-olive-glow  { box-shadow: 0 0 20px rgba(42, 40, 38, 0.2); }
 
-.shadow-olive-glow {
-  box-shadow: 0 0 20px rgba(42, 40, 38, 0.2);
-}
-
-/* Force date/month input icons to be white on dark backgrounds */
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="month"]::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-    cursor: pointer;
+  filter: invert(0.4) sepia(0.5) saturate(2) hue-rotate(355deg);
+  cursor: pointer;
+}
+
+/* ============================================================================
+   PRINT STYLES (unchanged — required by ticket/receipt printing)
+   ============================================================================ */
+@media print {
+  .no-print, .print\:hidden { display: none !important; }
+
+  body, html {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.print-mode #root { display: none !important; }
+  #print-root { display: none; }
+  body.print-mode #print-root {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+  }
+
+  .print-only-container, .print-only-content {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  #root, main, .flex, .h-screen {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  body { background-color: white !important; }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .page-break { page-break-before: always; }
 }
