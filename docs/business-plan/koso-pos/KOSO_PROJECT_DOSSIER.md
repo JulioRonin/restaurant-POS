@@ -1,12 +1,21 @@
-# KŌSO POS — BUSINESS PLAN & MASTER PLAN EJECUTIVO
-### Plan integral de monetización, comercialización y forecast 2026
+# KŌSO POS — PROJECT DOSSIER
+### Charter + Business Plan + Action Plan 90 días + Forecast 12 meses
 
-| Documento | Versión | Fecha | Autor | Estado |
-|---|---|---|---|---|
-| Business Plan & Master Plan Master | v1.0 | 2026-06-02 | PMO / Equipo Fundador | Aprobado para ejecución |
-| Horizonte | 12 meses (Jun–Dic 2026) | Próxima revisión | 2026-09-01 | — |
+| Campo | Valor |
+|---|---|
+| Proyecto | KŌSO POS — SaaS Restaurant Management |
+| **Project Leader** | **Julio Ibarra** — Founder / CEO operativo del producto |
+| Patrocinador / PMO | Comité de Portafolio (ver `00_PORTFOLIO_MASTER_PLAN.md`) |
+| Versión | v1.1 |
+| Fecha de partida | 2026-06-02 |
+| Estado | Aprobado para ejecución |
+| Horizonte | 12 meses (Jun–Dic 2026) · Detalle granular 90 días (Jun–Sep) |
+| Próxima revisión PMO | 2026-09-01 (cierre del trimestre comprometido) |
+| Reporting cadence | Daily standup 9:00 · Demo viernes 16:00 · Steering quincenal con PMO |
 
-> **Objetivo central:** Pasar de producto pre-comercial a **operación SaaS generando ingresos recurrentes (MRR)** en **90 días** (1 sep 2026), con un pipeline que sustente **MXN $1.85 M** de ingresos totales y **MRR ≥ MXN $185 K** al cierre de 2026.
+> **Mandato del Project Leader (Julio):** Llevar a KŌSO POS de pre-comercial a **30+ clientes pagando y MRR ≥ MXN $23,400 al 1-sep-2026**, cerrando las 3 brechas técnicas críticas (CFDI, webhook, landing) antes del 1-jul-2026, y dejando el motor de adquisición Meta/Google calibrado para acelerar en Q4.
+
+> **Objetivo central:** Pasar de producto pre-comercial a **operación SaaS generando ingresos recurrentes (MRR)** en **90 días** (1 sep 2026), con un pipeline que sustente **MXN $1.85 M** de ingresos totales y **MRR ≥ MXN $118.5 K** al cierre de 2026.
 
 ---
 
@@ -520,7 +529,18 @@ NPV LTV (descuento 12% anual)               ≈ 10,800
 
 ---
 
-## CIERRE EJECUTIVO
+## 13. PROJECT LEADER — COMPROMISOS FORMALES DE JULIO
+
+Como Project Leader, **Julio Ibarra** se compromete formalmente ante el comité de portafolio a:
+
+1. **Cumplir los 4 hitos** del plan a 90 días (Sprints Producto Comercial, Beta Paga, Go-Live, Cierre 30 clientes) o escalar desviación al PMO con ≥ 5 días de anticipación.
+2. **Mantener tablero Linear/Jira al día** y publicar reporte semanal cada viernes 17:00 (formato: MRR · Clientes · CAC · Churn · Riesgos · Blockers).
+3. **Owner único del P&L del proyecto** y de cualquier desviación > 10 % en burn mensual.
+4. **Decisiones de arquitectura y pricing público** requieren approval del Steering quincenal (no unilateral).
+5. **Capital allocation:** solicitudes de presupuesto extra > MXN $20K requieren approval del Comité de Portafolio.
+6. **Handoff de incidencias críticas (P0):** on-call y comunicación al PMO en < 1 h.
+
+## 14. CIERRE EJECUTIVO
 
 KŌSO POS llega al 2-jun-2026 con un producto técnicamente robusto, una arquitectura SaaS multi-tenant funcional y un modelo de pricing validado en el mercado mexicano. Las **3 brechas críticas a cerrar antes del 1-jul** son: **CFDI, Webhook Stripe y Landing**. Con un equipo de 4.5 FTE y una inversión de ~**MXN $1.85 M** durante el segundo semestre, el plan proyecta cerrar 2026 con **152 clientes activos, MRR de MXN $118 K** y un camino claro a break-even en el Q2 2027.
 
@@ -528,4 +548,4 @@ KŌSO POS llega al 2-jun-2026 con un producto técnicamente robusto, una arquite
 
 ---
 
-*Documento vivo. Próxima revisión: 2026-09-01.*
+*Documento vivo. Project Leader: Julio Ibarra. Próxima revisión PMO: 2026-09-01.*
