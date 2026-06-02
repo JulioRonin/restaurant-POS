@@ -152,6 +152,22 @@
    ============================================================================ */
 * { box-sizing: border-box; }
 
+html {
+  /* Explicitly opt out of forced dark mode. Some browsers (Chrome on macOS,
+     Edge) repaint the canvas dark when the OS is in dark mode unless we say
+     otherwise. ServiRest is a single-mode brand (Sobremesa Lúcida cream),
+     except when Prestige night canvas is opted into via data attribute. */
+  color-scheme: light only;
+  background-color: var(--sr-hueso);
+}
+
+@media (prefers-color-scheme: dark) {
+  html, body {
+    background-color: var(--sr-hueso) !important;
+    color: var(--sr-carbon) !important;
+  }
+}
+
 body {
   margin: 0;
   font-family: var(--sr-font-sans);
@@ -160,6 +176,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--sr-hueso);
   color: var(--sr-carbon);
+  overflow: hidden; /* App shell — individual screens manage their own scroll */
 }
 
 img { display: block; }
