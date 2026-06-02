@@ -293,7 +293,7 @@ export const HostessScreen: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-3 flex-wrap">
-                        <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-[20px]">
+                        <div className="flex bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-1 rounded-[20px]">
                             <button
                                 onClick={() => setViewMode('floor')}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'floor' ? 'bg-white/10 text-[#1a1c14] shadow-xl' : 'text-[#2A2826]/30 hover:text-[#1a1c14]'}`}
@@ -328,7 +328,7 @@ export const HostessScreen: React.FC = () => {
                 {/* Map + Lista de espera area */}
                 <div className="flex flex-col md:flex-row gap-4 flex-1 min-h-0 overflow-hidden px-4 md:px-8 pb-4">
                     {/* WAITLIST KANBAN SIDEBAR — hidden on mobile, drawer on tablet+ */}
-                    <div className="hidden md:flex w-64 bg-white/[0.02] rounded-2xl p-5 border border-white/5 flex-col shrink-0 overflow-hidden shadow-2xl">
+                    <div className="hidden md:flex w-64 bg-servirest-surface rounded-2xl p-5 border border-[rgba(42,40,38,0.12)] flex-col shrink-0 overflow-hidden shadow-2xl">
                         <h3 className="font-black text-servirest-terracota/40 text-[9px] uppercase tracking-[0.4em] mb-5 flex items-center gap-2 italic">
                              <Hourglass size={12} />
                              Lista de espera
@@ -341,7 +341,7 @@ export const HostessScreen: React.FC = () => {
                                     key={entry.id}
                                     draggable
                                     onDragStart={(e) => handleDragStart(e, entry.id)}
-                                    className="bg-white p-6 rounded-2xl border border-white/5 shadow-xl cursor-grab active:cursor-grabbing hover:border-solaris-orange/20 transition-all group relative overflow-hidden"
+                                    className="bg-white p-6 rounded-2xl border border-[rgba(42,40,38,0.12)] shadow-xl cursor-grab active:cursor-grabbing hover:border-solaris-orange/20 transition-all group relative overflow-hidden"
                                 >
                                     <div className="flex justify-between items-start mb-4">
                                         <h4 className="font-black italic text-[#1a1c14] text-sm uppercase tracking-tight leading-tight">{entry.customerName}</h4>
@@ -368,7 +368,7 @@ export const HostessScreen: React.FC = () => {
 
                     {/* Table Map / List */}
                     <div
-                        className="flex-1 border border-white/5 rounded-2xl relative bg-white/30 shadow-2xl"
+                        className="flex-1 border border-[rgba(42,40,38,0.12)] rounded-2xl relative bg-white/30 shadow-2xl"
                         style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}
                     >
                         {viewMode === 'floor' ? (
@@ -401,7 +401,7 @@ export const HostessScreen: React.FC = () => {
                                                 isDraggingOver === table.id ? 'border-green-500 bg-green-500/10 scale-110' :
                                                 isOccupied ? 'border-red-500/20 bg-red-500/5' :
                                                 isReserved ? 'border-yellow-500/20 bg-yellow-500/5' :
-                                                'border-white/10 bg-white/[0.02] hover:border-white/30'
+                                                'border-[rgba(42,40,38,0.20)] bg-servirest-surface hover:border-white/30'
                                             }`}
                                         >
                                             <span className={`font-black italic text-xl uppercase tracking-tighter transition-colors ${isSelected ? 'text-[#1a1c14]' : 'text-[#2A2826]/60'}`}>{table.name}</span>
@@ -421,7 +421,7 @@ export const HostessScreen: React.FC = () => {
 
                                             {/* Waiter Indicator */}
                                             {waiter && (
-                                                <div className="absolute -top-4 -right-4 w-10 h-10 rounded-full border-2 border-white/20 shadow-2xl overflow-hidden ring-4 ring-black/50" title={`Assigned to ${waiter.name}`}>
+                                                <div className="absolute -top-4 -right-4 w-10 h-10 rounded-full border-2 border-[rgba(42,40,38,0.20)] shadow-2xl overflow-hidden ring-4 ring-black/50" title={`Assigned to ${waiter.name}`}>
                                                     <img src={waiter.image} alt={waiter.name} className="w-full h-full object-cover" />
                                                 </div>
                                             )}
@@ -454,8 +454,8 @@ export const HostessScreen: React.FC = () => {
                                                     className={`transition-all cursor-pointer group ${isSelected ? 'scale-[1.01]' : ''}`}
                                                     onClick={() => setSelectedTableId(table.id)}
                                                 >
-                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-l border-white/5 rounded-l-[24px] font-black italic text-[#1a1c14] uppercase tracking-tight group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>{table.name}</td>
-                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>
+                                                    <td className={`py-6 px-6 bg-servirest-surface border-y border-l border-[rgba(42,40,38,0.12)] rounded-l-[24px] font-black italic text-[#1a1c14] uppercase tracking-tight group-hover:bg-servirest-surface ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>{table.name}</td>
+                                                    <td className={`py-6 px-6 bg-servirest-surface border-y border-[rgba(42,40,38,0.12)] group-hover:bg-servirest-surface ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>
                                                         <span className={`inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
                                                             table.status === TableStatus.AVAILABLE ? 'bg-green-500/10 text-green-500' :
                                                             table.status === TableStatus.OCCUPIED ? 'bg-red-500/10 text-red-500' :
@@ -471,8 +471,8 @@ export const HostessScreen: React.FC = () => {
                                                             {table.status}
                                                         </span>
                                                     </td>
-                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 font-black italic text-[#2A2826]/60 text-xs tracking-widest group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>{table.seats} PERS.</td>
-                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-white/5 group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>
+                                                    <td className={`py-6 px-6 bg-servirest-surface border-y border-[rgba(42,40,38,0.12)] font-black italic text-[#2A2826]/60 text-xs tracking-widest group-hover:bg-servirest-surface ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>{table.seats} PERS.</td>
+                                                    <td className={`py-6 px-6 bg-servirest-surface border-y border-[rgba(42,40,38,0.12)] group-hover:bg-servirest-surface ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>
                                                         {session ? (
                                                             <div>
                                                                 <p className="text-xs font-black italic text-[#1a1c14] uppercase tracking-tight">{session.name}</p>
@@ -480,10 +480,10 @@ export const HostessScreen: React.FC = () => {
                                                             </div>
                                                         ) : <span className="text-[#2A2826]/10 font-black tracking-widest opacity-20">---</span>}
                                                     </td>
-                                                    <td className={`py-6 px-6 bg-white/[0.02] border-y border-r border-white/5 rounded-r-[24px] group-hover:bg-white/[0.05] ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>
+                                                    <td className={`py-6 px-6 bg-servirest-surface border-y border-r border-[rgba(42,40,38,0.12)] rounded-r-[24px] group-hover:bg-servirest-surface ${isSelected ? '!border-solaris-orange/40 !bg-servirest-terracota/10' : ''}`}>
                                                         {waiter ? (
                                                             <div className="flex items-center gap-3">
-                                                                <img src={waiter.image} className="w-8 h-8 rounded-full border border-white/10" alt="" />
+                                                                <img src={waiter.image} className="w-8 h-8 rounded-full border border-[rgba(42,40,38,0.20)]" alt="" />
                                                                 <span className="text-[10px] font-black italic text-[#2A2826]/60 uppercase tracking-widest">{waiter.name}</span>
                                                             </div>
                                                         ) : <span className="text-[#2A2826]/10 font-black tracking-widest opacity-20">---</span>}
@@ -501,12 +501,12 @@ export const HostessScreen: React.FC = () => {
 
             {/* Side Panel — Full width below on mobile, fixed right column on desktop */}
             <aside
-                className="w-full md:w-[380px] lg:w-[420px] bg-[#F0F0E8] border-t md:border-t-0 md:border-l border-white/10 flex flex-col shadow-2xl shrink-0"
+                className="w-full md:w-[380px] lg:w-[420px] bg-[#F0F0E8] border-t md:border-t-0 md:border-l border-[rgba(42,40,38,0.20)] flex flex-col shadow-2xl shrink-0"
                 style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch', maxHeight: selectedTableId ? '55vh' : '220px' }}
             >
                 <div className="p-5 md:p-8 flex flex-col gap-5 flex-1">
                 {/* Walk-in terminal — compact on mobile */}
-                <div className="mb-5 p-5 bg-white/[0.02] rounded-2xl border border-white/5 shadow-inner relative overflow-hidden">
+                <div className="mb-5 p-5 bg-servirest-surface rounded-2xl border border-[rgba(42,40,38,0.12)] shadow-inner relative overflow-hidden">
                     <h3 className="font-black italic text-[#1a1c14] text-xs uppercase tracking-tight mb-4 flex items-center gap-2">
                         <UserPlus size={14} className="text-servirest-terracota" />
                         Walk-in
@@ -516,10 +516,10 @@ export const HostessScreen: React.FC = () => {
                             type="text"
                             value={customerName}
                             onChange={(e) => setCustomerName(e.target.value)}
-                            className="flex-1 p-3 bg-white/[0.03] border border-white/10 rounded-xl outline-none focus:border-solaris-orange/40 text-[#1a1c14] font-bold transition-all text-sm placeholder:text-[#2A2826]/30 shadow-inner"
+                            className="flex-1 p-3 bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-xl outline-none focus:border-solaris-orange/40 text-[#1a1c14] font-bold transition-all text-sm placeholder:text-[#2A2826]/30 shadow-inner"
                             placeholder="Nombre cliente..."
                         />
-                        <div className="flex items-center gap-2 bg-white/[0.02] px-3 rounded-xl border border-white/5">
+                        <div className="flex items-center gap-2 bg-servirest-surface px-3 rounded-xl border border-[rgba(42,40,38,0.12)]">
                             <button onClick={() => setPartySize(Math.max(1, partySize - 1))} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center font-black text-[#1a1c14] text-lg">-</button>
                             <span className="font-black italic text-lg text-servirest-terracota w-6 text-center">{partySize}</span>
                             <button onClick={() => setPartySize(partySize + 1)} className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center font-black text-[#1a1c14] text-lg">+</button>
@@ -537,7 +537,7 @@ export const HostessScreen: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="mb-4 pb-4 border-b border-white/10">
+                <div className="mb-4 pb-4 border-b border-[rgba(42,40,38,0.20)]">
                     <h2 className="text-xl font-black italic text-[#1a1c14] tracking-tighter uppercase">{selectedTable ? selectedTable.name : 'Sin selección'}</h2>
                     <p className="text-servirest-terracota/40 text-[8px] font-black uppercase tracking-[0.4em] italic">Consola de Mesa</p>
                 </div>
@@ -545,7 +545,7 @@ export const HostessScreen: React.FC = () => {
                 {selectedTable ? (
                     <div className="flex flex-col gap-6 animate-in fade-in">
                         {/* Status Card */}
-                        <div className="bg-white/[0.03] p-6 rounded-2xl border border-white/5 flex justify-between items-center relative overflow-hidden">
+                        <div className="bg-servirest-surface p-6 rounded-2xl border border-[rgba(42,40,38,0.12)] flex justify-between items-center relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-1 h-full bg-servirest-terracota"></div>
                             <div>
                                 <span className="text-[9px] text-servirest-terracota/40 uppercase font-black tracking-widest block mb-2 italic">Vector de Estado</span>
@@ -572,15 +572,15 @@ export const HostessScreen: React.FC = () => {
                                     Reservación Detalle
                                 </h3>
                                 <div className="space-y-4">
-                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                    <div className="flex justify-between items-center py-2 border-b border-[rgba(42,40,38,0.12)]">
                                         <span className="text-servirest-terracota/40 text-[10px] uppercase font-black tracking-widest italic">Huésped</span>
                                         <span className="font-black italic text-[#1a1c14] uppercase text-sm tracking-tight">{currentReservation.name}</span>
                                     </div>
-                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                    <div className="flex justify-between items-center py-2 border-b border-[rgba(42,40,38,0.12)]">
                                         <span className="text-servirest-terracota/40 text-[10px] uppercase font-black tracking-widest italic">Cronograma</span>
                                         <span className="font-black italic text-[#1a1c14] uppercase text-sm tracking-tight">{currentReservation.time}</span>
                                     </div>
-                                    <div className="flex justify-between items-center py-2 border-b border-white/5">
+                                    <div className="flex justify-between items-center py-2 border-b border-[rgba(42,40,38,0.12)]">
                                         <span className="text-servirest-terracota/40 text-[10px] uppercase font-black tracking-widest italic">Métrica Pax</span>
                                         <span className="font-black italic text-[#1a1c14] uppercase text-sm tracking-tight">{currentReservation.pax} PAX</span>
                                     </div>
@@ -589,7 +589,7 @@ export const HostessScreen: React.FC = () => {
                                 <div className="grid grid-cols-2 gap-3 mt-8">
                                     <button
                                         onClick={handleChangeReservationTime}
-                                        className="py-4 bg-white/5 border border-white/10 text-[#1a1c14] rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all italic"
+                                        className="py-4 bg-white/5 border border-[rgba(42,40,38,0.20)] text-[#1a1c14] rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all italic"
                                     >
                                         Edit Time
                                     </button>
@@ -613,7 +613,7 @@ export const HostessScreen: React.FC = () => {
                         {/* Check-In Action (Only if Available) */}
                         {selectedTable.status === TableStatus.AVAILABLE && !currentSession && (
                             <div className="space-y-4">
-                                <div className="p-6 bg-white/[0.02] rounded-2xl border border-white/10">
+                                <div className="p-6 bg-servirest-surface rounded-2xl border border-[rgba(42,40,38,0.20)]">
                                     <p className="text-[10px] text-servirest-terracota/40 font-black uppercase tracking-widest mb-6 italic">Asignar mesa a <b className="text-servirest-terracota underline decoration-orange-500/30 underline-offset-4">{customerName || 'Designación Vacía'}</b> con <b className="text-[#1a1c14]">{partySize}</b> personas.</p>
                                     <div className="grid grid-cols-1 gap-4">
                                         <button
@@ -627,7 +627,7 @@ export const HostessScreen: React.FC = () => {
                                         <button
                                             onClick={handleReserveTable}
                                             disabled={!customerName}
-                                            className="w-full py-4 bg-white/5 border border-white/10 text-[#1a1c14] rounded-xl font-black italic uppercase text-[9px] tracking-widest hover:bg-white/10 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-20"
+                                            className="w-full py-4 bg-white/5 border border-[rgba(42,40,38,0.20)] text-[#1a1c14] rounded-xl font-black italic uppercase text-[9px] tracking-widest hover:bg-white/10 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-20"
                                         >
                                             <Bookmark size={14} className="text-yellow-500" />
                                             Apartar Mesa (Reserve)
@@ -663,10 +663,10 @@ export const HostessScreen: React.FC = () => {
                                             onClick={() => handleAssignWaiter(waiter.id)}
                                             className={`flex flex-col items-center p-3 rounded-2xl border transition-all ${assignedWaiterId === waiter.id
                                                 ? 'border-solaris-orange bg-servirest-terracota/10'
-                                                : 'border-white/5 bg-white/[0.02] hover:border-white/20'
+                                                : 'border-[rgba(42,40,38,0.12)] bg-servirest-surface hover:border-[rgba(42,40,38,0.20)]'
                                                 }`}
                                         >
-                                            <div className="w-12 h-12 rounded-full overflow-hidden mb-2 border border-white/10">
+                                            <div className="w-12 h-12 rounded-full overflow-hidden mb-2 border border-[rgba(42,40,38,0.20)]">
                                                 <img src={waiter.image} alt={waiter.name} className="w-full h-full object-cover" />
                                             </div>
                                             <span className="text-[9px] font-black text-[#2A2826]/60 text-center leading-tight uppercase tracking-tighter truncate w-full">{waiter.name.split(' ')[0]}</span>
@@ -677,11 +677,11 @@ export const HostessScreen: React.FC = () => {
                         )}
 
                         {/* Actions */}
-                        <div className="border-t border-white/10 pt-8 space-y-4">
+                        <div className="border-t border-[rgba(42,40,38,0.20)] pt-8 space-y-4">
                             <div className="flex gap-3 mb-4">
                                 <button 
                                     onClick={handleOpenEditModal}
-                                    className="flex-1 py-4 bg-white/5 border border-white/10 text-[#2A2826]/60 rounded-xl font-black uppercase italic text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-white/10 transition-all"
+                                    className="flex-1 py-4 bg-white/5 border border-[rgba(42,40,38,0.20)] text-[#2A2826]/60 rounded-xl font-black uppercase italic text-[10px] tracking-widest flex items-center justify-center gap-3 hover:bg-white/10 transition-all"
                                 >
                                     <Edit3 size={14} />
                                     Ajustes
@@ -701,7 +701,7 @@ export const HostessScreen: React.FC = () => {
                                         <XCircle size={18} />
                                         Abortar Comanda
                                     </button>
-                                    <button onClick={handleClearTable} className="w-full py-4 bg-white/[0.03] border border-white/10 hover:bg-white/10 text-[#1a1c14] rounded-xl font-black italic uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-3">
+                                    <button onClick={handleClearTable} className="w-full py-4 bg-servirest-surface border border-[rgba(42,40,38,0.20)] hover:bg-white/10 text-[#1a1c14] rounded-xl font-black italic uppercase text-[10px] tracking-widest transition-all flex items-center justify-center gap-3">
                                         <RotateCw size={14} />
                                         Estatus Post-Servicio
                                     </button>
@@ -732,7 +732,7 @@ export const HostessScreen: React.FC = () => {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="bg-white border border-white/10 rounded-[32px] p-10 w-full max-w-[420px] shadow-2xl relative overflow-hidden"
+                            className="bg-white border border-[rgba(42,40,38,0.20)] rounded-[32px] p-10 w-full max-w-[420px] shadow-2xl relative overflow-hidden"
                         >
                             <div className="absolute top-0 left-0 w-full h-1 bg-servirest-terracota"></div>
                             <div className="flex justify-between items-center mb-10">
@@ -749,16 +749,16 @@ export const HostessScreen: React.FC = () => {
                                         value={newTableName}
                                         onChange={(e) => setNewTableName(e.target.value)}
                                         placeholder="ej. MESA 24"
-                                        className="w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl outline-none focus:border-solaris-orange font-black italic text-[#1a1c14] transition-all text-lg placeholder:text-[#2A2826]/5 uppercase tracking-tight"
+                                        className="w-full p-5 bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-2xl outline-none focus:border-solaris-orange font-black italic text-[#1a1c14] transition-all text-lg placeholder:text-[#2A2826]/5 uppercase tracking-tight"
                                         autoFocus
                                     />
                                 </div>
-                                <div className="bg-white/[0.02] p-8 rounded-2xl border border-white/5">
+                                <div className="bg-servirest-surface p-8 rounded-2xl border border-[rgba(42,40,38,0.12)]">
                                     <label className="text-[9px] font-black text-[#2A2826]/30 uppercase tracking-[0.5em] block mb-6 text-center">Capacidad Máxima PAX</label>
                                     <div className="flex items-center justify-center gap-10">
-                                        <button onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-[#1a1c14] transition-all border border-white/5">-</button>
+                                        <button onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-[#1a1c14] transition-all border border-[rgba(42,40,38,0.12)]">-</button>
                                         <span className="font-black italic text-5xl text-servirest-terracota w-16 text-center">{newTableSeats}</span>
-                                        <button onClick={() => setNewTableSeats(newTableSeats + 1)} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-[#1a1c14] transition-all border border-white/5">+</button>
+                                        <button onClick={() => setNewTableSeats(newTableSeats + 1)} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-[#1a1c14] transition-all border border-[rgba(42,40,38,0.12)]">+</button>
                                     </div>
                                 </div>
                                 <div className="flex gap-4 mt-10">
@@ -776,7 +776,7 @@ export const HostessScreen: React.FC = () => {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="bg-white border border-white/10 rounded-[32px] p-10 w-full max-w-[420px] shadow-2xl relative overflow-hidden"
+                            className="bg-white border border-[rgba(42,40,38,0.20)] rounded-[32px] p-10 w-full max-w-[420px] shadow-2xl relative overflow-hidden"
                         >
                             <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
                             <div className="flex justify-between items-center mb-10">
@@ -788,14 +788,14 @@ export const HostessScreen: React.FC = () => {
                             <div className="space-y-8">
                                 <div>
                                     <label className="text-[9px] font-black text-[#2A2826]/30 uppercase tracking-[0.5em] block mb-3">Identificador</label>
-                                    <input type="text" value={newTableName} onChange={(e) => setNewTableName(e.target.value)} className="w-full p-5 bg-white/[0.03] border border-white/10 rounded-2xl outline-none focus:border-blue-500 font-black italic text-[#1a1c14] transition-all text-lg placeholder:text-[#2A2826]/5 uppercase tracking-tight" autoFocus />
+                                    <input type="text" value={newTableName} onChange={(e) => setNewTableName(e.target.value)} className="w-full p-5 bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-2xl outline-none focus:border-blue-500 font-black italic text-[#1a1c14] transition-all text-lg placeholder:text-[#2A2826]/5 uppercase tracking-tight" autoFocus />
                                 </div>
-                                <div className="bg-white/[0.02] p-8 rounded-2xl border border-white/5">
+                                <div className="bg-servirest-surface p-8 rounded-2xl border border-[rgba(42,40,38,0.12)]">
                                     <label className="text-[9px] font-black text-[#2A2826]/30 uppercase tracking-[0.5em] block mb-6 text-center">Protocolo Pax</label>
                                     <div className="flex items-center justify-center gap-10">
-                                        <button onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-[#1a1c14] transition-all border border-white/5">-</button>
+                                        <button onClick={() => setNewTableSeats(Math.max(1, newTableSeats - 1))} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-[#1a1c14] transition-all border border-[rgba(42,40,38,0.12)]">-</button>
                                         <span className="font-black italic text-5xl text-blue-500 w-16 text-center">{newTableSeats}</span>
-                                        <button onClick={() => setNewTableSeats(newTableSeats + 1)} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-[#1a1c14] transition-all border border-white/5">+</button>
+                                        <button onClick={() => setNewTableSeats(newTableSeats + 1)} className="w-14 h-14 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center font-black text-2xl text-[#1a1c14] transition-all border border-[rgba(42,40,38,0.12)]">+</button>
                                     </div>
                                 </div>
                                 <div className="flex gap-4 mt-10">

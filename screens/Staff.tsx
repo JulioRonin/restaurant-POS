@@ -107,11 +107,11 @@ export const StaffScreen: React.FC = () => {
                 </motion.div>
 
                 <div className="flex gap-4 items-center flex-wrap">
-                    <button onClick={handleDownload} className="bg-white/[0.03] border border-white/5 text-[#2A2826]/55 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-white/[0.05] hover:text-[#1a1c14] transition-all">
+                    <button onClick={handleDownload} className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[#2A2826]/55 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-servirest-surface hover:text-[#1a1c14] transition-all">
                         <FileText size={16} /> Export Intel
                     </button>
                     
-                    <div className="bg-white/[0.03] border border-white/5 p-1 rounded-2xl flex">
+                    <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-1 rounded-2xl flex">
                         <button onClick={() => setViewMode('grid')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${viewMode === 'grid' ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/30 hover:text-[#1a1c14]'}`}>
                             <LayoutGrid size={14} /> Lista
                         </button>
@@ -136,8 +136,8 @@ export const StaffScreen: React.FC = () => {
                         { label: 'Activos', val: onShiftCount, icon: UserCheck, color: 'text-servirest-terracota' },
                         { label: 'Asistencia', val: '4.8', icon: Star, color: 'text-servirest-terracota' },
                     ].map((s, i) => (
-                        <div key={i} className="bg-white/[0.02] border border-white/5 p-6 rounded-solaris flex items-center gap-6">
-                            <div className={`p-4 bg-white/[0.03] rounded-2xl ${s.color}`}><s.icon size={24} /></div>
+                        <div key={i} className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-6 rounded-solaris flex items-center gap-6">
+                            <div className={`p-4 bg-servirest-surface rounded-2xl ${s.color}`}><s.icon size={24} /></div>
                             <div>
                                 <h3 className="text-2xl font-black italic tracking-tighter text-[#1a1c14]">{s.val}</h3>
                                 <p className="text-[9px] font-black uppercase tracking-widest text-servirest-terracota/40">{s.label}</p>
@@ -146,9 +146,9 @@ export const StaffScreen: React.FC = () => {
                     ))}
                 </div>
 
-                <div className="bg-white/[0.02] border border-white/5 p-2 rounded-2xl flex items-center gap-1 overflow-x-auto min-w-max">
+                <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-2 rounded-2xl flex items-center gap-1 overflow-x-auto min-w-max">
                     {areas.map(area => (
-                        <button key={area} onClick={() => setSelectedArea(area)} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectedArea === area ? 'bg-white/[0.05] text-servirest-terracota border border-solaris-orange/20' : 'text-[#2A2826]/30 hover:text-[#1a1c14]'}`}>
+                        <button key={area} onClick={() => setSelectedArea(area)} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectedArea === area ? 'bg-servirest-surface text-servirest-terracota border border-solaris-orange/20' : 'text-[#2A2826]/30 hover:text-[#1a1c14]'}`}>
                             {area}
                         </button>
                     ))}
@@ -157,7 +157,7 @@ export const StaffScreen: React.FC = () => {
 
             <div ref={printRef} className="space-y-12 pb-20">
             {filteredStaff.length === 0 ? (
-                <div className="bg-white/[0.01] rounded-solaris p-20 flex flex-col items-center justify-center text-center border border-white/5 border-dashed">
+                <div className="bg-servirest-surface rounded-solaris p-20 flex flex-col items-center justify-center text-center border border-[rgba(42,40,38,0.12)] border-dashed">
                     <Search size={64} className="text-[#2A2826]/5 mb-6" />
                     <h2 className="text-xl font-black italic text-[#1a1c14] uppercase tracking-tighter mb-2">No Bio-ID Detected</h2>
                     <p className="text-servirest-terracota/20 text-[10px] font-bold uppercase tracking-widest max-w-sm mb-10">Iniciando Buscar empleado...</p>
@@ -171,10 +171,10 @@ export const StaffScreen: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredStaff.map(emp => (
                         <div key={emp.id}>
-                            <GlowCard glowColor="orange" className={`relative group border !p-8 ${emp.status === 'ON_SHIFT' ? 'border-solaris-orange/20' : 'border-white/5'}`}>
+                            <GlowCard glowColor="orange" className={`relative group border !p-8 ${emp.status === 'ON_SHIFT' ? 'border-solaris-orange/20' : 'border-[rgba(42,40,38,0.12)]'}`}>
                                 <div className="flex flex-col items-center">
                                     <div className="relative mb-6">
-                                        <div className={`w-28 h-28 rounded-full p-1 border-2 transition-all ${emp.status === 'ON_SHIFT' ? 'border-solaris-orange' : 'border-white/10 opacity-50'}`}>
+                                        <div className={`w-28 h-28 rounded-full p-1 border-2 transition-all ${emp.status === 'ON_SHIFT' ? 'border-solaris-orange' : 'border-[rgba(42,40,38,0.20)] opacity-50'}`}>
                                             <img 
                                                 src={emp.image || `https://ui-avatars.com/api/?name=${emp.name}&background=333&color=fff`} 
                                                 alt={emp.name} 
@@ -186,15 +186,15 @@ export const StaffScreen: React.FC = () => {
                                     <h3 className="text-lg font-black italic text-[#1a1c14] tracking-tight text-center mb-1 uppercase">{emp.name}</h3>
                                     <p className="text-servirest-terracota text-[9px] font-black uppercase tracking-[0.3em] mb-4">{emp.role}</p>
                                     
-                                    <div className="w-full grid grid-cols-2 gap-2 text-center mb-8 bg-white/[0.03] p-4 rounded-2xl border border-white/5">
+                                    <div className="w-full grid grid-cols-2 gap-2 text-center mb-8 bg-servirest-surface p-4 rounded-2xl border border-[rgba(42,40,38,0.12)]">
                                         <div><p className="text-[10px] font-black text-[#1a1c14] italic">{emp.hoursWorked}h</p><p className="text-[8px] font-black uppercase text-servirest-terracota/40">Payload</p></div>
                                         <div><p className="text-[10px] font-black text-[#1a1c14] flex items-center justify-center gap-1 italic">{emp.rating} <Star size={10} className="text-servirest-terracota" /></p><p className="text-[8px] font-black uppercase text-servirest-terracota/40">Calificación</p></div>
                                     </div>
 
                                     <div className="flex gap-2 w-full">
-                                        <button onClick={() => handleProfileClick(emp)} className="flex-1 py-3 px-4 rounded-xl bg-white/[0.03] border border-white/10 text-[9px] font-black uppercase tracking-widest text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">Profile</button>
+                                        <button onClick={() => handleProfileClick(emp)} className="flex-1 py-3 px-4 rounded-xl bg-servirest-surface border border-[rgba(42,40,38,0.20)] text-[9px] font-black uppercase tracking-widest text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">Profile</button>
                                         {(activeEmployee?.role?.toLowerCase() === 'admin' || isSuperAdmin) && (
-                                            <button onClick={() => handleScheduleClick(emp)} className="flex-1 py-3 px-4 rounded-xl bg-white/[0.03] border border-white/10 text-[9px] font-black uppercase tracking-widest text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">Tasking</button>
+                                            <button onClick={() => handleScheduleClick(emp)} className="flex-1 py-3 px-4 rounded-xl bg-servirest-surface border border-[rgba(42,40,38,0.20)] text-[9px] font-black uppercase tracking-widest text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">Tasking</button>
                                         )}
                                     </div>
                                 </div>
@@ -206,11 +206,11 @@ export const StaffScreen: React.FC = () => {
                     ))}
                 </div>
             ) : (
-                <div className="bg-white/[0.02] border border-white/5 rounded-solaris overflow-hidden">
+                <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-solaris overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
                             <thead>
-                                <tr className="border-b border-white/5 text-servirest-terracota/40 text-[9px] font-black uppercase tracking-[0.3em]">
+                                <tr className="border-b border-[rgba(42,40,38,0.12)] text-servirest-terracota/40 text-[9px] font-black uppercase tracking-[0.3em]">
                                     <th className="py-6 px-8 italic">Operator Biological ID</th>
                                     {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => <th key={day} className="py-6 px-4 text-center">{day}</th>)}
                                     <th className="py-6 px-8 text-right italic">Horas</th>
@@ -218,7 +218,7 @@ export const StaffScreen: React.FC = () => {
                             </thead>
                             <tbody className="text-sm">
                                 {filteredStaff.map(emp => (
-                                    <tr key={emp.id} className="border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors group">
+                                    <tr key={emp.id} className="border-b border-[rgba(42,40,38,0.12)] hover:bg-servirest-surface transition-colors group">
                                         <td className="py-6 px-8">
                                             <div className="flex items-center gap-4">
                                                 <img 
@@ -236,7 +236,7 @@ export const StaffScreen: React.FC = () => {
                                             const shift = emp.schedule?.find(s => s.day === day);
                                             return (
                                                 <td key={day} className="py-6 px-4 text-center">
-                                                    <div className={`min-w-[80px] h-10 mx-auto rounded-xl flex items-center justify-center transition-all ${shift ? 'bg-servirest-terracota/10 border border-solaris-orange/30 animate-pulse' : 'bg-white/[0.01] border border-white/5 opacity-20'}`}>
+                                                    <div className={`min-w-[80px] h-10 mx-auto rounded-xl flex items-center justify-center transition-all ${shift ? 'bg-servirest-terracota/10 border border-solaris-orange/30 animate-pulse' : 'bg-servirest-surface border border-[rgba(42,40,38,0.12)] opacity-20'}`}>
                                                        {shift ? (
                                                             <div className="text-center">
                                                                 <p className="text-[8px] font-bold text-[#1a1c14] leading-none">{shift.start}</p>
@@ -269,7 +269,7 @@ export const StaffScreen: React.FC = () => {
                     >
                         <motion.div 
                             initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                            className="bg-white border border-white/10 rounded-solaris w-full max-w-lg overflow-hidden shadow-2xl"
+                            className="bg-white border border-[rgba(42,40,38,0.20)] rounded-solaris w-full max-w-lg overflow-hidden shadow-2xl"
                         >
                             <div className="p-10">
                                 <div className="flex justify-between items-center mb-10">
@@ -281,16 +281,16 @@ export const StaffScreen: React.FC = () => {
                                     <form onSubmit={handleAddEmployee} className="space-y-8">
                                         <div className="space-y-2">
                                             <label className="text-[9px] font-black uppercase text-servirest-terracota/60 tracking-widest px-1 italic">Nombre</label>
-                                            <input name="name" type="text" required placeholder="Unidad de Personal" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold placeholder:text-[#2A2826]/5" />
+                                            <input name="name" type="text" required placeholder="Unidad de Personal" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold placeholder:text-[#2A2826]/5" />
                                         </div>
                                         <div className="grid grid-cols-2 gap-6">
                                             <div className="space-y-2">
                                                 <label className="text-[9px] font-black uppercase text-servirest-terracota/60 tracking-widest px-1 italic">Puesto</label>
-                                                <input name="role" type="text" required placeholder="Role" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold placeholder:text-[#2A2826]/5" />
+                                                <input name="role" type="text" required placeholder="Role" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold placeholder:text-[#2A2826]/5" />
                                             </div>
                                             <div className="space-y-2">
                                                 <label className="text-[9px] font-black uppercase text-servirest-terracota/60 tracking-widest px-1 italic">Área</label>
-                                                <select name="area" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold appearance-none">
+                                                <select name="area" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold appearance-none">
                                                     <option value="Kitchen" className="bg-white">Kitchen</option>
                                                     <option value="Service" className="bg-white">Service</option>
                                                     <option value="Bar" className="bg-white">Bar</option>
@@ -307,7 +307,7 @@ export const StaffScreen: React.FC = () => {
                                  {activeModal === 'profile' && selectedEmployee && (
                                     <div className="space-y-8">
                                         <div className="flex items-center gap-8 mb-10">
-                                            <img src={selectedEmployee.image} className="w-24 h-24 rounded-solaris border border-white/10" alt="" />
+                                            <img src={selectedEmployee.image} className="w-24 h-24 rounded-solaris border border-[rgba(42,40,38,0.20)]" alt="" />
                                             <div className="flex-1">
                                                 {!isEditing ? (
                                                     <>
@@ -319,12 +319,12 @@ export const StaffScreen: React.FC = () => {
                                                         <input 
                                                             value={editingEmployee.name} 
                                                             onChange={e => setEditingEmployee({...editingEmployee, name: e.target.value})}
-                                                            className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-2 px-4 text-[#1a1c14] text-sm font-black italic uppercase"
+                                                            className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-xl py-2 px-4 text-[#1a1c14] text-sm font-black italic uppercase"
                                                         />
                                                         <input 
                                                             value={editingEmployee.role} 
                                                             onChange={e => setEditingEmployee({...editingEmployee, role: e.target.value})}
-                                                            className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-2 px-4 text-servirest-terracota text-[10px] font-black uppercase"
+                                                            className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-xl py-2 px-4 text-servirest-terracota text-[10px] font-black uppercase"
                                                         />
                                                     </div>
                                                 )}
@@ -332,7 +332,7 @@ export const StaffScreen: React.FC = () => {
                                         </div>
                                         
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl text-center">
+                                            <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-4 rounded-2xl text-center">
                                                 <p className="text-[8px] font-black text-servirest-terracota/40 uppercase mb-1">Sector node</p>
                                                 {isEditing ? (
                                                     <select 
@@ -346,7 +346,7 @@ export const StaffScreen: React.FC = () => {
                                                     <p className="text-[10px] font-black text-[#1a1c14] italic">{selectedEmployee.area}</p>
                                                 )}
                                             </div>
-                                            <div className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl text-center">
+                                            <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-4 rounded-2xl text-center">
                                                 <p className="text-[8px] font-black text-servirest-terracota/40 uppercase mb-1">Status</p>
                                                 <p className="text-[10px] font-black text-[#1a1c14] italic">{selectedEmployee.status}</p>
                                             </div>
@@ -361,7 +361,7 @@ export const StaffScreen: React.FC = () => {
                                             </button>
                                         ) : (
                                             <div className="flex gap-4">
-                                                <button onClick={() => setIsEditing(false)} className="flex-1 bg-white/[0.03] border border-white/10 text-[#2A2826]/55 font-black uppercase py-4 rounded-xl text-[10px] tracking-widest">Cancel</button>
+                                                <button onClick={() => setIsEditing(false)} className="flex-1 bg-servirest-surface border border-[rgba(42,40,38,0.20)] text-[#2A2826]/55 font-black uppercase py-4 rounded-xl text-[10px] tracking-widest">Cancel</button>
                                                 <button onClick={handleSaveEmployee} className="flex-1 bg-servirest-terracota text-[#1a1c14] font-black uppercase py-4 rounded-xl text-[10px] tracking-widest shadow-solaris-glow">Save Changes</button>
                                             </div>
                                         )}
@@ -370,8 +370,8 @@ export const StaffScreen: React.FC = () => {
 
                                 {activeModal === 'schedule' && selectedEmployee && (
                                     <div className="space-y-8 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
-                                        <div className="flex items-center gap-6 mb-8 border-b border-white/5 pb-6">
-                                            <img src={selectedEmployee.image} className="w-16 h-16 rounded-2xl grayscale brightness-75 border border-white/10" alt="" />
+                                        <div className="flex items-center gap-6 mb-8 border-b border-[rgba(42,40,38,0.12)] pb-6">
+                                            <img src={selectedEmployee.image} className="w-16 h-16 rounded-2xl grayscale brightness-75 border border-[rgba(42,40,38,0.20)]" alt="" />
                                             <div>
                                                 <h3 className="text-xl font-black italic text-[#1a1c14] uppercase tracking-tight">{selectedEmployee.name}</h3>
                                                 <p className="text-servirest-terracota text-[8px] font-black uppercase tracking-widest">Temporal Tasking Lista</p>
@@ -382,12 +382,12 @@ export const StaffScreen: React.FC = () => {
                                         <div className="space-y-3">
                                             <label className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest italic ml-1">Turnos activos</label>
                                             {(editingEmployee.schedule || []).length === 0 ? (
-                                                <div className="p-8 rounded-2xl border border-dashed border-white/5 text-center">
+                                                <div className="p-8 rounded-2xl border border-dashed border-[rgba(42,40,38,0.12)] text-center">
                                                     <p className="text-[9px] font-black uppercase tracking-widest text-[#2A2826]/10">No tasks assigned</p>
                                                 </div>
                                             ) : (
                                                 editingEmployee.schedule?.map((shift, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between bg-white/[0.02] border border-white/5 p-4 rounded-2xl animate-in fade-in slide-in-from-right-2">
+                                                    <div key={idx} className="flex items-center justify-between bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-4 rounded-2xl animate-in fade-in slide-in-from-right-2">
                                                         <div>
                                                             <p className="text-[10px] font-black text-servirest-terracota uppercase tracking-widest">{shift.day}</p>
                                                             <p className="text-[12px] font-black text-[#1a1c14] italic">{shift.start} — {shift.end}</p>
@@ -408,22 +408,22 @@ export const StaffScreen: React.FC = () => {
                                         </div>
 
                                         {/* Add New Shift */}
-                                        <div className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl space-y-6">
+                                        <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-6 rounded-3xl space-y-6">
                                             <h4 className="text-[10px] font-black uppercase tracking-widest text-[#2A2826]/55 italic">New Temporal Allocation</h4>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div className="col-span-2">
                                                     <label className="text-[8px] font-black uppercase text-[#2A2826]/10 mb-2 block">Day</label>
-                                                    <select id="new-shift-day" className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-black appearance-none outline-none focus:border-solaris-orange/50 transition-all">
+                                                    <select id="new-shift-day" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-black appearance-none outline-none focus:border-solaris-orange/50 transition-all">
                                                         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => <option key={d} value={d} className="bg-white">{d}</option>)}
                                                     </select>
                                                 </div>
                                                 <div>
                                                     <label className="text-[8px] font-black uppercase text-[#2A2826]/10 mb-2 block">Start</label>
-                                                    <input id="new-shift-start" type="time" defaultValue="09:00" className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-black outline-none focus:border-solaris-orange/50 transition-all" />
+                                                    <input id="new-shift-start" type="time" defaultValue="09:00" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-black outline-none focus:border-solaris-orange/50 transition-all" />
                                                 </div>
                                                 <div>
                                                     <label className="text-[8px] font-black uppercase text-[#2A2826]/10 mb-2 block">End</label>
-                                                    <input id="new-shift-end" type="time" defaultValue="17:00" className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-black outline-none focus:border-solaris-orange/50 transition-all" />
+                                                    <input id="new-shift-end" type="time" defaultValue="17:00" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-black outline-none focus:border-solaris-orange/50 transition-all" />
                                                 </div>
                                             </div>
                                             <button 
@@ -434,7 +434,7 @@ export const StaffScreen: React.FC = () => {
                                                     const newSched = [...(editingEmployee.schedule || []), { day, start, end }];
                                                     setEditingEmployee({...editingEmployee, schedule: newSched});
                                                 }}
-                                                className="w-full bg-white/[0.04] border border-solaris-orange/20 text-servirest-terracota font-black uppercase py-4 rounded-xl text-[9px] tracking-widest hover:bg-servirest-terracota hover:text-[#1a1c14] transition-all shadow-lg hover:shadow-solaris-glow"
+                                                className="w-full bg-servirest-surface border border-solaris-orange/20 text-servirest-terracota font-black uppercase py-4 rounded-xl text-[9px] tracking-widest hover:bg-servirest-terracota hover:text-[#1a1c14] transition-all shadow-lg hover:shadow-solaris-glow"
                                             >
                                                 Inject Shift Data
                                             </button>

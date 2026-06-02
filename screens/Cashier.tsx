@@ -191,13 +191,13 @@ export const CashierScreen: React.FC = () => {
 
             <div className="flex-1 flex overflow-hidden flex-col lg:flex-row relative">
                 {/* Left Navigation Panel — Reduced width for more workspace */}
-                <div className={`${selectedOrder ? 'hidden lg:flex' : 'flex'} w-full lg:w-80 border-r border-white/5 flex-col no-print bg-[#F0F0E8]/50 shrink-0 h-full`}>
+                <div className={`${selectedOrder ? 'hidden lg:flex' : 'flex'} w-full lg:w-80 border-r border-[rgba(42,40,38,0.12)] flex-col no-print bg-[#F0F0E8]/50 shrink-0 h-full`}>
                     <div className="p-6 md:p-8 space-y-6 md:space-y-8">
                         <div>
                            <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase mb-2">Terminal Ops</h1>
                            <p className="text-servirest-terracota/40 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.4em]">Cobros y caja</p>
                         </div>
-                        <div className="flex bg-white/[0.03] border border-white/5 p-1 rounded-2xl">
+                        <div className="flex bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-1 rounded-2xl">
                              {[
                                 { id: 'tables', icon: Wallet, label: 'Nodes' },
                                 { id: 'delivery', icon: Truck, label: 'Grid' },
@@ -221,7 +221,7 @@ export const CashierScreen: React.FC = () => {
                                 <motion.div
                                     key={table.id}
                                     onClick={() => order && setSelectedTableId(table.id)}
-                                    className={`p-5 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden ${isSelected ? 'bg-servirest-terracota/10 border-servirest-terracota shadow-solaris-glow' : order ? 'bg-white/[0.03] border-white/10 hover:border-white/20' : 'bg-transparent border-dashed border-white/5 opacity-30 cursor-default'}`}
+                                    className={`p-5 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden ${isSelected ? 'bg-servirest-terracota/10 border-servirest-terracota shadow-solaris-glow' : order ? 'bg-servirest-surface border-[rgba(42,40,38,0.20)] hover:border-[rgba(42,40,38,0.20)]' : 'bg-transparent border-dashed border-[rgba(42,40,38,0.12)] opacity-30 cursor-default'}`}
                                 >
                                     {isRequested && (
                                         <div className="absolute top-0 right-0 bg-servirest-terracota text-[#1a1c14] px-3 py-1 text-[8px] font-black tracking-widest uppercase animate-pulse italic">
@@ -240,7 +240,7 @@ export const CashierScreen: React.FC = () => {
                         })}
 
                         {activeTab === 'delivery' && orders.filter(o => o.source && o.source !== OrderSource.DINE_IN && o.status !== 'COMPLETED').map(order => (
-                             <div key={order.id} onClick={() => setSelectedTableId(order.id)} className={`p-5 rounded-2xl border cursor-pointer transition-all ${selectedTableId === order.id ? 'border-servirest-terracota bg-servirest-terracota/10' : 'border-white/5 bg-white/[0.03] hover:border-white/20'}`}>
+                             <div key={order.id} onClick={() => setSelectedTableId(order.id)} className={`p-5 rounded-2xl border cursor-pointer transition-all ${selectedTableId === order.id ? 'border-servirest-terracota bg-servirest-terracota/10' : 'border-[rgba(42,40,38,0.12)] bg-servirest-surface hover:border-[rgba(42,40,38,0.20)]'}`}>
                                  <div className="flex justify-between items-start">
                                      <div>
                                          <p className="text-[10px] font-black uppercase text-servirest-terracota tracking-widest mb-1 italic">{order.source}</p>
@@ -254,12 +254,12 @@ export const CashierScreen: React.FC = () => {
                         {activeTab === 'expenses' && (
                             <div className="space-y-4">
                                 {/* Add expense form */}
-                                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 space-y-3">
+                                <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl p-5 space-y-3">
                                     <p className="text-[9px] font-black uppercase text-servirest-terracota/40 tracking-widest italic">Register Expense</p>
-                                    <input value={newExpenseDesc} onChange={e => setNewExpenseDesc(e.target.value)} placeholder="Description..." className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40" />
+                                    <input value={newExpenseDesc} onChange={e => setNewExpenseDesc(e.target.value)} placeholder="Description..." className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40" />
                                     <div className="grid grid-cols-2 gap-2">
-                                        <input value={newExpenseAmount} onChange={e => setNewExpenseAmount(e.target.value)} type="number" placeholder="$0.00" className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40" />
-                                        <select value={newExpenseCategory} onChange={e => setNewExpenseCategory(e.target.value as any)} className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40 appearance-none">
+                                        <input value={newExpenseAmount} onChange={e => setNewExpenseAmount(e.target.value)} type="number" placeholder="$0.00" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40" />
+                                        <select value={newExpenseCategory} onChange={e => setNewExpenseCategory(e.target.value as any)} className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40 appearance-none">
                                             {['Insumos','Renta','Servicios','Nómina','Mantenimiento','Otros'].map(c => <option key={c} value={c} className="bg-[#FAF8F4]">{c}</option>)}
                                         </select>
                                     </div>
@@ -269,7 +269,7 @@ export const CashierScreen: React.FC = () => {
                                             type="date" 
                                             value={newExpenseDate} 
                                             onChange={e => setNewExpenseDate(e.target.value)} 
-                                            className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-2 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40" 
+                                            className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-xl py-2 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40" 
                                         />
                                     </div>
                                     <button
@@ -292,7 +292,7 @@ export const CashierScreen: React.FC = () => {
                                 </div>
                                 {/* Expense list */}
                                 {expenses.map(exp => (
-                                    <div key={exp.id} className="flex justify-between items-center p-4 bg-white/[0.02] border border-white/5 rounded-xl group">
+                                    <div key={exp.id} className="flex justify-between items-center p-4 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-xl group">
                                         <div>
                                             <p className="text-xs font-black italic text-[#2A2826]/80 uppercase tracking-tight">{exp.description}</p>
                                             <p className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest">{exp.category}</p>
@@ -310,14 +310,14 @@ export const CashierScreen: React.FC = () => {
                         {activeTab === 'history' && (
                             <div className="space-y-6">
                                 {/* Control Hub for Logs */}
-                                <div className="bg-white/[0.02] border border-white/5 rounded-[32px] p-6 space-y-6">
+                                <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-[32px] p-6 space-y-6">
                                     <div>
                                         <p className="text-[10px] font-black uppercase text-[#2A2826]/30 tracking-widest mb-3 italic">Temporal Range</p>
                                         <input
                                             type="date"
                                             value={selectedDate}
                                             onChange={e => setSelectedDate(e.target.value)}
-                                            className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-3 px-5 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40"
+                                            className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-3 px-5 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40"
                                         />
                                     </div>
 
@@ -358,7 +358,7 @@ export const CashierScreen: React.FC = () => {
                                                     setSuccessMessage('CASH_CUT_PRINTED'); setTimeout(() => setSuccessMessage(null), 2000);
                                                 }
                                             }}
-                                            className="w-full flex items-center justify-center gap-3 py-4 bg-white/[0.03] border border-white/10 rounded-2xl text-[#2A2826]/60 hover:text-[#1a1c14] hover:border-white/20 transition-all font-black text-[10px] uppercase tracking-widest"
+                                            className="w-full flex items-center justify-center gap-3 py-4 bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-2xl text-[#2A2826]/60 hover:text-[#1a1c14] hover:border-[rgba(42,40,38,0.20)] transition-all font-black text-[10px] uppercase tracking-widest"
                                         >
                                             <Printer size={16} /> Reimprimir ticket
                                         </button>
@@ -396,7 +396,7 @@ export const CashierScreen: React.FC = () => {
                                     <p className="text-[12px] font-black uppercase text-servirest-terracota/60 tracking-[0.5em] mt-3 italic">Hoy: {selectedDate} • sincronización al día</p>
                                 </div>
                                 <div className="flex gap-4">
-                                    <div className="px-6 py-3 bg-white/[0.02] border border-white/5 rounded-2xl flex items-center gap-4">
+                                    <div className="px-6 py-3 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl flex items-center gap-4">
                                         <div className={`w-3 h-3 rounded-full ${navigator.onLine ? 'bg-green-500 shadow-[0_0_10px_green]' : 'bg-red-500 animate-pulse'}`} />
                                         <span className="text-[10px] font-black uppercase text-[#2A2826]/55 tracking-widest">{navigator.onLine ? 'Uplink Stable' : 'Offline Mode'}</span>
                                     </div>
@@ -411,7 +411,7 @@ export const CashierScreen: React.FC = () => {
                                     { label: 'Tarjeta (Card)', value: salesMetrics.cardSales, color: 'text-blue-400', icon: CreditCard, glow: 'blue' },
                                     { label: 'Total', value: salesMetrics.totalRevenue - expenses.filter(e => e.date.startsWith(selectedDate)).reduce((s, e) => s + Number(e.amount || 0), 0), color: 'text-servirest-terracota', icon: TrendingUp, glow: 'orange' }
                                 ].map((kpi, i) => (
-                                    <GlowCard key={i} glowColor={kpi.glow as any} customSize className="w-full !p-8 bg-white/[0.01] border-white/5 rounded-[32px]">
+                                    <GlowCard key={i} glowColor={kpi.glow as any} customSize className="w-full !p-8 bg-servirest-surface border-[rgba(42,40,38,0.12)] rounded-[32px]">
                                         <div className="flex items-center gap-4 mb-3 opacity-30">
                                             <kpi.icon size={16} />
                                             <p className="text-[9px] font-black uppercase tracking-widest">{kpi.label}</p>
@@ -423,8 +423,8 @@ export const CashierScreen: React.FC = () => {
 
                             {/* Detailed Transaction Ledger */}
                             <div className="flex-1 flex flex-col min-h-0">
-                                <GlowCard customSize glowColor="orange" className="w-full h-full !p-0 bg-white/[0.01] border-white/5 rounded-[40px] flex flex-col overflow-hidden">
-                                     <div className="px-10 py-6 border-b border-white/5 bg-white/[0.02] flex justify-between items-center shrink-0">
+                                <GlowCard customSize glowColor="orange" className="w-full h-full !p-0 bg-servirest-surface border-[rgba(42,40,38,0.12)] rounded-[40px] flex flex-col overflow-hidden">
+                                     <div className="px-10 py-6 border-b border-[rgba(42,40,38,0.12)] bg-servirest-surface flex justify-between items-center shrink-0">
                                         <p className="text-[10px] font-black uppercase text-[#2A2826]/45 tracking-widest italic font-mono">Detailed Transaction Ledger</p>
                                         <p className="text-[10px] font-black uppercase text-[#2A2826]/45 tracking-widest italic font-mono">Count: {filteredByDateOrders.length} Events</p>
                                      </div>
@@ -442,10 +442,10 @@ export const CashierScreen: React.FC = () => {
                                             </thead>
                                             <tbody>
                                                 {filteredByDateOrders.map(order => (
-                                                    <tr key={order.id} className="group hover:bg-white/[0.02] transition-all">
-                                                        <td className="px-6 py-5 bg-white/[0.02] rounded-l-[24px] border-y border-l border-white/5 font-mono text-[11px] text-[#2A2826]/60">TX-{order.id.slice(0, 8).toUpperCase()}</td>
-                                                        <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5 text-[11px] font-black italic text-[#2A2826]/55">{new Date(order.timestamp).toLocaleTimeString('es-MX')}</td>
-                                                        <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5 text-[10px] font-black uppercase italic tracking-tight max-w-[250px]">
+                                                    <tr key={order.id} className="group hover:bg-servirest-surface transition-all">
+                                                        <td className="px-6 py-5 bg-servirest-surface rounded-l-[24px] border-y border-l border-[rgba(42,40,38,0.12)] font-mono text-[11px] text-[#2A2826]/60">TX-{order.id.slice(0, 8).toUpperCase()}</td>
+                                                        <td className="px-6 py-5 bg-servirest-surface border-y border-[rgba(42,40,38,0.12)] text-[11px] font-black italic text-[#2A2826]/55">{new Date(order.timestamp).toLocaleTimeString('es-MX')}</td>
+                                                        <td className="px-6 py-5 bg-servirest-surface border-y border-[rgba(42,40,38,0.12)] text-[10px] font-black uppercase italic tracking-tight max-w-[250px]">
     <div className="flex flex-wrap gap-1">
         {(order.items || []).map((item, idx) => (
             <span key={idx} className="bg-servirest-terracota/5 text-servirest-terracota px-1.5 py-0.5 rounded-md border border-servirest-terracota/10 whitespace-nowrap">
@@ -455,17 +455,17 @@ export const CashierScreen: React.FC = () => {
         {(!order.items || order.items.length === 0) && <span className="text-[#2A2826]/20">Empty Node</span>}
     </div>
 </td>
-                                                        <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5">
+                                                        <td className="px-6 py-5 bg-servirest-surface border-y border-[rgba(42,40,38,0.12)]">
                                                             <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${order.paymentMethod === PaymentMethod.CASH ? 'border-green-500/20 text-green-400 bg-green-500/5' : 'border-blue-500/20 text-blue-400 bg-blue-500/5'}`}>
                                                                 {order.paymentMethod || 'PENDING'}
                                                             </span>
                                                         </td>
-                                                        <td className="px-6 py-5 bg-white/[0.02] border-y border-white/5">
+                                                        <td className="px-6 py-5 bg-servirest-surface border-y border-[rgba(42,40,38,0.12)]">
                                                             <span className={`text-[10px] font-black uppercase tracking-tighter ${order.status === 'COMPLETED' ? 'text-servirest-terracota' : 'text-[#2A2826]/30'}`}>
                                                                 {order.status}
                                                             </span>
                                                         </td>
-                                                        <td className="px-6 py-5 bg-white/[0.02] rounded-r-[24px] border-y border-r border-white/5 text-right font-black italic text-xl">
+                                                        <td className="px-6 py-5 bg-servirest-surface rounded-r-[24px] border-y border-r border-[rgba(42,40,38,0.12)] text-right font-black italic text-xl">
                                                             ${order.total.toFixed(2)}
                                                         </td>
                                                     </tr>
@@ -481,9 +481,9 @@ export const CashierScreen: React.FC = () => {
 
                             {/* ── CENTER CONSOLE: The Asset & Adjustment Hub ── */}
                             <div className="flex-[6] flex flex-col gap-4 md:gap-6 min-h-0 lg:overflow-visible pb-12 lg:pb-0">
-                                <GlowCard glowColor="orange" customSize className="w-full h-auto lg:h-full border border-white/10 bg-white/[0.01] !p-0 rounded-solaris lg:rounded-[40px] shadow-2xl flex flex-col">
+                                <GlowCard glowColor="orange" customSize className="w-full h-auto lg:h-full border border-[rgba(42,40,38,0.20)] bg-servirest-surface !p-0 rounded-solaris lg:rounded-[40px] shadow-2xl flex flex-col">
                                     {/* Console Header: Title & Adjustments Unified */}
-                                    <div className="px-6 md:px-10 py-6 md:py-8 border-b border-white/5 bg-white/[0.01] shrink-0">
+                                    <div className="px-6 md:px-10 py-6 md:py-8 border-b border-[rgba(42,40,38,0.12)] bg-servirest-surface shrink-0">
                                         <div className="flex justify-between items-start mb-6 md:mb-10">
                                             <div className="flex items-center gap-4">
                                                 <button 
@@ -498,8 +498,8 @@ export const CashierScreen: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div className="flex gap-2 md:gap-3">
-                                                <button onClick={() => printerService.openCashDrawer(settings)} className="p-3 md:p-4 bg-white/[0.03] border border-white/5 rounded-xl md:rounded-2xl text-[#2A2826]/55 hover:text-[#1a1c14] hover:bg-white/[0.08] transition-all"><Zap size={18} /></button>
-                                                <button onClick={() => handlePrintTicket(selectedOrder)} className="p-3 md:p-4 bg-white/[0.03] border border-white/5 rounded-xl md:rounded-2xl text-[#2A2826]/55 hover:text-[#1a1c14] hover:bg-white/[0.08] transition-all"><Printer size={18} /></button>
+                                                <button onClick={() => printerService.openCashDrawer(settings)} className="p-3 md:p-4 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-xl md:rounded-2xl text-[#2A2826]/55 hover:text-[#1a1c14] hover:bg-white/[0.08] transition-all"><Zap size={18} /></button>
+                                                <button onClick={() => handlePrintTicket(selectedOrder)} className="p-3 md:p-4 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-xl md:rounded-2xl text-[#2A2826]/55 hover:text-[#1a1c14] hover:bg-white/[0.08] transition-all"><Printer size={18} /></button>
                                             </div>
                                         </div>
 
@@ -510,7 +510,7 @@ export const CashierScreen: React.FC = () => {
                                                 <div className="flex gap-1.5 md:gap-2">
                                                     {[1, 2, 3, 4].map(num => (
                                                         <button key={num} onClick={() => setSplitCount(num)}
-                                                            className={`flex-1 py-2 md:py-3 rounded-xl md:rounded-2xl font-black italic text-sm md:text-base transition-all ${splitCount === num ? 'bg-servirest-terracota text-[#1a1c14]' : 'bg-white/[0.03] text-[#2A2826]/30 border border-white/5 hover:text-[#1a1c14]'}`}
+                                                            className={`flex-1 py-2 md:py-3 rounded-xl md:rounded-2xl font-black italic text-sm md:text-base transition-all ${splitCount === num ? 'bg-servirest-terracota text-[#1a1c14]' : 'bg-servirest-surface text-[#2A2826]/30 border border-[rgba(42,40,38,0.12)] hover:text-[#1a1c14]'}`}
                                                         >{num}</button>
                                                     ))}
                                                 </div>
@@ -520,7 +520,7 @@ export const CashierScreen: React.FC = () => {
                                                 <div className="flex gap-1.5 md:gap-2">
                                                     {[0, 10, 15, 20].map(pct => (
                                                         <button key={pct} onClick={() => setTipAmount(subtotal * (pct/100))}
-                                                            className={`flex-1 py-2 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-widest transition-all ${Math.abs(tipAmount - subtotal*(pct/100)) < 1 ? 'bg-white text-black' : 'bg-white/[0.03] text-[#2A2826]/30 border border-white/5'}`}
+                                                            className={`flex-1 py-2 md:py-3 rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-widest transition-all ${Math.abs(tipAmount - subtotal*(pct/100)) < 1 ? 'bg-white text-black' : 'bg-servirest-surface text-[#2A2826]/30 border border-[rgba(42,40,38,0.12)]'}`}
                                                         >{pct}%</button>
                                                     ))}
                                                 </div>
@@ -532,7 +532,7 @@ export const CashierScreen: React.FC = () => {
                                     <div className="flex-1 overflow-y-auto no-scrollbar p-10 space-y-4">
                                         <p className="text-[10px] font-black uppercase text-servirest-terracota tracking-[0.5em] mb-6 italic">Verified Items Manifest</p>
                                         {(selectedOrder.items || []).map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-center py-6 px-10 bg-white/[0.015] rounded-[32px] border border-white/5 group hover:border-servirest-terracota/20 hover:bg-white/[0.03] transition-all">
+                                            <div key={idx} className="flex justify-between items-center py-6 px-10 bg-white/[0.015] rounded-[32px] border border-[rgba(42,40,38,0.12)] group hover:border-servirest-terracota/20 hover:bg-servirest-surface transition-all">
                                                 <div className="flex items-center gap-8 flex-1">
                                                     <span className="text-2xl font-black italic text-servirest-terracota/40 group-hover:text-servirest-terracota transition-colors min-w-[1.5em]">{item.quantity}</span>
                                                     <div className="w-px h-8 bg-white/10" />
@@ -547,7 +547,7 @@ export const CashierScreen: React.FC = () => {
                                     </div>
 
                                     {/* Console Footer: Sub-metrics */}
-                                    <div className="px-10 py-6 bg-white/[0.01] border-t border-white/5 flex justify-between items-center shadow-inner">
+                                    <div className="px-10 py-6 bg-servirest-surface border-t border-[rgba(42,40,38,0.12)] flex justify-between items-center shadow-inner">
                                         <div className="flex gap-12">
                                             <div>
                                                 <p className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest mb-1">Subtotal Baseline</p>
@@ -568,7 +568,7 @@ export const CashierScreen: React.FC = () => {
 
                             {/* ── RIGHT COLUMN: The Settlement Panel ── */}
                             <div className="w-full lg:flex-[4] flex flex-col min-h-0 pb-24 md:pb-0">
-                                <GlowCard glowColor="orange" customSize className="w-full h-auto lg:h-full border border-white/10 bg-white/[0.02] !p-6 md:!p-10 rounded-[32px] md:rounded-[48px] shadow-solaris-glow flex flex-col">
+                                <GlowCard glowColor="orange" customSize className="w-full h-auto lg:h-full border border-[rgba(42,40,38,0.20)] bg-servirest-surface !p-6 md:!p-10 rounded-[32px] md:rounded-[48px] shadow-solaris-glow flex flex-col">
                                     <div className="flex-1 flex flex-col min-h-0">
                                         {/* Payload Display */}
                                         <div className="mb-8 md:mb-12">
@@ -599,7 +599,7 @@ export const CashierScreen: React.FC = () => {
                                     </div>
 
                                     {/* Action Vector */}
-                                    <div className="space-y-4 pt-8 md:pt-10 border-t border-white/5">
+                                    <div className="space-y-4 pt-8 md:pt-10 border-t border-[rgba(42,40,38,0.12)]">
                                         <GlowButton
                                             onClick={() => setIsPaymentModalOpen(true)}
                                             className="w-full py-8 md:py-12 rounded-[28px] md:rounded-[40px] tracking-[0.2em] md:tracking-[0.4em] text-xl md:text-3xl flex items-center justify-center gap-4 md:gap-8 group !text-[#2A2826]"
@@ -632,16 +632,16 @@ export const CashierScreen: React.FC = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[600] flex items-center justify-center bg-black/95 backdrop-blur-3xl p-4"
                     >
-                        <div className="w-full max-w-5xl bg-[#FAF8F4] border border-white/10 rounded-solaris md:rounded-[40px] shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+                        <div className="w-full max-w-5xl bg-[#FAF8F4] border border-[rgba(42,40,38,0.20)] rounded-solaris md:rounded-[40px] shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
                             {/* Modal Header */}
-                            <div className="flex justify-between items-center px-6 md:px-10 py-5 md:py-7 border-b border-white/5 bg-white/[0.01] shrink-0">
+                            <div className="flex justify-between items-center px-6 md:px-10 py-5 md:py-7 border-b border-[rgba(42,40,38,0.12)] bg-servirest-surface shrink-0">
                                 <div>
                                     <h2 className="text-xl md:text-3xl font-black italic tracking-tighter uppercase text-[#1a1c14]">Authorize Payout</h2>
                                     <p className="text-[8px] md:text-[10px] font-black uppercase text-servirest-terracota/60 tracking-[0.4em] mt-1 italic">Table: {selectedOrder?.tableId} • Amount due: ${(total / splitCount).toFixed(2)}</p>
                                 </div>
                                 <button
                                     onClick={() => setIsPaymentModalOpen(false)}
-                                    className="w-10 h-10 md:w-12 md:h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
+                                    className="w-10 h-10 md:w-12 md:h-12 bg-servirest-surface rounded-full flex items-center justify-center text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
                                 >
                                     <X size={20} />
                                 </button>
@@ -650,7 +650,7 @@ export const CashierScreen: React.FC = () => {
                             {/* Modal Body */}
                             <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] flex-1 overflow-y-auto custom-scrollbar">
                                 {/* Left — Cash Input */}
-                                <div className="flex flex-col items-center justify-center p-8 md:p-12 border-b xl:border-b-0 xl:border-r border-white/5">
+                                <div className="flex flex-col items-center justify-center p-8 md:p-12 border-b xl:border-b-0 xl:border-r border-[rgba(42,40,38,0.12)]">
                                     <p className="text-[9px] md:text-[10px] font-black uppercase text-[#2A2826]/30 tracking-[0.5em] mb-6 md:mb-8 italic">Cash Received</p>
                                     <div className="relative w-full flex items-center justify-center">
                                         <span className="text-3xl md:text-5xl font-black italic text-[#2A2826]/45 mr-2 md:mr-3 leading-none">$</span>
@@ -672,7 +672,7 @@ export const CashierScreen: React.FC = () => {
                                             <button
                                                 key={amt}
                                                 onClick={() => setCashReceived(amt.toString())}
-                                                className="py-3 md:py-4 rounded-xl md:rounded-2xl bg-white/[0.03] border border-white/5 text-[#2A2826]/55 hover:text-[#1a1c14] hover:bg-white/[0.08] font-black italic text-xs md:text-sm transition-all"
+                                                className="py-3 md:py-4 rounded-xl md:rounded-2xl bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[#2A2826]/55 hover:text-[#1a1c14] hover:bg-white/[0.08] font-black italic text-xs md:text-sm transition-all"
                                             >
                                                 ${amt}
                                             </button>
@@ -687,10 +687,10 @@ export const CashierScreen: React.FC = () => {
                                 </div>
 
                                 {/* Right — Summary & Confirm */}
-                                <div className="flex flex-col p-8 md:p-10 gap-6 bg-white/[0.01]">
+                                <div className="flex flex-col p-8 md:p-10 gap-6 bg-servirest-surface">
                                     <div className="flex-1 space-y-4">
                                         <div className="grid grid-cols-2 xl:grid-cols-1 gap-4">
-                                            <div className="bg-white/[0.03] rounded-xl md:rounded-2xl p-4 md:p-6 border border-white/5">
+                                            <div className="bg-servirest-surface rounded-xl md:rounded-2xl p-4 md:p-6 border border-[rgba(42,40,38,0.12)]">
                                                 <p className="text-[8px] md:text-[9px] font-black uppercase text-[#2A2826]/45 tracking-widest mb-1 md:mb-2 italic">To Pay</p>
                                                 <p className="text-2xl md:text-4xl font-black italic text-[#1a1c14] tracking-tighter leading-none">${(total / splitCount).toFixed(2)}</p>
                                             </div>
