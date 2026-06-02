@@ -228,7 +228,7 @@ export const SettingsScreen: React.FC = () => {
                 <header className="mb-14">
                      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
                         <h1 className="text-5xl font-black italic tracking-tighter uppercase mb-4 text-[#1a1c14]">Core Configuration</h1>
-                        <p className="text-[#505530]/30 font-black text-[11px] uppercase tracking-[0.5em] italic">System Parameters & Interface Logic • KOSO POS v1</p>
+                        <p className="text-[#505530]/30 font-black text-[11px] uppercase tracking-[0.5em] italic">System Parameters & Interface Logic • ServiRest v1</p>
                     </motion.div>
                 </header>
 
@@ -322,7 +322,7 @@ export const SettingsScreen: React.FC = () => {
                                             <label className="text-[11px] font-black uppercase text-[#505530] tracking-[0.4em] px-2 italic">Interface Theme Protocol</label>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                                 {[
-                                                    { id: 'solaris', name: 'KOSO POS', bg: 'bg-[#F0F0E8]', accent: 'bg-solaris-orange', desc: 'Brand Master Mode' },
+                                                    { id: 'solaris', name: 'ServiRest', bg: 'bg-[#FAF8F4]', accent: 'bg-[#C4633F]', desc: 'Brand Master Mode' },
                                                     { id: 'midnight', name: 'Void Deep', bg: 'bg-[#000000]', accent: 'bg-emerald-500', desc: 'Efficiency Vector' },
                                                     { id: 'ruby', name: 'Critical State', bg: 'bg-[#000000]', accent: 'bg-red-500', desc: 'Alert Logic' }
                                                 ].map(t => (

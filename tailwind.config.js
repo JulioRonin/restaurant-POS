@@ -12,25 +12,37 @@ export default {
         'xs': '480px',
         ...defaultTheme.screens,
       },
+      fontFamily: {
+        sans: ['Inter', ...defaultTheme.fontFamily.sans],
+        serif: ['Fraunces', ...defaultTheme.fontFamily.serif],
+        mono: ['JetBrains Mono', ...defaultTheme.fontFamily.mono],
+      },
       colors: {
+        servirest: {
+          midnight: '#1A1E2E',
+          terracota: '#C4633F',
+          mostaza: '#C9A24A',
+          hueso: '#FAF8F4',
+          carbon: '#2A2826',
+        },
         solaris: {
-          black: '#1a1c14',
-          orange: '#F98359',
-          dark: '#12140d',
-          accent: '#e8724a',
+          black: '#2A2826', // Gris Carbón
+          orange: '#C4633F', // Terracota
+          dark: '#1A1E2E', // Midnight Tinto
+          accent: '#C9A24A', // Mostaza Mate
         },
         koso: {
-          olive:   '#505530',
-          cream:   '#FAFAF3',
-          orange:  '#F98359',
-          purple:  '#C694DB',
-          dark:    '#12140d',
-          surface: '#1e2118',
+          olive:   '#2A2826', // Gris Carbón
+          cream:   '#FAF8F4', // Blanco Hueso
+          orange:  '#C4633F', // Terracota
+          purple:  '#C9A24A', // Mostaza Mate
+          dark:    '#1A1E2E', // Midnight Tinto
+          surface: '#232839',
         },
         primary: {
-          DEFAULT: '#F98359',
-          dark:    '#e8724a',
-          light:   '#fab08a',
+          DEFAULT: '#C4633F', // Terracota
+          dark:    '#a14c2d',
+          light:   '#dca08a',
         }
       },
       borderRadius: {
@@ -38,10 +50,10 @@ export default {
         '3xl': '2rem',
       },
       boxShadow: {
-        'solaris':      '0 0 40px rgba(249, 131, 89, 0.12)',
-        'solaris-glow': '0 0 20px rgba(249, 131, 89, 0.45)',
-        'koso-glow':    '0 0 24px rgba(249, 131, 89, 0.45)',
-        'olive-glow':   '0 0 20px rgba(80, 85, 48, 0.5)',
+        'solaris':      '0 0 40px rgba(196, 99, 63, 0.12)',
+        'solaris-glow': '0 0 20px rgba(196, 99, 63, 0.45)',
+        'koso-glow':    '0 0 24px rgba(196, 99, 63, 0.45)',
+        'olive-glow':   '0 0 20px rgba(42, 40, 38, 0.5)',
       }
     },
   },

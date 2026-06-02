@@ -8,10 +8,10 @@ import { canAccess } from '../services/rbac';
 import { onSyncStatusChange, getSyncStatus } from '../services/SyncService';
 import { authService } from '../services/auth';
 import { printerService } from '../services/PrinterService';
+import { Logo } from './Logo';
 import { 
   Printer, 
   Cloud, 
-  CloudOff, 
   CloudCog, 
   LayoutDashboard, 
   Smartphone, 
@@ -24,14 +24,10 @@ import {
   Boxes, 
   Wine, 
   Settings2, 
-  Rocket, 
   Lock, 
   LogOut, 
-  ChevronLeft, 
-  ChevronRight,
   MonitorCheck,
-  Zap,
-  ShieldCheck
+  Zap
 } from 'lucide-react';
 
 const PrinterStatus = () => {
@@ -68,7 +64,7 @@ const NavItem = ({ to, icon: Icon, label, isExpanded }: { to: string; icon: any;
   <NavLink
     to={to}
     className={({ isActive }) =>
-      `flex items-center ${isExpanded ? 'px-4 gap-4 w-full mx-2' : 'justify-center w-12 mx-auto'} h-12 rounded-solaris my-1 transition-all duration-300 group relative ${isActive ? 'bg-[#F98359] text-white shadow-[0_0_20px_rgba(249,131,89,0.4)] scale-105' : 'text-[#FAFAF3]/50 hover:bg-white/[0.08] hover:text-[#FAFAF3]'
+      `flex items-center ${isExpanded ? 'px-4 gap-4 w-full mx-2' : 'justify-center w-12 mx-auto'} h-12 rounded-solaris my-1 transition-all duration-300 group relative ${isActive ? 'bg-[#C4633F] text-[#FAF8F4] shadow-[0_0_20px_rgba(196,99,63,0.4)] scale-105' : 'text-[#FAF8F4]/50 hover:bg-white/[0.08] hover:text-[#FAF8F4]'
       }`
     }
   >
@@ -89,7 +85,7 @@ const SyncBadge = () => {
     return unsubscribe;
   }, []);
 
-  const color = sync.pendingCount > 0 ? 'text-[#F98359]' : sync.isSyncing ? 'text-white' : 'text-green-500/40';
+  const color = sync.pendingCount > 0 ? 'text-[#C4633F]' : sync.isSyncing ? 'text-white' : 'text-green-500/40';
   const Icon = sync.pendingCount > 0 ? CloudCog : sync.isSyncing ? RefreshCw : Cloud;
   
   return (
@@ -109,8 +105,8 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
   const { settings } = useSettings();
 
   const statusConfig = {
-    [SubscriptionStatus.ACTIVE]: { color: 'text-green-500 border-green-500/20 bg-green-500/5', label: 'KOSO Activo' },
-    [SubscriptionStatus.WARNING]: { color: 'text-[#F98359] border-[#F98359]/20 bg-[#F98359]/5', label: 'Aviso de Licencia' },
+    [SubscriptionStatus.ACTIVE]: { color: 'text-green-500 border-green-500/20 bg-green-500/5', label: 'ServiRest Activo' },
+    [SubscriptionStatus.WARNING]: { color: 'text-[#C4633F] border-[#C4633F]/20 bg-[#C4633F]/5', label: 'Aviso de Licencia' },
     [SubscriptionStatus.EXPIRED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Nodo Expirado' },
     [SubscriptionStatus.DEMO]: { color: 'text-amber-500 border-amber-500/20 bg-amber-500/5', label: 'Modo Demo' },
     [SubscriptionStatus.DEMO_EXPIRED]: { color: 'text-red-500 border-red-500/20 bg-red-500/5', label: 'Demo Expirada' },
@@ -122,7 +118,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
       className={`hidden lg:flex ${isExpanded ? 'w-64' : 'w-24'} h-full flex-col py-8 z-50 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] relative shadow-[4px_0_30px_rgba(0,0,0,0.15)]`}
-      style={{ background: 'linear-gradient(160deg, #505530 0%, #3d4124 60%, #2e3018 100%)' }}
+      style={{ background: 'linear-gradient(160deg, #1A1E2E 0%, #232839 60%, #1A1E2E 100%)' }}
     >
       {/* Brand Header */}
       <div className={`mb-12 p-2 flex flex-col items-center ${isExpanded ? 'px-8 w-full' : 'justify-center'}`}>
@@ -132,17 +128,17 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
         </div>
         
         <div className="flex items-center gap-4 w-full group/header relative">
-          <div className="w-12 h-12 min-w-[48px] bg-[#505530]/20 border border-[#505530]/40 rounded-solaris flex items-center justify-center overflow-hidden transition-all group-hover/header:border-[#F98359]/50 shadow-koso-glow">
+          <div className="w-12 h-12 min-w-[48px] bg-[#FAF8F4]/10 border border-[#FAF8F4]/20 rounded-solaris flex items-center justify-center overflow-hidden transition-all group-hover/header:border-[#C4633F]/50 shadow-koso-glow">
             {settings.logoUrl ? (
               <img src={settings.logoUrl} alt="Logo" className="w-full h-full object-cover filter contrast-125" />
             ) : (
-              <img src="/koso-logo.png" alt="KŌSO" className="w-full h-full object-cover" />
+              <Logo variant="midnight" size={32} showText={false} />
             )}
           </div>
           {isExpanded && (
             <div className="flex-1 overflow-hidden">
                <div className="flex items-center justify-between">
-                <h1 className="font-black text-white leading-tight uppercase tracking-tighter text-xs truncate italic">KŌSO POS</h1>
+                <h1 className="font-serif text-white font-medium leading-tight uppercase tracking-tighter text-sm truncate italic" style={{ fontFamily: '"Fraunces", Georgia, serif' }}>ServiRest</h1>
                 {isSuperAdmin && (
                    <button 
                      onClick={async () => {
@@ -153,13 +149,13 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
                           if (match) switchBusiness(match.id, match.name);
                        }
                      }}
-                     className="text-[#F98359] hover:text-white p-1 hover:bg-white/5 rounded-full transition-colors hidden group-hover/header:block"
+                     className="text-[#C4633F] hover:text-white p-1 hover:bg-white/5 rounded-full transition-colors hidden group-hover/header:block"
                    >
                      <RefreshCw size={12} />
                    </button>
                 )}
                </div>
-               <p className="text-[8px] text-[#F98359]/50 font-black uppercase tracking-[0.4em] mt-1 italic">POS Restaurante</p>
+               <p className="text-[8px] text-[#C9A24A]/70 font-black uppercase tracking-[0.4em] mt-1 italic">POS Restaurante</p>
             </div>
           )}
         </div>
@@ -202,7 +198,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
           <NavItem to="/menu" icon={MenuSquare} label="Menu" isExpanded={isExpanded} />
         )}
 
-        <div className={`h-px my-5 ${isExpanded ? 'w-full' : 'w-8 mx-auto'}`} style={{ background: 'rgba(250,250,243,0.1)' }}></div>
+        <div className={`h-px my-5 ${isExpanded ? 'w-full' : 'w-8 mx-auto'}`} style={{ background: 'rgba(250,248,244,0.1)' }}></div>
 
         {canAccess(activeEmployee, '/staff') && isFeatureEnabled('staff') && (
           <NavItem to="/staff" icon={Users} label="Personal" isExpanded={isExpanded} />
@@ -245,9 +241,9 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
       </nav>
 
       {/* Network Operator Status */}
-      <div className="w-full px-4 py-6 mt-auto" style={{ borderTop: '1px solid rgba(250,250,243,0.1)', background: 'rgba(0,0,0,0.15)' }}>
+      <div className="w-full px-4 py-6 mt-auto" style={{ borderTop: '1px solid rgba(250,248,244,0.1)', background: 'rgba(0,0,0,0.15)' }}>
         <div 
-          className="flex items-center justify-between group cursor-pointer bg-white/[0.02] p-4 rounded-solaris border border-white/5 hover:border-[#F98359]/20 transition-all shadow-xl" 
+          className="flex items-center justify-between group cursor-pointer bg-white/[0.02] p-4 rounded-solaris border border-white/5 hover:border-[#C4633F]/20 transition-all shadow-xl" 
           onClick={onLock}
         >
            <div className="flex items-center gap-4 overflow-hidden">
@@ -257,11 +253,11 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
               {isExpanded && (
                 <div className="min-w-0">
                   <p className="text-[10px] font-black uppercase text-white truncate italic leading-none">{activeEmployee?.name}</p>
-                  <p className="text-[8px] font-black uppercase text-[#F98359] tracking-widest mt-2">{activeEmployee?.role}</p>
+                  <p className="text-[8px] font-black uppercase text-[#C9A24A] tracking-widest mt-2">{activeEmployee?.role}</p>
                 </div>
               )}
            </div>
-           {isExpanded && <Lock size={14} className="text-white/20 group-hover:text-[#F98359] transition-colors" />}
+           {isExpanded && <Lock size={14} className="text-white/20 group-hover:text-[#C4633F] transition-colors" />}
         </div>
         
         {authProfile?.role === 'admin' && isExpanded && (
@@ -285,3 +281,4 @@ const RefreshCw = ({ size, className }: { size: number, className?: string }) =>
         <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" />
     </svg>
 );
+export default Sidebar;

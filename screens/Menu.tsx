@@ -163,9 +163,14 @@ export const MenuScreen: React.FC = () => {
         <div className="h-full w-full bg-[#FAFAF3] text-[#1a1c14] flex flex-col overflow-hidden antialiased">
             {/* Header */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center px-8 pt-8 pb-6 gap-4 shrink-0 border-b border-white/5">
-                <div>
-                    <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-1">KOSO Menu</h1>
-                    <p className="text-[#505530]/30 font-bold text-[10px] uppercase tracking-[0.4em]">Gastronomical Asset Registry & Pricing Logic</p>
+                <div className="mb-8">
+                    <h1 
+                        className="text-4xl font-medium tracking-tighter uppercase mb-1"
+                        style={{ fontFamily: '"Fraunces", Georgia, serif' }}
+                    >
+                        ServiRest Menu
+                    </h1>
+                    <p className="text-[#505530]/40 font-bold text-[10px] uppercase tracking-[0.4em] italic">Node Inventory & Asset Registry</p>
                 </div>
                 <div className="flex gap-3">
                     <button

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowCard } from './ui/spotlight-card';
-import { SolarisShader } from './ui/solaris-shader';
-import { Lock, Mail, User, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import { Lock, Mail, User, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Logo } from './Logo';
 
 export const AuthScreen: React.FC = () => {
     const { signIn, signUp } = useUser();
@@ -36,9 +36,12 @@ export const AuthScreen: React.FC = () => {
     };
 
     return (
-        <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden font-sans" style={{ background: '#FAFAF3' }}>
-            {/* Background Shader */}
-            <SolarisShader />
+        <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden font-sans" style={{ background: '#1A1E2E' }}>
+            {/* Background Gradient/Mesh */}
+            <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-40">
+                <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-[#C4633F]/20 blur-[120px]" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#C9A24A]/10 blur-[100px]" />
+            </div>
 
             {/* Content Container */}
             <motion.div 
@@ -47,34 +50,33 @@ export const AuthScreen: React.FC = () => {
                 className="relative z-10 w-full max-w-xl px-6"
             >
                 {/* Branding */}
-                <div className="text-center mb-10">
+                <div className="text-center mb-10 flex flex-col items-center">
                     <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
-                        className="inline-flex items-center justify-center w-40 h-40 md:w-56 md:h-56 mb-4 overflow-hidden"
+                        className="mb-4"
                     >
-                        <img src="/koso-logo.png" alt="KŌSO" className="w-full h-full object-contain filter drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)]" />
+                        <Logo variant="midnight" size={96} showText={true} textClassName="text-4xl font-semibold !text-[#FAF8F4]" />
                     </motion.div>
-                    {/* Plain text name is now redundant due to the new brand asset */}
                 </div>
 
-                <GlowCard glowColor="orange" customSize className="w-full !p-0 overflow-hidden border border-[#505530]/20 bg-white rounded-solaris shadow-2xl">
+                <GlowCard glowColor="orange" customSize className="w-full !p-0 overflow-hidden border border-[#FAF8F4]/10 bg-[#FAF8F4] rounded-solaris shadow-2xl">
                     <div className="p-6 md:p-14">
-                            <div className="border-b border-[#505530]/10">
+                        <div className="border-b border-[#2A2826]/10 flex gap-8">
                             <button 
                                 onClick={() => setIsLogin(true)}
-                                className={`pb-4 md:pb-6 text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] transition-all relative whitespace-nowrap ${isLogin ? 'text-[#F98359]' : 'text-[#505530]/30 hover:text-[#505530]/60'}`}
+                                className={`pb-4 md:pb-6 text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] transition-all relative whitespace-nowrap ${isLogin ? 'text-[#C4633F]' : 'text-[#2A2826]/30 hover:text-[#2A2826]/60'}`}
                             >
                                 Iniciar Sesión
-                                {isLogin && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-[#F98359] shadow-solaris-glow" />}
+                                {isLogin && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-[#C4633F] shadow-solaris-glow" />}
                             </button>
                             <button 
                                 onClick={() => setIsLogin(false)}
-                                className={`pb-6 text-[11px] font-black uppercase tracking-[0.3em] transition-all relative ${!isLogin ? 'text-[#F98359]' : 'text-[#505530]/30 hover:text-[#505530]/60'}`}
+                                className={`pb-4 md:pb-6 text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] transition-all relative whitespace-nowrap ${!isLogin ? 'text-[#C4633F]' : 'text-[#2A2826]/30 hover:text-[#2A2826]/60'}`}
                             >
                                 Registrar Negocio
-                                {!isLogin && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-[#F98359] shadow-solaris-glow" />}
+                                {!isLogin && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-1 bg-[#C4633F] shadow-solaris-glow" />}
                             </button>
                         </div>
 
@@ -82,14 +84,14 @@ export const AuthScreen: React.FC = () => {
                             <motion.div 
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                className="mb-10 p-5 bg-red-500/10 border border-red-500/20 rounded-[20px] flex items-center gap-4"
+                                className="mb-10 p-5 bg-red-500/10 border border-red-500/20 rounded-[20px] flex items-center gap-4 mt-6"
                             >
                                 <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                                 <p className="text-red-500 text-[11px] font-black uppercase tracking-widest">{error}</p>
                             </motion.div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-8">
+                        <form onSubmit={handleSubmit} className="space-y-8 mt-8">
                             <AnimatePresence mode="wait">
                                 {!isLogin && (
                                     <motion.div 
@@ -99,25 +101,25 @@ export const AuthScreen: React.FC = () => {
                                         className="space-y-8"
                                     >
                                         <div className="relative group/field">
-                                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#505530]/60 mb-3 px-2">Nombre Comercial</label>
+                                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#2A2826]/60 mb-3 px-2">Nombre Comercial</label>
                                             <div className="relative">
-                                                <User className="absolute left-5 top-1/2 -translate-y-1/2 text-[#505530]/30 group-focus-within/field:text-[#F98359] transition-colors" size={20} />
+                                                <User className="absolute left-5 top-1/2 -translate-y-1/2 text-[#2A2826]/30 group-focus-within/field:text-[#C4633F] transition-colors" size={20} />
                                                 <input 
                                                     type="text" required value={businessName}
                                                     onChange={(e) => setBusinessName(e.target.value)}
-                                                    className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#505530] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
+                                                    className="w-full bg-[#FAF8F4] border border-[#2A2826]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#2A2826] text-sm focus:bg-white focus:border-[#C4633F]/50 transition-all outline-none placeholder:text-[#2A2826]/30"
                                                     placeholder="ej. Mi Restaurante"
                                                 />
                                             </div>
                                         </div>
                                         <div className="relative group/field">
-                                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#505530]/60 mb-3 px-2">Nombre Completo (Dueño)</label>
+                                            <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#2A2826]/60 mb-3 px-2">Nombre Completo (Dueño)</label>
                                             <div className="relative">
-                                                <ShieldCheck className="absolute left-5 top-1/2 -translate-y-1/2 text-[#505530]/30 group-focus-within/field:text-[#F98359] transition-colors" size={20} />
+                                                <ShieldCheck className="absolute left-5 top-1/2 -translate-y-1/2 text-[#2A2826]/30 group-focus-within/field:text-[#C4633F] transition-colors" size={20} />
                                                 <input 
                                                     type="text" required value={fullName}
                                                     onChange={(e) => setFullName(e.target.value)}
-                                                    className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#505530] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
+                                                    className="w-full bg-[#FAF8F4] border border-[#2A2826]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#2A2826] text-sm focus:bg-white focus:border-[#C4633F]/50 transition-all outline-none placeholder:text-[#2A2826]/30"
                                                     placeholder="Tu nombre real"
                                                 />
                                             </div>
@@ -127,36 +129,36 @@ export const AuthScreen: React.FC = () => {
                             </AnimatePresence>
 
                             <div className="relative group/field">
-                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#505530]/60 mb-3 px-2">E-mail</label>
+                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#2A2826]/60 mb-3 px-2">E-mail</label>
                                 <div className="relative">
-                                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-[#505530]/30 group-focus-within/field:text-[#F98359] transition-colors" size={20} />
+                                    <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-[#2A2826]/30 group-focus-within/field:text-[#C4633F] transition-colors" size={20} />
                                     <input 
                                         type="email" required value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#505530] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
+                                        className="w-full bg-[#FAF8F4] border border-[#2A2826]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#2A2826] text-sm focus:bg-white focus:border-[#C4633F]/50 transition-all outline-none placeholder:text-[#2A2826]/30"
                                         placeholder="correo@turestaurante.com"
                                     />
                                 </div>
                             </div>
 
                             <div className="relative group/field">
-                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#505530]/60 mb-3 px-2">Contrasena</label>
+                                <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-[#2A2826]/60 mb-3 px-2">Contraseña</label>
                                 <div className="relative">
-                                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-[#505530]/30 group-focus-within/field:text-[#F98359] transition-colors" size={20} />
+                                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-[#2A2826]/30 group-focus-within/field:text-[#C4633F] transition-colors" size={20} />
                                     <input 
                                         type="password" required value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full bg-[#F0F0E8] border border-[#505530]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#505530] text-sm focus:bg-white focus:border-[#F98359]/50 transition-all outline-none placeholder:text-[#505530]/30"
+                                        className="w-full bg-[#FAF8F4] border border-[#2A2826]/20 rounded-[22px] py-5 pl-14 pr-6 text-[#2A2826] text-sm focus:bg-white focus:border-[#C4633F]/50 transition-all outline-none placeholder:text-[#2A2826]/30"
                                         placeholder="••••••••"
                                     />
                                 </div>
                             </div>
 
                             <motion.button 
-                                whileHover={{ scale: 1.02, boxShadow: "0 0 40px rgba(249, 115, 22, 0.4)" }}
+                                whileHover={{ scale: 1.02, boxShadow: "0 0 40px rgba(196, 99, 63, 0.4)" }}
                                 whileTap={{ scale: 0.98 }}
                                 disabled={loading}
-                                className="w-full bg-[#F98359] text-[#FAFAF3] !text-[#FAFAF3] font-black uppercase tracking-[0.4em] py-6 rounded-[24px] shadow-solaris-glow transition-all flex items-center justify-center gap-4 mt-12 disabled:opacity-50 text-[11px] italic"
+                                className="w-full bg-[#C4633F] text-[#FAF8F4] !text-[#FAF8F4] font-black uppercase tracking-[0.4em] py-6 rounded-[24px] shadow-solaris-glow transition-all flex items-center justify-center gap-4 mt-12 disabled:opacity-50 text-[11px] italic"
                             >
                                 {loading ? (
                                     <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
@@ -166,13 +168,13 @@ export const AuthScreen: React.FC = () => {
                                         <ArrowRight size={20} />
                                     </>
                                 )}
-                            </motion.button>
+                             </motion.button>
                         </form>
                     </div>
                 </GlowCard>
 
                 <p className="text-center mt-12 text-[10px] font-black text-white/30 uppercase tracking-[0.5em] italic mb-16">
-                    KŌSO POS v1.0 • Secure Restaurant Management
+                    ServiRest POS v1.0 • Secure Restaurant Management
                 </p>
             </motion.div>
         </div>

@@ -1,46 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* Base Styles */
 :root {
-  --primary-color: #F98359;
-  --secondary-color: #C694DB;
-  --olive-color: #505530;
-  --cream-color: #FAFAF3;
-  --primary-rgb: 249, 131, 89;
-  --koso-bg: #FAFAF3;
-  --koso-surface: #F0F0E8;
-  --koso-olive: #505530;
-  --koso-text: #1a1c14;
+  --primary-color: #C4633F; /* Terracota */
+  --secondary-color: #C9A24A; /* Mostaza Mate */
+  --olive-color: #1A1E2E; /* Midnight Tinto */
+  --cream-color: #FAF8F4; /* Blanco Hueso */
+  --primary-rgb: 196, 99, 63;
+  --koso-bg: #FAF8F4;
+  --koso-surface: #FAF8F4;
+  --koso-olive: #2A2826; /* Gris Carbón */
+  --koso-text: #2A2826;
 }
 
 body {
   margin: 0;
-  font-family: 'Manrope', 'Inter', sans-serif;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #FAFAF3;
-  color: #1a1c14;
+  background-color: #FAF8F4;
+  color: #2A2826;
 }
 
 /* ── KŌSO Design Tokens ──────────────────────────────────────── */
 /* Distribution: 35% #FAFAF3, 40% #505530, 20% #F98359, 5% #C694DB */
 
 .koso-card {
-  background: rgba(250, 250, 243, 0.85);
-  border: 1px solid rgba(80, 85, 48, 0.15);
+  background: rgba(250, 248, 244, 0.85);
+  border: 1px solid rgba(42, 40, 38, 0.15);
   border-radius: 1.5rem;
-  box-shadow: 0 2px 20px rgba(80, 85, 48, 0.08);
+  box-shadow: 0 2px 20px rgba(42, 40, 38, 0.08);
 }
 
 .koso-surface {
-  background: rgba(240, 240, 232, 0.7);
-  border: 1px solid rgba(80, 85, 48, 0.1);
+  background: rgba(250, 248, 244, 0.7);
+  border: 1px solid rgba(42, 40, 38, 0.1);
 }
 
 .koso-label {
-  color: #505530;
+  color: #2A2826;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.3em;
@@ -48,27 +50,27 @@ body {
 }
 
 .koso-accent {
-  color: #F98359;
+  color: #C4633F;
 }
 
 .koso-purple {
-  color: #C694DB;
+  color: #C9A24A;
 }
 
-/* ── Global: default text to olive on cream screens ────────────── */
-/* All content inside .koso-app (main layout) defaults to olive text */
+/* ── Global: default text to Gris Carbón on Blanco Hueso screens ── */
+/* All content inside .koso-app (main layout) defaults to Gris Carbón text */
 .koso-app {
-  color: #505530;
+  color: #2A2826;
 }
 
 /* Dashboard cards over background image */
 .koso-glass-card {
-  background: rgba(250, 250, 243, 0.88);
+  background: rgba(250, 248, 244, 0.88);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(80, 85, 48, 0.15);
+  border: 1px solid rgba(42, 40, 38, 0.15);
   border-radius: 1.25rem;
-  box-shadow: 0 4px 24px rgba(80, 85, 48, 0.1);
+  box-shadow: 0 4px 24px rgba(42, 40, 38, 0.1);
 }
 
 /* Custom Scrollbars */
@@ -240,16 +242,16 @@ body {
 }
 
 /* Visibility Helpers */
-.force-cream { color: #FAFAF3 !important; }
-.force-olive { color: #505530 !important; }
-.force-salmon { color: #F98359 !important; }
+.force-cream { color: #FAF8F4 !important; }
+.force-olive { color: #2A2826 !important; }
+.force-salmon { color: #C4633F !important; }
 
 .shadow-salmon-glow {
-  box-shadow: 0 0 20px rgba(249, 131, 89, 0.3);
+  box-shadow: 0 0 20px rgba(196, 99, 63, 0.3);
 }
 
 .shadow-olive-glow {
-  box-shadow: 0 0 20px rgba(80, 85, 48, 0.2);
+  box-shadow: 0 0 20px rgba(42, 40, 38, 0.2);
 }
 
 /* Force date/month input icons to be white on dark backgrounds */

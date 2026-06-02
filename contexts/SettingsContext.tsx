@@ -38,7 +38,7 @@ interface SettingsContextType {
 }
 
 const DEFAULT_SETTINGS: BusinessSettings = {
-  name: 'KOSO POS',
+  name: 'ServiRest',
   legalName: '',
   rfc: '',
   address: '',
@@ -53,7 +53,7 @@ const DEFAULT_SETTINGS: BusinessSettings = {
   isCashDrawerEnabled: true,
   isTerminalEnabled: false,
   logoUrl: '',
-  themeId: 'indigo',
+  themeId: 'midnight',
   bankName: '',
   bankAccount: '',
   bankCLABE: '',

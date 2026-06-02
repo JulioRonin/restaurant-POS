@@ -17,7 +17,7 @@ function createWindow() {
       // preload: path.join(__dirname, 'preload.js') // Future use
     },
     icon: path.join(__dirname, 'public/icons/icon-512.png'),
-    title: 'Culinex POS',
+    title: 'ServiRest',
     autoHideMenuBar: true
   });
 

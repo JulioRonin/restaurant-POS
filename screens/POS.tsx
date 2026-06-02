@@ -168,7 +168,7 @@ export const POSScreen: React.FC = () => {
             <div>
               <div className="flex items-center gap-1.5 opacity-60 mb-0.5">
                   <Zap size={8} className="text-[#F98359]" />
-                  <span className="text-[7px] font-black tracking-[0.2em] uppercase">{authProfile?.businessName || 'KOSO POS'}</span>
+                  <span className="text-[7px] font-black tracking-[0.2em] uppercase">{authProfile?.businessName || 'ServiRest'}</span>
               </div>
               <h2 className="text-lg font-black italic tracking-tighter uppercase text-[#505530] leading-none">Command Center</h2>
             </div>

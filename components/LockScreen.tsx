@@ -1,8 +1,7 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useUser } from '../contexts/UserContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowCard } from './ui/spotlight-card';
-import { SolarisShader } from './ui/solaris-shader';
 import { Lock, User, Terminal, LogOut, ShieldAlert } from 'lucide-react';
 
 export const LockScreen: React.FC = () => {
@@ -36,14 +35,22 @@ export const LockScreen: React.FC = () => {
     }, [pin]);
 
     return (
-        <div className="relative min-h-screen w-full flex flex-col md:flex-row bg-[#FAFAF3] overflow-hidden font-sans pt-12 md:pt-0">
-            {/* Background Shader */}
-            <SolarisShader />
+        <div className="relative min-h-screen w-full flex flex-col md:flex-row bg-[#1A1E2E] overflow-hidden font-sans pt-12 md:pt-0">
+            {/* Background Gradient/Mesh */}
+            <div className="absolute inset-0 w-full h-full z-0 pointer-events-none opacity-40">
+                <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-[#C4633F]/20 blur-[120px]" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-[#C9A24A]/10 blur-[100px]" />
+            </div>
 
             {/* Left: User Selection */}
             <div className="relative z-10 flex-1 flex flex-col justify-center px-6 md:px-12 py-10 overflow-y-auto custom-scrollbar lg:max-h-screen">
                 <div className="mb-8 md:mb-12 mt-8 md:mt-0">
-                    <h1 className="text-3xl md:text-5xl font-black italic tracking-tighter text-[#FAFAF3] !text-[#FAFAF3] uppercase mb-2 leading-none drop-shadow-lg">KOSO Terminal</h1>
+                    <h1 
+                        className="text-3xl md:text-5xl font-medium tracking-tighter text-[#FAF8F4] !text-[#FAF8F4] mb-2 leading-none drop-shadow-lg"
+                        style={{ fontFamily: '"Fraunces", Georgia, serif' }}
+                    >
+                        ServiRest Terminal
+                    </h1>
                     <p className="text-white/50 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.3em] md:tracking-[0.5em]">Identidad de Operador Requerida</p>
                 </div>
 
@@ -60,10 +67,10 @@ export const LockScreen: React.FC = () => {
                         >
                             <GlowCard 
                                 glowColor="orange"
-                                className={`cursor-pointer transition-all border-2 flex flex-col items-center !p-4 md:!p-6 rounded-solaris h-full ${selectedUser === emp.id ? 'border-solaris-orange bg-[#F98359]/5 shadow-solaris-glow' : 'border-white/5 bg-white/[0.01]'}`}
+                                className={`cursor-pointer transition-all border-2 flex flex-col items-center !p-4 md:!p-6 rounded-solaris h-full ${selectedUser === emp.id ? 'border-[#C4633F] bg-[#C4633F]/5 shadow-solaris-glow' : 'border-white/5 bg-white/[0.01]'}`}
                             >
                                 <div className="relative mb-3 md:mb-4">
-                                    <div className={`w-14 h-14 md:w-20 md:h-20 rounded-full p-1 border-2 ${selectedUser === emp.id ? 'border-solaris-orange' : 'border-white/10'}`}>
+                                    <div className={`w-14 h-14 md:w-20 md:h-20 rounded-full p-1 border-2 ${selectedUser === emp.id ? 'border-[#C4633F]' : 'border-white/10'}`}>
                                         <img 
                                             src={emp.image || 'https://ui-avatars.com/api/?background=333&color=fff'} 
                                             alt={emp.name} 
@@ -73,7 +80,7 @@ export const LockScreen: React.FC = () => {
                                     {selectedUser === emp.id && (
                                         <motion.div 
                                             layoutId="check"
-                                            className="absolute -bottom-1 -right-1 bg-[#F98359] text-[#FAFAF3] !text-[#FAFAF3] rounded-full p-1 shadow-lg"
+                                            className="absolute -bottom-1 -right-1 bg-[#C4633F] text-[#FAF8F4] !text-[#FAF8F4] rounded-full p-1 shadow-lg"
                                         >
                                             <div className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center">
                                                 <div className="w-2 h-2 bg-white rounded-full" />
@@ -81,8 +88,8 @@ export const LockScreen: React.FC = () => {
                                         </motion.div>
                                     )}
                                 </div>
-                                <h3 className={`font-black uppercase text-[9px] md:text-[10px] tracking-widest text-center truncate w-full ${selectedUser === emp.id ? 'text-[#505530]' : 'text-white/40'}`}>{emp.name}</h3>
-                                <p className={`text-[7px] md:text-[8px] font-bold uppercase mt-1 ${selectedUser === emp.id ? 'text-[#F98359]' : 'text-white/20'}`}>{emp.role}</p>
+                                <h3 className={`font-black uppercase text-[9px] md:text-[10px] tracking-widest text-center truncate w-full ${selectedUser === emp.id ? 'text-[#FAF8F4]' : 'text-white/40'}`}>{emp.name}</h3>
+                                <p className={`text-[7px] md:text-[8px] font-bold uppercase mt-1 ${selectedUser === emp.id ? 'text-[#C9A24A]' : 'text-white/20'}`}>{emp.role}</p>
                             </GlowCard>
                         </motion.div>
                     ))}
@@ -91,7 +98,7 @@ export const LockScreen: React.FC = () => {
                 <div className="mt-auto pt-12 flex items-center justify-between">
                     <div className="flex items-center gap-4 text-white/20">
                         <Terminal size={16} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">{authProfile?.businessName || 'KOSO POS'}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">{authProfile?.businessName || 'ServiRest'}</span>
                     </div>
                     <button 
                         onClick={signOut}
@@ -103,20 +110,20 @@ export const LockScreen: React.FC = () => {
             </div>
 
             {/* Right: Keypad Area */}
-            <div className="relative z-10 w-full md:w-[450px] bg-[#505530]/5 backdrop-blur-3xl border-t md:border-t-0 md:border-l border-[#505530]/10 flex flex-col items-center justify-center p-6 md:p-8">
+            <div className="relative z-10 w-full md:w-[450px] bg-[#FAF8F4] border-t md:border-t-0 md:border-l border-[#2A2826]/10 flex flex-col items-center justify-center p-6 md:p-8">
                 <div className="w-full max-w-[280px] md:max-w-[300px]">
                     <div className="text-center mb-6 md:mb-10">
-                        <div className={`inline-flex items-center justify-center w-14 h-14 md:w-20 md:h-20 rounded-[24px] md:rounded-[32px] bg-white/[0.02] border border-white/10 mb-4 md:mb-6 ${error ? 'border-red-500/50 bg-red-500/5 text-red-500' : 'text-[#F98359] shadow-solaris-glow'}`}>
+                        <div className={`inline-flex items-center justify-center w-14 h-14 md:w-20 md:h-20 rounded-[24px] md:rounded-[32px] bg-[#1A1E2E]/[0.02] border border-[#1A1E2E]/10 mb-4 md:mb-6 ${error ? 'border-red-500/50 bg-red-500/5 text-red-500' : 'text-[#C4633F] shadow-solaris-glow'}`}>
                            {error ? <ShieldAlert size={24} /> : <Lock size={24} />}
                         </div>
-                        <h2 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-[#505530]/50 mb-6 md:mb-10 italic">Protocolo de Seguridad</h2>
+                        <h2 className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-[#2A2826]/50 mb-6 md:mb-10 italic">Protocolo de Seguridad</h2>
                         
                         <div className="flex justify-center gap-4 md:gap-5">
                             {[0, 1, 2, 3].map((i) => (
                                 <motion.div
                                     key={i}
                                     animate={error ? { x: [0, -5, 5, -5, 5, 0] } : {}}
-                                    className={`w-3 h-3 md:w-4 md:h-4 rounded-full transition-all duration-300 border border-white/10 ${pin.length > i ? 'bg-[#F98359] scale-125 shadow-solaris-glow border-solaris-orange/50' : 'bg-white/5'}`}
+                                    className={`w-3 h-3 md:w-4 md:h-4 rounded-full transition-all duration-300 border border-[#2A2826]/10 ${pin.length > i ? 'bg-[#C4633F] scale-125 shadow-solaris-glow border-[#C4633F]/50' : 'bg-[#2A2826]/5'}`}
                                 />
                             ))}
                         </div>
@@ -126,20 +133,20 @@ export const LockScreen: React.FC = () => {
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                             <motion.button
                                 key={num}
-                                whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
+                                whileHover={{ scale: 1.05, backgroundColor: 'rgba(26,30,46,0.03)', borderColor: 'rgba(26,30,46,0.1)' }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => handlePinClick(num.toString())}
-                                className="h-16 md:h-20 rounded-[20px] md:rounded-[28px] border border-[#505530]/15 bg-white text-xl md:text-2xl font-black italic text-[#505530] transition-all shadow-sm hover:shadow-2xl hover:text-[#F98359]"
+                                className="h-16 md:h-20 rounded-[20px] md:rounded-[28px] border border-[#2A2826]/15 bg-white text-xl md:text-2xl font-black italic text-[#2A2826] transition-all shadow-sm hover:shadow-2xl hover:text-[#C4633F]"
                             >
                                 {num}
                             </motion.button>
                         ))}
                         <button className="h-16 md:h-20" />
                         <motion.button
-                            whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.1)' }}
+                            whileHover={{ scale: 1.05, backgroundColor: 'rgba(26,30,46,0.03)', borderColor: 'rgba(26,30,46,0.1)' }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => handlePinClick('0')}
-                            className="h-16 md:h-20 rounded-[20px] md:rounded-[28px] border border-[#505530]/15 bg-white text-xl md:text-2xl font-black italic text-[#505530] transition-all shadow-sm hover:shadow-2xl hover:text-[#F98359]"
+                            className="h-16 md:h-20 rounded-[20px] md:rounded-[28px] border border-[#2A2826]/15 bg-white text-xl md:text-2xl font-black italic text-[#2A2826] transition-all shadow-sm hover:shadow-2xl hover:text-[#C4633F]"
                         >
                             0
                         </motion.button>

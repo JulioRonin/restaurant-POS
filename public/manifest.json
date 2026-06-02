@@ -1,18 +1,18 @@
 {
-  "name": "KŌSO RESTAURANT POS",
-  "short_name": "KŌSO POS",
-  "description": "Sistema de Punto de Venta Inteligente - KŌSO",
+  "name": "ServiRest POS",
+  "short_name": "ServiRest",
+  "description": "Sistema de Punto de Venta Inteligente - ServiRest",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#FAFAF3",
-  "theme_color": "#505530",
+  "background_color": "#FAF8F4",
+  "theme_color": "#1A1E2E",
   "orientation": "any",
   "categories": ["business", "productivity"],
   "icons": [
     {
-      "src": "/koso-logo.png",
+      "src": "/favicon.svg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ]

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--lana-bg); padding: 20px; font-family: var(--font-sans); }
+  .grid { display: flex; gap: 12px; flex-wrap: wrap; }
+  .swatch { border-radius: 16px; overflow: hidden; width: 120px; }
+  .color { height: 72px; }
+  .info { background: white; padding: 8px 10px; }
+  .name { font-size: 11px; font-weight: 500; color: #1a1a2e; }
+  .hex { font-family: var(--font-mono); font-size: 10px; color: #6b6b6b; }
+  .label-upper { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: #6b6b6b; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<p class="label-upper">Brand Colors</p>
+<div class="grid">
+  <div class="swatch">
+    <div class="color" style="background:#A8E063;"></div>
+    <div class="info"><div class="name">Lime</div><div class="hex">#A8E063</div></div>
+  </div>
+  <div class="swatch">
+    <div class="color" style="background:#D6F0A8;"></div>
+    <div class="info"><div class="name">Lime Soft</div><div class="hex">#D6F0A8</div></div>
+  </div>
+  <div class="swatch">
+    <div class="color" style="background:#1A1A2E;"></div>
+    <div class="info"><div class="name">Dark</div><div class="hex">#1A1A2E</div></div>
+  </div>
+  <div class="swatch">
+    <div class="color" style="background:#F5F5F5; border: 1px solid #e8e8e8;"></div>
+    <div class="info"><div class="name">Background</div><div class="hex">#F5F5F5</div></div>
+  </div>
+  <div class="swatch">
+    <div class="color" style="background:#FFFFFF; border: 1px solid #e8e8e8;"></div>
+    <div class="info"><div class="name">Card</div><div class="hex">#FFFFFF</div></div>
+  </div>
+</div>
+</body></html>

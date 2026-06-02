@@ -242,7 +242,7 @@ export default function OnboardingScreen() {
             <ChefHat size={24} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Configuración KŌSO</h1>
+            <h1 className="text-xl font-bold text-slate-900">Configuración ServiRest</h1>
             <p className="text-sm text-slate-500">Paso {steps.indexOf(currentStep) + 1} de {steps.length}</p>
           </div>
         </div>
@@ -311,7 +311,7 @@ export default function OnboardingScreen() {
             </div>
 
             <div className="text-xs text-slate-500">
-              © 2026 KOSO POS - Todos los derechos reservados.
+              © 2026 ServiRest - Todos los derechos reservados.
             </div>
           </div>
 

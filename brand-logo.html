@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--lana-bg); padding: 24px 20px; font-family: var(--font-sans); display: flex; align-items: center; gap: 32px; flex-wrap: wrap; }
+  .logo { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em; color: #1a1a2e; display: inline-flex; align-items: baseline; line-height: 1; }
+  .dot { display: inline-block; border-radius: 50%; background: #A8E063; margin-left: 2px; }
+  .on-dark { background: #1a1a2e; border-radius: 16px; padding: 14px 18px; }
+  .on-lime { background: #A8E063; border-radius: 16px; padding: 14px 18px; }
+  .label-upper { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: #6b6b6b; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+  <div>
+    <p class="label-upper">Default</p>
+    <span class="logo" style="font-size:32px;">lana<span class="dot" style="width:0.28em;height:0.28em;transform:translateY(-0.55em);"></span></span>
+  </div>
+  <div class="on-dark">
+    <p class="label-upper" style="color:rgba(255,255,255,0.4);">On Dark</p>
+    <span class="logo" style="font-size:32px;color:white;">lana<span class="dot" style="width:0.28em;height:0.28em;transform:translateY(-0.55em);"></span></span>
+  </div>
+  <div class="on-lime">
+    <p class="label-upper" style="color:rgba(26,26,46,0.5);">On Lime</p>
+    <span class="logo" style="font-size:32px;color:#1a1a2e;">lana<span class="dot" style="width:0.28em;height:0.28em;transform:translateY(-0.55em);background:#1a1a2e;"></span></span>
+  </div>
+  <div>
+    <p class="label-upper">Sizes</p>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <span class="logo" style="font-size:14px;">lana<span class="dot" style="width:0.28em;height:0.28em;transform:translateY(-0.55em);"></span></span>
+      <span class="logo" style="font-size:22px;">lana<span class="dot" style="width:0.28em;height:0.28em;transform:translateY(-0.55em);"></span></span>
+      <span class="logo" style="font-size:32px;">lana<span class="dot" style="width:0.28em;height:0.28em;transform:translateY(-0.55em);"></span></span>
+    </div>
+  </div>
+</body></html>

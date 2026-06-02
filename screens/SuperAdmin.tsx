@@ -284,7 +284,7 @@ export default function SuperAdminScreen() {
       <div className="flex flex-col items-center justify-center h-full text-[#1a1c14] bg-slate-900 p-8">
         <ShieldCheck className="w-20 h-20 text-red-500 mb-4 animate-pulse" />
         <h1 className="text-3xl font-bold mb-2">Acceso Restringido</h1>
-        <p className="text-slate-400">Esta área es solo para administradores de KOSO POS.</p>
+        <p className="text-slate-400">Esta área es solo para administradores de ServiRest.</p>
       </div>
     );
   }
@@ -300,7 +300,7 @@ export default function SuperAdminScreen() {
                 <Zap className="w-5 h-5 text-[#1a1c14]" />
             </div>
             <h1 className="text-3xl font-black uppercase tracking-tighter text-[#1a1c14]">
-              KŌSO Control <span className="text-blue-500">Center</span>
+              ServiRest Control <span className="text-blue-500">Center</span>
             </h1>
           </div>
           <p className="text-slate-500 text-sm font-medium">Gestión Global de Ecosistema Multi-Tenant</p>
@@ -480,7 +480,7 @@ export default function SuperAdminScreen() {
                 <div className="space-y-4">
                     <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">
                         <CreditCard className="w-3 h-3 text-emerald-400" />
-                        Plan KŌSO
+                        Plan ServiRest
                     </h3>
 
                     <div className="grid grid-cols-1 gap-2">
