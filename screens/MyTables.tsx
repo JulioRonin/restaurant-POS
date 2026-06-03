@@ -1,446 +1,569 @@
 import React, { useState, useMemo } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { useUser } from '../contexts/UserContext';
-import { OrderStatus, TableStatus, OrderSource, MenuItem } from '../types';
+import { OrderStatus, MenuItem } from '../types';
 import { useTables } from '../contexts/TableContext';
 import { useMenu } from '../contexts/MenuContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Clock,
-  Trash2,
-  Edit3,
-  CheckCircle2,
-  X,
-  Search,
-  Save,
-  Lock,
-  ChevronRight,
-  Package,
-  BellRing
+  Clock, Trash2, Edit3, CheckCircle2, X, Search, Save, Lock,
+  ArrowRight, Package, BellRing, ChefHat, Receipt, Minus, Plus,
 } from 'lucide-react';
+import {
+  SrCard, SrButton, SrChip, SrInput, SrLabel, SrKicker, SrMono,
+  SrModal, SrModalHeader, SrEmptyState, SrTabs, SrProgressRing,
+} from '../components/ui/servirest';
+
+type StatusGroup = 'todos' | 'preparando' | 'listos' | 'por_cobrar';
 
 export const MyTablesScreen: React.FC = () => {
-    const { orders, updateOrderStatus, removeOrder } = useOrders();
-    const { activeEmployee } = useUser();
-    const { tables: TABLES } = useTables();
-    const { menuItems } = useMenu();
-    const [editingOrder, setEditingOrder] = useState<any | null>(null);
-    const [showPinModal, setShowPinModal] = useState(false);
-    const [pin, setPin] = useState('');
-    const [tempItems, setTempItems] = useState<any[]>([]);
-    const [showItemPicker, setShowItemPicker] = useState(false);
-    const [pickerSearch, setPickerSearch] = useState('');
+  const { orders, updateOrderStatus, removeOrder } = useOrders();
+  const { activeEmployee } = useUser();
+  const { tables: TABLES } = useTables();
+  const { menuItems } = useMenu();
+  const [editingOrder, setEditingOrder] = useState<any | null>(null);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pin, setPin] = useState('');
+  const [tempItems, setTempItems] = useState<any[]>([]);
+  const [showItemPicker, setShowItemPicker] = useState(false);
+  const [pickerSearch, setPickerSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusGroup>('todos');
 
-    const myOrders = useMemo(() => {
-        if (!activeEmployee) return [];
-        return orders.filter(o => o.waiterName === activeEmployee.name && o.status !== OrderStatus.COMPLETED);
-    }, [orders, activeEmployee]);
+  const myOrders = useMemo(() => {
+    if (!activeEmployee) return [];
+    return orders.filter((o) => o.waiterName === activeEmployee.name && o.status !== OrderStatus.COMPLETED);
+  }, [orders, activeEmployee]);
 
-    const getElapsedTime = (timestamp: Date) => {
-        const diff = Date.now() - new Date(timestamp).getTime();
-        return `${Math.floor(diff / 60000)}m`;
-    };
+  const groupedCounts = useMemo(() => ({
+    todos: myOrders.length,
+    preparando: myOrders.filter((o) => o.status === OrderStatus.COOKING || o.status === OrderStatus.PENDING).length,
+    listos: myOrders.filter((o) => o.status === OrderStatus.READY).length,
+    por_cobrar: myOrders.filter((o) => o.status === OrderStatus.BILL_REQUESTED).length,
+  }), [myOrders]);
 
-    const handleOpenEdit = (order: any) => {
-        setEditingOrder(order);
-        setTempItems([...order.items]);
-        setShowItemPicker(false);
-        setPickerSearch('');
-    };
+  const filteredOrders = useMemo(() => {
+    if (statusFilter === 'todos') return myOrders;
+    if (statusFilter === 'preparando') return myOrders.filter((o) => o.status === OrderStatus.COOKING || o.status === OrderStatus.PENDING);
+    if (statusFilter === 'listos') return myOrders.filter((o) => o.status === OrderStatus.READY);
+    if (statusFilter === 'por_cobrar') return myOrders.filter((o) => o.status === OrderStatus.BILL_REQUESTED);
+    return myOrders;
+  }, [myOrders, statusFilter]);
 
-    const finalizeSave = () => {
-        if (!editingOrder) return;
-        const newTotal = tempItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        
-        let newStatus = editingOrder.status;
-        let isKitchenReady = editingOrder.isKitchenReady;
-        let isBarReady = editingOrder.isBarReady;
+  const totalAccumulated = useMemo(
+    () => myOrders.reduce((sum, o) => sum + (o.total || 0), 0),
+    [myOrders]
+  );
 
-        const isDrink = (item: any) => 
-            item.category?.toLowerCase().includes('bebida') ||
-            item.category?.toLowerCase().includes('bar') ||
-            item.category?.toLowerCase().includes('vino') ||
-            item.category?.toLowerCase().includes('trago') ||
-            item.category?.toLowerCase().includes('cerveza') ||
-            item.category?.toLowerCase().includes('drink') ||
-            item.category?.toLowerCase().includes('cocktail');
+  const getElapsedMinutes = (timestamp: Date | string) => {
+    const diff = Date.now() - new Date(timestamp).getTime();
+    return Math.floor(diff / 60000);
+  };
 
-        // Check if any new food or drink items were added
-        const oldFoodCount = editingOrder.items.filter((i: any) => !isDrink(i)).reduce((acc: number, item: any) => acc + item.quantity, 0);
-        const newFoodCount = tempItems.filter(i => !isDrink(i)).reduce((acc: number, item: any) => acc + item.quantity, 0);
-        
-        const oldDrinkCount = editingOrder.items.filter((i: any) => isDrink(i)).reduce((acc: number, item: any) => acc + item.quantity, 0);
-        const newDrinkCount = tempItems.filter(i => isDrink(i)).reduce((acc: number, item: any) => acc + item.quantity, 0);
+  const getOrderPrepPct = (order: any) => {
+    if (!order.items || order.items.length === 0) return 0;
+    const ready = order.items.filter((i: any) => i.status === 'READY' || i.status === 'SERVED').length;
+    return Math.round((ready / order.items.length) * 100);
+  };
 
-        if (newFoodCount > oldFoodCount) isKitchenReady = false;
-        if (newDrinkCount > oldDrinkCount) isBarReady = false;
+  const handleOpenEdit = (order: any) => {
+    setEditingOrder(order);
+    setTempItems([...order.items]);
+    setShowItemPicker(false);
+    setPickerSearch('');
+  };
 
-        // Revert to COOKING if new items were added and it needs prep again
-        if (!isKitchenReady || !isBarReady) {
-            newStatus = OrderStatus.COOKING;
-        }
-        
-        updateOrderStatus(editingOrder.id, newStatus, { 
-            ...editingOrder, 
-            items: tempItems, 
-            total: newTotal, 
-            isKitchenReady, 
-            isBarReady 
-        });
-        setEditingOrder(null);
-        setPin('');
-        setShowPinModal(false);
-    };
+  const finalizeSave = () => {
+    if (!editingOrder) return;
+    const newTotal = tempItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    let newStatus = editingOrder.status;
+    let isKitchenReady = editingOrder.isKitchenReady;
+    let isBarReady = editingOrder.isBarReady;
 
-    const handleCancelOrder = (id: string) => {
-        if (window.confirm('¿Estás seguro de que deseas CANCELAR este pedido? Esta acción lo eliminará de la vista de mesas y de la caja.')) {
-            removeOrder(id);
-        }
-    };
+    const isDrink = (item: any) =>
+      item.category?.toLowerCase().includes('bebida') ||
+      item.category?.toLowerCase().includes('bar') ||
+      item.category?.toLowerCase().includes('vino') ||
+      item.category?.toLowerCase().includes('trago') ||
+      item.category?.toLowerCase().includes('cerveza') ||
+      item.category?.toLowerCase().includes('drink') ||
+      item.category?.toLowerCase().includes('cocktail');
 
-    return (
-        <div className="h-full bg-[#FAF8F4] text-[#1a1c14] p-6 md:p-10 flex flex-col overflow-y-auto no-scrollbar antialiased">
-            <header className="mb-10 flex justify-between items-start md:items-end flex-wrap gap-6 shrink-0">
-                <div>
-                    <h1 className="text-5xl font-black italic tracking-tighter uppercase mb-2 text-[#1a1c14]">Mesas activas</h1>
-                    <p className="text-servirest-terracota/40 font-black text-[11px] uppercase tracking-[0.5em] italic">Pedidos en curso · ServiRest</p>
-                </div>
-                <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] px-8 py-5 rounded-2xl text-right">
-                    <p className="text-[10px] font-black text-[#2A2826]/30 uppercase tracking-[0.3em] mb-1 italic">Mesas con pedido</p>
-                    <p className="text-4xl font-black italic text-servirest-terracota tracking-tighter leading-none">{myOrders.length}</p>
-                </div>
-            </header>
+    const oldFoodCount = editingOrder.items.filter((i: any) => !isDrink(i)).reduce((a: number, x: any) => a + x.quantity, 0);
+    const newFoodCount = tempItems.filter((i) => !isDrink(i)).reduce((a, x) => a + x.quantity, 0);
+    const oldDrinkCount = editingOrder.items.filter((i: any) => isDrink(i)).reduce((a: number, x: any) => a + x.quantity, 0);
+    const newDrinkCount = tempItems.filter((i) => isDrink(i)).reduce((a, x) => a + x.quantity, 0);
 
-            {myOrders.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center opacity-20 border-2 border-dashed border-[rgba(42,40,38,0.12)] rounded-3xl py-32">
-                    <Package size={80} className="mb-6 text-servirest-terracota/20" />
-                    <p className="text-[12px] font-black uppercase tracking-[0.4em] italic">Sin pedidos asignados</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 pb-10">
-                    {myOrders.map(order => {
-                        const isRequested = order.status === OrderStatus.BILL_REQUESTED;
-                        return (
-                            <div
-                                key={order.id}
-                                className={`flex flex-col rounded-[28px] border relative overflow-hidden transition-all ${isRequested ? 'border-servirest-terracota shadow-solaris-glow' : 'border-[rgba(42,40,38,0.12)] bg-white/[0.015]'}`}
-                            >
-                                {isRequested && (
-                                    <div className="absolute top-0 right-0 bg-servirest-terracota text-[#1a1c14] px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.3em] animate-pulse rounded-bl-2xl z-10">
-                                        POR COBRAR
-                                    </div>
-                                )}
-                                {!isRequested && order.status === OrderStatus.READY && (
-                                    <div className="absolute top-0 right-0 bg-[#C4633F] text-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] animate-bounce shadow-salmon-glow rounded-bl-2xl z-10 flex items-center gap-1.5">
-                                        <BellRing size={14} className="animate-pulse" /> LISTA PARA SERVIR
-                                    </div>
-                                )}
+    if (newFoodCount > oldFoodCount) isKitchenReady = false;
+    if (newDrinkCount > oldDrinkCount) isBarReady = false;
+    if (!isKitchenReady || !isBarReady) newStatus = OrderStatus.COOKING;
 
-                                {/* Header */}
-                                <div className="px-6 pt-6 pb-4 border-b border-[rgba(42,40,38,0.12)] bg-servirest-surface flex justify-between items-center gap-3">
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-[8px] font-black text-servirest-terracota/40 uppercase tracking-widest mb-1 italic">MESA</p>
-                                        <h3 className="text-base font-black italic tracking-tighter uppercase text-[#1a1c14] leading-tight font-mono truncate">
-                                            {order.tableId.length > 16 ? `${order.tableId.slice(0, 10)}...${order.tableId.slice(-4)}` : order.tableId}
-                                        </h3>
-                                    </div>
-                                    <div className="text-right shrink-0">
-                                        <p className="text-[8px] font-black text-servirest-terracota/40 uppercase tracking-widest mb-1 italic">TIEMPO</p>
-                                        <p className="text-xs font-black italic text-[#1a1c14] flex items-center gap-1 justify-end">
-                                            <Clock size={11} className="text-servirest-terracota" /> {getElapsedTime(order.timestamp)}
-                                        </p>
-                                    </div>
-                                </div>
+    updateOrderStatus(editingOrder.id, newStatus, {
+      ...editingOrder, items: tempItems, total: newTotal, isKitchenReady, isBarReady,
+    });
+    setEditingOrder(null);
+    setPin('');
+    setShowPinModal(false);
+  };
 
-                                {/* Items */}
-                                <div className="px-6 py-4 overflow-y-auto no-scrollbar" style={{ maxHeight: '150px' }}>
-                                    <div className="space-y-2">
-                                        {order.items.map((item: any, i: number) => (
-                                            <div key={i} className="flex justify-between items-center text-[11px] py-1 border-b border-[rgba(42,40,38,0.12)] last:border-0">
-                                                <span className="text-[#1a1c14] font-black italic uppercase tracking-tight flex-1 truncate mr-2">
-                                                    <span className="text-servirest-terracota mr-1">{item.quantity}×</span>{item.name}
-                                                </span>
-                                                <span className="font-black italic text-[#2A2826]/65 shrink-0">${(item.price * item.quantity).toFixed(0)}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+  const handleCancelOrder = (id: string) => {
+    if (window.confirm('¿Cancelar este pedido? Se elimina de mesas y caja.')) removeOrder(id);
+  };
 
-                                {/* Total */}
-                                <div className="px-6 py-4 border-t border-[rgba(42,40,38,0.12)] flex justify-between items-center">
-                                    <p className="text-[9px] font-black text-[#2A2826]/30 uppercase tracking-[0.3em] italic">Total acumulado</p>
-                                    <p className="text-3xl font-black italic text-servirest-terracota tracking-tighter leading-none">${order.total.toFixed(0)}</p>
-                                </div>
+  const tableName = (id: string) => TABLES.find((t) => t.id === id)?.name || id;
 
-                                {/* Actions */}
-                                <div className="px-6 pb-6 flex gap-3">
-                                    {!isRequested ? (
-                                        <>
-                                            <button
-                                                onClick={() => handleCancelOrder(order.id)}
-                                                className="w-11 h-11 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl flex items-center justify-center text-red-500/30 hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-90"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => handleOpenEdit(order)}
-                                                className="w-11 h-11 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl flex items-center justify-center text-servirest-terracota/30 hover:text-servirest-terracota hover:bg-servirest-terracota/10 transition-all active:scale-90"
-                                            >
-                                                <Edit3 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => updateOrderStatus(order.id, OrderStatus.BILL_REQUESTED)}
-                                                className="flex-1 py-3 bg-white text-black rounded-2xl font-black italic uppercase tracking-[0.15em] text-[10px] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-servirest-terracota hover:text-[#1a1c14]"
-                                            >
-                                                Cobrar cuenta <ChevronRight size={14} />
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <button
-                                                onClick={() => handleCancelOrder(order.id)}
-                                                className="w-11 h-11 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl flex items-center justify-center text-red-500/30 hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-90"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                            <div className="flex-1 py-3 bg-servirest-terracota/10 border border-servirest-terracota/20 text-servirest-terracota font-black italic uppercase tracking-[0.3em] text-[9px] rounded-2xl flex items-center justify-center gap-2 animate-pulse">
-                                                Esperando confirmación de cocina…
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
+  const STATUS_TABS = [
+    { id: 'todos' as StatusGroup,      label: 'Todos',          count: groupedCounts.todos },
+    { id: 'preparando' as StatusGroup, label: 'En preparación', count: groupedCounts.preparando },
+    { id: 'listos' as StatusGroup,     label: 'Listos',         count: groupedCounts.listos },
+    { id: 'por_cobrar' as StatusGroup, label: 'Por cobrar',     count: groupedCounts.por_cobrar },
+  ] as const;
 
-            {/* ── MODIFY MANIFEST MODAL ── */}
-            <AnimatePresence>
-                {editingOrder && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[600] flex items-center justify-center bg-black/95 backdrop-blur-3xl p-4"
-                    >
-                        <div
-                            className="w-full max-w-5xl bg-[#FAF8F4] border border-[rgba(42,40,38,0.20)] rounded-[40px] shadow-2xl flex flex-col"
-                            style={{ maxHeight: '90vh' }}
-                        >
-                            {/* Header */}
-                            <div className="flex justify-between items-center px-10 py-7 border-b border-[rgba(42,40,38,0.12)] bg-servirest-surface shrink-0 rounded-t-[40px]">
-                                <div>
-                                    <h2 className="text-3xl font-black italic tracking-tighter uppercase text-[#1a1c14]">Modificar pedido</h2>
-                                    <p className="text-[10px] font-black uppercase text-servirest-terracota/50 tracking-[0.4em] mt-1 italic">
-                                        Node: {editingOrder.tableId}
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => setEditingOrder(null)}
-                                    className="w-12 h-12 bg-servirest-surface rounded-full flex items-center justify-center text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
-                                >
-                                    <X size={22} />
-                                </button>
-                            </div>
+  return (
+    <div className="h-full w-full overflow-y-auto custom-scrollbar bg-servirest-hueso text-servirest-carbon antialiased">
+      <div className="px-[38px] py-10 max-w-[1480px] mx-auto pb-32 lg:pb-12">
+        {/* ─── HEADER ────────────────────────────────────────────────── */}
+        <div className="flex justify-between items-start flex-wrap gap-6 mb-12">
+          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
+            <SrKicker className="block mb-2">Tu turno</SrKicker>
+            <h1 className="font-serif italic font-medium text-[56px] text-servirest-midnight tracking-[-0.025em] leading-[0.95] m-0">
+              Mesas activas
+            </h1>
+            <p className="text-[14px] text-[rgba(42,40,38,0.6)] font-medium mt-2 max-w-[480px] leading-relaxed">
+              {activeEmployee?.name ? `${activeEmployee.name} — ` : ''}aquí están los pedidos que tienes en piso ahora mismo.
+            </p>
+          </motion.div>
 
-                            {/* Body – responsive two column */}
-                            <div className="flex-1 flex flex-col xl:flex-row overflow-hidden min-h-0">
-
-                                {/* Left: item list */}
-                                <div className="flex-1 flex flex-col overflow-hidden border-r border-[rgba(42,40,38,0.12)]">
-                                    {/* Toolbar */}
-                                    <div className="flex justify-between items-center px-8 py-5 border-b border-[rgba(42,40,38,0.12)] shrink-0 bg-servirest-surface">
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase text-servirest-terracota tracking-[0.3em] italic">Pedido actual</p>
-                                            <p className="text-[9px] text-[#2A2826]/30 font-mono mt-0.5">{tempItems.length} modules loaded</p>
-                                        </div>
-                                        <button
-                                            onClick={() => { setShowItemPicker(v => !v); setPickerSearch(''); }}
-                                            className="px-6 py-3 bg-servirest-terracota rounded-xl text-[10px] font-black uppercase text-[#1a1c14] shadow-solaris-glow hover:scale-105 active:scale-95 transition-all"
-                                        >
-                                            {showItemPicker ? '✕ Cerrar' : '+ Agregar platillo'}
-                                        </button>
-                                    </div>
-
-                                    {/* Picker panel */}
-                                    {showItemPicker && (
-                                        <div className="px-8 py-5 border-b border-[rgba(42,40,38,0.12)] bg-servirest-surface space-y-4 shrink-0">
-                                            <div className="relative">
-                                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-servirest-terracota/30" size={16} />
-                                                <input
-                                                    type="text"
-                                                    placeholder="Search menu items..."
-                                                    className="w-full pl-11 pr-5 py-3 bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-2xl outline-none font-black text-sm italic placeholder:text-[#2A2826]/10 focus:border-servirest-terracota/40 transition-all text-[#1a1c14]"
-                                                    value={pickerSearch}
-                                                    onChange={e => setPickerSearch(e.target.value)}
-                                                    autoFocus
-                                                />
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-2" style={{ maxHeight: '160px', overflowY: 'auto' }}>
-                                                {menuItems
-                                                    .filter(i => i.name.toLowerCase().includes(pickerSearch.toLowerCase()))
-                                                    .slice(0, 12)
-                                                    .map(item => (
-                                                        <button
-                                                            key={item.id}
-                                                            onClick={() => {
-                                                                const existing = tempItems.find(ti => ti.id === item.id);
-                                                                if (existing) {
-                                                                    setTempItems(tempItems.map(ti => ti.id === item.id ? { ...ti, quantity: ti.quantity + 1 } : ti));
-                                                                } else {
-                                                                    setTempItems([...tempItems, { ...item, quantity: 1 }]);
-                                                                }
-                                                                setShowItemPicker(false);
-                                                                setPickerSearch('');
-                                                            }}
-                                                            className="p-4 bg-servirest-surface hover:bg-servirest-terracota text-[#2A2826]/65 hover:text-[#1a1c14] rounded-2xl border border-[rgba(42,40,38,0.12)] transition-all text-left"
-                                                        >
-                                                            <p className="font-black italic uppercase text-sm leading-tight truncate">{item.name}</p>
-                                                            <p className="text-[10px] opacity-50 mt-0.5">${item.price.toFixed(0)}</p>
-                                                        </button>
-                                                    ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Items list */}
-                                    <div className="flex-1 overflow-y-auto no-scrollbar px-8 py-6 space-y-3">
-                                        {tempItems.length === 0 ? (
-                                            <div className="h-full flex items-center justify-center opacity-20 py-16">
-                                                <p className="text-[11px] font-black uppercase tracking-widest italic text-center">Sin platillos — toca Agregar platillo</p>
-                                            </div>
-                                        ) : tempItems.map((item, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="flex items-center justify-between bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl px-6 py-5 hover:border-servirest-terracota/20 transition-all"
-                                            >
-                                                <div className="min-w-0 flex-1 mr-4">
-                                                    <p className="font-black italic text-[#1a1c14] uppercase tracking-tight leading-tight truncate">{item.name}</p>
-                                                    <p className="text-[10px] text-servirest-terracota/40 font-black italic mt-0.5">
-                                                        ${item.price.toFixed(0)} × {item.quantity} = ${(item.price * item.quantity).toFixed(0)}
-                                                    </p>
-                                                </div>
-                                                <div className="flex items-center gap-3 bg-black/40 border border-[rgba(42,40,38,0.12)] px-3 py-2 rounded-2xl shrink-0">
-                                                    <button
-                                                        onClick={() => {
-                                                            const n = [...tempItems];
-                                                            n[idx].quantity = Math.max(0, n[idx].quantity - 1);
-                                                            if (n[idx].quantity === 0) n.splice(idx, 1);
-                                                            setTempItems(n);
-                                                        }}
-                                                        className="w-9 h-9 rounded-xl bg-servirest-surface hover:bg-red-500/20 text-[#2A2826]/45 hover:text-red-500 transition-all flex items-center justify-center text-xl font-black"
-                                                    >−</button>
-                                                    <span className="min-w-[24px] text-center font-black italic text-xl text-[#1a1c14]">{item.quantity}</span>
-                                                    <button
-                                                        onClick={() => {
-                                                            const n = [...tempItems];
-                                                            n[idx].quantity += 1;
-                                                            setTempItems(n);
-                                                        }}
-                                                        className="w-9 h-9 rounded-xl bg-servirest-surface hover:bg-green-500/20 text-[#2A2826]/45 hover:text-green-500 transition-all flex items-center justify-center text-xl font-black"
-                                                    >+</button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Right: summary + save */}
-                                <div className="xl:w-72 w-full shrink-0 flex flex-col p-8 gap-5 bg-servirest-surface">
-                                    <div className="flex-1 flex flex-col justify-center gap-5">
-                                        <div className="bg-servirest-surface rounded-2xl p-7 border border-[rgba(42,40,38,0.12)] text-center">
-                                            <p className="text-[9px] font-black uppercase text-[#2A2826]/45 tracking-widest mb-3 italic">Calculated Flux</p>
-                                            <p className="text-5xl font-black italic text-servirest-terracota tracking-tighter leading-none">
-                                                ${tempItems.reduce((s, i) => s + (i.price * i.quantity), 0).toFixed(0)}
-                                            </p>
-                                        </div>
-
-                                        <div className="bg-servirest-surface rounded-2xl p-5 border border-[rgba(42,40,38,0.12)] space-y-3">
-                                            <div className="flex justify-between items-center text-[11px]">
-                                                <span className="text-[#2A2826]/45 font-black italic uppercase">Total Qty</span>
-                                                <span className="text-[#1a1c14] font-black italic">{tempItems.reduce((a, i) => a + i.quantity, 0)}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center text-[11px]">
-                                                <span className="text-[#2A2826]/45 font-black italic uppercase">Lines</span>
-                                                <span className="text-[#1a1c14] font-black italic">{tempItems.length}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center text-[11px] border-t border-[rgba(42,40,38,0.12)] pt-3">
-                                                <span className="text-servirest-terracota font-black italic uppercase">Total</span>
-                                                <span className="text-servirest-terracota font-black italic">
-                                                    ${tempItems.reduce((s, i) => s + (i.price * i.quantity), 0).toFixed(2)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={() => {
-                                            const isRed = tempItems.length < editingOrder.items.length || tempItems.some((it: any) => {
-                                                const o = editingOrder.items.find((oi: any) => oi.name === it.name);
-                                                return o && it.quantity < (o.quantity || 1);
-                                            });
-                                            if (isRed) setShowPinModal(true); else finalizeSave();
-                                        }}
-                                        className="w-full py-6 bg-white text-black rounded-2xl font-black italic uppercase tracking-[0.3em] text-base shadow-2xl hover:bg-servirest-terracota hover:text-[#1a1c14] transition-all active:scale-95 flex items-center justify-center gap-3"
-                                    >
-                                        <Save size={20} /> Commit Changes
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* ── PIN MODAL ── */}
-            <AnimatePresence>
-                {showPinModal && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[700] flex items-center justify-center bg-black/98 backdrop-blur-3xl p-6"
-                    >
-                        <div className="w-full max-w-md bg-[#FAF8F4] border border-[rgba(42,40,38,0.20)] rounded-[40px] shadow-2xl p-12 text-center">
-                            <div className="w-20 h-20 bg-servirest-terracota/10 rounded-full flex items-center justify-center text-servirest-terracota mx-auto mb-8 border border-servirest-terracota/20">
-                                <Lock size={36} />
-                            </div>
-                            <h3 className="text-3xl font-black italic tracking-tighter uppercase text-[#1a1c14] mb-2">Auth Code Required</h3>
-                            <p className="text-[10px] font-black uppercase text-servirest-terracota/40 tracking-[0.5em] mb-10 italic">Security Interlock Active</p>
-
-                            <div className="flex justify-center gap-6 mb-10">
-                                {[0, 1, 2, 3].map((_, i) => (
-                                    <div key={i} className={`w-5 h-5 rounded-full transition-all duration-300 ${pin.length > i ? 'bg-servirest-terracota scale-125' : 'bg-white/5 border border-[rgba(42,40,38,0.20)]'}`} />
-                                ))}
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-4 mb-4">
-                                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
-                                    <button
-                                        key={n}
-                                        onClick={() => pin.length < 4 && setPin(pin + n)}
-                                        className="w-full h-16 rounded-2xl bg-servirest-surface hover:bg-white text-[#2A2826]/55 hover:text-black text-2xl font-black italic transition-all active:scale-90 border border-[rgba(42,40,38,0.12)]"
-                                    >{n}</button>
-                                ))}
-                            </div>
-                            <div className="grid grid-cols-3 gap-4 mb-8">
-                                <button onClick={() => setPin('')} className="text-[10px] font-black text-[#2A2826]/30 uppercase tracking-widest hover:text-red-500 transition-colors italic">Reset</button>
-                                <button onClick={() => pin.length < 4 && setPin(pin + '0')} className="w-full h-16 rounded-2xl bg-servirest-surface hover:bg-white text-[#2A2826]/55 hover:text-black text-2xl font-black italic transition-all active:scale-90 border border-[rgba(42,40,38,0.12)]">0</button>
-                                <button
-                                    onClick={() => { if (pin === '0000') finalizeSave(); else { alert('ACCESS_DENIED'); setPin(''); } }}
-                                    className="w-full h-16 rounded-2xl bg-servirest-terracota text-[#1a1c14] flex items-center justify-center hover:scale-105 transition-all active:scale-95"
-                                >
-                                    <CheckCircle2 size={28} />
-                                </button>
-                            </div>
-                            <button onClick={() => { setShowPinModal(false); setPin(''); }} className="text-[#2A2826]/10 hover:text-[#1a1c14] transition-colors uppercase font-black text-[10px] tracking-widest italic flex items-center justify-center gap-2 mx-auto">
-                                <X size={14} /> Descartar
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+          {/* Mini-stats rail */}
+          <div className="flex gap-3 flex-wrap">
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">Activos</SrLabel>
+              <div className="font-black italic text-[32px] text-servirest-midnight tracking-[-0.03em] leading-none">
+                {myOrders.length}
+              </div>
+            </SrCard>
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">Por cobrar</SrLabel>
+              <div className="font-black italic text-[32px] text-servirest-terracota tracking-[-0.03em] leading-none">
+                {groupedCounts.por_cobrar}
+              </div>
+            </SrCard>
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">Acumulado</SrLabel>
+              <SrMono className="text-[20px] text-servirest-midnight font-extrabold tracking-tight">
+                ${totalAccumulated.toFixed(0)}
+              </SrMono>
+            </SrCard>
+          </div>
         </div>
-    );
+
+        {/* ─── STATUS FILTER TABS ───────────────────────────────────── */}
+        <div className="mb-8">
+          <SrTabs<StatusGroup> tabs={STATUS_TABS} active={statusFilter} onChange={setStatusFilter} />
+        </div>
+
+        {/* ─── ORDER CARDS GRID ─────────────────────────────────────── */}
+        {filteredOrders.length === 0 ? (
+          <SrCard variant="solaris" className="p-12">
+            <SrEmptyState
+              icon={<Package size={28} />}
+              title={statusFilter === 'todos' ? 'Sin pedidos por ahora' : 'Sin pedidos en este filtro'}
+              description={
+                statusFilter === 'todos'
+                  ? 'Cuando la host te asigne mesa o tomes un pedido nuevo, aparecerá aquí.'
+                  : 'Cambia de filtro para ver el resto de tus mesas.'
+              }
+            />
+          </SrCard>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <AnimatePresence mode="popLayout">
+              {filteredOrders.map((order, idx) => {
+                const isRequested = order.status === OrderStatus.BILL_REQUESTED;
+                const isReady = order.status === OrderStatus.READY;
+                const isCooking = order.status === OrderStatus.COOKING || order.status === OrderStatus.PENDING;
+                const elapsed = getElapsedMinutes(order.timestamp);
+                const isLate = elapsed > 25 && (isCooking || isReady);
+                const pct = getOrderPrepPct(order);
+
+                return (
+                  <motion.div
+                    key={order.id}
+                    layout
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.96 }}
+                    transition={{ duration: 0.3, delay: idx * 0.03, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    <SrCard
+                      hover
+                      className={`overflow-hidden relative ${isRequested ? 'border-2 border-servirest-terracota/60 shadow-sr-glow' : isReady ? 'border-2 border-servirest-success/40' : ''}`}
+                    >
+                      {/* Status banner — small ribbon at top */}
+                      {isRequested && (
+                        <div className="px-5 py-2 bg-servirest-terracota text-servirest-hueso flex items-center gap-2">
+                          <Receipt size={12} />
+                          <span className="font-black italic uppercase tracking-[0.2em] text-[9px]">Por cobrar</span>
+                        </div>
+                      )}
+                      {isReady && !isRequested && (
+                        <div className="px-5 py-2 bg-servirest-success text-servirest-hueso flex items-center gap-2">
+                          <BellRing size={12} />
+                          <span className="font-black italic uppercase tracking-[0.2em] text-[9px]">Lista para servir</span>
+                        </div>
+                      )}
+                      {isLate && !isRequested && !isReady && (
+                        <div className="px-5 py-2 bg-servirest-mostaza text-servirest-midnight flex items-center gap-2">
+                          <Clock size={12} />
+                          <span className="font-black italic uppercase tracking-[0.2em] text-[9px]">Tarda {elapsed} min — verifica</span>
+                        </div>
+                      )}
+
+                      {/* Card head: table + customer + elapsed */}
+                      <div className="px-6 pt-6 pb-4 flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <SrLabel className="block mb-1.5">Mesa</SrLabel>
+                          <div className="font-serif italic font-medium text-[26px] text-servirest-midnight tracking-[-0.02em] leading-none mb-1 truncate">
+                            {tableName(order.tableId)}
+                          </div>
+                          <SrMono className="text-[11px] text-[rgba(42,40,38,0.5)]">
+                            #{(order.id || '').slice(0, 8).toUpperCase()}
+                          </SrMono>
+                        </div>
+                        <div className="text-right shrink-0">
+                          {isCooking && pct > 0 ? (
+                            <SrProgressRing pct={pct} size={48} stroke={4} />
+                          ) : (
+                            <SrChip tone={isReady ? 'success' : isRequested ? 'terracota' : 'neutral'}>
+                              <Clock size={10} className="mr-1.5" />
+                              {elapsed}m
+                            </SrChip>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Items list — compact */}
+                      <div className="px-6 pb-4 max-h-[180px] overflow-y-auto custom-scrollbar">
+                        <div className="space-y-1">
+                          {order.items.map((item: any, i: number) => (
+                            <div
+                              key={i}
+                              className="flex justify-between items-center text-[12px] py-1.5 border-b border-[rgba(42,40,38,0.06)] last:border-0"
+                            >
+                              <span className="flex-1 truncate font-medium text-servirest-carbon mr-2">
+                                <span className="font-mono font-bold text-servirest-terracota mr-2">{item.quantity}×</span>
+                                {item.name}
+                              </span>
+                              <SrMono className="text-[11px] text-[rgba(42,40,38,0.6)] shrink-0">
+                                ${(item.price * item.quantity).toFixed(0)}
+                              </SrMono>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Total */}
+                      <div className="px-6 py-4 border-t border-[rgba(42,40,38,0.08)] bg-servirest-hueso-sunken/40 flex items-baseline justify-between">
+                        <SrLabel>Total</SrLabel>
+                        <div className="font-black italic text-[28px] text-servirest-midnight tracking-[-0.03em] leading-none">
+                          ${order.total.toFixed(0)}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="px-6 py-4 flex gap-2.5 border-t border-[rgba(42,40,38,0.08)]">
+                        {!isRequested ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleCancelOrder(order.id)}
+                              title="Cancelar pedido"
+                              className="w-11 h-11 rounded-sr-md bg-[rgba(225,85,75,0.06)] text-servirest-danger/60 hover:text-servirest-danger hover:bg-[rgba(225,85,75,0.10)] flex items-center justify-center transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEdit(order)}
+                              title="Modificar pedido"
+                              className="w-11 h-11 rounded-sr-md bg-[rgba(42,40,38,0.05)] text-[rgba(42,40,38,0.6)] hover:text-servirest-terracota hover:bg-[rgba(196,99,63,0.08)] flex items-center justify-center transition-colors"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+                            <SrButton
+                              variant={isReady ? 'primary' : 'midnight'}
+                              size="sm"
+                              className="flex-1"
+                              iconRight={<ArrowRight size={12} />}
+                              onClick={() => updateOrderStatus(order.id, OrderStatus.BILL_REQUESTED)}
+                            >
+                              Cobrar cuenta
+                            </SrButton>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleCancelOrder(order.id)}
+                              title="Cancelar pedido"
+                              className="w-11 h-11 rounded-sr-md bg-[rgba(225,85,75,0.06)] text-servirest-danger/60 hover:text-servirest-danger hover:bg-[rgba(225,85,75,0.10)] flex items-center justify-center transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                            <div className="flex-1 py-3 rounded-sr-md bg-[rgba(196,99,63,0.08)] border border-servirest-terracota/30 text-servirest-terracota font-black italic uppercase tracking-[0.18em] text-[9px] flex items-center justify-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-servirest-terracota animate-pulse" />
+                              Esperando caja
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </SrCard>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+
+      {/* ─── MODIFY ORDER MODAL ───────────────────────────────────── */}
+      <AnimatePresence>
+        {editingOrder && (
+          <SrModal open onClose={() => setEditingOrder(null)} maxWidth={960}>
+            <SrModalHeader
+              title="Modificar pedido"
+              kicker={`Mesa ${tableName(editingOrder.tableId)} · ${editingOrder.items.length} platillos`}
+              onClose={() => setEditingOrder(null)}
+            />
+
+            <div className="flex flex-col lg:flex-row gap-6 max-h-[70vh]">
+              {/* LEFT — items list */}
+              <div className="flex-1 flex flex-col min-w-0 min-h-0">
+                <div className="flex items-center justify-between mb-4">
+                  <SrLabel>Pedido actual ({tempItems.length} líneas)</SrLabel>
+                  <SrButton
+                    variant={showItemPicker ? 'outline' : 'primary'}
+                    size="sm"
+                    icon={showItemPicker ? <X size={12} /> : <Plus size={12} />}
+                    onClick={() => { setShowItemPicker((v) => !v); setPickerSearch(''); }}
+                  >
+                    {showItemPicker ? 'Cerrar' : 'Agregar platillo'}
+                  </SrButton>
+                </div>
+
+                {showItemPicker && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-4 p-4 bg-servirest-hueso-sunken/40 rounded-sr-lg border border-[rgba(42,40,38,0.08)]"
+                  >
+                    <div className="mb-3">
+                      <SrInput
+                        shape="pill"
+                        placeholder="Buscar platillo…"
+                        icon={<Search size={14} />}
+                        value={pickerSearch}
+                        onChange={(e) => setPickerSearch(e.target.value)}
+                        autoFocus
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+                      {menuItems
+                        .filter((i) => i.name.toLowerCase().includes(pickerSearch.toLowerCase()))
+                        .slice(0, 12)
+                        .map((item: MenuItem) => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => {
+                              const existing = tempItems.find((ti) => ti.id === item.id);
+                              if (existing) {
+                                setTempItems(tempItems.map((ti) => ti.id === item.id ? { ...ti, quantity: ti.quantity + 1 } : ti));
+                              } else {
+                                setTempItems([...tempItems, { ...item, quantity: 1 }]);
+                              }
+                              setShowItemPicker(false);
+                              setPickerSearch('');
+                            }}
+                            className="text-left p-3 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-sr-md hover:border-servirest-terracota/40 hover:bg-[rgba(196,99,63,0.04)] transition-colors"
+                          >
+                            <div className="font-extrabold text-[12px] text-servirest-midnight tracking-tight truncate">{item.name}</div>
+                            <SrMono className="text-[10px] text-servirest-terracota">${item.price.toFixed(0)}</SrMono>
+                          </button>
+                        ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
+                  {tempItems.length === 0 ? (
+                    <SrEmptyState
+                      icon={<Package size={24} />}
+                      title="Sin platillos en el pedido"
+                      description="Toca Agregar platillo para empezar."
+                    />
+                  ) : (
+                    tempItems.map((item, idx) => (
+                      <SrCard key={`${item.id}-${idx}`} className="px-4 py-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="font-extrabold text-[13px] text-servirest-midnight tracking-tight truncate">{item.name}</div>
+                          <SrMono className="text-[10px] text-[rgba(42,40,38,0.6)]">
+                            ${item.price.toFixed(0)} × {item.quantity} = ${(item.price * item.quantity).toFixed(0)}
+                          </SrMono>
+                        </div>
+                        <div className="flex items-center gap-1 bg-servirest-hueso-sunken/60 rounded-sr-md p-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const n = [...tempItems];
+                              n[idx].quantity = Math.max(0, n[idx].quantity - 1);
+                              if (n[idx].quantity === 0) n.splice(idx, 1);
+                              setTempItems(n);
+                            }}
+                            className="w-8 h-8 rounded-sr-sm hover:bg-[rgba(225,85,75,0.10)] text-[rgba(42,40,38,0.6)] hover:text-servirest-danger flex items-center justify-center transition-colors"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="min-w-[24px] text-center font-black italic text-[14px] text-servirest-midnight">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const n = [...tempItems];
+                              n[idx].quantity += 1;
+                              setTempItems(n);
+                            }}
+                            className="w-8 h-8 rounded-sr-sm hover:bg-[rgba(34,160,107,0.10)] text-[rgba(42,40,38,0.6)] hover:text-servirest-success flex items-center justify-center transition-colors"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                      </SrCard>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* RIGHT — summary */}
+              <div className="lg:w-[280px] shrink-0 flex flex-col gap-4">
+                <SrCard variant="solaris" className="p-6">
+                  <SrKicker className="block mb-1.5">Resumen</SrKicker>
+                  <SrLabel className="block mb-3">Nuevo total</SrLabel>
+                  <div className="font-black italic text-[48px] text-servirest-midnight tracking-[-0.03em] leading-none mb-1">
+                    ${tempItems.reduce((s, i) => s + i.price * i.quantity, 0).toFixed(0)}
+                  </div>
+                  <SrMono className="text-[10px] text-[rgba(42,40,38,0.4)]">MXN</SrMono>
+                </SrCard>
+
+                <SrCard className="p-5 space-y-3">
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-[rgba(42,40,38,0.6)] font-medium">Platillos</span>
+                    <SrMono className="text-servirest-midnight">{tempItems.reduce((a, i) => a + i.quantity, 0)}</SrMono>
+                  </div>
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-[rgba(42,40,38,0.6)] font-medium">Líneas</span>
+                    <SrMono className="text-servirest-midnight">{tempItems.length}</SrMono>
+                  </div>
+                  <div className="flex justify-between text-[12px] pt-3 border-t border-[rgba(42,40,38,0.08)]">
+                    <SrLabel className="text-servirest-terracota">Total exacto</SrLabel>
+                    <SrMono className="text-servirest-terracota font-extrabold">
+                      ${tempItems.reduce((s, i) => s + i.price * i.quantity, 0).toFixed(2)}
+                    </SrMono>
+                  </div>
+                </SrCard>
+
+                <SrButton
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  iconRight={<Save size={16} />}
+                  onClick={() => {
+                    const isReduce =
+                      tempItems.length < editingOrder.items.length ||
+                      tempItems.some((it: any) => {
+                        const o = editingOrder.items.find((oi: any) => oi.name === it.name);
+                        return o && it.quantity < (o.quantity || 1);
+                      });
+                    if (isReduce) setShowPinModal(true);
+                    else finalizeSave();
+                  }}
+                >
+                  Guardar cambios
+                </SrButton>
+              </div>
+            </div>
+          </SrModal>
+        )}
+      </AnimatePresence>
+
+      {/* ─── PIN CONFIRMATION MODAL ───────────────────────────────── */}
+      <AnimatePresence>
+        {showPinModal && (
+          <SrModal open onClose={() => { setShowPinModal(false); setPin(''); }} maxWidth={420}>
+            <div className="text-center py-2">
+              <div className="w-16 h-16 rounded-full bg-[rgba(196,99,63,0.10)] text-servirest-terracota flex items-center justify-center mx-auto mb-6 border border-servirest-terracota/30">
+                <Lock size={28} />
+              </div>
+              <h3 className="font-serif italic font-medium text-[28px] text-servirest-midnight tracking-[-0.02em] m-0 mb-2 leading-tight">
+                PIN del manager
+              </h3>
+              <p className="text-[13px] text-[rgba(42,40,38,0.6)] font-medium leading-relaxed m-0 mb-8 max-w-[280px] mx-auto">
+                Reducir o quitar platillos requiere autorización. Pide el PIN al encargado.
+              </p>
+
+              <div className="flex justify-center gap-3 mb-8">
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className={`w-3.5 h-3.5 rounded-full border transition-all duration-300 ${pin.length > i ? 'bg-servirest-terracota border-servirest-terracota scale-110' : 'bg-transparent border-[rgba(42,40,38,0.20)]'}`}
+                  />
+                ))}
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => pin.length < 4 && setPin(pin + n)}
+                    className="h-14 rounded-sr-lg bg-servirest-hueso-sunken text-servirest-midnight font-black italic text-[22px] hover:bg-servirest-surface hover:shadow-sr-card active:scale-95 transition-all border border-[rgba(42,40,38,0.08)]"
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-3 gap-3 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setPin('')}
+                  className="h-14 rounded-sr-lg text-[10px] font-black uppercase tracking-[0.16em] text-[rgba(42,40,38,0.6)] hover:text-servirest-danger transition-colors"
+                >
+                  Borrar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => pin.length < 4 && setPin(pin + '0')}
+                  className="h-14 rounded-sr-lg bg-servirest-hueso-sunken text-servirest-midnight font-black italic text-[22px] hover:bg-servirest-surface hover:shadow-sr-card active:scale-95 transition-all border border-[rgba(42,40,38,0.08)]"
+                >
+                  0
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (pin === '0000') finalizeSave();
+                    else { alert('PIN incorrecto'); setPin(''); }
+                  }}
+                  className="h-14 rounded-sr-lg bg-servirest-terracota text-servirest-hueso shadow-sr-glow flex items-center justify-center hover:scale-105 active:scale-95 transition-transform"
+                >
+                  <CheckCircle2 size={22} />
+                </button>
+              </div>
+            </div>
+          </SrModal>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 };
+
+export default MyTablesScreen;

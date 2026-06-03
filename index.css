@@ -1,29 +1,103 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* ============================================================================
    ServiRest — Sobremesa Lúcida · Design Tokens
-   Source of truth: design_handoff_linea_de_ordenes/tokens/colors_and_type.css
-   Mirrors tailwind.config.js → colors.servirest.* so we have one truth.
+   Tailwind v4 (@theme directive). Source of truth for all utilities.
+   ============================================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@import "tailwindcss";
+
+/* ============================================================================
+   @THEME — Tailwind v4 tokens. Every key here becomes a utility class.
+   e.g. --color-servirest-hueso → bg-servirest-hueso / text-servirest-hueso.
+   ============================================================================ */
+@theme {
+  /* Type families */
+  --font-sans:  'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Fraunces', 'Tiempos Headline', ui-serif, Georgia, 'Times New Roman', serif;
+  --font-mono:  'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* ── ServiRest Sobremesa Lúcida palette ─────────────────────────────── */
+  --color-servirest-midnight:        #1A1E2E;
+  --color-servirest-terracota:       #C4633F;
+  --color-servirest-mostaza:         #C9A24A;
+  --color-servirest-hueso:           #FAF8F4;
+  --color-servirest-carbon:          #2A2826;
+  /* Extended ramps */
+  --color-servirest-midnight-soft:   #232839;
+  --color-servirest-midnight-card:   #2A2F42;
+  --color-servirest-terracota-dark:  #A14C2D;
+  --color-servirest-terracota-light: #DCA08A;
+  --color-servirest-hueso-sunken:    #F0F0E8;
+  --color-servirest-surface:         #FFFFFF;
+  --color-servirest-success:         #22A06B;
+  --color-servirest-warning:         #C9A24A;
+  --color-servirest-danger:          #E1554B;
+
+  /* ── Legacy aliases kept so older screens compile unchanged ─────────── */
+  --color-solaris-black:  #2A2826;
+  --color-solaris-orange: #C4633F;
+  --color-solaris-dark:   #1A1E2E;
+  --color-solaris-accent: #C9A24A;
+  --color-koso-olive:     #2A2826;
+  --color-koso-cream:     #FAF8F4;
+  --color-koso-orange:    #C4633F;
+  --color-koso-purple:    #C9A24A;
+  --color-koso-dark:      #1A1E2E;
+  --color-koso-surface:   #232839;
+
+  /* Radii */
+  --radius-sr-sm:   8px;
+  --radius-sr-md:   12px;
+  --radius-sr-lg:   16px;
+  --radius-sr-xl:   24px;
+  --radius-sr-2xl:  32px;
+  --radius-sr-pill: 9999px;
+  --radius-solaris: 2rem;
+  --radius-3xl:     2rem;
+
+  /* Shadows */
+  --shadow-sr-card:          0 2px 20px rgba(42, 40, 38, 0.08);
+  --shadow-sr-lift:          0 4px 24px rgba(42, 40, 38, 0.10);
+  --shadow-sr-modal:         0 30px 80px rgba(26, 30, 46, 0.35);
+  --shadow-sr-glow:          0 0 20px rgba(196, 99, 63, 0.40);
+  --shadow-sr-glow-soft:     0 0 40px rgba(196, 99, 63, 0.12);
+  --shadow-sr-glow-midnight: 0 0 20px rgba(42, 40, 38, 0.50);
+  /* Legacy aliases */
+  --shadow-solaris:      0 0 40px rgba(196, 99, 63, 0.12);
+  --shadow-solaris-glow: 0 0 20px rgba(196, 99, 63, 0.45);
+  --shadow-koso-glow:    0 0 24px rgba(196, 99, 63, 0.45);
+  --shadow-olive-glow:   0 0 20px rgba(42, 40, 38, 0.5);
+
+  /* Animations */
+  --animate-sr-fade:   sr-fade 0.4s ease;
+  --animate-sr-fadeup: sr-fadeup 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-sr-pop:    sr-pop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-sr-blink:  sr-blink 1.2s infinite;
+  --animate-soft-fade-in: soft-fade-in 0.4s ease-out forwards;
+}
+
+@keyframes sr-fade   { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes sr-fadeup { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
+@keyframes sr-pop    { 0% { transform: scale(0.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes sr-blink  { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@keyframes soft-fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ============================================================================
+   :root CSS variables — semantic tokens used in components for direct
+   `style="background: var(--sr-*)"` access (not Tailwind utility class form).
    ============================================================================ */
 :root {
-  /* ---- Brand core: 5 colores Sobremesa Lúcida ------------------------- */
   --sr-midnight:   #1A1E2E;
   --sr-terracota:  #C4633F;
   --sr-mostaza:    #C9A24A;
   --sr-hueso:      #FAF8F4;
   --sr-carbon:     #2A2826;
 
-  /* ---- Extended brand ramps ------------------------------------------- */
   --sr-terracota-dark:  #A14C2D;
   --sr-terracota-light: #DCA08A;
   --sr-midnight-soft:   #232839;
   --sr-midnight-card:   #2A2F42;
 
-  /* ---- Surfaces & lines ----------------------------------------------- */
   --sr-bg:            var(--sr-hueso);
   --sr-bg-sunken:     #F0F0E8;
   --sr-surface:       #FFFFFF;
@@ -32,25 +106,21 @@
   --sr-line-dark:     rgba(250, 248, 244, 0.08);
   --sr-line-dark-str: rgba(250, 248, 244, 0.16);
 
-  /* ---- Text roles ----------------------------------------------------- */
   --sr-fg:        var(--sr-carbon);
   --sr-fg-mute:   rgba(42, 40, 38, 0.60);
   --sr-fg-low:    rgba(42, 40, 38, 0.40);
   --sr-fg-on-dark:      var(--sr-hueso);
   --sr-fg-on-dark-mute: rgba(250, 248, 244, 0.55);
 
-  /* ---- Semantic ------------------------------------------------------- */
   --sr-success: #22A06B;
   --sr-warning: var(--sr-mostaza);
   --sr-danger:  #E1554B;
   --sr-info:    var(--sr-midnight);
 
-  /* ---- Type families -------------------------------------------------- */
-  --sr-font-serif: "Fraunces", "Tiempos Headline", ui-serif, Georgia, "Times New Roman", serif;
-  --sr-font-sans:  "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --sr-font-mono:  "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --sr-font-serif: 'Fraunces', 'Tiempos Headline', ui-serif, Georgia, 'Times New Roman', serif;
+  --sr-font-sans:  'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --sr-font-mono:  'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  /* ---- Radii ---------------------------------------------------------- */
   --sr-r-sm:   8px;
   --sr-r-md:   12px;
   --sr-r-lg:   16px;
@@ -58,7 +128,6 @@
   --sr-r-2xl:  32px;
   --sr-r-pill: 999px;
 
-  /* ---- Shadows & glow ------------------------------------------------- */
   --sr-shadow-card:    0 2px 20px rgba(42, 40, 38, 0.08);
   --sr-shadow-lift:    0 4px 24px rgba(42, 40, 38, 0.10);
   --sr-shadow-modal:   0 30px 80px rgba(26, 30, 46, 0.35);
@@ -66,18 +135,16 @@
   --sr-glow-soft:      0 0 40px rgba(196, 99, 63, 0.12);
   --sr-glow-midnight:  0 0 20px rgba(42, 40, 38, 0.50);
 
-  /* ---- Motion --------------------------------------------------------- */
   --sr-ease-solaris: cubic-bezier(0.23, 1, 0.32, 1);
   --sr-ease-out:     cubic-bezier(0.16, 1, 0.3, 1);
   --sr-dur-fast: 0.18s;
   --sr-dur:      0.30s;
   --sr-dur-slow: 0.50s;
 
-  /* ---- Tracking ------------------------------------------------------- */
   --sr-track-label:  0.3em;
   --sr-track-kicker: 0.4em;
 
-  /* ---- Legacy aliases (kept for already-shipped screens) -------------- */
+  /* Legacy aliases */
   --primary-color:   var(--sr-terracota);
   --secondary-color: var(--sr-mostaza);
   --olive-color:     var(--sr-midnight);
@@ -91,37 +158,28 @@
 
 /* ============================================================================
    TIER OVERRIDES — Sobremesa Editorial (Prestige)
-   See docs/business-plan/koso-pos/TIER_STRATEGY_AND_VISUAL_DIFFERENTIATION.md
-   Esencial + Profesional inherit the defaults above ("Sobremesa Operativa").
-   Prestige applies an editorial layer: bigger radii, more breath, longer
-   motion, optional gold accent over mostaza, optional night canvas.
    ============================================================================ */
-
 [data-tier="prestige"] {
   --sr-r-xl:    32px;
   --sr-r-2xl:   40px;
   --sr-dur-fast: 0.30s;
   --sr-dur:      0.45s;
   --sr-dur-slow: 0.60s;
-  --sr-mostaza-gold: #D4A857;   /* premium insignia accent, applied on hover/active */
+  --sr-mostaza-gold: #D4A857;
 }
-
 [data-tier="prestige"] .sr-h1 {
   font-size: clamp(48px, 5vw, 64px);
   line-height: 1.05;
   font-variation-settings: "opsz" 144, "SOFT" 60;
 }
-
 [data-tier="prestige"] .sr-h2 {
   font-size: 36px;
   font-variation-settings: "opsz" 96, "SOFT" 50;
 }
-
 [data-tier="prestige"] .sr-card,
 [data-tier="prestige"] .sr-card-solaris {
   border-radius: 32px;
 }
-
 [data-tier="prestige"] .sr-kicker {
   font-family: var(--sr-font-serif);
   font-weight: 500;
@@ -129,8 +187,6 @@
   font-size: 11px;
   letter-spacing: 0.3em;
 }
-
-/* Prestige optional night canvas (persisted via data-prestige-night="true") */
 [data-tier="prestige"][data-prestige-night="true"] {
   --sr-bg:         var(--sr-midnight);
   --sr-bg-sunken:  var(--sr-midnight-soft);
@@ -141,7 +197,6 @@
   --sr-line:       var(--sr-line-dark);
   --sr-line-strong: var(--sr-line-dark-str);
 }
-
 [data-tier="prestige"][data-prestige-night="true"] body {
   background-color: var(--sr-midnight);
   color: var(--sr-hueso);
@@ -150,13 +205,7 @@
 /* ============================================================================
    GLOBAL BASE
    ============================================================================ */
-* { box-sizing: border-box; }
-
 html {
-  /* Explicitly opt out of forced dark mode. Some browsers (Chrome on macOS,
-     Edge) repaint the canvas dark when the OS is in dark mode unless we say
-     otherwise. ServiRest is a single-mode brand (Sobremesa Lúcida cream),
-     except when Prestige night canvas is opted into via data attribute. */
   color-scheme: light only;
   background-color: var(--sr-hueso);
 }
@@ -176,7 +225,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--sr-hueso);
   color: var(--sr-carbon);
-  overflow: hidden; /* App shell — individual screens manage their own scroll */
+  overflow: hidden;
 }
 
 img { display: block; }
@@ -187,7 +236,7 @@ img { display: block; }
 }
 
 /* ============================================================================
-   SEMANTIC TYPE STYLES — .sr-* type primitives
+   SEMANTIC TYPE STYLES
    ============================================================================ */
 .sr-display {
   font-family: var(--sr-font-serif);
@@ -199,7 +248,6 @@ img { display: block; }
   font-variation-settings: "opsz" 144, "SOFT" 40, "WONK" 1;
   color: var(--sr-midnight);
 }
-
 .sr-h1 {
   font-family: var(--sr-font-serif);
   font-weight: 500;
@@ -209,7 +257,6 @@ img { display: block; }
   font-variation-settings: "opsz" 96, "SOFT" 30;
   color: var(--sr-midnight);
 }
-
 .sr-h2 {
   font-family: var(--sr-font-serif);
   font-weight: 500;
@@ -218,7 +265,6 @@ img { display: block; }
   letter-spacing: -0.015em;
   color: var(--sr-midnight);
 }
-
 .sr-h-brutal {
   font-family: var(--sr-font-sans);
   font-weight: 900;
@@ -228,7 +274,6 @@ img { display: block; }
   line-height: 1;
   color: var(--sr-midnight);
 }
-
 .sr-body {
   font-family: var(--sr-font-sans);
   font-weight: 400;
@@ -236,7 +281,6 @@ img { display: block; }
   line-height: 1.6;
   color: var(--sr-fg);
 }
-
 .sr-body-sm {
   font-family: var(--sr-font-sans);
   font-weight: 500;
@@ -244,7 +288,6 @@ img { display: block; }
   line-height: 1.55;
   color: var(--sr-fg-mute);
 }
-
 .sr-label {
   font-family: var(--sr-font-sans);
   font-weight: 900;
@@ -253,7 +296,6 @@ img { display: block; }
   letter-spacing: var(--sr-track-label);
   color: var(--sr-fg-mute);
 }
-
 .sr-kicker {
   font-family: var(--sr-font-sans);
   font-weight: 900;
@@ -263,7 +305,6 @@ img { display: block; }
   letter-spacing: var(--sr-track-kicker);
   color: var(--sr-terracota);
 }
-
 .sr-kpi {
   font-family: var(--sr-font-sans);
   font-weight: 900;
@@ -273,7 +314,6 @@ img { display: block; }
   line-height: 1;
   color: var(--sr-midnight);
 }
-
 .sr-mono {
   font-family: var(--sr-font-mono);
   font-weight: 600;
@@ -283,7 +323,7 @@ img { display: block; }
 }
 
 /* ============================================================================
-   PRIMITIVES — building blocks reused by cards & kits
+   PRIMITIVES
    ============================================================================ */
 .sr-card {
   background: var(--sr-surface);
@@ -291,27 +331,23 @@ img { display: block; }
   border-radius: var(--sr-r-xl);
   box-shadow: var(--sr-shadow-card);
 }
-
 .sr-card-solaris {
   background: var(--sr-surface);
   border: 1px solid var(--sr-line);
   border-radius: var(--sr-r-2xl);
   box-shadow: var(--sr-shadow-lift);
 }
-
 .sr-glass {
   background: rgba(250, 248, 244, 0.88);
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+          backdrop-filter: blur(12px);
   border: 1px solid var(--sr-line);
   border-radius: var(--sr-r-xl);
   box-shadow: var(--sr-shadow-lift);
 }
-
 .sr-sidebar-bg {
   background: linear-gradient(160deg, #1A1E2E 0%, #232839 60%, #1A1E2E 100%);
 }
-
 .sr-chip {
   font-family: var(--sr-font-sans);
   font-weight: 900;
@@ -324,13 +360,11 @@ img { display: block; }
   color: var(--sr-fg-mute);
   background: var(--sr-surface);
 }
-
 .sr-no-scrollbar::-webkit-scrollbar { display: none; }
 .sr-no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* ============================================================================
-   LEGACY KŌSO CLASSES — kept for screens not yet refactored
-   They now map to Sobremesa Lúcida values so old code looks new for free.
+   LEGACY KŌSO CLASSES
    ============================================================================ */
 .koso-card {
   background: rgba(250, 248, 244, 0.85);
@@ -354,15 +388,15 @@ img { display: block; }
 .koso-app    { color: var(--sr-carbon); }
 .koso-glass-card {
   background: rgba(250, 248, 244, 0.88);
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+          backdrop-filter: blur(12px);
   border: 1px solid var(--sr-line);
   border-radius: var(--sr-r-xl);
   box-shadow: var(--sr-shadow-lift);
 }
 
 /* ============================================================================
-   CUSTOM SCROLLBARS (unchanged)
+   CUSTOM SCROLLBARS
    ============================================================================ */
 .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -370,19 +404,14 @@ img { display: block; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(42, 40, 38, 0.30); }
 
 /* ============================================================================
-   ANIMATIONS
+   ANIMATIONS (legacy class for backward compat)
    ============================================================================ */
 .animate-soft-fade-in {
   animation: soft-fade-in 0.4s ease-out forwards;
 }
-@keyframes soft-fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
 
 /* ============================================================================
-   SOLARIS GLOW ENGINE — cursor-following radial highlight on [data-glow]
-   Unchanged. Drives the spotlight cards in components/ui/spotlight-card.tsx.
+   SOLARIS GLOW ENGINE
    ============================================================================ */
 [data-glow] {
   --radius: 32;
@@ -402,7 +431,6 @@ img { display: block; }
   border: calc(var(--border) * 1px) solid transparent;
   touch-action: auto;
 }
-
 [data-glow]::before,
 [data-glow]::after {
   pointer-events: none;
@@ -451,7 +479,7 @@ img { display: block; }
 }
 
 /* ============================================================================
-   VISIBILITY HELPERS (legacy — kept)
+   VISIBILITY HELPERS
    ============================================================================ */
 .force-cream  { color: var(--sr-hueso) !important; }
 .force-olive  { color: var(--sr-carbon) !important; }
@@ -467,7 +495,7 @@ input[type="month"]::-webkit-calendar-picker-indicator {
 }
 
 /* ============================================================================
-   PRINT STYLES (unchanged — required by ticket/receipt printing)
+   PRINT STYLES
    ============================================================================ */
 @media print {
   .no-print, .print\:hidden { display: none !important; }
