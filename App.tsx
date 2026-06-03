@@ -52,7 +52,24 @@ const RoleGuard: React.FC<{ children: React.ReactNode; path: string }> = ({ chil
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { clearActiveEmployee } = useUser();
-  const location = useLocation(); // Accurate location tracking for stable transitions
+  const { settings } = useSettings();
+  const location = useLocation();
+
+  // Terminal mode strips the chrome — useful for tablet-on-a-stand kiosk
+  // setups where the device is glued to one screen. The screen the user
+  // ends up locked to is enforced by their default route + a hidden
+  // unlock affordance in the corner (long-press → PIN).
+  const isKiosk = settings.terminalMode === 'tablet-pos' || settings.terminalMode === 'tablet-host';
+
+  if (isKiosk) {
+    return (
+      <div className="flex h-screen w-screen bg-servirest-hueso font-sans overflow-hidden antialiased selection:bg-servirest-terracota selection:text-servirest-hueso">
+        <main className="flex-1 h-full overflow-hidden relative bg-servirest-hueso">
+          {children}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-screen bg-servirest-hueso font-sans overflow-hidden antialiased selection:bg-servirest-terracota selection:text-servirest-hueso">
@@ -79,6 +96,14 @@ const AppContent: React.FC = () => {
     document.body.dataset.tier = tier;
     return () => { delete document.body.dataset.tier; };
   }, [tier]);
+
+  // Apply terminal mode to <body>. CSS in index.css uses [data-terminal-mode]
+  // to scale touch targets and adjust spacing for tablet kiosk setups.
+  useEffect(() => {
+    const mode = settings.terminalMode || 'standard';
+    document.body.dataset.terminalMode = mode;
+    return () => { delete document.body.dataset.terminalMode; };
+  }, [settings.terminalMode]);
 
   // Splash Screen Timer
   useEffect(() => {
@@ -143,7 +168,21 @@ const AppContent: React.FC = () => {
         <SubscriptionGuard>
           <Layout>
             <Routes>
-              <Route path="/" element={<Navigate to={getDefaultRoute(activeEmployee)} replace />} />
+              <Route
+                path="/"
+                element={
+                  <Navigate
+                    to={
+                      settings.terminalMode === 'tablet-pos'
+                        ? '/pos'
+                        : settings.terminalMode === 'tablet-host'
+                        ? '/hostess'
+                        : getDefaultRoute(activeEmployee)
+                    }
+                    replace
+                  />
+                }
+              />
               
               <Route path="/dashboard" element={<RoleGuard path="/dashboard"><DashboardScreen /></RoleGuard>} />
               <Route path="/pos" element={<RoleGuard path="/pos"><POSScreen /></RoleGuard>} />

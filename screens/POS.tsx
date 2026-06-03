@@ -9,65 +9,47 @@ import { KitchenTicket } from '../components/KitchenTicket';
 import { printerService } from '../services/PrinterService';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search,
-  Plus,
-  Printer,
-  ShoppingCart,
-  X,
-  Minus,
-  ChefHat,
-  Table as TableIcon,
-  ShoppingBag,
-  Truck,
-  ArrowRight,
-  CheckCircle2,
-  Trash2,
-  SlidersHorizontal,
-  Cpu,
-  Rocket,
-  Check,
+  Search, Plus, Printer, ShoppingCart, X, Minus, ChefHat,
+  Table as TableIcon, ShoppingBag, Truck, ArrowRight, Trash2,
+  SlidersHorizontal, Cpu, Rocket, Check, Wifi, WifiOff, Sparkles,
 } from 'lucide-react';
 import {
-  SrCard,
-  SrButton,
-  SrChip,
-  SrInput,
-  SrLabel,
-  SrKicker,
-  SrProgressRing,
-  SrModal,
-  SrModalHeader,
-  SrArrowBadge,
+  SrCard, SrButton, SrChip, SrInput, SrLabel, SrKicker, SrMono,
+  SrProgressRing, SrModal, SrModalHeader, SrArrowBadge, SrTabs,
+  SrEmptyState,
 } from '../components/ui/servirest';
 
 /* -------------------------------------------------------------------------- */
-/* PromoBanner — dismissible promo row at the top of "Línea de Órdenes"        */
+/* PromoBanner — dismissible promo row, refined                                */
 /* -------------------------------------------------------------------------- */
 const PromoBanner: React.FC<{ onDismiss: () => void }> = ({ onDismiss }) => (
   <motion.div
-    initial={{ opacity: 0, y: -8 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -8 }}
-    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-    className="relative flex items-center gap-5 p-[18px_22px] rounded-sr-xl bg-servirest-surface shadow-sr-card overflow-hidden mb-6"
-    style={{ border: '1px solid rgba(196,99,63,0.45)' }}
+    initial={{ opacity: 0, y: -8, scale: 0.98 }}
+    animate={{ opacity: 1, y: 0, scale: 1 }}
+    exit={{ opacity: 0, y: -8, scale: 0.98 }}
+    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+    className="relative flex items-center gap-5 p-5 rounded-sr-xl bg-servirest-surface shadow-sr-card overflow-hidden mb-6"
+    style={{ border: '1px solid rgba(196,99,63,0.30)' }}
   >
-    <div className="w-14 h-14 flex-shrink-0 rounded-sr-lg bg-servirest-midnight text-servirest-mostaza flex items-center justify-center">
-      <Cpu size={26} />
+    <div className="absolute inset-0 pointer-events-none opacity-[0.04]" aria-hidden="true">
+      <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 80% 50%, #C4633F 0%, transparent 50%)' }} />
     </div>
-    <div className="flex-1 min-w-0">
-      <h3 className="m-0 mb-1 font-extrabold text-base text-servirest-midnight tracking-tight">
-        No te pierdas la nueva versión de ServiRest
-      </h3>
-      <p className="m-0 text-xs font-medium text-[rgba(42,40,38,0.6)]">
-        Activa las nuevas funciones que sumamos para tu restaurante.
+    <div className="w-14 h-14 flex-shrink-0 rounded-sr-lg bg-servirest-midnight text-servirest-mostaza flex items-center justify-center relative">
+      <Sparkles size={22} />
+    </div>
+    <div className="flex-1 min-w-0 relative">
+      <div className="font-serif italic font-medium text-[18px] text-servirest-midnight tracking-[-0.01em] leading-tight">
+        Versión nueva disponible
+      </div>
+      <p className="m-0 mt-1 text-[12px] text-[rgba(42,40,38,0.6)] font-medium">
+        Activa las funciones que sumamos para tu restaurante esta semana.
       </p>
     </div>
     <SrButton
       variant="primary"
       size="sm"
       icon={<Rocket size={14} />}
-      className="flex-shrink-0 !rounded-[14px] !px-[22px] !py-[13px]"
+      className="flex-shrink-0"
     >
       Actualizar
     </SrButton>
@@ -75,7 +57,7 @@ const PromoBanner: React.FC<{ onDismiss: () => void }> = ({ onDismiss }) => (
       type="button"
       onClick={onDismiss}
       aria-label="Cerrar"
-      className="absolute top-3 right-3 w-[26px] h-[26px] rounded-full border border-[rgba(42,40,38,0.12)] bg-servirest-surface text-[rgba(42,40,38,0.4)] hover:text-servirest-carbon flex items-center justify-center transition-colors"
+      className="absolute top-3 right-3 w-7 h-7 rounded-full bg-servirest-hueso-sunken text-[rgba(42,40,38,0.4)] hover:text-servirest-carbon hover:bg-[rgba(42,40,38,0.10)] flex items-center justify-center transition-colors"
     >
       <X size={14} />
     </button>
@@ -83,7 +65,7 @@ const PromoBanner: React.FC<{ onDismiss: () => void }> = ({ onDismiss }) => (
 );
 
 /* -------------------------------------------------------------------------- */
-/* OrderProgressCard — one card per active kitchen order                       */
+/* OrderProgressCard — kitchen-line ticket. Bigger, more editorial.            */
 /* -------------------------------------------------------------------------- */
 type OrderCardProps = {
   id: string;
@@ -94,85 +76,98 @@ type OrderCardProps = {
   onClick?: () => void;
 };
 const OrderProgressCard: React.FC<OrderCardProps> = ({ id, customer, tableName, pct, items, onClick }) => (
-  <SrCard
-    hover
-    className="p-5 cursor-pointer"
-    onClick={onClick}
-    role={onClick ? 'button' : undefined}
+  <motion.div
+    initial={{ opacity: 0, y: 6 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
   >
-    <div className="flex items-center justify-between mb-2.5">
-      <span className="font-mono font-semibold text-xs text-servirest-terracota">{id}</span>
-      <SrChip tone="neutral" size="xs">{tableName}</SrChip>
-    </div>
-    <div className="font-extrabold text-lg text-servirest-midnight tracking-tight mb-[18px] truncate">
-      {customer}
-    </div>
-    <div className="flex items-center gap-3 pt-4 border-t border-[rgba(42,40,38,0.12)]">
-      <SrProgressRing pct={pct} />
-      <span className="font-extrabold text-xs text-servirest-midnight flex-1">En preparación</span>
-      <span className="inline-flex items-center gap-2 font-bold text-[11px] text-[rgba(42,40,38,0.6)]">
-        {items} platillos
-        <SrArrowBadge />
-      </span>
-    </div>
-  </SrCard>
+    <SrCard
+      hover
+      className="p-5 cursor-pointer"
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+    >
+      <div className="flex items-center justify-between mb-2.5">
+        <SrMono className="text-[11px] text-servirest-terracota">{id}</SrMono>
+        <SrChip tone="neutral" size="xs">{tableName}</SrChip>
+      </div>
+      <div className="font-serif italic font-medium text-[20px] text-servirest-midnight tracking-[-0.015em] mb-[18px] truncate leading-tight">
+        {customer}
+      </div>
+      <div className="flex items-center gap-3 pt-4 border-t border-[rgba(42,40,38,0.08)]">
+        <SrProgressRing pct={pct} size={42} stroke={4} />
+        <span className="font-extrabold text-[12px] text-servirest-midnight flex-1 tracking-tight">
+          En preparación
+        </span>
+        <span className="inline-flex items-center gap-2 font-bold text-[11px] text-[rgba(42,40,38,0.6)]">
+          <span className="font-mono">{items}</span>
+          <SrArrowBadge />
+        </span>
+      </div>
+    </SrCard>
+  </motion.div>
 );
 
 /* -------------------------------------------------------------------------- */
-/* DishCard — image + name + price-terracota + sub                             */
+/* DishCard — refined imagery + price treatment                                 */
 /* -------------------------------------------------------------------------- */
-type DishCardProps = {
-  item: MenuItem;
-  onClick: () => void;
-};
+type DishCardProps = { item: MenuItem; onClick: () => void };
 const DishCard: React.FC<DishCardProps> = ({ item, onClick }) => {
   const available = item.status === 'ACTIVE';
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
-      className="bg-transparent border-none text-left p-0 transition-transform duration-200 ease-sr-out hover:-translate-y-1 disabled:cursor-default group"
-      style={{ opacity: available ? 1 : 0.6 }}
       disabled={!available}
+      whileHover={available ? { y: -4 } : undefined}
+      whileTap={available ? { scale: 0.98 } : undefined}
+      transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+      className="bg-transparent border-none text-left p-0 disabled:cursor-default group"
+      style={{ opacity: available ? 1 : 0.5 }}
     >
       <div className="relative h-[150px] rounded-sr-lg overflow-hidden shadow-sr-card">
         {item.image ? (
           <img
             src={item.image}
             alt={item.name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.07]"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.08]"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-servirest-hueso to-servirest-hueso-sunken flex items-center justify-center">
+          <div className="w-full h-full bg-servirest-hueso-sunken flex items-center justify-center">
             <ChefHat size={36} className="text-[rgba(42,40,38,0.2)]" />
           </div>
         )}
         {!available && (
-          <span className="absolute top-2.5 left-2.5 font-black text-[8px] uppercase tracking-[0.1em] text-servirest-hueso bg-[rgba(225,85,75,0.92)] px-2 py-1 rounded-md">
+          <span className="absolute top-2.5 left-2.5 font-black text-[8px] uppercase tracking-[0.16em] text-servirest-hueso bg-[rgba(225,85,75,0.92)] px-2.5 py-1 rounded-sr-sm">
             Agotado
           </span>
         )}
-        <span className="absolute bottom-2.5 right-2.5 w-[34px] h-[34px] rounded-full bg-servirest-terracota text-servirest-hueso flex items-center justify-center opacity-0 translate-y-1.5 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 shadow-sr-glow">
-          <Plus size={17} />
+        {item.variants && item.variants.length > 0 && available && (
+          <span className="absolute top-2.5 left-2.5 font-black text-[8px] uppercase tracking-[0.16em] text-servirest-hueso bg-servirest-midnight/85 px-2.5 py-1 rounded-sr-sm backdrop-blur-sm">
+            Variantes
+          </span>
+        )}
+        <span className="absolute bottom-2.5 right-2.5 w-9 h-9 rounded-full bg-servirest-terracota text-servirest-hueso flex items-center justify-center opacity-0 translate-y-1.5 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 shadow-sr-glow">
+          <Plus size={18} />
         </span>
       </div>
-      <div className="flex items-baseline justify-between gap-2.5 mt-3 mx-0.5">
-        <span className="font-extrabold text-[15px] text-servirest-midnight tracking-tight truncate">
+      <div className="flex items-baseline justify-between gap-2 mt-3 mx-0.5">
+        <span className="font-extrabold text-[14px] text-servirest-midnight tracking-[-0.005em] truncate leading-tight">
           {item.name}
         </span>
-        <span className="font-extrabold text-sm text-servirest-terracota flex-shrink-0 font-mono">
-          ${item.price.toFixed(2)}
-        </span>
+        <SrMono className="text-servirest-terracota font-extrabold text-[13px] flex-shrink-0">
+          ${item.price.toFixed(0)}
+        </SrMono>
       </div>
-      <div className="text-[11px] text-[rgba(42,40,38,0.6)] mt-0.5 mx-0.5 font-medium truncate">
-        {item.category}{item.variants && item.variants.length > 0 ? ' · variantes' : ''}
+      <div className="text-[11px] text-[rgba(42,40,38,0.5)] mt-1 mx-0.5 font-medium truncate uppercase tracking-[0.06em]">
+        {item.category}
       </div>
-    </button>
+    </motion.button>
   );
 };
 
 /* -------------------------------------------------------------------------- */
-/* POSScreen — Línea de Órdenes                                                */
+/* POSScreen — Punto de Venta editorial                                        */
 /* -------------------------------------------------------------------------- */
 export const POSScreen: React.FC = () => {
   const { activeEmployee, authProfile } = useUser();
@@ -218,7 +213,17 @@ export const POSScreen: React.FC = () => {
     [activeCategory, searchQuery, activeMenuItems]
   );
 
-  /* Active kitchen orders → progress cards. Show up to 4 cooking / pending. */
+  const categoryTabs = useMemo(() => {
+    const counts = activeMenuItems.reduce((acc: Record<string, number>, item) => {
+      acc[item.category || ''] = (acc[item.category || ''] || 0) + 1;
+      return acc;
+    }, {});
+    return [
+      { id: 'All', label: 'Todos', count: activeMenuItems.length },
+      ...dynamicCategories.map((c) => ({ id: c, label: c, count: counts[c] || 0 })),
+    ];
+  }, [activeMenuItems, dynamicCategories]);
+
   const activeKitchenOrders = useMemo(() => {
     const cooking = orders.filter(
       (o) => o.status === OrderStatus.COOKING || o.status === OrderStatus.PENDING
@@ -328,54 +333,95 @@ export const POSScreen: React.FC = () => {
 
   return (
     <div className="flex flex-col lg:flex-row h-full w-full bg-servirest-hueso antialiased relative">
-      {/* Hidden print root */}
+      {/* Print root (hidden) */}
       <div className="hidden print:block absolute inset-0 z-[9999] bg-white">
         {kitchenOrderToPrint && <KitchenTicket order={kitchenOrderToPrint} settings={settings} />}
       </div>
 
-      {/* MAIN COLUMN — Línea de Órdenes */}
-      <div className="flex-1 min-w-0 overflow-y-auto custom-scrollbar p-6 md:p-8 lg:p-[34px_32px_40px]">
-        <h1 className="font-serif font-medium text-[32px] tracking-[-0.02em] text-servirest-midnight m-0 mb-[22px] leading-none">
-          Línea de Órdenes
-        </h1>
+      {/* MAIN COLUMN */}
+      <div className="flex-1 min-w-0 overflow-y-auto custom-scrollbar p-6 md:p-8 lg:px-10 lg:py-9">
+        {/* Editorial header */}
+        <div className="flex items-start justify-between flex-wrap gap-5 mb-9">
+          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
+            <SrKicker className="block mb-2">Punto de venta</SrKicker>
+            <h1 className="font-serif italic font-medium text-[56px] text-servirest-midnight tracking-[-0.025em] leading-[0.95] m-0">
+              Línea de órdenes
+            </h1>
+            <p className="text-[13px] text-[rgba(42,40,38,0.6)] font-medium mt-2 leading-relaxed max-w-[460px]">
+              {activeEmployee?.name ? `${activeEmployee.name} · ` : ''}arma la orden y mándala a cocina sin cambiar de pantalla.
+            </p>
+          </motion.div>
+
+          {/* Status rail */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {settings.isDirectPrintingEnabled && (
+              <div
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-sr-md border ${printerReady ? 'border-servirest-success/30 bg-[rgba(34,160,107,0.05)] text-servirest-success' : 'border-servirest-danger/30 bg-[rgba(225,85,75,0.04)] text-servirest-danger animate-pulse'}`}
+                title={printerReady ? 'Impresora conectada' : 'Impresora desconectada'}
+              >
+                <Printer size={14} />
+                <span className="font-black uppercase tracking-[0.14em] text-[9px]">
+                  {printerReady ? 'Impresora ok' : 'Sin impresora'}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-sr-md border border-[rgba(42,40,38,0.12)] bg-servirest-surface">
+              {navigator.onLine ? (
+                <Wifi size={14} className="text-servirest-success" />
+              ) : (
+                <WifiOff size={14} className="text-servirest-danger" />
+              )}
+              <span className="font-black uppercase tracking-[0.14em] text-[9px] text-[rgba(42,40,38,0.6)]">
+                {navigator.onLine ? 'En línea' : 'Sin conexión'}
+              </span>
+            </div>
+          </div>
+        </div>
 
         <AnimatePresence>
           {showPromo && <PromoBanner onDismiss={() => setShowPromo(false)} />}
         </AnimatePresence>
 
-        {/* Order progress cards */}
+        {/* Active kitchen orders */}
         {activeKitchenOrders.length > 0 && (
-          <div className="grid gap-4 mb-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-            {activeKitchenOrders.map((o) => (
-              <OrderProgressCard key={o.id} {...o} />
-            ))}
+          <div className="mb-9">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <SrKicker className="block mb-1">Pedidos en cocina</SrKicker>
+                <h2 className="font-serif italic font-medium text-[28px] text-servirest-midnight tracking-[-0.015em] m-0 leading-tight">
+                  {activeKitchenOrders.length === 1 ? '1 pedido activo' : `${activeKitchenOrders.length} pedidos activos`}
+                </h2>
+              </div>
+              <SrLabel>En tiempo real</SrLabel>
+            </div>
+            <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+              <AnimatePresence>
+                {activeKitchenOrders.map((o) => (
+                  <OrderProgressCard key={o.id} {...o} />
+                ))}
+              </AnimatePresence>
+            </div>
           </div>
         )}
 
-        {/* Menu section header */}
-        <div className="flex items-center justify-between flex-wrap gap-5 mt-[34px] mb-[18px]">
-          <h2 className="font-serif font-medium text-[32px] tracking-[-0.02em] text-servirest-midnight m-0 leading-none">
-            Menú
-          </h2>
-          <div className="flex items-center gap-3">
-            <div className="w-[320px] max-w-full">
+        {/* Menu section divider */}
+        <div className="flex items-end justify-between flex-wrap gap-5 mt-10 mb-6 pb-4 border-b border-[rgba(42,40,38,0.10)]">
+          <div>
+            <SrKicker className="block mb-1.5">Catálogo</SrKicker>
+            <h2 className="font-serif italic font-medium text-[36px] text-servirest-midnight tracking-[-0.02em] m-0 leading-none">
+              Menú
+            </h2>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="w-[280px] max-w-full">
               <SrInput
                 shape="pill"
-                placeholder="Buscar platillo..."
+                placeholder="Buscar platillo…"
                 value={searchQuery}
                 icon={<Search size={16} />}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            {settings.isDirectPrintingEnabled && (
-              <button
-                type="button"
-                className={`w-12 h-12 flex-shrink-0 rounded-full border flex items-center justify-center transition-all ${printerReady ? 'border-servirest-success/40 text-servirest-success' : 'border-servirest-danger/40 text-servirest-danger animate-pulse'}`}
-                title={printerReady ? 'Impresora activa' : 'Impresora desconectada'}
-              >
-                <Printer size={18} />
-              </button>
-            )}
             <button
               type="button"
               className="w-12 h-12 flex-shrink-0 rounded-full border border-[rgba(42,40,38,0.20)] bg-servirest-surface text-[rgba(42,40,38,0.6)] hover:border-servirest-terracota hover:text-servirest-terracota flex items-center justify-center transition-colors"
@@ -386,58 +432,45 @@ export const POSScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Category tabs */}
-        <div className="flex gap-[26px] overflow-x-auto sr-no-scrollbar border-b border-[rgba(42,40,38,0.12)] mb-[22px]">
-          <button
-            type="button"
-            onClick={() => setActiveCategory('All')}
-            className={`flex-shrink-0 bg-transparent border-none px-0.5 pt-3 pb-4 font-bold text-sm whitespace-nowrap transition-colors relative ${activeCategory === 'All' ? 'text-servirest-terracota font-extrabold' : 'text-[rgba(42,40,38,0.6)] hover:text-servirest-carbon'}`}
-          >
-            Todos
-            {activeCategory === 'All' && (
-              <span className="absolute left-0 right-0 -bottom-[1px] h-[3px] bg-servirest-terracota rounded-t" />
-            )}
-          </button>
-          {dynamicCategories.map((cat) => {
-            const on = activeCategory === cat;
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setActiveCategory(cat)}
-                className={`flex-shrink-0 bg-transparent border-none px-0.5 pt-3 pb-4 font-bold text-sm whitespace-nowrap transition-colors relative ${on ? 'text-servirest-terracota font-extrabold' : 'text-[rgba(42,40,38,0.6)] hover:text-servirest-carbon'}`}
-              >
-                {cat}
-                {on && (
-                  <span className="absolute left-0 right-0 -bottom-[1px] h-[3px] bg-servirest-terracota rounded-t" />
-                )}
-              </button>
-            );
-          })}
+        {/* Category tabs with counts */}
+        <div className="mb-7">
+          <SrTabs
+            tabs={categoryTabs}
+            active={activeCategory}
+            onChange={setActiveCategory}
+          />
         </div>
 
         {/* Food grid */}
-        <div
-          className="grid gap-x-5 gap-y-[22px] pb-40 lg:pb-2"
-          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))' }}
-        >
-          {filteredItems.map((item) => (
-            <DishCard
-              key={item.id}
-              item={item}
-              onClick={() => (item.variants && item.variants.length > 0 ? setVariantItem(item) : addToCart(item))}
+        {filteredItems.length === 0 ? (
+          <SrCard variant="solaris" className="p-10 my-6">
+            <SrEmptyState
+              icon={<ChefHat size={28} />}
+              title={searchQuery ? 'Sin coincidencias' : 'Sin platillos en esta categoría'}
+              description={searchQuery
+                ? 'Prueba con otro término o cambia de categoría.'
+                : 'Agrega platillos desde Menú para empezar a vender.'}
             />
-          ))}
-          {filteredItems.length === 0 && (
-            <div className="col-span-full text-center py-20">
-              <p className="sr-label">Sin platillos</p>
-              <p className="font-bold text-[rgba(42,40,38,0.4)] mt-2">Ajusta tu búsqueda o categoría.</p>
-            </div>
-          )}
-        </div>
+          </SrCard>
+        ) : (
+          <div
+            className="grid gap-x-5 gap-y-[22px] pb-40 lg:pb-4"
+            style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))' }}
+          >
+            <AnimatePresence>
+              {filteredItems.map((item) => (
+                <DishCard
+                  key={item.id}
+                  item={item}
+                  onClick={() => (item.variants && item.variants.length > 0 ? setVariantItem(item) : addToCart(item))}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
       </div>
 
-      {/* MOBILE FLOATING CART TRIGGER */}
+      {/* MOBILE CART TRIGGER */}
       <div className="lg:hidden fixed z-[90]" style={{ bottom: 100, right: 20 }}>
         <button
           type="button"
@@ -454,33 +487,32 @@ export const POSScreen: React.FC = () => {
         </button>
       </div>
 
-      {/* ORDER RAIL — current order */}
+      {/* ORDER RAIL */}
       <div
         className={`
           ${isCartOpen ? 'translate-x-0' : 'translate-x-full'} lg:translate-x-0
           fixed lg:relative inset-y-0 right-0 z-[60] lg:z-10
-          w-full xs:w-[400px] sm:w-[420px] lg:w-[348px] flex-shrink-0
+          w-full xs:w-[400px] sm:w-[420px] lg:w-[368px] flex-shrink-0
           bg-servirest-surface border-l border-[rgba(42,40,38,0.12)]
           flex flex-col transition-transform duration-300 ease-sr-solaris
           shadow-[-30px_0_60px_rgba(0,0,0,0.06)]
         `}
       >
-        <div className="px-[26px] pt-7 pb-[18px] flex items-start justify-between">
+        {/* Rail header */}
+        <div className="px-7 pt-7 pb-5 flex items-start justify-between border-b border-[rgba(42,40,38,0.08)]">
           <div>
-            <h2 className="font-serif font-medium text-[26px] text-servirest-midnight tracking-[-0.02em] m-0 mb-1 leading-none">
-              Orden Actual
+            <SrKicker className="block mb-1">Tu orden</SrKicker>
+            <h2 className="font-serif italic font-medium text-[28px] text-servirest-midnight tracking-[-0.02em] m-0 mb-2 leading-none">
+              Orden actual
             </h2>
-            <div className="flex items-center gap-2.5 font-bold text-[11px] text-[rgba(42,40,38,0.6)]">
-              <button
-                type="button"
-                onClick={() => setShowTableModal(true)}
-                className={`font-black uppercase tracking-[0.16em] text-[10px] transition-colors ${selectedTable ? 'text-servirest-terracota' : 'text-[rgba(42,40,38,0.6)] hover:text-servirest-terracota'}`}
-              >
-                {selectedTable ? selectedTable.name : 'Asignar mesa'}
-              </button>
-              <span>·</span>
-              <span>{activeEmployee?.name || 'Sistema'}</span>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowTableModal(true)}
+              className={`inline-flex items-center gap-1.5 font-black uppercase tracking-[0.18em] text-[10px] transition-colors ${selectedTable ? 'text-servirest-terracota' : 'text-[rgba(42,40,38,0.5)] hover:text-servirest-terracota'}`}
+            >
+              <TableIcon size={11} />
+              {selectedTable ? selectedTable.name : 'Asignar mesa'}
+            </button>
           </div>
           <div className="flex items-center gap-2">
             {cart.length > 0 && (
@@ -504,74 +536,82 @@ export const POSScreen: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-[26px] sr-no-scrollbar">
+        {/* Items list */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-7 py-3">
           {cart.length === 0 ? (
-            <div className="text-center font-bold text-[11px] uppercase tracking-[0.16em] text-[rgba(42,40,38,0.4)] py-[50px] px-5 leading-relaxed">
-              Agrega platillos del menú para iniciar la orden
-            </div>
+            <SrEmptyState
+              icon={<ShoppingCart size={26} />}
+              title="Sin platillos aún"
+              description="Toca un platillo del menú para iniciar la orden."
+            />
           ) : (
-            cart.map((it, idx) => (
-              <motion.div
-                key={`${it.id}-${idx}`}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, x: -8 }}
-                className="flex items-start gap-3 py-3.5 border-b border-[rgba(42,40,38,0.12)] group"
-              >
-                <span className="w-[30px] h-[30px] flex-shrink-0 rounded-[9px] bg-[rgba(196,99,63,0.10)] text-servirest-terracota flex items-center justify-center font-black italic text-xs">
-                  {it.quantity}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-[13px] text-servirest-midnight leading-tight">
-                    {it.name}
+            <AnimatePresence mode="popLayout">
+              {cart.map((it, idx) => (
+                <motion.div
+                  key={`${it.id}-${idx}`}
+                  layout
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -8 }}
+                  transition={{ duration: 0.25 }}
+                  className="flex items-start gap-3 py-3.5 border-b border-[rgba(42,40,38,0.06)] group last:border-0"
+                >
+                  <span className="w-9 h-9 flex-shrink-0 rounded-sr-md bg-[rgba(196,99,63,0.10)] text-servirest-terracota flex items-center justify-center font-black italic text-[13px]">
+                    {it.quantity}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-extrabold text-[13px] text-servirest-midnight tracking-tight leading-tight truncate">
+                      {it.name}
+                    </div>
+                    <div className="text-[10px] text-[rgba(42,40,38,0.45)] font-bold mt-0.5 uppercase tracking-[0.1em]">
+                      {(it.selectedVariants || []).length > 0
+                        ? it.selectedVariants!.map((v) => v.name).join(' · ')
+                        : 'Sin indicaciones'}
+                    </div>
+                    <input
+                      type="text"
+                      value={it.notes || ''}
+                      placeholder="Nota para cocina…"
+                      onChange={(e) =>
+                        setCart((prev) => prev.map((p, i) => (i === idx ? { ...p, notes: e.target.value } : p)))
+                      }
+                      className="mt-2 w-full bg-servirest-hueso-sunken/60 border border-[rgba(42,40,38,0.08)] rounded-sr-sm px-2.5 py-1.5 text-[11px] font-medium italic text-[rgba(42,40,38,0.7)] placeholder:text-[rgba(42,40,38,0.25)] outline-none focus:border-servirest-terracota/50 transition-colors"
+                    />
+                    <div className="mt-2 flex justify-end gap-1.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(idx, -1)}
+                        className="w-7 h-7 rounded-sr-sm bg-servirest-hueso-sunken text-[rgba(42,40,38,0.6)] hover:bg-[rgba(42,40,38,0.10)] flex items-center justify-center transition-colors"
+                      >
+                        <Minus size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(idx, 1)}
+                        className="w-7 h-7 rounded-sr-sm bg-servirest-hueso-sunken text-[rgba(42,40,38,0.6)] hover:bg-[rgba(42,40,38,0.10)] flex items-center justify-center transition-colors"
+                      >
+                        <Plus size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCart((prev) => prev.filter((_, i) => i !== idx))}
+                        className="w-7 h-7 rounded-sr-sm bg-[rgba(225,85,75,0.08)] text-servirest-danger/60 hover:text-servirest-danger flex items-center justify-center transition-colors"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-[10px] text-[rgba(42,40,38,0.4)] font-semibold mt-0.5">
-                    {(it.selectedVariants || []).length > 0
-                      ? it.selectedVariants!.map((v) => v.name).join(', ')
-                      : 'Sin indicaciones'}
-                  </div>
-                  <input
-                    type="text"
-                    value={it.notes || ''}
-                    placeholder="Nota para cocina…"
-                    onChange={(e) =>
-                      setCart((prev) => prev.map((p, i) => (i === idx ? { ...p, notes: e.target.value } : p)))
-                    }
-                    className="mt-2 w-full bg-[rgba(240,240,232,0.6)] border border-[rgba(42,40,38,0.12)] rounded-md px-2.5 py-1.5 text-[10px] font-medium italic text-[rgba(42,40,38,0.6)] placeholder:text-[rgba(42,40,38,0.2)] outline-none focus:border-servirest-terracota/40 transition-colors"
-                  />
-                  <div className="mt-2 flex justify-end gap-1.5 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                    <button
-                      type="button"
-                      onClick={() => updateQuantity(idx, -1)}
-                      className="w-7 h-7 rounded-md bg-[rgba(42,40,38,0.05)] text-[rgba(42,40,38,0.6)] hover:bg-[rgba(42,40,38,0.10)] flex items-center justify-center transition-colors"
-                    >
-                      <Minus size={12} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => updateQuantity(idx, 1)}
-                      className="w-7 h-7 rounded-md bg-[rgba(42,40,38,0.05)] text-[rgba(42,40,38,0.6)] hover:bg-[rgba(42,40,38,0.10)] flex items-center justify-center transition-colors"
-                    >
-                      <Plus size={12} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCart((prev) => prev.filter((_, i) => i !== idx))}
-                      className="w-7 h-7 rounded-md bg-[rgba(225,85,75,0.10)] text-servirest-danger/60 hover:text-servirest-danger flex items-center justify-center transition-colors"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                </div>
-                <span className="font-extrabold text-[13px] text-servirest-midnight font-mono ml-1">
-                  ${lineTotal(it).toFixed(0)}
-                </span>
-              </motion.div>
-            ))
+                  <SrMono className="text-[13px] text-servirest-midnight font-extrabold ml-1">
+                    ${lineTotal(it).toFixed(0)}
+                  </SrMono>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           )}
         </div>
 
-        <div className="px-[26px] py-[22px] border-t border-[rgba(42,40,38,0.12)] bg-servirest-hueso-sunken">
+        {/* Rail footer */}
+        <div className="px-7 py-5 border-t border-[rgba(42,40,38,0.08)] bg-servirest-hueso-sunken/60">
           {/* Source pills */}
           <div className="grid grid-cols-2 gap-2 mb-5">
             {sourceOptions.map((src) => {
@@ -582,7 +622,7 @@ export const POSScreen: React.FC = () => {
                   key={src.id}
                   type="button"
                   onClick={() => setSelectedSource(src.id)}
-                  className={`py-3 rounded-sr-lg border flex items-center justify-center gap-2 transition-all ${on ? 'bg-servirest-terracota text-servirest-hueso border-servirest-terracota shadow-sr-glow scale-[1.02]' : 'bg-[rgba(42,40,38,0.03)] border-[rgba(42,40,38,0.12)] text-[rgba(42,40,38,0.6)] hover:bg-[rgba(42,40,38,0.05)]'}`}
+                  className={`py-3 rounded-sr-md border flex items-center justify-center gap-2 transition-all ${on ? 'bg-servirest-terracota text-servirest-hueso border-servirest-terracota shadow-sr-glow scale-[1.02]' : 'bg-servirest-surface border-[rgba(42,40,38,0.12)] text-[rgba(42,40,38,0.6)] hover:border-[rgba(42,40,38,0.20)]'}`}
                 >
                   <Icon size={13} />
                   <span className="font-black uppercase tracking-[0.14em] text-[8px]">{src.label}</span>
@@ -592,20 +632,23 @@ export const POSScreen: React.FC = () => {
           </div>
 
           {/* Totals */}
-          <div className="flex justify-between text-xs mb-2.5">
-            <span className="text-[rgba(42,40,38,0.6)] font-semibold">Subtotal</span>
-            <span className="font-mono font-bold text-servirest-carbon">${subtotal.toFixed(2)}</span>
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between text-[12px]">
+              <span className="text-[rgba(42,40,38,0.6)] font-medium">Subtotal</span>
+              <SrMono className="text-servirest-carbon font-bold">${subtotal.toFixed(2)}</SrMono>
+            </div>
+            <div className="flex justify-between text-[12px]">
+              <span className="text-[rgba(42,40,38,0.6)] font-medium">IVA (16 %)</span>
+              <SrMono className="text-servirest-carbon font-bold">${tax.toFixed(2)}</SrMono>
+            </div>
           </div>
-          <div className="flex justify-between text-xs mb-3">
-            <span className="text-[rgba(42,40,38,0.6)] font-semibold">IVA (16%)</span>
-            <span className="font-mono font-bold text-servirest-carbon">${tax.toFixed(2)}</span>
-          </div>
+
           <div
-            className="flex justify-between items-baseline pt-3 mb-[18px]"
+            className="flex justify-between items-baseline pt-4 mb-5"
             style={{ borderTop: '1px dashed rgba(42,40,38,0.20)' }}
           >
-            <span className="font-black uppercase tracking-[0.2em] text-[10px] text-[rgba(42,40,38,0.6)]">Total</span>
-            <span className="font-black italic text-[28px] text-servirest-midnight tracking-[-0.03em]">
+            <SrLabel className="text-[10px]">Total</SrLabel>
+            <span className="font-black italic text-[30px] text-servirest-midnight tracking-[-0.03em] leading-none">
               ${total.toFixed(2)}
             </span>
           </div>
@@ -643,13 +686,13 @@ export const POSScreen: React.FC = () => {
                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                 className="w-[104px] h-[104px] rounded-full bg-servirest-terracota shadow-sr-glow flex items-center justify-center mb-8"
               >
-                <Check size={52} className="text-servirest-midnight" />
+                <Check size={52} className="text-servirest-hueso" />
               </motion.div>
-              <h2 className="m-0 mb-3.5 font-black italic uppercase tracking-[-0.02em] text-3xl text-servirest-midnight leading-[1.1]">
-                ¡Pago procesado!
+              <h2 className="m-0 mb-3 font-serif italic font-medium text-[34px] text-servirest-midnight tracking-[-0.02em] leading-tight">
+                Orden enviada
               </h2>
               <p className="m-0 font-black uppercase tracking-[0.3em] text-[10px] text-[rgba(42,40,38,0.4)]">
-                Orden enviada a cocina
+                Cocina la recibió
               </p>
             </div>
           </SrModal>
@@ -679,7 +722,7 @@ export const POSScreen: React.FC = () => {
                     onClick={() =>
                       setSelectedVariants((p) => (on ? p.filter((x) => x.name !== v.name) : [...p, v]))
                     }
-                    className="flex justify-between items-center p-[18px] rounded-[20px] transition-colors"
+                    className="flex justify-between items-center p-[18px] rounded-sr-lg transition-colors"
                     style={{
                       border: `2px solid ${on ? '#C4633F' : 'rgba(42,40,38,0.12)'}`,
                       background: on ? 'rgba(196,99,63,0.08)' : '#FFFFFF',
@@ -702,12 +745,12 @@ export const POSScreen: React.FC = () => {
                         {v.name}
                       </span>
                     </span>
-                    <span
+                    <SrMono
                       className="font-extrabold"
                       style={{ color: on ? 'rgba(196,99,63,0.8)' : 'rgba(42,40,38,0.4)' }}
                     >
                       {v.price ? `+$${v.price}` : 'Incluido'}
-                    </span>
+                    </SrMono>
                   </button>
                 );
               })}
@@ -751,7 +794,7 @@ export const POSScreen: React.FC = () => {
                     >
                       <TableIcon size={22} />
                     </span>
-                    <span className="font-black italic uppercase text-[20px] leading-none">{table.name}</span>
+                    <span className="font-serif italic font-medium text-[20px] leading-none">{table.name}</span>
                     <span className="font-extrabold uppercase tracking-[0.18em] text-[8px] opacity-50">
                       {table.seats} personas
                     </span>

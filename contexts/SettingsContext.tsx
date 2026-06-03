@@ -30,6 +30,16 @@ export interface BusinessSettings {
   didiPayoutDay?: string;
   rappiPayoutNotes?: string;
   tables: { id: string; name: string; seats: number; status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED'; x: number; y: number }[];
+
+  /* ─── Terminal mode (tablet / kiosko / mobile) ──────────────────────────
+   * 'standard'    → desktop/laptop, sidebar + mobile nav as usual
+   * 'tablet-pos'  → 10" tablet on a stand at the cashier, locked to POS
+   * 'tablet-host' → tablet at the door, locked to Hostess / floor plan
+   * 'mobile-pwa'  → waiter phone, bottom nav only, no sidebar
+   * The body gets data-terminal-mode="X" so CSS can scale touch targets.
+   * Exit from a locked mode requires the manager PIN. */
+  terminalMode?: 'standard' | 'tablet-pos' | 'tablet-host' | 'mobile-pwa';
+  terminalLockPin?: string; // 4-digit, defaults to '0000'
 }
 
 interface SettingsContextType {
@@ -62,7 +72,9 @@ const DEFAULT_SETTINGS: BusinessSettings = {
   uberPayoutDay: 'Lunes',
   didiPayoutDay: 'Martes',
   rappiPayoutNotes: 'Al acumular $500',
-  tables: [] // Start with no tables
+  tables: [], // Start with no tables
+  terminalMode: 'standard',
+  terminalLockPin: '0000',
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);

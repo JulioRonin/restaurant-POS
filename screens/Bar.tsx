@@ -1,226 +1,283 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useOrders } from '../contexts/OrderContext';
-import { Order, OrderStatus } from '../types';
+import { Order, OrderStatus, OrderSource } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GlowCard } from '../components/ui/spotlight-card';
-import { Wine, Timer, CheckCircle2, AlertTriangle, Package, Bell } from 'lucide-react';
+import {
+  Wine, Truck, Utensils, AlertTriangle, Bell, CheckCircle2, GlassWater,
+} from 'lucide-react';
+import {
+  SrCard, SrButton, SrChip, SrLabel, SrKicker, SrEmptyState,
+} from '../components/ui/servirest';
 
+/* -------------------------------------------------------------------------- */
+/* Audio cue when new drink orders arrive                                      */
+/* -------------------------------------------------------------------------- */
 const playBeep = () => {
-    try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.type = 'sine'; osc.frequency.setValueAtTime(660, ctx.currentTime);
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        osc.start(); osc.stop(ctx.currentTime + 0.4);
-    } catch (e) {}
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine'; osc.frequency.setValueAtTime(660, ctx.currentTime);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    osc.start(); osc.stop(ctx.currentTime + 0.4);
+  } catch (e) { console.error('Audio play failed', e); }
 };
 
+/* -------------------------------------------------------------------------- */
+/* BarTimer — visible from the bar. Mostaza→danger gradient by minutes.        */
+/* -------------------------------------------------------------------------- */
 const BarTimer: React.FC<{ timestamp: Date }> = ({ timestamp }) => {
-    const [elapsed, setElapsed] = useState('');
-    const [isLate, setIsLate] = useState(false);
-
-    useEffect(() => {
-        const update = () => {
-            const diff = Date.now() - new Date(timestamp).getTime();
-            const min = Math.floor(diff / 60000);
-            const sec = Math.floor((diff % 60000) / 1000);
-            setElapsed(`${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`);
-            setIsLate(min >= 10);
-        };
-        update();
-        const interval = setInterval(update, 1000);
-        return () => clearInterval(interval);
-    }, [timestamp]);
-
-    return (
-        <span className={`px-4 py-1.5 rounded-xl font-mono text-lg font-black italic tracking-tighter ${isLate ? 'bg-red-500 text-[#1a1c14] animate-pulse shadow-lg' : 'bg-servirest-mostaza/10 text-servirest-mostaza border border-servirest-mostaza/20'}`}>
-            {elapsed}
-        </span>
-    );
-};
-
-const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string) => void }> = ({ order, items, onComplete }) => {
-    const isUUID = /^[0-9a-f]{8}-/i.test(order.tableId);
-    const tableLabel = isUUID
-        ? `Mesa #${order.id.slice(0, 6).toUpperCase()}`
-        : order.tableId.length > 14
-            ? `${order.tableId.slice(0, 12)}…`
-            : order.tableId;
-
-    return (
-    <GlowCard glowColor="orange" className="!p-0 border border-[rgba(42,40,38,0.12)] bg-servirest-surface flex flex-col min-w-[320px] max-w-[360px] h-[550px] overflow-hidden">
-        {/* Header */}
-        <div className="p-5 bg-servirest-surface border-b border-[rgba(42,40,38,0.12)] flex justify-between items-start gap-4">
-            <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                    <Wine size={12} className="text-servirest-mostaza shrink-0" />
-                    <span className="text-[9px] font-black uppercase tracking-widest text-servirest-mostaza/60">Bar Order</span>
-                </div>
-                <h3 className="text-xl font-black italic uppercase tracking-tighter text-[#1a1c14] leading-tight">
-                    {tableLabel}
-                </h3>
-                <p className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest mt-1 italic">
-                    PKT: {order.id.slice(0, 8).toUpperCase()}
-                </p>
-            </div>
-            <div className="shrink-0 pt-1">
-                <BarTimer timestamp={order.timestamp} />
-            </div>
-        </div>
-
-        {/* Items — scrollable area */}
-        <div className="flex-1 p-4 space-y-2.5 overflow-y-auto no-scrollbar">
-            {items.map((item, idx) => (
-                <div key={idx} className="space-y-1">
-                    <div className="flex items-center gap-3 bg-servirest-surface p-3 rounded-2xl border border-[rgba(42,40,38,0.12)]">
-                        <span className="w-8 h-8 rounded-xl bg-servirest-mostaza/10 border border-servirest-mostaza/20 flex items-center justify-center font-black italic text-servirest-mostaza text-sm shrink-0">
-                            {item.quantity}
-                        </span>
-                        <span className="font-black italic text-[#1a1c14] uppercase tracking-tight text-sm">{item.name}</span>
-                    </div>
-                    {item.notes && (
-                        <div className="mx-1 p-2.5 rounded-xl bg-red-500/5 border border-red-500/10 flex items-center gap-2">
-                            <AlertTriangle size={12} className="text-red-500 shrink-0" />
-                            <span className="text-[10px] font-black uppercase text-red-400 tracking-widest">{item.notes}</span>
-                        </div>
-                    )}
-                </div>
-            ))}
-        </div>
-
-        {/* Complete button — locked at bottom */}
-        <div className="p-4 border-t border-[rgba(42,40,38,0.12)] bg-servirest-surface">
-            <button
-                onClick={() => onComplete(order.id)}
-                className="w-full py-4 bg-servirest-mostaza text-[#1a1c14] font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-lg shadow-blue-500/20 hover:scale-[1.02] hover:bg-blue-400 active:scale-95 transition-all flex items-center justify-center gap-3"
-            >
-                <Wine size={18} /> Bebidas Listas
-            </button>
-        </div>
-    </GlowCard>
-    );
-};
-
-export const BarScreen: React.FC = () => {
-    const { orders, updateOrderStatus } = useOrders();
-    const [prevCount, setPrevCount] = useState(0);
-    const [alert, setAlert] = useState(false);
-
-    const isDrink = (item: any) => 
-        item.category?.toLowerCase().includes('bebida') ||
-        item.category?.toLowerCase().includes('bar') ||
-        item.category?.toLowerCase().includes('vino') ||
-        item.category?.toLowerCase().includes('trago') ||
-        item.category?.toLowerCase().includes('cerveza') ||
-        item.category?.toLowerCase().includes('drink') ||
-        item.category?.toLowerCase().includes('cocktail');
-
-    const hasFood = (order: Order) => order.items.some(i => !isDrink(i));
-    const hasDrinks = (order: Order) => order.items.some(i => isDrink(i));
-
-    const pendingOrders = orders.filter(o =>
-        !o.isBarReady &&
-        hasDrinks(o) &&
-        (o.status === OrderStatus.PENDING || o.status === OrderStatus.COOKING || o.status === OrderStatus.READY)
-    );
-
-    const barOrders = pendingOrders.map(order => {
-        const drinkItems = order.items.filter(isDrink);
-        return { order, items: drinkItems };
-    });
-
-    useEffect(() => {
-        if (barOrders.length > prevCount && prevCount !== 0) {
-            playBeep(); setAlert(true); setTimeout(() => setAlert(false), 4000);
-        }
-        setPrevCount(barOrders.length);
-    }, [barOrders.length, prevCount]);
-
-    const handleComplete = (id: string) => {
-        const order = orders.find(o => o.id === id);
-        if (!order) return;
-
-        const isFullyReady = !hasFood(order) || order.isKitchenReady;
-        
-        updateOrderStatus(id, isFullyReady ? OrderStatus.READY : order.status, {
-            ...order,
-            isBarReady: true
-        });
+  const [elapsed, setElapsed] = useState({ min: 0, sec: 0 });
+  useEffect(() => {
+    const update = () => {
+      const diff = Date.now() - new Date(timestamp).getTime();
+      setElapsed({ min: Math.floor(diff / 60000), sec: Math.floor((diff % 60000) / 1000) });
     };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [timestamp]);
 
-    return (
-        <div className="h-full bg-[#F0F0E8] text-[#1a1c14] flex flex-col overflow-hidden antialiased relative">
-            {/* New Order Alert */}
-            <AnimatePresence>
-                {alert && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
-                    >
-                        <div className="p-16 rounded-[4rem] bg-servirest-mostaza text-[#1a1c14] shadow-2xl border-[10px] border-[rgba(42,40,38,0.20)] flex flex-col items-center">
-                            <Bell size={80} className="mb-6 animate-bounce" />
-                            <h2 className="text-6xl font-black italic uppercase tracking-tighter">Pedido de bar entrante</h2>
-                            <p className="text-[12px] font-black uppercase tracking-[0.5em] mt-2 opacity-60">Nuevo pedido de bebidas</p>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+  const total = elapsed.min;
+  const tone =
+    total >= 15 ? 'bg-servirest-danger text-servirest-hueso animate-pulse'
+    : total >= 8 ? 'bg-servirest-mostaza text-servirest-midnight'
+    : 'bg-[rgba(201,162,74,0.12)] text-servirest-mostaza';
+  const subtle = total >= 15 ? 'Apura' : total >= 8 ? 'Avanza' : 'A tiempo';
 
-            {/* Header */}
-            <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 px-8 pt-8 pb-6 border-b border-[rgba(42,40,38,0.12)] shrink-0">
-                <div>
-                    <div className="flex items-center gap-3 mb-1">
-                        <div className="w-10 h-10 rounded-2xl bg-servirest-mostaza/10 border border-servirest-mostaza/20 flex items-center justify-center">
-                            <Wine size={20} className="text-servirest-mostaza" />
-                        </div>
-                        <div>
-                            <h1 className="text-4xl font-black italic tracking-tighter uppercase leading-none">Bar Station</h1>
-                            <p className="text-[#2A2826]/30 font-bold text-[10px] uppercase tracking-[0.4em]">Drinks Dispatch Monitor</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex gap-3">
-                    <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] px-6 py-3 rounded-2xl text-center">
-                        <p className="text-[8px] font-black uppercase text-[#2A2826]/30 tracking-widest">En Espera</p>
-                        <p className="text-2xl font-black italic text-servirest-mostaza leading-none">{barOrders.length}</p>
-                    </div>
-                    <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] px-6 py-3 rounded-2xl text-center">
-                        <p className="text-[8px] font-black uppercase text-[#2A2826]/30 tracking-widest">Listos</p>
-                        <p className="text-2xl font-black italic text-green-400 leading-none">
-                            {orders.filter(o => o.status === OrderStatus.READY).length}
-                        </p>
-                    </div>
-                </div>
-            </header>
-
-            {/* Main content */}
-            <main className="flex-1 overflow-x-auto no-scrollbar py-6 px-8">
-                {barOrders.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center opacity-10 border-2 border-dashed border-[rgba(42,40,38,0.12)] rounded-[32px]">
-                        <Wine size={80} className="mb-6" />
-                        <p className="text-[12px] font-black uppercase tracking-[0.4em]">Bar Despejado</p>
-                        <p className="text-[10px] font-black uppercase tracking-widest mt-2 opacity-60">No hay bebidas por preparar</p>
-                    </div>
-                ) : (
-                    <div className="flex gap-6 min-w-max h-full">
-                        {barOrders.map(({ order, items }) => (
-                            <BarTicket
-                                key={order.id}
-                                order={order}
-                                items={items}
-                                onComplete={handleComplete}
-                            />
-                        ))}
-                    </div>
-                )}
-            </main>
-        </div>
-    );
+  return (
+    <div className={`px-3 py-2 rounded-sr-md ${tone} flex flex-col items-center`}>
+      <span className="font-mono font-extrabold text-[20px] leading-none tracking-tight">
+        {String(elapsed.min).padStart(2, '0')}:{String(elapsed.sec).padStart(2, '0')}
+      </span>
+      <span className="text-[8px] font-black uppercase tracking-[0.2em] mt-1 opacity-80">{subtle}</span>
+    </div>
+  );
 };
+
+/* -------------------------------------------------------------------------- */
+/* BarTicket — single bar order. Big quantities, mostaza ribbon at top.         */
+/* -------------------------------------------------------------------------- */
+const BarTicket: React.FC<{ order: Order; items: any[]; onComplete: (id: string) => void }> = ({
+  order, items, onComplete,
+}) => {
+  const isDineIn = !order.source || order.source === OrderSource.DINE_IN;
+  const isUUID = /^[0-9a-f]{8}-/i.test(order.tableId);
+  const tableLabel = isUUID
+    ? `#${order.id.slice(0, 6).toUpperCase()}`
+    : order.tableId.length > 16
+    ? `${order.tableId.slice(0, 14)}…`
+    : order.tableId;
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      className="w-[340px] flex-shrink-0"
+    >
+      <SrCard variant="solaris" className="flex flex-col h-[560px] overflow-hidden">
+        {/* Source ribbon — mostaza for bar */}
+        <div className={`px-4 py-2 flex items-center gap-2 ${isDineIn ? 'bg-servirest-mostaza text-servirest-midnight' : 'bg-servirest-midnight text-servirest-mostaza'}`}>
+          {isDineIn ? <Wine size={12} /> : <Truck size={12} />}
+          <span className="font-black italic uppercase tracking-[0.18em] text-[9px]">
+            {isDineIn ? 'Barra' : (order.source || 'Para llevar')}
+          </span>
+        </div>
+
+        {/* Hero row: table label + timer */}
+        <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-3 border-b border-[rgba(42,40,38,0.08)]">
+          <div className="min-w-0 flex-1">
+            <SrLabel className="block mb-1">Mesa</SrLabel>
+            <div className="font-serif italic font-medium text-[34px] text-servirest-midnight tracking-[-0.02em] leading-none truncate">
+              {tableLabel}
+            </div>
+            <div className="font-mono text-[10px] text-[rgba(42,40,38,0.4)] mt-1">
+              #{(order.id || '').slice(0, 8).toUpperCase()}
+            </div>
+          </div>
+          <BarTimer timestamp={order.timestamp} />
+        </div>
+
+        {/* Drink items — mostaza-tinted quantity badges */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+          {items.map((item, idx) => (
+            <div key={idx} className="space-y-1.5">
+              <div className="flex items-center gap-3 p-3 bg-servirest-hueso-sunken/40 rounded-sr-md">
+                <span className="w-10 h-10 rounded-sr-sm bg-servirest-mostaza text-servirest-midnight flex items-center justify-center font-black italic text-[18px] shrink-0">
+                  {item.quantity}
+                </span>
+                <span className="font-extrabold text-[14px] text-servirest-midnight tracking-tight leading-tight">
+                  {item.name}
+                </span>
+              </div>
+              {item.notes && (
+                <div className="ml-2 px-3 py-2 rounded-sr-sm bg-[rgba(225,85,75,0.06)] border-l-2 border-servirest-danger flex items-start gap-2">
+                  <AlertTriangle size={12} className="text-servirest-danger shrink-0 mt-0.5" />
+                  <span className="text-[11px] font-bold text-servirest-danger leading-snug">{item.notes}</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Complete CTA */}
+        <div className="p-3 border-t border-[rgba(42,40,38,0.08)] bg-servirest-hueso-sunken/30">
+          <SrButton
+            variant="primary"
+            size="lg"
+            fullWidth
+            icon={<CheckCircle2 size={18} />}
+            onClick={() => onComplete(order.id)}
+          >
+            Bebidas listas
+          </SrButton>
+        </div>
+      </SrCard>
+    </motion.div>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/* BarScreen — editorial header + ticket row                                    */
+/* -------------------------------------------------------------------------- */
+export const BarScreen: React.FC = () => {
+  const { orders, updateOrderStatus } = useOrders();
+  const [prevCount, setPrevCount] = useState(0);
+  const [alert, setAlert] = useState(false);
+
+  const isDrink = (item: any) =>
+    item.category?.toLowerCase().includes('bebida') ||
+    item.category?.toLowerCase().includes('bar') ||
+    item.category?.toLowerCase().includes('vino') ||
+    item.category?.toLowerCase().includes('trago') ||
+    item.category?.toLowerCase().includes('cerveza') ||
+    item.category?.toLowerCase().includes('drink') ||
+    item.category?.toLowerCase().includes('cocktail');
+
+  const hasFood = (order: Order) => order.items.some((i) => !isDrink(i));
+  const hasDrinks = (order: Order) => order.items.some((i) => isDrink(i));
+
+  const pendingOrders = orders.filter(
+    (o) =>
+      !o.isBarReady &&
+      hasDrinks(o) &&
+      (o.status === OrderStatus.PENDING || o.status === OrderStatus.COOKING || o.status === OrderStatus.READY)
+  );
+
+  const sortedBarOrders = [...pendingOrders]
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+    .map((order) => ({ order, items: order.items.filter(isDrink) }));
+
+  const distinctTables = new Set(sortedBarOrders.map((b) => b.order.tableId)).size;
+  const readyCount = orders.filter((o) => o.status === OrderStatus.READY).length;
+
+  useEffect(() => {
+    if (sortedBarOrders.length > prevCount && prevCount !== 0) {
+      playBeep();
+      setAlert(true);
+      setTimeout(() => setAlert(false), 4000);
+    }
+    setPrevCount(sortedBarOrders.length);
+  }, [sortedBarOrders.length, prevCount]);
+
+  const handleComplete = (id: string) => {
+    const order = orders.find((o) => o.id === id);
+    if (!order) return;
+    const isFullyReady = !hasFood(order) || order.isKitchenReady;
+    updateOrderStatus(id, isFullyReady ? OrderStatus.READY : order.status, {
+      ...order, isBarReady: true,
+    });
+  };
+
+  return (
+    <div className="h-full w-full bg-servirest-hueso text-servirest-carbon flex flex-col overflow-hidden antialiased relative">
+      {/* New-order overlay */}
+      <AnimatePresence>
+        {alert && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-0 z-[100] pointer-events-none flex items-center justify-center"
+          >
+            <div className="p-14 rounded-sr-2xl bg-servirest-mostaza text-servirest-midnight shadow-sr-glow border-[6px] border-servirest-midnight/20 flex flex-col items-center">
+              <Bell size={64} className="mb-5 animate-bounce" />
+              <div className="font-serif italic font-medium text-[60px] tracking-[-0.02em] leading-none mb-2">
+                Bebidas nuevas
+              </div>
+              <SrLabel className="text-servirest-midnight/70 text-[11px]">Barra sincronizada</SrLabel>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* HEADER */}
+      <div className="px-[38px] pt-10 pb-6 shrink-0">
+        <div className="flex justify-between items-start flex-wrap gap-6 mb-7">
+          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
+            <SrKicker className="block mb-2">Bebidas en preparación</SrKicker>
+            <h1 className="font-serif italic font-medium text-[56px] text-servirest-midnight tracking-[-0.025em] leading-[0.95] m-0">
+              Bar
+            </h1>
+            <p className="text-[14px] text-[rgba(42,40,38,0.6)] font-medium mt-2 max-w-[480px] leading-relaxed">
+              Cócteles, copas y refrescos por servir. El timer te marca cuál sale primero.
+            </p>
+          </motion.div>
+
+          <div className="flex gap-3 flex-wrap">
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">En preparación</SrLabel>
+              <div className="font-black italic text-[32px] text-servirest-mostaza tracking-[-0.03em] leading-none">
+                {sortedBarOrders.length}
+              </div>
+            </SrCard>
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">Listas</SrLabel>
+              <div className="font-black italic text-[32px] text-servirest-success tracking-[-0.03em] leading-none">
+                {readyCount}
+              </div>
+            </SrCard>
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">Mesas con bebida</SrLabel>
+              <div className="font-black italic text-[32px] text-servirest-terracota tracking-[-0.03em] leading-none">
+                {distinctTables}
+              </div>
+            </SrCard>
+          </div>
+        </div>
+      </div>
+
+      {/* TICKET ROW */}
+      <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar px-[38px] pb-10">
+        {sortedBarOrders.length === 0 ? (
+          <div className="h-full flex items-center justify-center">
+            <SrCard variant="solaris" className="p-12 max-w-md">
+              <SrEmptyState
+                icon={<GlassWater size={28} />}
+                title="Bar despejado"
+                description="No hay bebidas por preparar. Aprovecha para ordenar la barra y revisar el hielo."
+              />
+            </SrCard>
+          </div>
+        ) : (
+          <div className="flex gap-5 min-w-max h-full pt-1">
+            <AnimatePresence mode="popLayout">
+              {sortedBarOrders.map(({ order, items }) => (
+                <BarTicket key={order.id} order={order} items={items} onComplete={handleComplete} />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default BarScreen;

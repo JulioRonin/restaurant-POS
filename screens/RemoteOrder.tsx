@@ -1,399 +1,612 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { useUser } from '../contexts/UserContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { useMenu } from '../contexts/MenuContext';
-import { MenuItem, OrderItem, Order, OrderStatus, OrderSource, PaymentMethod, PaymentStatus, Table } from '../types';
-import { CATEGORIES, TABLES } from '../constants';
+import {
+  MenuItem, OrderItem, Order, OrderStatus, OrderSource,
+  PaymentMethod, PaymentStatus, Table,
+} from '../types';
+import { TABLES } from '../constants';
 import { bluetoothTerminalService } from '../services/BluetoothTerminalService';
 import { printerService } from '../services/PrinterService';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GlowCard } from '../components/ui/spotlight-card';
 import {
-    Search, Smartphone, Table2, Plus, Minus, Trash2, X,
-    CreditCard, Wallet, ArrowRight, CheckCircle2, Zap, Copy,
-    ShoppingCart
+  Search, Smartphone, Table2, Plus, Minus, X,
+  CreditCard, Wallet, ArrowRight, CheckCircle2, ShoppingCart, Copy,
+  ShoppingBag, Package,
 } from 'lucide-react';
+import {
+  SrCard, SrButton, SrChip, SrInput, SrLabel, SrKicker, SrMono,
+  SrModal, SrModalHeader, SrEmptyState, SrTabs,
+} from '../components/ui/servirest';
+
+type RemoteMode = 'DRIVE_THRU' | 'COUNTER' | 'TO_GO';
+
+const MODE_META: Record<RemoteMode, { label: string; source: OrderSource; icon: React.ReactNode; tableLabel: string }> = {
+  DRIVE_THRU: { label: 'Drive-thru', source: OrderSource.DRIVE_THRU, icon: <Smartphone size={14} />, tableLabel: 'Drive-thru' },
+  COUNTER:    { label: 'Mostrador',  source: OrderSource.DINE_IN,    icon: <Table2 size={14} />,    tableLabel: 'Mostrador' },
+  TO_GO:      { label: 'Para llevar', source: OrderSource.TO_GO,     icon: <ShoppingBag size={14} />, tableLabel: 'Para llevar' },
+};
 
 export const RemoteOrderScreen: React.FC = () => {
-    const { currentUser } = useUser();
-    const { addOrder } = useOrders();
-    const { settings } = useSettings();
-    const { menuItems } = useMenu();
+  // ── Contexts (intact) ────────────────────────────────────────────────────
+  const { currentUser } = useUser();
+  const { addOrder, orders } = useOrders();
+  const { settings } = useSettings();
+  const { menuItems } = useMenu();
 
-    const [activeMode, setActiveMode] = useState<'DRIVE_THRU' | 'TABLES'>('DRIVE_THRU');
-    const [selectedTable, setSelectedTable] = useState<Table | null>(null);
-    const [showTableModal, setShowTableModal] = useState(false);
-    const [activeCategory, setActiveCategory] = useState('All');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [cart, setCart] = useState<OrderItem[]>([]);
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [terminalStep, setTerminalStep] = useState('');
-    const [showTransferModal, setShowTransferModal] = useState(false);
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [lastOrderTotal, setLastOrderTotal] = useState(0);
+  // ── State ────────────────────────────────────────────────────────────────
+  const [activeMode, setActiveMode] = useState<RemoteMode>('DRIVE_THRU');
+  const [selectedTable, setSelectedTable] = useState<Table | null>(null);
+  const [showTableModal, setShowTableModal] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('todos');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [cart, setCart] = useState<OrderItem[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [terminalStep, setTerminalStep] = useState('');
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [lastOrderTotal, setLastOrderTotal] = useState(0);
 
-    const categories = useMemo(() => {
-        const cats = Array.from(new Set(menuItems.map(i => i.category).filter(Boolean)));
-        return ['All', ...cats];
-    }, [menuItems]);
+  // ── Derived ──────────────────────────────────────────────────────────────
+  const categories = useMemo(() => {
+    const cats = Array.from(new Set(menuItems.map((i) => i.category).filter(Boolean)));
+    return ['todos', ...cats];
+  }, [menuItems]);
 
-    const filteredItems = useMemo(() =>
-        menuItems.filter(item => {
-            const matchesStatus = item.status === 'ACTIVE';
-            const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
-            const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesStatus && matchesCategory && matchesSearch;
-        }), [menuItems, activeCategory, searchQuery]);
+  const filteredItems = useMemo(
+    () =>
+      menuItems.filter((item) => {
+        const matchesStatus = item.status === 'ACTIVE';
+        const matchesCategory = activeCategory === 'todos' || item.category === activeCategory;
+        const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesStatus && matchesCategory && matchesSearch;
+      }),
+    [menuItems, activeCategory, searchQuery]
+  );
 
-    const cartTotal = useMemo(() => cart.reduce((sum, i) => sum + (i.price * i.quantity), 0), [cart]);
+  const cartTotal = useMemo(() => cart.reduce((sum, i) => sum + i.price * i.quantity, 0), [cart]);
+  const cartCount = useMemo(() => cart.reduce((sum, i) => sum + i.quantity, 0), [cart]);
 
-    const addToCart = (item: MenuItem) => {
-        setCart(prev => {
-            const existing = prev.find(i => i.id === item.id);
-            if (existing) return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
-            return [...prev, { ...item, quantity: 1, notes: '' }];
-        });
-    };
-
-    const updateQuantity = (id: string, delta: number) => {
-        setCart(prev => prev.map(item => {
-            if (item.id === id) { const nq = Math.max(0, item.quantity + delta); return { ...item, quantity: nq }; }
-            return item;
-        }).filter(item => item.quantity > 0));
-    };
-
-    const handlePayment = async (method: PaymentMethod) => {
-        if (cart.length === 0) return;
-        if (activeMode === 'TABLES' && !selectedTable) { setShowTableModal(true); return; }
-        const total = cartTotal;
-        setLastOrderTotal(total);
-        if (method === PaymentMethod.CARD && settings.isTerminalEnabled) {
-            setIsProcessing(true);
-            await bluetoothTerminalService.simulateTransaction(total, (step) => setTerminalStep(step));
-            setIsProcessing(false);
-        }
-        const newOrder: Order = {
-            id: `REM-${Date.now().toString().slice(-6)}`,
-            tableId: activeMode === 'DRIVE_THRU' ? 'Drive-Thru' : (selectedTable?.name || 'Mesa'),
-            items: [...cart],
-            status: OrderStatus.COMPLETED,
-            paymentStatus: PaymentStatus.PAID,
-            paymentMethod: method,
-            timestamp: new Date(),
-            total,
-            source: activeMode === 'DRIVE_THRU' ? OrderSource.DRIVE_THRU : OrderSource.DINE_IN,
-            waiterName: currentUser?.name || 'Remoto'
-        };
-        addOrder(newOrder);
-        if (printerService.isConnected() || (settings.connectedDeviceName && settings.connectedDeviceName !== 'None')) {
-            await printerService.printOrder(newOrder, settings);
-        }
-        setCart([]);
-        setShowSuccessModal(true);
-        setTimeout(() => setShowSuccessModal(false), 3000);
-    };
-
-    return (
-        <div className="flex h-full bg-[#F0F0E8] text-[#1a1c14] overflow-hidden antialiased">
-
-            {/* ── LEFT: Menu Browser ── */}
-            <div className="flex-1 flex flex-col overflow-hidden border-r border-[rgba(42,40,38,0.12)]">
-                {/* Header */}
-                <header className="px-8 pt-8 pb-6 border-b border-[rgba(42,40,38,0.12)] shrink-0">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 rounded-2xl bg-servirest-terracota/10 border border-servirest-terracota/20 flex items-center justify-center">
-                            <Smartphone size={18} className="text-servirest-terracota" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-black italic tracking-tighter uppercase leading-none">Orden Rápida</h1>
-                            <p className="text-[#2A2826]/30 font-bold text-[9px] uppercase tracking-[0.4em]">Drive-Thru y mostrador</p>
-                        </div>
-                    </div>
-
-                    {/* Mode toggle */}
-                    <div className="flex gap-4 items-center flex-wrap">
-                        <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-1 rounded-2xl flex">
-                            <button
-                                onClick={() => { setActiveMode('DRIVE_THRU'); setSelectedTable(null); }}
-                                className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeMode === 'DRIVE_THRU' ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/45 hover:text-[#1a1c14]'}`}
-                            >
-                                <Smartphone size={14} /> Drive-Thru
-                            </button>
-                            <button
-                                onClick={() => setActiveMode('TABLES')}
-                                className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeMode === 'TABLES' ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/45 hover:text-[#1a1c14]'}`}
-                            >
-                                <Table2 size={14} /> {selectedTable ? selectedTable.name : 'Mesas'}
-                            </button>
-                        </div>
-
-                        {/* Search */}
-                        <div className="flex-1 min-w-[200px] relative">
-                            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#2A2826]/30" />
-                            <input
-                                type="text"
-                                placeholder="Buscar producto..."
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-3 pl-10 pr-4 text-sm font-bold text-[#1a1c14] outline-none focus:border-servirest-terracota/40 placeholder:text-[#2A2826]/10 transition-all"
-                            />
-                        </div>
-                    </div>
-                </header>
-
-                {/* Categories */}
-                <div className="flex gap-3 overflow-x-auto no-scrollbar px-8 py-4 shrink-0 border-b border-[rgba(42,40,38,0.12)]">
-                    {categories.map(cat => (
-                        <button
-                            key={cat}
-                            onClick={() => setActiveCategory(cat)}
-                            className={`px-5 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest whitespace-nowrap transition-all ${activeCategory === cat ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[#2A2826]/45 hover:text-[#1a1c14] hover:border-[rgba(42,40,38,0.20)]'}`}
-                        >
-                            {cat}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Product Grid */}
-                <div className="flex-1 overflow-y-auto no-scrollbar p-6">
-                    {filteredItems.length === 0 ? (
-                        <div className="h-full flex items-center justify-center opacity-10">
-                            <p className="text-[12px] font-black uppercase tracking-[0.4em]">Sin productos</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {filteredItems.map(item => (
-                                <button
-                                    key={item.id}
-                                    onClick={() => addToCart(item)}
-                                    className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-4 rounded-[28px] text-left hover:border-servirest-terracota/30 hover:bg-servirest-surface hover:scale-[1.02] active:scale-95 transition-all group relative overflow-hidden"
-                                >
-                                    <div className="h-28 w-full mb-4 bg-servirest-surface rounded-2xl overflow-hidden relative">
-                                        {item.image
-                                            ? <img src={item.image} alt={item.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                                            : <div className="w-full h-full flex items-center justify-center"><Zap size={32} className="text-[#2A2826]/10" /></div>
-                                        }
-                                        <div className="absolute inset-0 bg-servirest-terracota/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                            <Plus size={32} className="text-[#1a1c14]" />
-                                        </div>
-                                    </div>
-                                    <h3 className="font-black italic text-[#1a1c14] text-sm leading-tight mb-1 uppercase line-clamp-2">{item.name}</h3>
-                                    <p className="text-servirest-terracota font-black italic text-base">${item.price.toFixed(2)}</p>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* ── RIGHT: Cart & Checkout ── */}
-            <div className="w-[400px] min-w-[320px] bg-[#F0F0E8] flex flex-col border-l border-[rgba(42,40,38,0.12)] shadow-2xl">
-                <div className="px-8 pt-8 pb-6 border-b border-[rgba(42,40,38,0.12)] shrink-0">
-                    <h2 className="text-2xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Orden de Venta</h2>
-                    <p className="text-[#2A2826]/30 font-bold text-[9px] uppercase tracking-widest mt-1">
-                        {activeMode === 'DRIVE_THRU' ? 'Drive-Thru' : (selectedTable ? `Mesa: ${selectedTable.name}` : 'Sin mesa asignada')}
-                    </p>
-                </div>
-
-                {/* Cart Items */}
-                <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-3">
-                    {cart.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center opacity-10">
-                            <ShoppingCart size={64} className="mb-4" />
-                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-center">Canasta vacía</p>
-                        </div>
-                    ) : cart.map(item => (
-                        <div key={item.id} className="flex items-center gap-3 p-4 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl group hover:border-[rgba(42,40,38,0.20)] transition-all">
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-black italic text-[#1a1c14] text-sm uppercase leading-tight truncate">{item.name}</h4>
-                                <p className="text-[#2A2826]/45 font-bold text-[10px] mt-0.5">${item.price.toFixed(2)} c/u</p>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                                <button onClick={() => updateQuantity(item.id, -1)} className="w-7 h-7 rounded-lg bg-servirest-surface text-[#2A2826]/55 hover:bg-red-500/20 hover:text-red-400 transition-all flex items-center justify-center">
-                                    <Minus size={12} />
-                                </button>
-                                <span className="font-black italic text-base text-[#1a1c14] w-5 text-center">{item.quantity}</span>
-                                <button onClick={() => updateQuantity(item.id, 1)} className="w-7 h-7 rounded-lg bg-servirest-surface text-[#2A2826]/55 hover:bg-servirest-terracota/20 hover:text-servirest-terracota transition-all flex items-center justify-center">
-                                    <Plus size={12} />
-                                </button>
-                            </div>
-                            <span className="font-black italic text-sm text-[#1a1c14] w-16 text-right shrink-0">${(item.price * item.quantity).toFixed(2)}</span>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Totals & Payment */}
-                <div className="p-6 border-t border-[rgba(42,40,38,0.12)] shrink-0 space-y-4">
-                    <div className="flex justify-between items-center py-3 border-b border-[rgba(42,40,38,0.12)]">
-                        <span className="text-[#2A2826]/45 font-bold text-[10px] uppercase tracking-widest">Subtotal</span>
-                        <span className="text-[#2A2826]/45 font-bold text-sm">${cartTotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                        <span className="text-[#1a1c14] font-black italic text-xl uppercase">Total</span>
-                        <span className="text-servirest-terracota font-black italic text-2xl">${cartTotal.toFixed(2)}</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <button
-                            disabled={cart.length === 0 || isProcessing}
-                            onClick={() => handlePayment(PaymentMethod.CARD)}
-                            className="flex flex-col items-center justify-center gap-2 py-5 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-blue-400 hover:bg-blue-500/20 transition-all disabled:opacity-30 active:scale-95 font-black text-[9px] uppercase tracking-widest"
-                        >
-                            <CreditCard size={22} /> Tarjeta
-                        </button>
-                        <button
-                            disabled={cart.length === 0 || isProcessing}
-                            onClick={() => setShowTransferModal(true)}
-                            className="flex flex-col items-center justify-center gap-2 py-5 bg-purple-500/10 border border-purple-500/20 rounded-2xl text-purple-400 hover:bg-purple-500/20 transition-all disabled:opacity-30 active:scale-95 font-black text-[9px] uppercase tracking-widest"
-                        >
-                            <ArrowRight size={22} /> Transferencia
-                        </button>
-                    </div>
-
-                    <button
-                        disabled={cart.length === 0 || isProcessing}
-                        onClick={() => handlePayment(PaymentMethod.CASH)}
-                        className="w-full py-4 bg-servirest-terracota text-[#1a1c14] rounded-2xl font-black italic uppercase text-[10px] tracking-widest shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
-                    >
-                        <Wallet size={16} /> Pagar en Efectivo
-                    </button>
-                </div>
-            </div>
-
-            {/* ── MODALS ── */}
-
-            {/* Terminal Processing */}
-            <AnimatePresence>
-                {isProcessing && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6"
-                    >
-                        <div className="bg-[#FAF8F4] border border-[rgba(42,40,38,0.20)] w-full max-w-sm rounded-[40px] p-10 text-center shadow-2xl">
-                            <div className="w-20 h-20 mx-auto mb-8 relative">
-                                <div className="absolute inset-0 border-4 border-servirest-terracota/20 rounded-full" />
-                                <div className="absolute inset-0 border-4 border-servirest-terracota rounded-full border-t-transparent animate-spin" />
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <CreditCard size={32} className="text-servirest-terracota" />
-                                </div>
-                            </div>
-                            <h3 className="text-2xl font-black italic uppercase text-[#1a1c14] mb-2 tracking-tighter">Procesando Pago</h3>
-                            <p className="text-servirest-terracota font-bold animate-pulse text-[10px] uppercase tracking-widest mb-6">{terminalStep}</p>
-                            <p className="text-[9px] text-[#2A2826]/30 font-bold uppercase tracking-widest">No apagues la terminal</p>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Transfer Modal */}
-            <AnimatePresence>
-                {showTransferModal && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6"
-                    >
-                        <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
-                            className="bg-[#FAF8F4] border border-[rgba(42,40,38,0.20)] w-full max-w-md rounded-[40px] overflow-hidden shadow-2xl"
-                        >
-                            <div className="bg-purple-500/10 border-b border-purple-500/20 p-10 text-center">
-                                <p className="text-purple-400/60 font-black text-[9px] uppercase tracking-[0.4em] mb-2">Total a Transferir</p>
-                                <h2 className="text-6xl font-black italic tracking-tighter text-[#1a1c14]">${cartTotal.toFixed(2)}</h2>
-                            </div>
-                            <div className="p-10 space-y-6">
-                                <div className="grid grid-cols-2 gap-6">
-                                    <div>
-                                        <p className="text-[9px] font-black text-[#2A2826]/30 uppercase tracking-widest mb-1">Banco</p>
-                                        <p className="font-black italic text-[#1a1c14] uppercase">{settings.bankName || '—'}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[9px] font-black text-[#2A2826]/30 uppercase tracking-widest mb-1">Beneficiario</p>
-                                        <p className="font-black italic text-[#1a1c14] uppercase">{settings.bankBeneficiary || '—'}</p>
-                                    </div>
-                                </div>
-                                <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-5 rounded-2xl flex items-center justify-between gap-4">
-                                    <div className="min-w-0">
-                                        <p className="text-[9px] font-black text-[#2A2826]/30 uppercase tracking-widest mb-1">CLABE / Tarjeta</p>
-                                        <p className="font-black italic text-purple-400 text-lg tracking-wider truncate">
-                                            {settings.bankCLABE || settings.bankAccount || '— —'}
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={() => { navigator.clipboard.writeText(settings.bankCLABE || ''); }}
-                                        className="w-10 h-10 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-center justify-center text-purple-400 hover:bg-purple-500/20 transition-all shrink-0"
-                                    >
-                                        <Copy size={16} />
-                                    </button>
-                                </div>
-                                <div className="flex gap-3">
-                                    <button onClick={() => setShowTransferModal(false)}
-                                        className="flex-1 py-4 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl text-[#2A2826]/55 font-black text-[10px] uppercase tracking-widest hover:text-[#1a1c14] transition-all"
-                                    >
-                                        Regresar
-                                    </button>
-                                    <button
-                                        onClick={() => { handlePayment(PaymentMethod.TRANSFER); setShowTransferModal(false); }}
-                                        className="flex-1 py-4 bg-purple-500 text-[#1a1c14] rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-purple-400 transition-all shadow-lg"
-                                    >
-                                        Confirmar
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Table Selection Modal */}
-            <AnimatePresence>
-                {showTableModal && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-xl flex items-center justify-center p-6"
-                    >
-                        <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }}
-                            className="bg-[#FAF8F4] border border-[rgba(42,40,38,0.20)] w-full max-w-2xl rounded-[40px] p-10 shadow-2xl"
-                        >
-                            <div className="flex justify-between items-center mb-8">
-                                <div>
-                                    <h2 className="text-3xl font-black italic uppercase text-[#1a1c14] tracking-tighter">Seleccionar Mesa</h2>
-                                    <p className="text-[#2A2826]/30 font-bold text-[9px] uppercase tracking-widest mt-1">Asigna esta orden remota</p>
-                                </div>
-                                <button onClick={() => setShowTableModal(false)} className="w-10 h-10 rounded-full bg-servirest-surface flex items-center justify-center text-[#2A2826]/45 hover:text-[#1a1c14] transition-all">
-                                    <X size={18} />
-                                </button>
-                            </div>
-                            <div className="grid grid-cols-3 gap-4 max-h-[400px] overflow-y-auto no-scrollbar pr-1">
-                                {TABLES.map(table => (
-                                    <button
-                                        key={table.id}
-                                        onClick={() => { setSelectedTable(table); setShowTableModal(false); }}
-                                        className={`p-6 rounded-[28px] border-2 flex flex-col items-center gap-2 transition-all ${selectedTable?.id === table.id ? 'border-servirest-terracota bg-servirest-terracota/10 text-servirest-terracota' : 'border-[rgba(42,40,38,0.12)] bg-servirest-surface text-[#2A2826]/55 hover:border-[rgba(42,40,38,0.20)] hover:text-[#1a1c14]'}`}
-                                    >
-                                        <Table2 size={28} />
-                                        <span className="font-black italic text-lg">{table.name}</span>
-                                        <span className="text-[9px] font-bold uppercase tracking-widest opacity-60">{table.seats} sillas</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Success Modal */}
-            <AnimatePresence>
-                {showSuccessModal && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-xl"
-                    >
-                        <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="bg-[#FAF8F4] border border-[rgba(42,40,38,0.20)] p-16 rounded-[40px] shadow-2xl flex flex-col items-center">
-                            <div className="w-24 h-24 bg-green-500/10 border-2 border-green-500 rounded-full flex items-center justify-center mb-6 shadow-2xl">
-                                <CheckCircle2 size={48} className="text-green-400" />
-                            </div>
-                            <h2 className="text-4xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Cobro Exitoso</h2>
-                            <p className="text-[#2A2826]/45 font-bold mt-3 uppercase text-[10px] tracking-[0.4em]">Orden por ${lastOrderTotal.toFixed(2)}</p>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
+  // Shift stats — remote orders only
+  const shiftStats = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const remoteOrders = orders.filter(
+      (o) =>
+        new Date(o.timestamp) >= today &&
+        (o.source === OrderSource.DRIVE_THRU || o.source === OrderSource.TO_GO || o.source === OrderSource.PICKUP)
     );
+    const total = remoteOrders.length;
+    const avg = total === 0 ? 0 : remoteOrders.reduce((s, o) => s + (o.total || 0), 0) / total;
+    const pending = orders.filter(
+      (o) =>
+        (o.source === OrderSource.DRIVE_THRU || o.source === OrderSource.TO_GO) &&
+        (o.status === OrderStatus.PENDING || o.status === OrderStatus.COOKING)
+    ).length;
+    return { total, avg, pending };
+  }, [orders]);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+  const addToCart = (item: MenuItem) => {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.id === item.id);
+      if (existing) return prev.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i));
+      return [...prev, { ...item, quantity: 1, notes: '' }];
+    });
+  };
+
+  const updateQuantity = (id: string, delta: number) => {
+    setCart((prev) =>
+      prev
+        .map((item) => {
+          if (item.id === id) {
+            const nq = Math.max(0, item.quantity + delta);
+            return { ...item, quantity: nq };
+          }
+          return item;
+        })
+        .filter((item) => item.quantity > 0)
+    );
+  };
+
+  const clearCart = () => setCart([]);
+
+  const handlePayment = async (method: PaymentMethod) => {
+    if (cart.length === 0) return;
+    if (activeMode === 'COUNTER' && !selectedTable) {
+      setShowTableModal(true);
+      return;
+    }
+    const total = cartTotal;
+    setLastOrderTotal(total);
+
+    if (method === PaymentMethod.CARD && settings.isTerminalEnabled) {
+      setIsProcessing(true);
+      await bluetoothTerminalService.simulateTransaction(total, (step) => setTerminalStep(step));
+      setIsProcessing(false);
+    }
+
+    const meta = MODE_META[activeMode];
+    const newOrder: Order = {
+      id: `REM-${Date.now().toString().slice(-6)}`,
+      tableId: activeMode === 'COUNTER' ? (selectedTable?.name || meta.tableLabel) : meta.tableLabel,
+      items: [...cart],
+      status: OrderStatus.COMPLETED,
+      paymentStatus: PaymentStatus.PAID,
+      paymentMethod: method,
+      timestamp: new Date(),
+      total,
+      source: meta.source,
+      waiterName: currentUser?.name || 'Remoto',
+    };
+
+    addOrder(newOrder);
+    if (printerService.isConnected() || (settings.connectedDeviceName && settings.connectedDeviceName !== 'None')) {
+      await printerService.printOrder(newOrder, settings);
+    }
+    setCart([]);
+    setShowSuccessModal(true);
+    setTimeout(() => setShowSuccessModal(false), 3000);
+  };
+
+  const MODE_TABS = (Object.keys(MODE_META) as RemoteMode[]).map((m) => ({
+    id: m,
+    label: MODE_META[m].label,
+  }));
+
+  const CAT_TABS = categories.map((c) => ({
+    id: c,
+    label: c === 'todos' ? 'Todos' : c,
+    count: c === 'todos'
+      ? menuItems.filter((i) => i.status === 'ACTIVE').length
+      : menuItems.filter((i) => i.status === 'ACTIVE' && i.category === c).length,
+  }));
+
+  // ── Render ───────────────────────────────────────────────────────────────
+  return (
+    <div className="flex h-full bg-servirest-hueso text-servirest-carbon overflow-hidden antialiased">
+      {/* ─── LEFT: Menu Browser ─────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col overflow-hidden border-r border-[rgba(42,40,38,0.12)] min-w-0">
+        {/* HEADER */}
+        <div className="px-[38px] pt-10 pb-6 shrink-0 border-b border-[rgba(42,40,38,0.08)]">
+          <div className="flex justify-between items-start flex-wrap gap-6 mb-7">
+            <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
+              <SrKicker className="block mb-2">Drive-thru y mostrador</SrKicker>
+              <h1 className="font-serif italic font-medium text-[56px] text-servirest-midnight tracking-[-0.025em] leading-[0.95] m-0">
+                Orden rápida
+              </h1>
+              <p className="text-[14px] text-[rgba(42,40,38,0.6)] font-medium mt-2 max-w-[480px] leading-relaxed">
+                Para cuando el cliente espera. Arma la cuenta, cobra y manda a cocina sin trámites.
+              </p>
+            </motion.div>
+
+            {/* Mini-stats rail */}
+            <div className="flex gap-3 flex-wrap">
+              <SrCard className="px-5 py-4">
+                <SrLabel className="block mb-1.5">Órdenes del turno</SrLabel>
+                <div className="font-black italic text-[32px] text-servirest-midnight tracking-[-0.03em] leading-none">
+                  {shiftStats.total}
+                </div>
+              </SrCard>
+              <SrCard className="px-5 py-4">
+                <SrLabel className="block mb-1.5">Ticket promedio</SrLabel>
+                <SrMono className="text-[24px] text-servirest-terracota font-extrabold tracking-tight">
+                  ${shiftStats.avg.toFixed(0)}
+                </SrMono>
+              </SrCard>
+              <SrCard className="px-5 py-4">
+                <SrLabel className="block mb-1.5">Pendientes</SrLabel>
+                <div className="font-black italic text-[32px] text-servirest-mostaza tracking-[-0.03em] leading-none">
+                  {shiftStats.pending}
+                </div>
+              </SrCard>
+            </div>
+          </div>
+
+          {/* Mode + Search row */}
+          <div className="flex gap-4 items-end flex-wrap">
+            <div className="flex-1 min-w-[280px]">
+              <SrTabs<RemoteMode>
+                tabs={MODE_TABS as readonly { id: RemoteMode; label: string }[]}
+                active={activeMode}
+                onChange={(m) => {
+                  setActiveMode(m);
+                  if (m !== 'COUNTER') setSelectedTable(null);
+                }}
+              />
+            </div>
+            <div className="w-full md:w-[300px]">
+              <SrInput
+                shape="pill"
+                placeholder="Buscar platillo…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                icon={<Search size={14} />}
+              />
+            </div>
+          </div>
+
+          {activeMode === 'COUNTER' && (
+            <div className="mt-4 flex items-center gap-3">
+              <SrLabel>Mesa asignada</SrLabel>
+              {selectedTable ? (
+                <SrChip tone="terracota">
+                  <Table2 size={10} className="mr-1.5" />
+                  {selectedTable.name}
+                </SrChip>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowTableModal(true)}
+                  className="text-[12px] font-extrabold text-servirest-terracota hover:underline"
+                >
+                  Elegir mesa →
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* CATEGORY TABS */}
+        <div className="px-[38px] pt-4 shrink-0">
+          <SrTabs<string> tabs={CAT_TABS} active={activeCategory} onChange={setActiveCategory} />
+        </div>
+
+        {/* PRODUCT GRID */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-[38px] py-6">
+          {filteredItems.length === 0 ? (
+            <SrCard variant="solaris" className="p-12">
+              <SrEmptyState
+                icon={<Package size={28} />}
+                title="Sin platillos a la vista"
+                description={
+                  searchQuery
+                    ? 'Nada coincide con esa búsqueda. Prueba con otra palabra.'
+                    : 'No hay platillos activos en esta categoría. Revisa el menú.'
+                }
+              />
+            </SrCard>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredItems.map((item, idx) => (
+                <motion.button
+                  key={item.id}
+                  type="button"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: idx * 0.02 }}
+                  onClick={() => addToCart(item)}
+                  className="text-left group focus:outline-none"
+                >
+                  <SrCard hover className="overflow-hidden p-3">
+                    <div className="h-28 w-full mb-3 bg-servirest-hueso-sunken rounded-sr-lg overflow-hidden relative">
+                      {item.image ? (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-[rgba(42,40,38,0.2)]">
+                          <Package size={28} />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-servirest-terracota/0 group-hover:bg-servirest-terracota/15 transition-colors flex items-center justify-center">
+                        <span className="opacity-0 group-hover:opacity-100 transition-opacity w-10 h-10 rounded-full bg-servirest-terracota text-servirest-hueso flex items-center justify-center shadow-sr-glow">
+                          <Plus size={18} />
+                        </span>
+                      </div>
+                    </div>
+                    <h3 className="font-extrabold text-[13px] text-servirest-midnight leading-tight mb-1 line-clamp-2 tracking-tight">
+                      {item.name}
+                    </h3>
+                    <SrMono className="text-[14px] font-extrabold text-servirest-terracota">
+                      ${item.price.toFixed(2)}
+                    </SrMono>
+                  </SrCard>
+                </motion.button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ─── RIGHT: Cart & Checkout ─────────────────────────────────── */}
+      <div className="w-[420px] min-w-[340px] bg-servirest-hueso-sunken/30 flex flex-col shrink-0">
+        <div className="px-7 pt-10 pb-5 shrink-0 border-b border-[rgba(42,40,38,0.08)]">
+          <SrKicker className="block mb-2">
+            {MODE_META[activeMode].label}
+            {activeMode === 'COUNTER' && selectedTable ? ` · ${selectedTable.name}` : ''}
+          </SrKicker>
+          <h2 className="font-serif italic font-medium text-[34px] text-servirest-midnight tracking-[-0.02em] leading-none m-0">
+            Cuenta
+          </h2>
+          <div className="mt-3 flex items-center gap-3">
+            <SrChip tone="terracota">
+              <ShoppingCart size={10} className="mr-1.5" />
+              {cartCount} {cartCount === 1 ? 'platillo' : 'platillos'}
+            </SrChip>
+            {cart.length > 0 && (
+              <button
+                type="button"
+                onClick={clearCart}
+                className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-[rgba(42,40,38,0.5)] hover:text-servirest-danger transition-colors"
+              >
+                Vaciar
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* CART ITEMS */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-2.5">
+          {cart.length === 0 ? (
+            <SrEmptyState
+              icon={<ShoppingCart size={24} />}
+              title="Cuenta en blanco"
+              description="Toca un platillo del menú para empezar a armar la orden."
+            />
+          ) : (
+            cart.map((item, idx) => (
+              <motion.div
+                key={item.id}
+                layout
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.25, delay: idx * 0.02 }}
+              >
+                <SrCard className="p-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-extrabold text-[13px] text-servirest-midnight leading-tight truncate tracking-tight">
+                        {item.name}
+                      </h4>
+                      <SrMono className="text-[11px] text-[rgba(42,40,38,0.5)] mt-0.5 block">
+                        ${item.price.toFixed(2)} c/u
+                      </SrMono>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(item.id, -1)}
+                        className="w-7 h-7 rounded-sr-sm bg-servirest-hueso-sunken text-[rgba(42,40,38,0.6)] hover:text-servirest-danger hover:bg-[rgba(225,85,75,0.08)] transition-colors flex items-center justify-center"
+                      >
+                        <Minus size={12} />
+                      </button>
+                      <span className="font-mono font-extrabold text-[14px] text-servirest-midnight w-5 text-center">
+                        {item.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => updateQuantity(item.id, 1)}
+                        className="w-7 h-7 rounded-sr-sm bg-servirest-hueso-sunken text-[rgba(42,40,38,0.6)] hover:text-servirest-terracota hover:bg-[rgba(196,99,63,0.08)] transition-colors flex items-center justify-center"
+                      >
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                    <SrMono className="font-extrabold text-[13px] text-servirest-midnight w-16 text-right shrink-0">
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </SrMono>
+                  </div>
+                </SrCard>
+              </motion.div>
+            ))
+          )}
+        </div>
+
+        {/* TOTALS + PAYMENT */}
+        <div className="p-5 border-t border-[rgba(42,40,38,0.12)] shrink-0 space-y-4 bg-servirest-surface">
+          <div className="flex justify-between items-center">
+            <SrLabel>Subtotal</SrLabel>
+            <SrMono className="text-[13px] text-[rgba(42,40,38,0.6)] font-extrabold">
+              ${cartTotal.toFixed(2)}
+            </SrMono>
+          </div>
+          <div className="flex justify-between items-baseline pt-3 border-t border-[rgba(42,40,38,0.08)]">
+            <span className="font-serif italic font-medium text-[18px] text-servirest-midnight tracking-[-0.02em]">
+              Total
+            </span>
+            <div className="font-black italic text-[34px] text-servirest-terracota tracking-[-0.03em] leading-none">
+              ${cartTotal.toFixed(2)}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <SrButton
+              variant="outline"
+              size="md"
+              icon={<CreditCard size={14} />}
+              disabled={cart.length === 0 || isProcessing}
+              onClick={() => handlePayment(PaymentMethod.CARD)}
+            >
+              Tarjeta
+            </SrButton>
+            <SrButton
+              variant="outline"
+              size="md"
+              icon={<ArrowRight size={14} />}
+              disabled={cart.length === 0 || isProcessing}
+              onClick={() => setShowTransferModal(true)}
+            >
+              Transfer
+            </SrButton>
+          </div>
+
+          <SrButton
+            variant="primary"
+            size="lg"
+            fullWidth
+            icon={<Wallet size={18} />}
+            disabled={cart.length === 0 || isProcessing}
+            onClick={() => handlePayment(PaymentMethod.CASH)}
+          >
+            Cobrar y enviar
+          </SrButton>
+        </div>
+      </div>
+
+      {/* ─── MODALS ──────────────────────────────────────────────────── */}
+      <AnimatePresence>
+        {/* TERMINAL PROCESSING */}
+        {isProcessing && (
+          <SrModal open onClose={() => {}} maxWidth={420} closeOnBackdrop={false}>
+            <div className="flex flex-col items-center text-center py-6">
+              <div className="w-20 h-20 mb-7 relative">
+                <div className="absolute inset-0 border-[3px] border-[rgba(196,99,63,0.18)] rounded-full" />
+                <div className="absolute inset-0 border-[3px] border-servirest-terracota rounded-full border-t-transparent animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <CreditCard size={28} className="text-servirest-terracota" />
+                </div>
+              </div>
+              <h2 className="font-serif italic font-medium text-[28px] text-servirest-midnight tracking-[-0.02em] leading-tight m-0 mb-2">
+                Procesando pago
+              </h2>
+              <p className="text-[12px] text-servirest-terracota font-black italic uppercase tracking-[0.2em] mb-5 animate-pulse">
+                {terminalStep}
+              </p>
+              <SrLabel>No apagues la terminal</SrLabel>
+            </div>
+          </SrModal>
+        )}
+
+        {/* TRANSFER MODAL */}
+        {showTransferModal && (
+          <SrModal open onClose={() => setShowTransferModal(false)} maxWidth={460}>
+            <SrModalHeader
+              title="Transferencia"
+              kicker="Comparte estos datos al cliente"
+              onClose={() => setShowTransferModal(false)}
+            />
+            <SrCard className="p-7 mb-6 bg-servirest-hueso-sunken/40">
+              <SrLabel className="block mb-2">Total a transferir</SrLabel>
+              <div className="font-serif italic font-medium text-[56px] text-servirest-midnight tracking-[-0.025em] leading-none">
+                ${cartTotal.toFixed(2)}
+              </div>
+            </SrCard>
+            <div className="space-y-4 mb-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <SrLabel className="block mb-1.5">Banco</SrLabel>
+                  <div className="font-extrabold text-[14px] text-servirest-midnight">{settings.bankName || '—'}</div>
+                </div>
+                <div>
+                  <SrLabel className="block mb-1.5">Beneficiario</SrLabel>
+                  <div className="font-extrabold text-[14px] text-servirest-midnight">{settings.bankBeneficiary || '—'}</div>
+                </div>
+              </div>
+              <SrCard className="p-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <SrLabel className="block mb-1.5">CLABE / Tarjeta</SrLabel>
+                  <SrMono className="text-[16px] text-servirest-terracota font-extrabold tracking-wider truncate block">
+                    {settings.bankCLABE || settings.bankAccount || '— —'}
+                  </SrMono>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(settings.bankCLABE || settings.bankAccount || '')}
+                  className="w-10 h-10 rounded-sr-md bg-[rgba(196,99,63,0.08)] border border-servirest-terracota/30 text-servirest-terracota hover:bg-[rgba(196,99,63,0.14)] transition-colors flex items-center justify-center shrink-0"
+                  aria-label="Copiar"
+                >
+                  <Copy size={14} />
+                </button>
+              </SrCard>
+            </div>
+            <div className="flex gap-3">
+              <SrButton variant="outline" size="md" fullWidth onClick={() => setShowTransferModal(false)}>
+                Regresar
+              </SrButton>
+              <SrButton
+                variant="primary"
+                size="md"
+                fullWidth
+                onClick={() => {
+                  handlePayment(PaymentMethod.TRANSFER);
+                  setShowTransferModal(false);
+                }}
+              >
+                Confirmar
+              </SrButton>
+            </div>
+          </SrModal>
+        )}
+
+        {/* TABLE MODAL */}
+        {showTableModal && (
+          <SrModal open onClose={() => setShowTableModal(false)} maxWidth={720}>
+            <SrModalHeader
+              title="Elige una mesa"
+              kicker="Para asignar la orden al mostrador"
+              onClose={() => setShowTableModal(false)}
+            />
+            {TABLES.length === 0 ? (
+              <SrEmptyState
+                icon={<Table2 size={28} />}
+                title="No hay mesas registradas"
+                description="Crea mesas desde la pantalla del Salón para poder asignar órdenes desde mostrador."
+              />
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[56vh] overflow-y-auto custom-scrollbar pr-1">
+                {TABLES.map((table) => {
+                  const sel = selectedTable?.id === table.id;
+                  return (
+                    <button
+                      key={table.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTable(table);
+                        setShowTableModal(false);
+                      }}
+                      className={`p-5 rounded-sr-xl border-2 flex flex-col items-center gap-2.5 transition-all ${
+                        sel
+                          ? 'border-servirest-terracota bg-[rgba(196,99,63,0.08)] text-servirest-terracota shadow-sr-glow'
+                          : 'border-[rgba(42,40,38,0.12)] bg-servirest-surface text-[rgba(42,40,38,0.6)] hover:border-[rgba(42,40,38,0.24)] hover:text-servirest-carbon'
+                      }`}
+                    >
+                      <span
+                        className={`w-12 h-12 rounded-sr-md flex items-center justify-center ${
+                          sel ? 'bg-servirest-terracota text-servirest-hueso' : 'bg-[rgba(42,40,38,0.05)]'
+                        }`}
+                      >
+                        <Table2 size={22} />
+                      </span>
+                      <span className="font-serif italic font-medium text-[18px] leading-none">{table.name}</span>
+                      <SrLabel>{table.seats} personas</SrLabel>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </SrModal>
+        )}
+
+        {/* SUCCESS MODAL */}
+        {showSuccessModal && (
+          <SrModal open onClose={() => setShowSuccessModal(false)} maxWidth={460} closeOnBackdrop={false}>
+            <div className="flex flex-col items-center text-center py-6">
+              <motion.div
+                initial={{ scale: 0.6 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                className="w-[104px] h-[104px] rounded-full bg-servirest-terracota shadow-sr-glow flex items-center justify-center mb-7"
+              >
+                <CheckCircle2 size={52} className="text-servirest-hueso" />
+              </motion.div>
+              <h2 className="font-serif italic font-medium text-[34px] text-servirest-midnight tracking-[-0.02em] leading-tight m-0 mb-3">
+                Cobro listo
+              </h2>
+              <SrMono className="text-[18px] text-servirest-terracota font-extrabold mb-1 block">
+                ${lastOrderTotal.toFixed(2)}
+              </SrMono>
+              <SrLabel>{MODE_META[activeMode].label} · mandado a cocina</SrLabel>
+            </div>
+          </SrModal>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 };
+
+export default RemoteOrderScreen;

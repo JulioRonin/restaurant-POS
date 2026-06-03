@@ -4,455 +4,672 @@ import { Employee } from '../types';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GlowCard } from '../components/ui/spotlight-card';
-import { 
-  Users, 
-  UserCheck, 
-  Star, 
-  FileText, 
-  LayoutGrid, 
-  Calendar, 
-  UserPlus, 
-  Search,
-  Mail,
-  X,
-  Plus,
-  RefreshCw
+import {
+  Users, UserCheck, Star, FileText, LayoutGrid, Calendar, UserPlus,
+  Search, X, Plus, RefreshCw, ChefHat, Wine, Briefcase, CheckCircle2,
 } from 'lucide-react';
+import {
+  SrCard, SrButton, SrChip, SrInput, SrLabel, SrKicker, SrMono,
+  SrModal, SrModalHeader, SrEmptyState, SrTabs, SrProgressRing,
+} from '../components/ui/servirest';
+
+type RoleFilter = 'All' | 'Kitchen' | 'Service' | 'Bar' | 'Management';
+
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+const DAY_LABEL: Record<string, string> = {
+  Mon: 'Lun', Tue: 'Mar', Wed: 'Mié', Thu: 'Jue', Fri: 'Vie', Sat: 'Sáb', Sun: 'Dom',
+};
+
+const AREA_TONE = (area?: string) =>
+  area === 'Kitchen' ? 'terracota'
+    : area === 'Bar' ? 'mostaza'
+    : area === 'Management' ? 'midnight'
+    : 'neutral';
 
 export const StaffScreen: React.FC = () => {
-    const { employees, addEmployee, updateEmployee, triggerSync, authProfile, isAuthenticating, activeEmployee, isSuperAdmin } = useUser();
-    const [selectedArea, setSelectedArea] = useState<string>('All');
-    const [viewMode, setViewMode] = useState<'grid' | 'schedule'>('grid');
-    const [activeModal, setActiveModal] = useState<'none' | 'add' | 'profile' | 'schedule'>('none');
-    const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-    const [isEditing, setIsEditing] = useState(false);
-    const [editingEmployee, setEditingEmployee] = useState<Partial<Employee>>({});
-    const printRef = useRef<HTMLDivElement>(null);
+  const {
+    employees, addEmployee, updateEmployee, triggerSync,
+    authProfile, isAuthenticating, activeEmployee, isSuperAdmin,
+  } = useUser();
 
-    const ADMIN_AVATAR = "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200&h=200";
-    const areas = ['All', 'Kitchen', 'Service', 'Bar', 'Management'];
+  const [selectedArea, setSelectedArea] = useState<RoleFilter>('All');
+  const [viewMode, setViewMode] = useState<'grid' | 'schedule'>('grid');
+  const [activeModal, setActiveModal] = useState<'none' | 'add' | 'profile' | 'schedule'>('none');
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Partial<Employee>>({});
+  const printRef = useRef<HTMLDivElement>(null);
 
-    const filteredStaff = useMemo(() => {
-        return selectedArea === 'All'
-            ? employees
-            : employees.filter(employee => employee.area === selectedArea);
-    }, [selectedArea, employees]);
+  const filteredStaff = useMemo(() => {
+    return selectedArea === 'All'
+      ? employees
+      : employees.filter((employee) => employee.area === selectedArea);
+  }, [selectedArea, employees]);
 
-    const onShiftCount = employees.filter(s => s.status === 'ON_SHIFT').length;
+  const onShiftCount = employees.filter((s) => s.status === 'ON_SHIFT').length;
+  const avgRating = useMemo(() => {
+    if (employees.length === 0) return 0;
+    return employees.reduce((s, e) => s + (e.rating || 0), 0) / employees.length;
+  }, [employees]);
 
-    const handleProfileClick = (employee: Employee) => {
-        setSelectedEmployee(employee);
-        setEditingEmployee({ ...employee });
-        setIsEditing(false);
-        setActiveModal('profile');
-    };
+  const areaTabs = useMemo(
+    () =>
+      [
+        { id: 'All' as RoleFilter, label: 'Todos', count: employees.length },
+        { id: 'Service' as RoleFilter, label: 'Meseros', count: employees.filter((e) => e.area === 'Service').length },
+        { id: 'Kitchen' as RoleFilter, label: 'Cocina', count: employees.filter((e) => e.area === 'Kitchen').length },
+        { id: 'Bar' as RoleFilter, label: 'Bar', count: employees.filter((e) => e.area === 'Bar').length },
+        { id: 'Management' as RoleFilter, label: 'Gerencia', count: employees.filter((e) => e.area === 'Management').length },
+      ] as const,
+    [employees]
+  );
 
-    const handleScheduleClick = (employee: Employee) => {
-        setSelectedEmployee(employee);
-        setEditingEmployee({ ...employee });
-        setActiveModal('schedule');
-    };
+  const handleProfileClick = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setEditingEmployee({ ...employee });
+    setIsEditing(false);
+    setActiveModal('profile');
+  };
 
-    const handleSaveEmployee = () => {
-        if (!editingEmployee.id) return;
-        updateEmployee(editingEmployee.id, editingEmployee);
-        setIsEditing(false);
-        setActiveModal('none');
-    };
+  const handleScheduleClick = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setEditingEmployee({ ...employee });
+    setActiveModal('schedule');
+  };
 
-    const handleAddEmployee = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!authProfile) return;
-        const formData = new FormData(e.target as HTMLFormElement);
-        addEmployee({
-            name: formData.get('name') as string,
-            role: formData.get('role') as string,
-            area: formData.get('area') as any,
-            status: 'OFF_SHIFT',
-            pin: '1111',
-            image: `https://ui-avatars.com/api/?name=${formData.get('name')}&background=f97316&color=fff`,
-            rating: 5,
-            hoursWorked: 0,
-            schedule: [],
-            businessId: authProfile.businessId
-        });
-        setActiveModal('none');
-    };
+  const handleSaveEmployee = () => {
+    if (!editingEmployee.id) return;
+    updateEmployee(editingEmployee.id, editingEmployee);
+    setIsEditing(false);
+    setActiveModal('none');
+  };
 
-    const handleDownload = async () => {
-        if (!printRef.current) return;
-        const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: '#1f2937' });
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-        pdf.addImage(imgData, 'PNG', 10, 10, 277, (canvas.height * 277) / canvas.width);
-        pdf.save(`Personal_ServiRest_${new Date().toISOString().slice(0, 10)}.pdf`);
-    };
+  const handleAddEmployee = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authProfile) return;
+    const formData = new FormData(e.target as HTMLFormElement);
+    addEmployee({
+      name: formData.get('name') as string,
+      role: formData.get('role') as string,
+      area: formData.get('area') as any,
+      status: 'OFF_SHIFT',
+      pin: '1111',
+      image: `https://ui-avatars.com/api/?name=${formData.get('name')}&background=C4633F&color=fff`,
+      rating: 5,
+      hoursWorked: 0,
+      schedule: [],
+      businessId: authProfile.businessId,
+    });
+    setActiveModal('none');
+  };
 
-    if (isAuthenticating) {
-        return (
-            <div className="h-full flex items-center justify-center bg-[#FAF8F4]">
-                <div className="w-10 h-10 border-4 border-solaris-orange/20 border-t-solaris-orange rounded-full animate-spin"></div>
-            </div>
-        );
-    }
+  const handleDownload = async () => {
+    if (!printRef.current) return;
+    const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: '#FAF8F4' });
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    pdf.addImage(imgData, 'PNG', 10, 10, 277, (canvas.height * 277) / canvas.width);
+    pdf.save(`Personal_ServiRest_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
 
+  const getShiftPct = (emp: Employee) => {
+    const max = 40; // semanales
+    return Math.min(100, Math.round(((emp.hoursWorked || 0) / max) * 100));
+  };
+
+  if (isAuthenticating) {
     return (
-        <div className="h-full bg-[#FAF8F4] text-[#1a1c14] p-6 md:p-10 overflow-y-auto relative antialiased">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
-                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                    <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">Staff Network</h1>
-                    <p className="text-servirest-terracota/40 font-bold text-[10px] uppercase tracking-[0.4em]">Personal & Equipo y horarios</p>
-                </motion.div>
-
-                <div className="flex gap-4 items-center flex-wrap">
-                    <button onClick={handleDownload} className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[#2A2826]/55 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-servirest-surface hover:text-[#1a1c14] transition-all">
-                        <FileText size={16} /> Export Intel
-                    </button>
-                    
-                    <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-1 rounded-2xl flex">
-                        <button onClick={() => setViewMode('grid')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${viewMode === 'grid' ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/30 hover:text-[#1a1c14]'}`}>
-                            <LayoutGrid size={14} /> Lista
-                        </button>
-                        <button onClick={() => setViewMode('schedule')} className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${viewMode === 'schedule' ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/30 hover:text-[#1a1c14]'}`}>
-                            <Calendar size={14} /> Timeline
-                        </button>
-                    </div>
-
-                    {(activeEmployee?.role?.toLowerCase() === 'admin' || isSuperAdmin) && (
-                        <button onClick={() => setActiveModal('add')} className="bg-servirest-terracota text-[#1a1c14] px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-solaris-glow hover:scale-105 transition-all">
-                             <UserPlus size={16} /> Recruit
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Stats */}
-            <div className="flex flex-col xl:flex-row gap-6 mb-12">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
-                    {[
-                        { label: 'Empleados', val: employees.length, icon: Users, color: 'text-[#2A2826]/55' },
-                        { label: 'Activos', val: onShiftCount, icon: UserCheck, color: 'text-servirest-terracota' },
-                        { label: 'Asistencia', val: '4.8', icon: Star, color: 'text-servirest-terracota' },
-                    ].map((s, i) => (
-                        <div key={i} className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-6 rounded-solaris flex items-center gap-6">
-                            <div className={`p-4 bg-servirest-surface rounded-2xl ${s.color}`}><s.icon size={24} /></div>
-                            <div>
-                                <h3 className="text-2xl font-black italic tracking-tighter text-[#1a1c14]">{s.val}</h3>
-                                <p className="text-[9px] font-black uppercase tracking-widest text-servirest-terracota/40">{s.label}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-2 rounded-2xl flex items-center gap-1 overflow-x-auto min-w-max">
-                    {areas.map(area => (
-                        <button key={area} onClick={() => setSelectedArea(area)} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${selectedArea === area ? 'bg-servirest-surface text-servirest-terracota border border-solaris-orange/20' : 'text-[#2A2826]/30 hover:text-[#1a1c14]'}`}>
-                            {area}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            <div ref={printRef} className="space-y-12 pb-20">
-            {filteredStaff.length === 0 ? (
-                <div className="bg-servirest-surface rounded-solaris p-20 flex flex-col items-center justify-center text-center border border-[rgba(42,40,38,0.12)] border-dashed">
-                    <Search size={64} className="text-[#2A2826]/5 mb-6" />
-                    <h2 className="text-xl font-black italic text-[#1a1c14] uppercase tracking-tighter mb-2">No Bio-ID Detected</h2>
-                    <p className="text-servirest-terracota/20 text-[10px] font-bold uppercase tracking-widest max-w-sm mb-10">Iniciando Buscar empleado...</p>
-                    <div className="flex gap-4">
-                        <button onClick={() => triggerSync()} className="bg-servirest-terracota text-[#1a1c14] px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-solaris-glow hover:scale-105 transition-all flex items-center gap-3">
-                            <RefreshCw size={16} /> Sync Network
-                        </button>
-                    </div>
-                </div>
-            ) : viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredStaff.map(emp => (
-                        <div key={emp.id}>
-                            <GlowCard glowColor="orange" className={`relative group border !p-8 ${emp.status === 'ON_SHIFT' ? 'border-solaris-orange/20' : 'border-[rgba(42,40,38,0.12)]'}`}>
-                                <div className="flex flex-col items-center">
-                                    <div className="relative mb-6">
-                                        <div className={`w-28 h-28 rounded-full p-1 border-2 transition-all ${emp.status === 'ON_SHIFT' ? 'border-solaris-orange' : 'border-[rgba(42,40,38,0.20)] opacity-50'}`}>
-                                            <img 
-                                                src={emp.image || `https://ui-avatars.com/api/?name=${emp.name}&background=333&color=fff`} 
-                                                alt={emp.name} 
-                                                className="w-full h-full rounded-full object-cover filter contrast-125" 
-                                            />
-                                        </div>
-                                        <div className={`absolute bottom-2 right-2 w-4 h-4 rounded-full border-2 border-solaris-black ${emp.status === 'ON_SHIFT' ? 'bg-servirest-terracota shadow-solaris-glow' : 'bg-[#1a1a1b]'}`}></div>
-                                    </div>
-                                    <h3 className="text-lg font-black italic text-[#1a1c14] tracking-tight text-center mb-1 uppercase">{emp.name}</h3>
-                                    <p className="text-servirest-terracota text-[9px] font-black uppercase tracking-[0.3em] mb-4">{emp.role}</p>
-                                    
-                                    <div className="w-full grid grid-cols-2 gap-2 text-center mb-8 bg-servirest-surface p-4 rounded-2xl border border-[rgba(42,40,38,0.12)]">
-                                        <div><p className="text-[10px] font-black text-[#1a1c14] italic">{emp.hoursWorked}h</p><p className="text-[8px] font-black uppercase text-servirest-terracota/40">Payload</p></div>
-                                        <div><p className="text-[10px] font-black text-[#1a1c14] flex items-center justify-center gap-1 italic">{emp.rating} <Star size={10} className="text-servirest-terracota" /></p><p className="text-[8px] font-black uppercase text-servirest-terracota/40">Calificación</p></div>
-                                    </div>
-
-                                    <div className="flex gap-2 w-full">
-                                        <button onClick={() => handleProfileClick(emp)} className="flex-1 py-3 px-4 rounded-xl bg-servirest-surface border border-[rgba(42,40,38,0.20)] text-[9px] font-black uppercase tracking-widest text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">Profile</button>
-                                        {(activeEmployee?.role?.toLowerCase() === 'admin' || isSuperAdmin) && (
-                                            <button onClick={() => handleScheduleClick(emp)} className="flex-1 py-3 px-4 rounded-xl bg-servirest-surface border border-[rgba(42,40,38,0.20)] text-[9px] font-black uppercase tracking-widest text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">Tasking</button>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className={`absolute top-4 right-4 text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest ${emp.status === 'ON_SHIFT' ? 'bg-servirest-terracota/10 text-servirest-terracota border border-solaris-orange/20' : 'bg-white/5 text-[#2A2826]/30'}`}>
-                                    {emp.status.replace('_', ' ')}
-                                </div>
-                            </GlowCard>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-solaris overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="border-b border-[rgba(42,40,38,0.12)] text-servirest-terracota/40 text-[9px] font-black uppercase tracking-[0.3em]">
-                                    <th className="py-6 px-8 italic">Operator Biological ID</th>
-                                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => <th key={day} className="py-6 px-4 text-center">{day}</th>)}
-                                    <th className="py-6 px-8 text-right italic">Horas</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-sm">
-                                {filteredStaff.map(emp => (
-                                    <tr key={emp.id} className="border-b border-[rgba(42,40,38,0.12)] hover:bg-servirest-surface transition-colors group">
-                                        <td className="py-6 px-8">
-                                            <div className="flex items-center gap-4">
-                                                <img 
-                                                    src={emp.image || `https://ui-avatars.com/api/?name=${emp.name}&background=333&color=fff`} 
-                                                    alt={emp.name} 
-                                                    className="w-10 h-10 rounded-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" 
-                                                />
-                                                <div>
-                                                    <p className="font-bold text-[#1a1c14] group-hover:text-servirest-terracota transition-colors">{emp.name}</p>
-                                                    <p className="text-[8px] font-black uppercase text-servirest-terracota/30 tracking-widest">{emp.role}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => {
-                                            const shift = emp.schedule?.find(s => s.day === day);
-                                            return (
-                                                <td key={day} className="py-6 px-4 text-center">
-                                                    <div className={`min-w-[80px] h-10 mx-auto rounded-xl flex items-center justify-center transition-all ${shift ? 'bg-servirest-terracota/10 border border-solaris-orange/30 animate-pulse' : 'bg-servirest-surface border border-[rgba(42,40,38,0.12)] opacity-20'}`}>
-                                                       {shift ? (
-                                                            <div className="text-center">
-                                                                <p className="text-[8px] font-bold text-[#1a1c14] leading-none">{shift.start}</p>
-                                                                <div className="w-1 h-1 rounded-full bg-servirest-terracota my-1 mx-auto"></div>
-                                                                <p className="text-[8px] font-bold text-[#1a1c14] leading-none">{shift.end}</p>
-                                                            </div>
-                                                       ) : (
-                                                            <div className="w-1 h-1 rounded-full bg-white/10"></div>
-                                                       )}
-                                                    </div>
-                                                </td>
-                                            );
-                                        })}
-                                        <td className="py-6 px-8 text-right font-black italic text-servirest-terracota">{emp.hoursWorked}h</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
-            </div>
-
-            {/* Modal Layer */}
-            <AnimatePresence>
-                {activeModal !== 'none' && (
-                    <motion.div 
-                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-6"
-                    >
-                        <motion.div 
-                            initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                            className="bg-white border border-[rgba(42,40,38,0.20)] rounded-solaris w-full max-w-lg overflow-hidden shadow-2xl"
-                        >
-                            <div className="p-10">
-                                <div className="flex justify-between items-center mb-10">
-                                    <h2 className="text-2xl font-black italic uppercase tracking-tighter text-[#1a1c14]">System Command</h2>
-                                    <button onClick={() => setActiveModal('none')} className="text-[#2A2826]/30 hover:text-[#1a1c14] transition-colors"><X size={24} /></button>
-                                </div>
-
-                                {activeModal === 'add' && (
-                                    <form onSubmit={handleAddEmployee} className="space-y-8">
-                                        <div className="space-y-2">
-                                            <label className="text-[9px] font-black uppercase text-servirest-terracota/60 tracking-widest px-1 italic">Nombre</label>
-                                            <input name="name" type="text" required placeholder="Unidad de Personal" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold placeholder:text-[#2A2826]/5" />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[9px] font-black uppercase text-servirest-terracota/60 tracking-widest px-1 italic">Puesto</label>
-                                                <input name="role" type="text" required placeholder="Role" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold placeholder:text-[#2A2826]/5" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <label className="text-[9px] font-black uppercase text-servirest-terracota/60 tracking-widest px-1 italic">Área</label>
-                                                <select name="area" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold appearance-none">
-                                                    <option value="Kitchen" className="bg-white">Kitchen</option>
-                                                    <option value="Service" className="bg-white">Service</option>
-                                                    <option value="Bar" className="bg-white">Bar</option>
-                                                    <option value="Management" className="bg-white">Management</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <button type="submit" className="w-full bg-servirest-terracota text-[#1a1c14] font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-600 transition-all text-[11px] flex items-center justify-center gap-3">
-                                            <Plus size={18} /> Integrate into Bio-Network
-                                        </button>
-                                    </form>
-                                )}
-
-                                 {activeModal === 'profile' && selectedEmployee && (
-                                    <div className="space-y-8">
-                                        <div className="flex items-center gap-8 mb-10">
-                                            <img src={selectedEmployee.image} className="w-24 h-24 rounded-solaris border border-[rgba(42,40,38,0.20)]" alt="" />
-                                            <div className="flex-1">
-                                                {!isEditing ? (
-                                                    <>
-                                                        <h3 className="text-2xl font-black italic text-[#1a1c14] uppercase">{selectedEmployee.name}</h3>
-                                                        <p className="text-servirest-terracota text-[9px] font-black uppercase tracking-widest">{selectedEmployee.role}</p>
-                                                    </>
-                                                ) : (
-                                                    <div className="space-y-2">
-                                                        <input 
-                                                            value={editingEmployee.name} 
-                                                            onChange={e => setEditingEmployee({...editingEmployee, name: e.target.value})}
-                                                            className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-xl py-2 px-4 text-[#1a1c14] text-sm font-black italic uppercase"
-                                                        />
-                                                        <input 
-                                                            value={editingEmployee.role} 
-                                                            onChange={e => setEditingEmployee({...editingEmployee, role: e.target.value})}
-                                                            className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-xl py-2 px-4 text-servirest-terracota text-[10px] font-black uppercase"
-                                                        />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-4 rounded-2xl text-center">
-                                                <p className="text-[8px] font-black text-servirest-terracota/40 uppercase mb-1">Sector node</p>
-                                                {isEditing ? (
-                                                    <select 
-                                                        value={editingEmployee.area} 
-                                                        onChange={e => setEditingEmployee({...editingEmployee, area: e.target.value as any})}
-                                                        className="bg-transparent text-[10px] font-black text-[#1a1c14] outline-none"
-                                                    >
-                                                        {areas.filter(a => a !== 'All').map(a => <option key={a} value={a} className="bg-white">{a}</option>)}
-                                                    </select>
-                                                ) : (
-                                                    <p className="text-[10px] font-black text-[#1a1c14] italic">{selectedEmployee.area}</p>
-                                                )}
-                                            </div>
-                                            <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-4 rounded-2xl text-center">
-                                                <p className="text-[8px] font-black text-servirest-terracota/40 uppercase mb-1">Status</p>
-                                                <p className="text-[10px] font-black text-[#1a1c14] italic">{selectedEmployee.status}</p>
-                                            </div>
-                                        </div>
-
-                                        {!isEditing ? (
-                                            <button 
-                                                onClick={() => setIsEditing(true)}
-                                                className="w-full bg-servirest-terracota text-[#1a1c14] font-black uppercase py-5 rounded-2xl text-[11px] tracking-widest shadow-solaris-glow hover:scale-[1.02] transition-all"
-                                            >
-                                                Edit Operator Intel
-                                            </button>
-                                        ) : (
-                                            <div className="flex gap-4">
-                                                <button onClick={() => setIsEditing(false)} className="flex-1 bg-servirest-surface border border-[rgba(42,40,38,0.20)] text-[#2A2826]/55 font-black uppercase py-4 rounded-xl text-[10px] tracking-widest">Cancel</button>
-                                                <button onClick={handleSaveEmployee} className="flex-1 bg-servirest-terracota text-[#1a1c14] font-black uppercase py-4 rounded-xl text-[10px] tracking-widest shadow-solaris-glow">Save Changes</button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {activeModal === 'schedule' && selectedEmployee && (
-                                    <div className="space-y-8 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
-                                        <div className="flex items-center gap-6 mb-8 border-b border-[rgba(42,40,38,0.12)] pb-6">
-                                            <img src={selectedEmployee.image} className="w-16 h-16 rounded-2xl grayscale brightness-75 border border-[rgba(42,40,38,0.20)]" alt="" />
-                                            <div>
-                                                <h3 className="text-xl font-black italic text-[#1a1c14] uppercase tracking-tight">{selectedEmployee.name}</h3>
-                                                <p className="text-servirest-terracota text-[8px] font-black uppercase tracking-widest">Temporal Tasking Lista</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Current Shifts */}
-                                        <div className="space-y-3">
-                                            <label className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest italic ml-1">Turnos activos</label>
-                                            {(editingEmployee.schedule || []).length === 0 ? (
-                                                <div className="p-8 rounded-2xl border border-dashed border-[rgba(42,40,38,0.12)] text-center">
-                                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#2A2826]/10">No tasks assigned</p>
-                                                </div>
-                                            ) : (
-                                                editingEmployee.schedule?.map((shift, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-4 rounded-2xl animate-in fade-in slide-in-from-right-2">
-                                                        <div>
-                                                            <p className="text-[10px] font-black text-servirest-terracota uppercase tracking-widest">{shift.day}</p>
-                                                            <p className="text-[12px] font-black text-[#1a1c14] italic">{shift.start} — {shift.end}</p>
-                                                        </div>
-                                                        <button 
-                                                            onClick={() => {
-                                                                const newSched = [...(editingEmployee.schedule || [])];
-                                                                newSched.splice(idx, 1);
-                                                                setEditingEmployee({...editingEmployee, schedule: newSched});
-                                                            }}
-                                                            className="p-2 text-red-500/20 hover:text-red-500 transition-colors"
-                                                        >
-                                                            <X size={16} />
-                                                        </button>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
-
-                                        {/* Add New Shift */}
-                                        <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-6 rounded-3xl space-y-6">
-                                            <h4 className="text-[10px] font-black uppercase tracking-widest text-[#2A2826]/55 italic">New Temporal Allocation</h4>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="col-span-2">
-                                                    <label className="text-[8px] font-black uppercase text-[#2A2826]/10 mb-2 block">Day</label>
-                                                    <select id="new-shift-day" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-black appearance-none outline-none focus:border-solaris-orange/50 transition-all">
-                                                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => <option key={d} value={d} className="bg-white">{d}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="text-[8px] font-black uppercase text-[#2A2826]/10 mb-2 block">Start</label>
-                                                    <input id="new-shift-start" type="time" defaultValue="09:00" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-black outline-none focus:border-solaris-orange/50 transition-all" />
-                                                </div>
-                                                <div>
-                                                    <label className="text-[8px] font-black uppercase text-[#2A2826]/10 mb-2 block">End</label>
-                                                    <input id="new-shift-end" type="time" defaultValue="17:00" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-black outline-none focus:border-solaris-orange/50 transition-all" />
-                                                </div>
-                                            </div>
-                                            <button 
-                                                onClick={() => {
-                                                    const day = (document.getElementById('new-shift-day') as HTMLSelectElement).value;
-                                                    const start = (document.getElementById('new-shift-start') as HTMLInputElement).value;
-                                                    const end = (document.getElementById('new-shift-end') as HTMLInputElement).value;
-                                                    const newSched = [...(editingEmployee.schedule || []), { day, start, end }];
-                                                    setEditingEmployee({...editingEmployee, schedule: newSched});
-                                                }}
-                                                className="w-full bg-servirest-surface border border-solaris-orange/20 text-servirest-terracota font-black uppercase py-4 rounded-xl text-[9px] tracking-widest hover:bg-servirest-terracota hover:text-[#1a1c14] transition-all shadow-lg hover:shadow-solaris-glow"
-                                            >
-                                                Inject Shift Data
-                                            </button>
-                                        </div>
-
-                                        <button 
-                                            onClick={handleSaveEmployee}
-                                            className="w-full bg-servirest-terracota text-[#1a1c14] font-black uppercase py-5 rounded-2xl text-[11px] tracking-widest shadow-solaris-glow mt-8"
-                                        >
-                                            Save Scheduling Lista
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
+      <div className="h-full flex items-center justify-center bg-servirest-hueso">
+        <div className="w-10 h-10 border-4 border-servirest-terracota/20 border-t-servirest-terracota rounded-full animate-spin" />
+      </div>
     );
+  }
+
+  const isAdmin = activeEmployee?.role?.toLowerCase() === 'admin' || isSuperAdmin;
+
+  return (
+    <div className="h-full w-full overflow-y-auto custom-scrollbar bg-servirest-hueso text-servirest-carbon antialiased">
+      <div className="px-[38px] py-10 max-w-[1480px] mx-auto pb-32 lg:pb-12">
+        {/* ─── HEADER ────────────────────────────────────────────── */}
+        <div className="flex justify-between items-start flex-wrap gap-6 mb-12">
+          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
+            <SrKicker className="block mb-2">Equipo y horarios</SrKicker>
+            <h1 className="font-serif italic font-medium text-[56px] text-servirest-midnight tracking-[-0.025em] leading-[0.95] m-0">
+              Personal
+            </h1>
+            <p className="text-[14px] text-[rgba(42,40,38,0.6)] font-medium mt-2 max-w-[480px] leading-relaxed">
+              Tu gente. Quién está en turno, quién no, y cómo se está moviendo cada uno en el piso.
+            </p>
+          </motion.div>
+
+          {/* Mini-stats rail */}
+          <div className="flex gap-3 flex-wrap">
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">Activos</SrLabel>
+              <div className="font-black italic text-[32px] text-servirest-success tracking-[-0.03em] leading-none">
+                {onShiftCount}
+              </div>
+            </SrCard>
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">Total</SrLabel>
+              <div className="font-black italic text-[32px] text-servirest-midnight tracking-[-0.03em] leading-none">
+                {employees.length}
+              </div>
+            </SrCard>
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">Calificación</SrLabel>
+              <div className="font-black italic text-[32px] text-servirest-terracota tracking-[-0.03em] leading-none">
+                {avgRating.toFixed(1)}
+              </div>
+            </SrCard>
+          </div>
+        </div>
+
+        {/* ─── ACTIONS BAR ───────────────────────────────────────── */}
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between mb-8">
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`px-5 py-3 rounded-sr-md text-[10px] font-black uppercase tracking-[0.16em] transition-colors flex items-center gap-2 border ${
+                viewMode === 'grid'
+                  ? 'bg-servirest-midnight text-servirest-hueso border-servirest-midnight'
+                  : 'bg-servirest-surface text-[rgba(42,40,38,0.6)] border-[rgba(42,40,38,0.12)] hover:text-servirest-carbon'
+              }`}
+            >
+              <LayoutGrid size={14} /> Equipo
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('schedule')}
+              className={`px-5 py-3 rounded-sr-md text-[10px] font-black uppercase tracking-[0.16em] transition-colors flex items-center gap-2 border ${
+                viewMode === 'schedule'
+                  ? 'bg-servirest-midnight text-servirest-hueso border-servirest-midnight'
+                  : 'bg-servirest-surface text-[rgba(42,40,38,0.6)] border-[rgba(42,40,38,0.12)] hover:text-servirest-carbon'
+              }`}
+            >
+              <Calendar size={14} /> Horarios
+            </button>
+          </div>
+
+          <div className="flex gap-3 flex-wrap">
+            <SrButton variant="outline" size="md" icon={<FileText size={14} />} onClick={handleDownload}>
+              Exportar PDF
+            </SrButton>
+            {isAdmin && (
+              <SrButton
+                variant="primary"
+                size="md"
+                icon={<UserPlus size={14} />}
+                onClick={() => setActiveModal('add')}
+              >
+                Agregar persona
+              </SrButton>
+            )}
+          </div>
+        </div>
+
+        {/* ─── ROLE TABS ─────────────────────────────────────────── */}
+        <div className="mb-8">
+          <SrTabs<RoleFilter>
+            tabs={areaTabs}
+            active={selectedArea}
+            onChange={setSelectedArea}
+          />
+        </div>
+
+        <div ref={printRef} className="pb-12">
+          {filteredStaff.length === 0 ? (
+            <SrCard variant="solaris" className="p-12">
+              <SrEmptyState
+                icon={<Users size={28} />}
+                title={employees.length === 0 ? 'Aún sin gente en tu equipo' : 'Sin personal en este filtro'}
+                description={
+                  employees.length === 0
+                    ? 'Suma a tu primera mesera o cocinero para empezar a operar.'
+                    : 'Cambia de filtro o sincroniza para traer al equipo desde la nube.'
+                }
+                action={
+                  employees.length === 0 ? (
+                    isAdmin ? (
+                      <SrButton variant="primary" icon={<UserPlus size={14} />} onClick={() => setActiveModal('add')}>
+                        Agregar primera persona
+                      </SrButton>
+                    ) : (
+                      <SrButton variant="outline" icon={<RefreshCw size={14} />} onClick={() => triggerSync()}>
+                        Sincronizar equipo
+                      </SrButton>
+                    )
+                  ) : undefined
+                }
+              />
+            </SrCard>
+          ) : viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              <AnimatePresence mode="popLayout">
+                {filteredStaff.map((emp, idx) => {
+                  const onShift = emp.status === 'ON_SHIFT';
+                  const pct = getShiftPct(emp);
+                  return (
+                    <motion.div
+                      key={emp.id}
+                      layout
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.96 }}
+                      transition={{ duration: 0.3, delay: idx * 0.03, ease: [0.16, 1, 0.3, 1] }}
+                    >
+                      <SrCard hover className="p-6 flex flex-col items-center text-center h-full">
+                        {/* Avatar */}
+                        <div className="relative mb-4">
+                          <div
+                            className={`w-24 h-24 rounded-full p-1 border-2 transition-colors ${
+                              onShift ? 'border-servirest-success' : 'border-[rgba(42,40,38,0.15)]'
+                            }`}
+                          >
+                            <img
+                              src={emp.image || `https://ui-avatars.com/api/?name=${emp.name}&background=C4633F&color=fff`}
+                              alt={emp.name}
+                              className="w-full h-full rounded-full object-cover"
+                            />
+                          </div>
+                          <span
+                            className={`absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full border-2 border-servirest-surface ${
+                              onShift ? 'bg-servirest-success shadow-[0_0_10px_rgba(34,160,107,0.5)]' : 'bg-[rgba(42,40,38,0.20)]'
+                            }`}
+                          />
+                        </div>
+
+                        <h3 className="font-serif italic font-medium text-[18px] text-servirest-midnight tracking-[-0.015em] m-0 mb-1 leading-tight">
+                          {emp.name}
+                        </h3>
+
+                        <div className="flex items-center gap-2 mb-4 flex-wrap justify-center">
+                          <SrChip tone={AREA_TONE(emp.area)} size="xs">
+                            {emp.role}
+                          </SrChip>
+                          <SrChip tone={onShift ? 'success' : 'neutral'} size="xs">
+                            {onShift ? 'En turno' : 'Descansa'}
+                          </SrChip>
+                        </div>
+
+                        {/* Stats row with progress ring */}
+                        <div className="w-full flex items-center gap-4 mb-5 pt-4 border-t border-[rgba(42,40,38,0.08)]">
+                          <SrProgressRing pct={pct} size={48} stroke={4} showLabel />
+                          <div className="flex-1 text-left">
+                            <SrLabel className="block mb-1">Horas semana</SrLabel>
+                            <SrMono className="text-[14px] text-servirest-midnight font-extrabold">
+                              {emp.hoursWorked || 0}h
+                            </SrMono>
+                          </div>
+                          <div className="text-right">
+                            <SrLabel className="block mb-1">Rating</SrLabel>
+                            <div className="flex items-center justify-end gap-1">
+                              <SrMono className="text-[14px] text-servirest-mostaza font-extrabold">
+                                {emp.rating}
+                              </SrMono>
+                              <Star size={11} className="text-servirest-mostaza fill-servirest-mostaza" />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2 w-full">
+                          <SrButton variant="outline" size="sm" className="flex-1" onClick={() => handleProfileClick(emp)}>
+                            Perfil
+                          </SrButton>
+                          {isAdmin && (
+                            <SrButton variant="outline" size="sm" className="flex-1" onClick={() => handleScheduleClick(emp)}>
+                              Horario
+                            </SrButton>
+                          )}
+                        </div>
+                      </SrCard>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          ) : (
+            <SrCard variant="solaris" className="p-7 overflow-hidden">
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left min-w-[760px]">
+                  <thead>
+                    <tr className="border-b border-[rgba(42,40,38,0.10)]">
+                      <th className="py-4 px-3 text-left">
+                        <SrLabel>Persona</SrLabel>
+                      </th>
+                      {DAYS.map((d) => (
+                        <th key={d} className="py-4 px-2 text-center">
+                          <SrLabel>{DAY_LABEL[d]}</SrLabel>
+                        </th>
+                      ))}
+                      <th className="py-4 px-3 text-right">
+                        <SrLabel>Horas</SrLabel>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStaff.map((emp, idx) => (
+                      <motion.tr
+                        key={emp.id}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: idx * 0.03 }}
+                        className="border-b border-[rgba(42,40,38,0.06)] last:border-0 hover:bg-servirest-hueso-sunken/40 transition-colors"
+                      >
+                        <td className="py-4 px-3">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={emp.image || `https://ui-avatars.com/api/?name=${emp.name}&background=C4633F&color=fff`}
+                              alt={emp.name}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                            <div>
+                              <div className="font-extrabold text-[13px] text-servirest-midnight tracking-tight">{emp.name}</div>
+                              <SrLabel>{emp.role}</SrLabel>
+                            </div>
+                          </div>
+                        </td>
+                        {DAYS.map((day) => {
+                          const shift = emp.schedule?.find((s) => s.day === day);
+                          return (
+                            <td key={day} className="py-4 px-2 text-center">
+                              <div
+                                className={`min-w-[68px] h-10 mx-auto rounded-sr-md flex items-center justify-center transition-colors border ${
+                                  shift
+                                    ? 'bg-[rgba(196,99,63,0.08)] border-servirest-terracota/30 text-servirest-terracota'
+                                    : 'bg-servirest-hueso-sunken/40 border-[rgba(42,40,38,0.06)] text-[rgba(42,40,38,0.2)]'
+                                }`}
+                              >
+                                {shift ? (
+                                  <SrMono className="text-[10px] font-extrabold leading-tight">
+                                    {shift.start}–{shift.end}
+                                  </SrMono>
+                                ) : (
+                                  <span className="text-[8px] font-black uppercase tracking-[0.16em]">—</span>
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
+                        <td className="py-4 px-3 text-right">
+                          <SrMono className="text-[14px] text-servirest-terracota font-extrabold">
+                            {emp.hoursWorked}h
+                          </SrMono>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </SrCard>
+          )}
+        </div>
+      </div>
+
+      {/* ─── ADD MODAL ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {activeModal === 'add' && (
+          <SrModal open onClose={() => setActiveModal('none')} maxWidth={560}>
+            <SrModalHeader
+              title="Agregar persona"
+              kicker="Suma a tu equipo"
+              onClose={() => setActiveModal('none')}
+            />
+            <form onSubmit={handleAddEmployee} className="space-y-5">
+              <div>
+                <SrLabel className="block mb-2">Nombre completo *</SrLabel>
+                <SrInput name="name" type="text" required placeholder="Ej. María González" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <SrLabel className="block mb-2">Puesto</SrLabel>
+                  <SrInput name="role" type="text" required placeholder="Ej. Mesera, Cocinero" />
+                </div>
+                <div>
+                  <SrLabel className="block mb-2">Área</SrLabel>
+                  <select
+                    name="area"
+                    defaultValue="Service"
+                    className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-sr-lg py-3 px-4 text-[13px] font-medium text-servirest-carbon outline-none focus:border-servirest-terracota transition-colors cursor-pointer"
+                  >
+                    <option value="Service">Servicio</option>
+                    <option value="Kitchen">Cocina</option>
+                    <option value="Bar">Bar</option>
+                    <option value="Management">Gerencia</option>
+                  </select>
+                </div>
+              </div>
+              <SrCard className="p-4 bg-[rgba(196,99,63,0.04)] border-servirest-terracota/20">
+                <div className="flex items-center gap-3">
+                  <Briefcase size={16} className="text-servirest-terracota shrink-0" />
+                  <SrMono className="text-[11px] text-servirest-carbon">
+                    PIN inicial: <span className="text-servirest-terracota font-extrabold">1111</span> — la persona puede cambiarlo al primer login.
+                  </SrMono>
+                </div>
+              </SrCard>
+              <SrButton type="submit" variant="primary" size="lg" fullWidth icon={<UserPlus size={16} />}>
+                Sumar al equipo
+              </SrButton>
+            </form>
+          </SrModal>
+        )}
+      </AnimatePresence>
+
+      {/* ─── PROFILE MODAL ─────────────────────────────────────── */}
+      <AnimatePresence>
+        {activeModal === 'profile' && selectedEmployee && (
+          <SrModal open onClose={() => setActiveModal('none')} maxWidth={560}>
+            <SrModalHeader
+              title="Perfil"
+              kicker={selectedEmployee.role}
+              onClose={() => setActiveModal('none')}
+            />
+
+            <div className="space-y-6">
+              <div className="flex items-center gap-5">
+                <img
+                  src={selectedEmployee.image || `https://ui-avatars.com/api/?name=${selectedEmployee.name}&background=C4633F&color=fff`}
+                  className="w-20 h-20 rounded-full border-2 border-[rgba(42,40,38,0.10)] object-cover"
+                  alt=""
+                />
+                <div className="flex-1">
+                  {!isEditing ? (
+                    <>
+                      <h3 className="font-serif italic font-medium text-[26px] text-servirest-midnight tracking-[-0.02em] m-0 leading-tight">
+                        {selectedEmployee.name}
+                      </h3>
+                      <div className="mt-2 flex items-center gap-2 flex-wrap">
+                        <SrChip tone={AREA_TONE(selectedEmployee.area)} size="xs">
+                          {selectedEmployee.role}
+                        </SrChip>
+                        <SrChip tone={selectedEmployee.status === 'ON_SHIFT' ? 'success' : 'neutral'} size="xs">
+                          {selectedEmployee.status === 'ON_SHIFT' ? 'En turno' : 'Descansa'}
+                        </SrChip>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <SrInput
+                        value={editingEmployee.name || ''}
+                        onChange={(e) => setEditingEmployee({ ...editingEmployee, name: e.target.value })}
+                        placeholder="Nombre"
+                      />
+                      <SrInput
+                        value={editingEmployee.role || ''}
+                        onChange={(e) => setEditingEmployee({ ...editingEmployee, role: e.target.value })}
+                        placeholder="Puesto"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <SrCard className="p-4 text-center">
+                  <SrLabel className="block mb-1.5">Área</SrLabel>
+                  {isEditing ? (
+                    <select
+                      value={editingEmployee.area}
+                      onChange={(e) => setEditingEmployee({ ...editingEmployee, area: e.target.value as any })}
+                      className="bg-transparent text-[12px] font-extrabold text-servirest-midnight outline-none w-full text-center"
+                    >
+                      <option value="Service">Servicio</option>
+                      <option value="Kitchen">Cocina</option>
+                      <option value="Bar">Bar</option>
+                      <option value="Management">Gerencia</option>
+                    </select>
+                  ) : (
+                    <div className="font-extrabold text-[14px] text-servirest-midnight italic">{selectedEmployee.area}</div>
+                  )}
+                </SrCard>
+                <SrCard className="p-4 text-center">
+                  <SrLabel className="block mb-1.5">Horas semana</SrLabel>
+                  <SrMono className="text-[16px] text-servirest-terracota font-extrabold">
+                    {selectedEmployee.hoursWorked || 0}h
+                  </SrMono>
+                </SrCard>
+                <SrCard className="p-4 text-center">
+                  <SrLabel className="block mb-1.5">Rating</SrLabel>
+                  <div className="flex items-center justify-center gap-1">
+                    <SrMono className="text-[16px] text-servirest-mostaza font-extrabold">
+                      {selectedEmployee.rating}
+                    </SrMono>
+                    <Star size={12} className="text-servirest-mostaza fill-servirest-mostaza" />
+                  </div>
+                </SrCard>
+              </div>
+
+              {!isEditing ? (
+                isAdmin && (
+                  <SrButton variant="primary" size="lg" fullWidth onClick={() => setIsEditing(true)}>
+                    Editar perfil
+                  </SrButton>
+                )
+              ) : (
+                <div className="flex gap-3">
+                  <SrButton variant="ghost" size="md" fullWidth onClick={() => setIsEditing(false)}>
+                    Cancelar
+                  </SrButton>
+                  <SrButton variant="primary" size="md" fullWidth icon={<CheckCircle2 size={14} />} onClick={handleSaveEmployee}>
+                    Guardar cambios
+                  </SrButton>
+                </div>
+              )}
+            </div>
+          </SrModal>
+        )}
+      </AnimatePresence>
+
+      {/* ─── SCHEDULE MODAL ────────────────────────────────────── */}
+      <AnimatePresence>
+        {activeModal === 'schedule' && selectedEmployee && (
+          <SrModal open onClose={() => setActiveModal('none')} maxWidth={620}>
+            <SrModalHeader
+              title="Horarios"
+              kicker={`${selectedEmployee.name} · ${selectedEmployee.role}`}
+              onClose={() => setActiveModal('none')}
+            />
+
+            <div className="space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar pr-1">
+              {/* Current shifts */}
+              <div>
+                <SrLabel className="block mb-3">Turnos asignados</SrLabel>
+                {(editingEmployee.schedule || []).length === 0 ? (
+                  <SrCard className="p-6 border-dashed">
+                    <p className="text-[12px] text-[rgba(42,40,38,0.4)] font-medium italic text-center m-0">
+                      Sin turnos por ahora. Suma uno abajo.
+                    </p>
+                  </SrCard>
+                ) : (
+                  <div className="space-y-2">
+                    {editingEmployee.schedule?.map((shift, idx) => (
+                      <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -6 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.25 }}
+                      >
+                        <SrCard className="p-4 flex items-center justify-between">
+                          <div>
+                            <SrLabel className="block text-servirest-terracota mb-1">{DAY_LABEL[shift.day] || shift.day}</SrLabel>
+                            <SrMono className="text-[14px] text-servirest-midnight font-extrabold">
+                              {shift.start} — {shift.end}
+                            </SrMono>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newSched = [...(editingEmployee.schedule || [])];
+                              newSched.splice(idx, 1);
+                              setEditingEmployee({ ...editingEmployee, schedule: newSched });
+                            }}
+                            className="w-9 h-9 rounded-sr-md text-servirest-danger/50 hover:text-servirest-danger hover:bg-[rgba(225,85,75,0.08)] flex items-center justify-center transition-colors"
+                            aria-label="Quitar turno"
+                          >
+                            <X size={16} />
+                          </button>
+                        </SrCard>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Add shift */}
+              <SrCard variant="solaris" className="p-6">
+                <SrKicker className="block mb-3">Nuevo turno</SrKicker>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="col-span-3">
+                    <SrLabel className="block mb-2">Día</SrLabel>
+                    <select
+                      id="new-shift-day"
+                      className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-sr-lg py-3 px-4 text-[13px] font-medium text-servirest-carbon outline-none focus:border-servirest-terracota transition-colors cursor-pointer"
+                    >
+                      {DAYS.map((d) => (
+                        <option key={d} value={d}>{DAY_LABEL[d]}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <SrLabel className="block mb-2">Entrada</SrLabel>
+                    <SrInput id="new-shift-start" type="time" defaultValue="09:00" />
+                  </div>
+                  <div>
+                    <SrLabel className="block mb-2">Salida</SrLabel>
+                    <SrInput id="new-shift-end" type="time" defaultValue="17:00" />
+                  </div>
+                  <div className="flex items-end">
+                    <SrButton
+                      type="button"
+                      variant="outline"
+                      size="md"
+                      fullWidth
+                      icon={<Plus size={14} />}
+                      onClick={() => {
+                        const day = (document.getElementById('new-shift-day') as HTMLSelectElement).value;
+                        const start = (document.getElementById('new-shift-start') as HTMLInputElement).value;
+                        const end = (document.getElementById('new-shift-end') as HTMLInputElement).value;
+                        const newSched = [...(editingEmployee.schedule || []), { day, start, end }];
+                        setEditingEmployee({ ...editingEmployee, schedule: newSched });
+                      }}
+                    >
+                      Sumar
+                    </SrButton>
+                  </div>
+                </div>
+              </SrCard>
+
+              <SrButton variant="primary" size="lg" fullWidth icon={<CheckCircle2 size={16} />} onClick={handleSaveEmployee}>
+                Guardar horarios
+              </SrButton>
+            </div>
+          </SrModal>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 };
+
+export default StaffScreen;
