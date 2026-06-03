@@ -1,450 +1,759 @@
 import React, { useState, useMemo } from 'react';
 import { INVENTORY_CATEGORIES } from '../constants';
 import { InventoryItem, CartItem, SupplierOrder, SupplyOrderStatus } from '../types';
-import jsPDF from 'jspdf';
 import { useInventory } from '../contexts/InventoryContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GlowCard } from '../components/ui/spotlight-card';
-import { 
-  Package, 
-  Truck, 
-  ShoppingCart, 
-  Plus, 
-  Edit3, 
-  Trash2, 
-  AlertTriangle, 
-  CheckCircle,
-  FileText,
-  Search,
-  ArrowRight,
-  ChevronRight,
-  X
+import {
+  Package, Truck, ShoppingCart, Plus, Edit3, Trash2, AlertTriangle,
+  CheckCircle2, Search, ArrowRight, X, Minus, Boxes,
 } from 'lucide-react';
+import {
+  SrCard, SrButton, SrChip, SrInput, SrLabel, SrKicker, SrMono,
+  SrModal, SrModalHeader, SrEmptyState, SrTabs, SrProgressRing,
+} from '../components/ui/servirest';
+
+type Tab = 'stock' | 'orders';
 
 export const InventoryScreen: React.FC = () => {
-    const { inventory, orders, addInventoryItem, updateInventoryItem, deleteInventoryItem, createSupplierOrder, updateSupplierOrder } = useInventory();
-    const [activeCategory, setActiveCategory] = useState('All');
-    const [activeTab, setActiveTab] = useState<'stock' | 'orders'>('stock');
+  const {
+    inventory, orders, addInventoryItem, updateInventoryItem,
+    deleteInventoryItem, createSupplierOrder, updateSupplierOrder,
+  } = useInventory();
 
-    // Cart & Ordering
-    const [cart, setCart] = useState<CartItem[]>([]);
-    const [isCartOpen, setIsCartOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [activeTab, setActiveTab] = useState<Tab>('stock');
 
-    // Editing
-    const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  // Cart & Ordering
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
-    // Restock
-    const [restockItem, setRestockItem] = useState<InventoryItem | null>(null);
-    const [restockQty, setRestockQty] = useState<number>(0);
+  // Editing
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-    const [publishToMenu, setPublishToMenu] = useState(false);
-    const [menuPrice, setMenuPrice] = useState<number>(0);
+  // Restock
+  const [restockItem, setRestockItem] = useState<InventoryItem | null>(null);
+  const [restockQty, setRestockQty] = useState<number>(0);
 
-    const filteredInventory = useMemo(() => {
-        if (activeCategory === 'All') return inventory;
-        return inventory.filter(item => item.category === activeCategory);
-    }, [activeCategory, inventory]);
+  const [publishToMenu, setPublishToMenu] = useState(false);
+  const [menuPrice, setMenuPrice] = useState<number>(0);
 
-    const cartTotal = cart.reduce((acc, item) => acc + (item.costPerUnit * item.orderQuantity), 0);
+  const filteredInventory = useMemo(() => {
+    if (activeCategory === 'All') return inventory;
+    return inventory.filter((item) => item.category === activeCategory);
+  }, [activeCategory, inventory]);
 
-    const handleSaveItem = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-        const itemData = {
-            name: formData.get('name') as string,
-            category: formData.get('category') as string,
-            supplier: formData.get('supplier') as string,
-            quantity: Number(formData.get('quantity')),
-            unit: formData.get('unit') as string,
-            costPerUnit: Number(formData.get('cost')),
-            minStock: Number(formData.get('minStock')),
-            maxStock: Number(formData.get('maxStock')),
-            publicInMenu: publishToMenu,
-            price: menuPrice,
-            lastRestock: editingItem?.lastRestock || new Date().toISOString()
-        };
+  const cartTotal = cart.reduce((acc, item) => acc + item.costPerUnit * item.orderQuantity, 0);
 
-        if (editingItem) {
-            await updateInventoryItem(editingItem.id, itemData);
-        } else {
-            await addInventoryItem(itemData as Omit<InventoryItem, 'id'>);
-        }
-        setIsAddModalOpen(false);
-        setEditingItem(null);
+  const stats = useMemo(() => {
+    const total = inventory.length;
+    const belowMin = inventory.filter((i) => i.quantity <= (i.minStock || 0)).length;
+    const totalValue = inventory.reduce((s, i) => s + i.quantity * (i.costPerUnit || 0), 0);
+    return { total, belowMin, totalValue };
+  }, [inventory]);
+
+  const categoryTabs = useMemo(
+    () =>
+      INVENTORY_CATEGORIES.map((c) => ({
+        id: c,
+        label: c === 'All' ? 'Todo' : c,
+        count: c === 'All' ? inventory.length : inventory.filter((i) => i.category === c).length,
+      })) as readonly { id: string; label: string; count: number }[],
+    [inventory]
+  );
+
+  const handleSaveItem = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const itemData = {
+      name: formData.get('name') as string,
+      category: formData.get('category') as string,
+      supplier: formData.get('supplier') as string,
+      quantity: Number(formData.get('quantity')),
+      unit: formData.get('unit') as string,
+      costPerUnit: Number(formData.get('cost')),
+      minStock: Number(formData.get('minStock')),
+      maxStock: Number(formData.get('maxStock')),
+      publicInMenu: publishToMenu,
+      price: menuPrice,
+      lastRestock: editingItem?.lastRestock || new Date().toISOString(),
     };
 
-    const addToCart = (item: InventoryItem, qty: number) => {
-        const existing = cart.find(c => c.id === item.id);
-        if (existing) {
-            setCart(prev => prev.map(c => c.id === item.id ? { ...c, orderQuantity: c.orderQuantity + qty } : c));
-        } else {
-            setCart(prev => [...prev, { ...item, orderQuantity: qty }]);
-        }
-        setRestockItem(null);
-        setIsCartOpen(true);
-    };
+    if (editingItem) {
+      await updateInventoryItem(editingItem.id, itemData);
+    } else {
+      await addInventoryItem(itemData as Omit<InventoryItem, 'id'>);
+    }
+    setIsAddModalOpen(false);
+    setEditingItem(null);
+  };
 
-    const handleCreateOrder = async () => {
-        if (cart.length === 0) return;
-        // Group by supplier — create one order per supplier
-        const bySupplier: Record<string, CartItem[]> = {};
-        for (const item of cart) {
-            const key = item.supplier || 'Sin Proveedor';
-            if (!bySupplier[key]) bySupplier[key] = [];
-            bySupplier[key].push(item);
-        }
-        for (const [supplier, items] of Object.entries(bySupplier)) {
-            await createSupplierOrder({
-                supplier,
-                date: new Date().toISOString(),
-                status: SupplyOrderStatus.PENDING,
-                items,
-                totalCost: items.reduce((s, i) => s + i.costPerUnit * i.orderQuantity, 0)
+  const addToCart = (item: InventoryItem, qty: number) => {
+    const existing = cart.find((c) => c.id === item.id);
+    if (existing) {
+      setCart((prev) => prev.map((c) => c.id === item.id ? { ...c, orderQuantity: c.orderQuantity + qty } : c));
+    } else {
+      setCart((prev) => [...prev, { ...item, orderQuantity: qty }]);
+    }
+    setRestockItem(null);
+    setIsCartOpen(true);
+  };
+
+  const handleCreateOrder = async () => {
+    if (cart.length === 0) return;
+    const bySupplier: Record<string, CartItem[]> = {};
+    for (const item of cart) {
+      const key = item.supplier || 'Sin proveedor';
+      if (!bySupplier[key]) bySupplier[key] = [];
+      bySupplier[key].push(item);
+    }
+    for (const [supplier, items] of Object.entries(bySupplier)) {
+      await createSupplierOrder({
+        supplier,
+        date: new Date().toISOString(),
+        status: SupplyOrderStatus.PENDING,
+        items,
+        totalCost: items.reduce((s, i) => s + i.costPerUnit * i.orderQuantity, 0),
+      });
+    }
+    setCart([]);
+    setIsCartOpen(false);
+    setActiveTab('orders');
+  };
+
+  const handleUpdateStatus = async (orderId: string, status: SupplyOrderStatus) => {
+    if (status === SupplyOrderStatus.RECEIVED) {
+      const order = orders.find((o) => o.id === orderId);
+      if (order) {
+        for (const orderItem of order.items) {
+          const invItem = inventory.find((i) => i.id === orderItem.id);
+          if (invItem) {
+            await updateInventoryItem(invItem.id, {
+              quantity: invItem.quantity + orderItem.orderQuantity,
+              lastRestock: new Date().toISOString(),
             });
+          }
         }
-        setCart([]);
-        setIsCartOpen(false);
-        setActiveTab('orders');
-    };
+      }
+    }
+    await updateSupplierOrder(orderId, { status });
+  };
 
-    const handleUpdateStatus = async (orderId: string, status: SupplyOrderStatus) => {
-        if (status === SupplyOrderStatus.RECEIVED) {
-            const order = orders.find(o => o.id === orderId);
-            if (order) {
-                for (const orderItem of order.items) {
-                    const invItem = inventory.find(i => i.id === orderItem.id);
-                    if (invItem) {
-                        await updateInventoryItem(invItem.id, {
-                            quantity: invItem.quantity + orderItem.orderQuantity,
-                            lastRestock: new Date().toISOString()
-                        });
-                    }
-                }
-            }
-        }
-        await updateSupplierOrder(orderId, { status });
-    };
+  const getStockState = (qty: number, max: number, min: number) => {
+    const pct = max > 0 ? Math.min(100, Math.round((qty / max) * 100)) : 0;
+    if (qty <= min) return { label: 'Bajo mínimo', tone: 'danger' as const, pct };
+    if (pct < 40) return { label: 'Bajo stock', tone: 'mostaza' as const, pct };
+    return { label: 'En orden', tone: 'success' as const, pct };
+  };
 
-    const getStockStatus = (qty: number, max: number, min: number) => {
-        const pct = (qty / (max || 100)) * 100;
-        if (qty <= min) return { label: 'CRITICAL', color: 'text-red-500', bar: 'bg-red-500', pct };
-        if (pct < 40) return { label: 'LOW', color: 'text-servirest-terracota', bar: 'bg-[#C4633F]', pct };
-        return { label: 'STABLE', color: 'text-green-500', bar: 'bg-green-500', pct };
-    };
+  return (
+    <div className="h-full w-full overflow-y-auto custom-scrollbar bg-servirest-hueso text-servirest-carbon antialiased">
+      <div className="px-[38px] py-10 max-w-[1480px] mx-auto pb-32 lg:pb-12">
+        {/* ─── HEADER ────────────────────────────────────────────── */}
+        <div className="flex justify-between items-start flex-wrap gap-6 mb-12">
+          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
+            <SrKicker className="block mb-2">Stock, mermas y proveedores</SrKicker>
+            <h1 className="font-serif italic font-medium text-[56px] text-servirest-midnight tracking-[-0.025em] leading-[0.95] m-0">
+              Inventario
+            </h1>
+            <p className="text-[14px] text-[rgba(42,40,38,0.6)] font-medium mt-2 max-w-[480px] leading-relaxed">
+              Lo que entra, lo que sale y lo que pides. Cuida tu capital amarrado sin pasarte mirando hojas de cálculo.
+            </p>
+          </motion.div>
 
-    return (
-        <div className="h-full bg-[#FAF8F4] text-[#1a1c14] p-6 md:p-10 overflow-y-auto antialiased">
-            <div className="max-w-7xl mx-auto w-full">
-                {/* Header */}
-                <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
-                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">Inventario</h1>
-                        <p className="text-gray-600 font-bold text-[10px] uppercase tracking-[0.4em]">Stock, mermas y proveedores</p>
-                    </motion.div>
-                    
-                    <div className="flex gap-4">
-                        <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-1 rounded-2xl flex">
-                            <button onClick={() => setActiveTab('stock')} className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'stock' ? 'bg-servirest-surface text-servirest-terracota border border-solaris-orange/20' : 'text-gray-500'}`}>
-                                <Package size={14} /> Inventario
-                            </button>
-                            <button onClick={() => setActiveTab('orders')} className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'orders' ? 'bg-servirest-surface text-servirest-terracota border border-solaris-orange/20' : 'text-gray-500'}`}>
-                                <Truck size={14} /> Compras
-                            </button>
-                        </div>
+          {/* Mini-stats rail */}
+          <div className="flex gap-3 flex-wrap">
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">En stock</SrLabel>
+              <div className="font-black italic text-[32px] text-servirest-midnight tracking-[-0.03em] leading-none">
+                {stats.total}
+              </div>
+            </SrCard>
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">Bajo mínimo</SrLabel>
+              <div className={`font-black italic text-[32px] tracking-[-0.03em] leading-none ${stats.belowMin > 0 ? 'text-servirest-danger' : 'text-servirest-success'}`}>
+                {stats.belowMin}
+              </div>
+            </SrCard>
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">Valor total</SrLabel>
+              <SrMono className="text-[20px] text-servirest-midnight font-extrabold tracking-tight">
+                ${stats.totalValue.toLocaleString('es-MX', { maximumFractionDigits: 0 })}
+              </SrMono>
+            </SrCard>
+          </div>
+        </div>
 
-                        <button onClick={() => setIsCartOpen(true)} className="relative group bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-3 rounded-2xl hover:bg-servirest-surface transition-all">
-                             <ShoppingCart size={20} className="text-gray-400 group-hover:text-[#1a1c14]" />
-                             {cart.length > 0 && <span className="absolute -top-1 -right-1 bg-[#C4633F] text-[#1a1c14] text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-solaris-glow">{cart.length}</span>}
-                        </button>
+        {/* ─── ACTIONS BAR ───────────────────────────────────────── */}
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between mb-8">
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setActiveTab('stock')}
+              className={`px-5 py-3 rounded-sr-md text-[10px] font-black uppercase tracking-[0.16em] transition-colors flex items-center gap-2 border ${
+                activeTab === 'stock'
+                  ? 'bg-servirest-midnight text-servirest-hueso border-servirest-midnight'
+                  : 'bg-servirest-surface text-[rgba(42,40,38,0.6)] border-[rgba(42,40,38,0.12)] hover:text-servirest-carbon'
+              }`}
+            >
+              <Package size={14} /> Stock
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('orders')}
+              className={`px-5 py-3 rounded-sr-md text-[10px] font-black uppercase tracking-[0.16em] transition-colors flex items-center gap-2 border ${
+                activeTab === 'orders'
+                  ? 'bg-servirest-midnight text-servirest-hueso border-servirest-midnight'
+                  : 'bg-servirest-surface text-[rgba(42,40,38,0.6)] border-[rgba(42,40,38,0.12)] hover:text-servirest-carbon'
+              }`}
+            >
+              <Truck size={14} /> Pedidos
+              {orders.length > 0 && (
+                <span className="text-[rgba(255,255,255,0.6)]">· {orders.length}</span>
+              )}
+            </button>
+          </div>
 
-                        <button 
-                            onClick={() => { setEditingItem(null); setIsAddModalOpen(true); }}
-                            className="bg-[#C4633F] text-[#1a1c14] px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-solaris-glow hover:scale-105 transition-all"
-                        >
-                             <Plus size={16} /> Agregar producto
-                        </button>
-                    </div>
-                </header>
+          <div className="flex gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setIsCartOpen(true)}
+              className="relative px-5 py-3 rounded-sr-md bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[rgba(42,40,38,0.6)] hover:text-servirest-carbon hover:border-servirest-terracota/40 transition-colors flex items-center gap-2"
+            >
+              <ShoppingCart size={14} />
+              <span className="font-black italic uppercase tracking-[0.18em] text-[10px]">Carrito</span>
+              {cart.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-servirest-terracota text-servirest-hueso text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-sr-glow">
+                  {cart.length}
+                </span>
+              )}
+            </button>
+            <SrButton
+              variant="outline"
+              size="md"
+              icon={<Truck size={14} />}
+              onClick={() => setIsCartOpen(true)}
+              disabled={cart.length === 0}
+            >
+              Pedir a proveedor
+            </SrButton>
+            <SrButton
+              variant="primary"
+              size="md"
+              icon={<Plus size={14} />}
+              onClick={() => { setEditingItem(null); setIsAddModalOpen(true); }}
+            >
+              Agregar producto
+            </SrButton>
+          </div>
+        </div>
 
-                {activeTab === 'stock' && (
-                    <>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-                             <div className="md:col-span-3 bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-2 rounded-2xl flex items-center gap-2 overflow-x-auto no-scrollbar">
-                                {INVENTORY_CATEGORIES.map(cat => (
-                                    <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeCategory === cat ? 'bg-servirest-surface text-servirest-terracota border border-solaris-orange/20' : 'text-gray-500'}`}>
-                                        {cat}
-                                    </button>
-                                ))}
-                             </div>
-                             <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-4 rounded-solaris flex items-center justify-between">
-                                 <div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-700">Productos</p>
-                                    <p className="text-2xl font-black italic text-servirest-terracota">{inventory.length}</p>
-                                 </div>
-                                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: 'linear' }} className="text-gray-800">
-                                    <Package size={28} />
-                                 </motion.div>
-                             </div>
-                        </div>
-
-                        <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-solaris overflow-hidden">
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="border-b border-[rgba(42,40,38,0.12)] text-gray-600 text-[9px] font-black uppercase tracking-[0.3em]">
-                                        <th className="py-6 px-8">Producto / Categoría</th>
-                                        <th className="py-6 px-4">Stock</th>
-                                        <th className="py-6 px-4 text-center">Costo</th>
-                                        <th className="py-6 px-4">Proveedor</th>
-                                        <th className="py-6 px-8 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="text-sm">
-                                    {filteredInventory.map(item => {
-                                        const status = getStockStatus(item.quantity, item.maxStock, item.minStock || 0);
-                                        return (
-                                            <tr key={item.id} className="border-b border-[rgba(42,40,38,0.12)] hover:bg-servirest-surface transition-colors group">
-                                                <td className="py-6 px-8">
-                                                    <div className="cursor-pointer" onClick={() => { setEditingItem(item); setIsAddModalOpen(true); }}>
-                                                        <p className="font-bold text-[#1a1c14] group-hover:text-servirest-terracota transition-colors uppercase italic">{item.name}</p>
-                                                        <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest">{item.category}</p>
-                                                    </div>
-                                                </td>
-                                                <td className="py-6 px-4 min-w-[200px]">
-                                                    <div className="flex justify-between items-end mb-2">
-                                                        <p className="text-[10px] font-black italic text-[#1a1c14]">{item.quantity} <span className="text-[8px] font-normal not-italic text-gray-600">{item.unit}</span></p>
-                                                        <p className={`text-[8px] font-black uppercase tracking-widest ${status.color}`}>{status.label}</p>
-                                                    </div>
-                                                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                                                        <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min(100, status.pct)}%` }} className={`h-full ${status.bar} shadow-solaris-glow`}></motion.div>
-                                                    </div>
-                                                </td>
-                                                <td className="py-6 px-4 text-center">
-                                                    <span className="text-xs font-black italic text-[#1a1c14]">${item.costPerUnit.toFixed(2)}</span>
-                                                </td>
-                                                <td className="py-6 px-4">
-                                                    <span className="text-[10px] font-bold text-gray-500 uppercase italic opacity-60">{item.supplier}</span>
-                                                </td>
-                                                <td className="py-6 px-8 text-right">
-                                                    <div className="flex justify-end gap-3">
-                                                        <button 
-                                                            onClick={() => { setRestockItem(item); setRestockQty(Math.max(0, item.maxStock - item.quantity)); }}
-                                                            className="px-4 py-2 bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-[#1a1c14] hover:border-[rgba(42,40,38,0.20)] transition-all rounded-xl"
-                                                        >
-                                                            Restock
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => { setEditingItem(item); setIsAddModalOpen(true); }}
-                                                            className="p-2 text-gray-700 hover:text-servirest-terracota transition-colors"
-                                                        >
-                                                            <Edit3 size={16} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </>
-                )}
-
-                {activeTab === 'orders' && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
-                        {orders.map(order => (
-                            <div key={order.id}>
-                                <GlowCard glowColor="orange" className={`relative border !p-8 ${order.status === 'PENDING' ? 'border-solaris-orange/20' : 'border-[rgba(42,40,38,0.12)]'}`}>
-                                    <div className="flex justify-between items-start mb-6">
-                                        <div>
-                                            <h3 className="text-xl font-black italic text-[#1a1c14] uppercase tracking-tight mb-1">Order #{order.id.slice(0, 8)}</h3>
-                                            <p className="text-[9px] font-black uppercase tracking-widest text-gray-600 italic">{new Date(order.date).toLocaleDateString()} • {order.supplier}</p>
-                                        </div>
-                                        <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.3em] border ${order.status === 'RECEIVED' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-[#C4633F]/10 text-servirest-terracota border-solaris-orange/20'}`}>
-                                            {order.status}
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-3 mb-8">
-                                        {order.items.map((item, i) => (
-                                            <div key={i} className="flex justify-between items-center text-[10px]">
-                                                <span className="font-bold text-gray-400">{item.orderQuantity}x <span className="text-[#1a1c14] uppercase italic">{item.name}</span></span>
-                                                <span className="text-gray-700 font-mono">${(item.costPerUnit * item.orderQuantity).toFixed(2)}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <div className="flex justify-between items-center pt-6 border-t border-[rgba(42,40,38,0.12)]">
-                                        <div>
-                                            <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest mb-1">Payload Total</p>
-                                            <p className="text-2xl font-black italic text-[#1a1c14] tracking-tighter">${order.totalCost.toFixed(2)}</p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            {order.status === 'ORDERED' && (
-                                                <button 
-                                                    onClick={() => handleUpdateStatus(order.id, SupplyOrderStatus.RECEIVED)}
-                                                    className="bg-green-600 text-[#1a1c14] px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-green-900/20"
-                                                >
-                                                    Receive
-                                                </button>
-                                            )}
-                                            {order.status === 'PENDING' && (
-                                                <button 
-                                                    onClick={() => handleUpdateStatus(order.id, SupplyOrderStatus.ORDERED)}
-                                                    className="bg-[#C4633F] text-[#1a1c14] px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-solaris-glow"
-                                                >
-                                                    Ship
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </GlowCard>
-                            </div>
-                        ))}
-                    </div>
-                )}
+        {activeTab === 'stock' && (
+          <>
+            {/* ─── CATEGORY TABS ───────────────────────────────── */}
+            <div className="mb-8">
+              <SrTabs<string>
+                tabs={categoryTabs as any}
+                active={activeCategory}
+                onChange={setActiveCategory}
+              />
             </div>
 
-            {/* Modal Layer */}
-            <AnimatePresence>
-                {isAddModalOpen && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-[rgba(42,40,38,0.20)] rounded-solaris w-full max-w-lg overflow-hidden shadow-2xl">
-                             <form onSubmit={handleSaveItem} className="p-10">
-                                <div className="flex justify-between items-center mb-10">
-                                    <h2 className="text-2xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Supply Registry</h2>
-                                    <X onClick={() => setIsAddModalOpen(false)} className="text-gray-700 hover:text-[#1a1c14] cursor-pointer" size={24} />
-                                </div>
-                                <div className="space-y-5">
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Nombre del insumo</label>
-                                        <input name="name" defaultValue={editingItem?.name} required className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold" />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Categoría</label>
-                                            <select name="category" defaultValue={editingItem?.category || 'General'} className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-6 text-[#1a1c14] outline-none appearance-none font-bold">
-                                                {INVENTORY_CATEGORIES.filter(c => c !== 'All').map(c => <option key={c} value={c} className="bg-white">{c}</option>)}
-                                            </select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Proveedor</label>
-                                            <input name="supplier" defaultValue={editingItem?.supplier} required placeholder="Nombre del proveedor" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-6 text-[#1a1c14] outline-none font-bold" />
-                                        </div>
-                                    </div>
-                                    {/* Unit type selector */}
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Unidad de Medida</label>
-                                        <div className="grid grid-cols-3 gap-3">
-                                            {['PZ', 'gr', 'Bolsa'].map(u => (
-                                                <label key={u} className="cursor-pointer">
-                                                    <input type="radio" name="unit" value={u} defaultChecked={editingItem?.unit === u || (!editingItem && u === 'PZ')} className="sr-only peer" />
-                                                    <div className="peer-checked:bg-[#C4633F]/20 peer-checked:border-solaris-orange peer-checked:text-[#1a1c14] bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-500 transition-all">{u}</div>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Mín. Crítico</label>
-                                            <input name="minStock" type="number" defaultValue={editingItem?.minStock || 10} className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-4 text-[#1a1c14] text-center font-bold" />
-                                        </div>
-                                        <div className="space-y-2">
-                                             <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Cap. Ideal</label>
-                                             <input name="maxStock" type="number" defaultValue={editingItem?.maxStock || 100} className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-4 text-[#1a1c14] text-center font-bold" />
-                                        </div>
-                                        <div className="space-y-2">
-                                             <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Costo/Unidad</label>
-                                             <input name="cost" type="number" step="0.01" defaultValue={editingItem?.costPerUnit} className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-4 text-[#1a1c14] text-center font-bold" />
-                                        </div>
-                                    </div>
-                                    <button type="submit" className="w-full bg-[#C4633F] text-[#1a1c14] font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-600 transition-all text-[11px] mt-2">
-                                        Guardar Cambios
-                                    </button>
-                                </div>
-                             </form>
-                        </motion.div>
-                    </motion.div>
-                )}
-
-                {restockItem && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
-                         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-[rgba(42,40,38,0.20)] rounded-solaris w-full max-w-sm overflow-hidden shadow-2xl">
-                             <div className="p-8">
-                                 <h3 className="text-xl font-black italic uppercase text-[#1a1c14] mb-2">Restock Payload</h3>
-                                 <p className="text-[9px] font-black uppercase text-servirest-terracota tracking-[0.3em] mb-10">{restockItem.name}</p>
-                                 
-                                 <div className="flex items-center gap-6 mb-10">
-                                     <button onClick={() => setRestockQty(Math.max(0, restockQty - 1))} className="w-14 h-14 rounded-2xl border border-[rgba(42,40,38,0.12)] flex items-center justify-center text-xl hover:bg-white/5 transition-all">-</button>
-                                     <input type="number" value={restockQty} onChange={e => setRestockQty(Number(e.target.value))} className="flex-1 bg-transparent border-b-2 border-[rgba(42,40,38,0.20)] outline-none text-4xl font-black italic text-center text-[#1a1c14]" />
-                                     <button onClick={() => setRestockQty(restockQty + 1)} className="w-14 h-14 rounded-2xl border border-[rgba(42,40,38,0.12)] flex items-center justify-center text-xl hover:bg-white/5 transition-all">+</button>
-                                 </div>
-
-                                 <div className="flex gap-4">
-                                     <button onClick={() => setRestockItem(null)} className="flex-1 py-4 text-[10px] font-black uppercase text-gray-700 tracking-widest hover:text-[#1a1c14] transition-colors">Abort</button>
-                                     <button onClick={() => addToCart(restockItem, restockQty)} className="flex-1 py-4 bg-[#C4633F] text-[#1a1c14] font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-solaris-glow">Add to Queue</button>
-                                 </div>
-                             </div>
-                         </motion.div>
-                    </motion.div>
-                )}
-
-                {isCartOpen && (
-                    <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed inset-y-0 right-0 w-full md:w-[450px] bg-white border-l border-[rgba(42,40,38,0.20)] shadow-2xl z-50 flex flex-col">
-                        <div className="p-10 border-b border-[rgba(42,40,38,0.12)] flex justify-between items-center">
-                            <div>
-                                <h2 className="text-2xl font-black italic text-[#1a1c14] uppercase tracking-tight">Compras Loop</h2>
-                                <p className="text-[9px] font-black uppercase text-servirest-terracota tracking-widest mt-1">{cart.length} Assets Enqueued</p>
+            {/* ─── EDITORIAL ITEM LIST ─────────────────────────── */}
+            {filteredInventory.length === 0 ? (
+              <SrCard variant="solaris" className="p-12">
+                <SrEmptyState
+                  icon={<Boxes size={28} />}
+                  title={inventory.length === 0 ? 'Aún sin productos en inventario' : 'Sin productos en este filtro'}
+                  description={
+                    inventory.length === 0
+                      ? 'Empieza dando de alta tus insumos clave. Sabrás siempre qué pedir y a quién.'
+                      : 'Cambia de categoría para ver el resto de tu stock.'
+                  }
+                  action={
+                    inventory.length === 0 ? (
+                      <SrButton variant="primary" icon={<Plus size={14} />} onClick={() => { setEditingItem(null); setIsAddModalOpen(true); }}>
+                        Agregar primer producto
+                      </SrButton>
+                    ) : undefined
+                  }
+                />
+              </SrCard>
+            ) : (
+              <div className="space-y-3">
+                <AnimatePresence mode="popLayout">
+                  {filteredInventory.map((item, idx) => {
+                    const state = getStockState(item.quantity, item.maxStock, item.minStock || 0);
+                    return (
+                      <motion.div
+                        key={item.id}
+                        layout
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.3, delay: idx * 0.03, ease: [0.16, 1, 0.3, 1] }}
+                      >
+                        <SrCard hover className="p-5">
+                          <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr_auto_1fr_auto] gap-5 items-center">
+                            {/* Name + category */}
+                            <div className="min-w-0">
+                              <h3 className="font-serif italic font-medium text-[20px] text-servirest-midnight tracking-[-0.015em] leading-tight m-0 mb-1 truncate">
+                                {item.name}
+                              </h3>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <SrLabel>{item.category}</SrLabel>
+                                {item.publicInMenu && (
+                                  <SrChip tone="mostaza" size="xs">En menú</SrChip>
+                                )}
+                              </div>
                             </div>
-                            <X onClick={() => setIsCartOpen(false)} className="text-gray-700 hover:text-[#1a1c14] cursor-pointer" size={24} />
-                        </div>
 
-                        <div className="flex-1 overflow-y-auto p-8 space-y-6">
-                            {/* Group by supplier */}
-                            {Object.entries(
-                                cart.reduce((acc: Record<string, CartItem[]>, item) => {
-                                    const key = item.supplier || 'Sin Proveedor';
-                                    if (!acc[key]) acc[key] = [];
-                                    acc[key].push(item);
-                                    return acc;
-                                }, {})
-                            ).map(([supplier, items]) => (
-                                <div key={supplier}>
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <Truck size={12} className="text-servirest-terracota" />
-                                        <span className="text-[9px] font-black uppercase text-servirest-terracota tracking-widest">{supplier}</span>
-                                        <span className="ml-auto text-[9px] font-black text-gray-600">${items.reduce((s, i) => s + i.costPerUnit * i.orderQuantity, 0).toFixed(2)}</span>
-                                    </div>
-                                    <div className="space-y-3 pl-4 border-l border-solaris-orange/20">
-                                        {items.map(item => (
-                                            <div key={item.id} className="flex justify-between items-center bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-4 rounded-2xl">
-                                                <div>
-                                                    <h4 className="font-bold text-[#1a1c14] uppercase italic text-sm">{item.name}</h4>
-                                                    <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest">{item.orderQuantity} {item.unit} · ${item.costPerUnit}/{item.unit}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="font-black text-servirest-terracota italic">${(item.costPerUnit * item.orderQuantity).toFixed(2)}</p>
-                                                    <button onClick={() => setCart(prev => prev.filter(c => c.id !== item.id))} className="text-[8px] font-black uppercase text-red-500/60 hover:text-red-500 transition-colors">Quitar</button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                            {/* Stock with ring */}
+                            <div className="flex items-center gap-4">
+                              <SrProgressRing pct={state.pct} size={52} stroke={4} showLabel />
+                              <div>
+                                <div className="font-black italic text-[22px] text-servirest-midnight tracking-[-0.02em] leading-none mb-1">
+                                  {item.quantity}
+                                  <span className="text-[12px] font-medium not-italic text-[rgba(42,40,38,0.5)] ml-1">{item.unit}</span>
                                 </div>
-                            ))}
-                        </div>
-
-                        <div className="p-10 border-t border-[rgba(42,40,38,0.12)] bg-servirest-surface">
-                            <div className="flex justify-between items-center mb-10">
-                                <span className="text-[9px] font-black uppercase text-gray-700 tracking-widest">Aggregate Cost</span>
-                                <span className="text-3xl font-black italic text-[#1a1c14] tracking-tighter">${cartTotal.toFixed(2)}</span>
+                                <SrChip tone={state.tone} size="xs">
+                                  {state.tone === 'danger' && <AlertTriangle size={9} className="mr-1" />}
+                                  {state.label}
+                                </SrChip>
+                              </div>
                             </div>
-                            <button onClick={handleCreateOrder} disabled={cart.length === 0} className="w-full bg-[#C4633F] text-[#1a1c14] font-black uppercase tracking-[0.2em] py-6 rounded-2xl shadow-solaris-glow disabled:opacity-30 flex items-center justify-center gap-3">
-                                <ShoppingCart size={20} /> Authorize Compras
-                            </button>
+
+                            {/* Cost */}
+                            <div className="text-center min-w-[100px]">
+                              <SrLabel className="block mb-1">Costo / {item.unit}</SrLabel>
+                              <SrMono className="text-[14px] text-servirest-terracota font-extrabold">
+                                ${item.costPerUnit.toFixed(2)}
+                              </SrMono>
+                            </div>
+
+                            {/* Supplier */}
+                            <div className="min-w-0">
+                              <SrLabel className="block mb-1.5">Proveedor</SrLabel>
+                              <SrChip tone="neutral">
+                                <Truck size={9} className="mr-1.5" />
+                                {item.supplier || 'Sin asignar'}
+                              </SrChip>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-2 justify-end">
+                              <SrButton
+                                variant="outline"
+                                size="sm"
+                                icon={<Plus size={12} />}
+                                onClick={() => {
+                                  setRestockItem(item);
+                                  setRestockQty(Math.max(0, item.maxStock - item.quantity));
+                                }}
+                              >
+                                Pedir
+                              </SrButton>
+                              <button
+                                type="button"
+                                onClick={() => { setEditingItem(item); setIsAddModalOpen(true); }}
+                                className="w-10 h-10 rounded-sr-md bg-[rgba(42,40,38,0.05)] text-[rgba(42,40,38,0.6)] hover:text-servirest-terracota hover:bg-[rgba(196,99,63,0.08)] flex items-center justify-center transition-colors"
+                                aria-label="Editar"
+                              >
+                                <Edit3 size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm(`¿Eliminar "${item.name}" del inventario?`)) {
+                                    deleteInventoryItem(item.id);
+                                  }
+                                }}
+                                className="w-10 h-10 rounded-sr-md bg-[rgba(225,85,75,0.06)] text-servirest-danger/60 hover:text-servirest-danger hover:bg-[rgba(225,85,75,0.10)] flex items-center justify-center transition-colors"
+                                aria-label="Eliminar"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        </SrCard>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === 'orders' && (
+          <>
+            {orders.length === 0 ? (
+              <SrCard variant="solaris" className="p-12">
+                <SrEmptyState
+                  icon={<Truck size={28} />}
+                  title="Aún sin pedidos a proveedores"
+                  description="Agrega productos al carrito desde la pestaña de stock y haz tu primer pedido."
+                  action={
+                    <SrButton variant="primary" icon={<Package size={14} />} onClick={() => setActiveTab('stock')}>
+                      Ir al stock
+                    </SrButton>
+                  }
+                />
+              </SrCard>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {orders.map((order, idx) => (
+                  <motion.div
+                    key={order.id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: idx * 0.03 }}
+                  >
+                    <SrCard
+                      variant="solaris"
+                      className={`p-7 ${order.status === SupplyOrderStatus.PENDING ? 'border-servirest-mostaza/40' : ''}`}
+                    >
+                      <div className="flex justify-between items-start mb-6">
+                        <div>
+                          <SrKicker className="block mb-1.5">Pedido</SrKicker>
+                          <h3 className="font-serif italic font-medium text-[24px] text-servirest-midnight tracking-[-0.02em] m-0 leading-tight mb-1">
+                            #{order.id.slice(0, 8).toUpperCase()}
+                          </h3>
+                          <SrMono className="text-[11px] text-[rgba(42,40,38,0.5)]">
+                            {new Date(order.date).toLocaleDateString('es-MX')} · {order.supplier}
+                          </SrMono>
                         </div>
-                    </motion.div>
+                        <SrChip
+                          tone={
+                            order.status === SupplyOrderStatus.RECEIVED ? 'success'
+                              : order.status === SupplyOrderStatus.ORDERED ? 'terracota'
+                              : order.status === SupplyOrderStatus.CANCELLED ? 'danger'
+                              : 'mostaza'
+                          }
+                        >
+                          {order.status === SupplyOrderStatus.RECEIVED ? 'Recibido'
+                            : order.status === SupplyOrderStatus.ORDERED ? 'Pedido'
+                            : order.status === SupplyOrderStatus.CANCELLED ? 'Cancelado'
+                            : 'Pendiente'}
+                        </SrChip>
+                      </div>
+
+                      <div className="space-y-2 mb-6">
+                        {order.items.map((it, i) => (
+                          <div key={i} className="flex justify-between items-center text-[12px] py-1.5 border-b border-[rgba(42,40,38,0.06)] last:border-0">
+                            <span className="font-medium text-servirest-carbon">
+                              <span className="font-mono font-bold text-servirest-terracota mr-2">{it.orderQuantity}×</span>
+                              {it.name}
+                            </span>
+                            <SrMono className="text-[11px] text-[rgba(42,40,38,0.6)]">
+                              ${(it.costPerUnit * it.orderQuantity).toFixed(2)}
+                            </SrMono>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex justify-between items-center pt-5 border-t border-[rgba(42,40,38,0.08)]">
+                        <div>
+                          <SrLabel className="block mb-1">Total del pedido</SrLabel>
+                          <div className="font-black italic text-[26px] text-servirest-midnight tracking-[-0.02em] leading-none">
+                            ${order.totalCost.toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {order.status === SupplyOrderStatus.PENDING && (
+                            <SrButton
+                              variant="primary"
+                              size="sm"
+                              iconRight={<ArrowRight size={12} />}
+                              onClick={() => handleUpdateStatus(order.id, SupplyOrderStatus.ORDERED)}
+                            >
+                              Marcar pedido
+                            </SrButton>
+                          )}
+                          {order.status === SupplyOrderStatus.ORDERED && (
+                            <SrButton
+                              variant="primary"
+                              size="sm"
+                              icon={<CheckCircle2 size={12} />}
+                              onClick={() => handleUpdateStatus(order.id, SupplyOrderStatus.RECEIVED)}
+                            >
+                              Recibir
+                            </SrButton>
+                          )}
+                        </div>
+                      </div>
+                    </SrCard>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ─── ADD / EDIT MODAL ──────────────────────────────────── */}
+      <AnimatePresence>
+        {isAddModalOpen && (
+          <SrModal open onClose={() => setIsAddModalOpen(false)} maxWidth={620}>
+            <SrModalHeader
+              title={editingItem ? 'Editar producto' : 'Nuevo producto'}
+              kicker={editingItem ? `Estás editando · ${editingItem.name}` : 'Registra un insumo en tu inventario'}
+              onClose={() => setIsAddModalOpen(false)}
+            />
+
+            <form onSubmit={handleSaveItem} className="space-y-5">
+              <div>
+                <SrLabel className="block mb-2">Nombre del insumo *</SrLabel>
+                <SrInput name="name" defaultValue={editingItem?.name} required placeholder="Ej. Aceite de oliva" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <SrLabel className="block mb-2">Categoría</SrLabel>
+                  <select
+                    name="category"
+                    defaultValue={editingItem?.category || 'Abarrotes'}
+                    className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-sr-lg py-3 px-4 text-[13px] font-medium text-servirest-carbon outline-none focus:border-servirest-terracota transition-colors cursor-pointer"
+                  >
+                    {INVENTORY_CATEGORIES.filter((c) => c !== 'All').map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <SrLabel className="block mb-2">Proveedor</SrLabel>
+                  <SrInput name="supplier" defaultValue={editingItem?.supplier} required placeholder="Nombre del proveedor" />
+                </div>
+              </div>
+
+              <div>
+                <SrLabel className="block mb-2">Unidad de medida</SrLabel>
+                <div className="grid grid-cols-3 gap-3">
+                  {['PZ', 'gr', 'Bolsa'].map((u) => (
+                    <label key={u} className="cursor-pointer">
+                      <input
+                        type="radio"
+                        name="unit"
+                        value={u}
+                        defaultChecked={editingItem?.unit === u || (!editingItem && u === 'PZ')}
+                        className="sr-only peer"
+                      />
+                      <div className="peer-checked:bg-[rgba(196,99,63,0.10)] peer-checked:border-servirest-terracota peer-checked:text-servirest-terracota bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-sr-md py-3 text-center text-[10px] font-black uppercase tracking-[0.16em] text-[rgba(42,40,38,0.5)] transition-colors">
+                        {u}
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <SrLabel className="block mb-2">Cantidad actual</SrLabel>
+                  <SrInput name="quantity" type="number" defaultValue={editingItem?.quantity ?? 0} />
+                </div>
+                <div>
+                  <SrLabel className="block mb-2">Costo / unidad</SrLabel>
+                  <SrInput name="cost" type="number" step="0.01" defaultValue={editingItem?.costPerUnit} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <SrLabel className="block mb-2">Mínimo crítico</SrLabel>
+                  <SrInput name="minStock" type="number" defaultValue={editingItem?.minStock ?? 10} />
+                </div>
+                <div>
+                  <SrLabel className="block mb-2">Capacidad ideal</SrLabel>
+                  <SrInput name="maxStock" type="number" defaultValue={editingItem?.maxStock ?? 100} />
+                </div>
+              </div>
+
+              <SrButton type="submit" variant="primary" size="lg" fullWidth icon={<CheckCircle2 size={16} />}>
+                {editingItem ? 'Guardar cambios' : 'Agregar al inventario'}
+              </SrButton>
+            </form>
+          </SrModal>
+        )}
+      </AnimatePresence>
+
+      {/* ─── RESTOCK MODAL ─────────────────────────────────────── */}
+      <AnimatePresence>
+        {restockItem && (
+          <SrModal open onClose={() => setRestockItem(null)} maxWidth={420}>
+            <div className="text-center py-2">
+              <div className="w-16 h-16 rounded-full bg-[rgba(196,99,63,0.10)] text-servirest-terracota flex items-center justify-center mx-auto mb-6 border border-servirest-terracota/30">
+                <Truck size={28} />
+              </div>
+              <SrKicker className="block mb-2">Pedir reposición</SrKicker>
+              <h3 className="font-serif italic font-medium text-[26px] text-servirest-midnight tracking-[-0.02em] m-0 mb-2 leading-tight">
+                {restockItem.name}
+              </h3>
+              <p className="text-[12px] text-[rgba(42,40,38,0.6)] font-medium leading-relaxed m-0 mb-8">
+                Stock actual: <SrMono className="text-servirest-midnight">{restockItem.quantity}</SrMono> de {restockItem.maxStock} {restockItem.unit}
+              </p>
+
+              <div className="flex items-center gap-4 mb-8">
+                <button
+                  type="button"
+                  onClick={() => setRestockQty(Math.max(0, restockQty - 1))}
+                  className="w-14 h-14 rounded-sr-lg bg-servirest-hueso-sunken text-servirest-midnight hover:bg-servirest-surface hover:shadow-sr-card active:scale-95 transition-all border border-[rgba(42,40,38,0.08)] flex items-center justify-center"
+                  aria-label="Restar"
+                >
+                  <Minus size={18} />
+                </button>
+                <input
+                  type="number"
+                  value={restockQty}
+                  onChange={(e) => setRestockQty(Number(e.target.value))}
+                  className="flex-1 bg-transparent border-b-2 border-[rgba(42,40,38,0.20)] outline-none text-[48px] font-black italic text-center text-servirest-midnight tracking-[-0.03em] py-2 focus:border-servirest-terracota transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setRestockQty(restockQty + 1)}
+                  className="w-14 h-14 rounded-sr-lg bg-servirest-hueso-sunken text-servirest-midnight hover:bg-servirest-surface hover:shadow-sr-card active:scale-95 transition-all border border-[rgba(42,40,38,0.08)] flex items-center justify-center"
+                  aria-label="Sumar"
+                >
+                  <Plus size={18} />
+                </button>
+              </div>
+
+              <div className="flex gap-3">
+                <SrButton variant="ghost" size="md" fullWidth onClick={() => setRestockItem(null)}>
+                  Cancelar
+                </SrButton>
+                <SrButton
+                  variant="primary"
+                  size="md"
+                  fullWidth
+                  icon={<ShoppingCart size={14} />}
+                  onClick={() => addToCart(restockItem, restockQty)}
+                >
+                  Agregar al carrito
+                </SrButton>
+              </div>
+            </div>
+          </SrModal>
+        )}
+      </AnimatePresence>
+
+      {/* ─── CART DRAWER ───────────────────────────────────────── */}
+      <AnimatePresence>
+        {isCartOpen && (
+          <motion.div
+            className="fixed inset-0 z-[100] flex"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <div
+              className="flex-1 bg-[rgba(10,12,20,0.92)] backdrop-blur-[14px]"
+              onClick={() => setIsCartOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full md:w-[460px] bg-servirest-surface border-l border-[rgba(42,40,38,0.12)] shadow-sr-modal flex flex-col"
+            >
+              <div className="p-8 border-b border-[rgba(42,40,38,0.10)]">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <SrKicker className="block mb-1.5">Carrito de compras</SrKicker>
+                    <h2 className="font-serif italic font-medium text-[28px] text-servirest-midnight tracking-[-0.02em] m-0 leading-tight">
+                      Pedido a proveedores
+                    </h2>
+                    <SrLabel className="block mt-2">{cart.length} productos en la lista</SrLabel>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsCartOpen(false)}
+                    className="w-11 h-11 rounded-sr-md border border-[rgba(42,40,38,0.12)] bg-[rgba(42,40,38,0.04)] text-[rgba(42,40,38,0.6)] hover:text-servirest-carbon hover:bg-[rgba(42,40,38,0.08)] flex items-center justify-center transition-colors"
+                    aria-label="Cerrar"
+                  >
+                    <X size={22} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+                {cart.length === 0 ? (
+                  <SrEmptyState
+                    icon={<ShoppingCart size={24} />}
+                    title="Carrito vacío"
+                    description="Toca Pedir en cualquier producto del stock para empezar a armar tu pedido."
+                  />
+                ) : (
+                  (Object.entries(
+                    cart.reduce((acc: Record<string, CartItem[]>, item) => {
+                      const key = item.supplier || 'Sin proveedor';
+                      if (!acc[key]) acc[key] = [];
+                      acc[key].push(item);
+                      return acc;
+                    }, {})
+                  ) as [string, CartItem[]][]).map(([supplier, items]) => (
+                    <div key={supplier}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Truck size={12} className="text-servirest-terracota" />
+                        <SrLabel className="text-servirest-terracota">{supplier}</SrLabel>
+                        <SrMono className="ml-auto text-[11px] text-[rgba(42,40,38,0.6)]">
+                          ${items.reduce((s, i) => s + i.costPerUnit * i.orderQuantity, 0).toFixed(2)}
+                        </SrMono>
+                      </div>
+                      <div className="space-y-2 pl-4 border-l-2 border-servirest-terracota/20">
+                        {items.map((item) => (
+                          <SrCard key={item.id} className="px-4 py-3 flex justify-between items-center gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="font-extrabold text-[13px] text-servirest-midnight tracking-tight truncate mb-0.5">{item.name}</div>
+                              <SrMono className="text-[10px] text-[rgba(42,40,38,0.6)]">
+                                {item.orderQuantity} {item.unit} · ${item.costPerUnit}/{item.unit}
+                              </SrMono>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <SrMono className="text-servirest-terracota font-extrabold text-[12px] block">
+                                ${(item.costPerUnit * item.orderQuantity).toFixed(2)}
+                              </SrMono>
+                              <button
+                                type="button"
+                                onClick={() => setCart((prev) => prev.filter((c) => c.id !== item.id))}
+                                className="text-[9px] font-black uppercase tracking-[0.16em] text-servirest-danger/60 hover:text-servirest-danger transition-colors mt-1"
+                              >
+                                Quitar
+                              </button>
+                            </div>
+                          </SrCard>
+                        ))}
+                      </div>
+                    </div>
+                  ))
                 )}
-            </AnimatePresence>
-        </div>
-    );
+              </div>
+
+              <div className="p-6 border-t border-[rgba(42,40,38,0.10)] bg-servirest-hueso-sunken/40">
+                <div className="flex justify-between items-baseline mb-5">
+                  <SrLabel>Total estimado</SrLabel>
+                  <div className="font-black italic text-[32px] text-servirest-midnight tracking-[-0.03em] leading-none">
+                    ${cartTotal.toFixed(2)}
+                  </div>
+                </div>
+                <SrButton
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  icon={<Truck size={16} />}
+                  onClick={handleCreateOrder}
+                  disabled={cart.length === 0}
+                >
+                  Crear pedido a proveedor
+                </SrButton>
+              </div>
+            </motion.aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 };
+
+export default InventoryScreen;
