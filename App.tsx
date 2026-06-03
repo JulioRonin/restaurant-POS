@@ -16,7 +16,7 @@ import { SettingsScreen } from './screens/Settings';
 import { CashierScreen } from './screens/Cashier';
 import { OrderProvider } from './contexts/OrderContext';
 import { UserProvider, useUser } from './contexts/UserContext';
-import { SubscriptionProvider } from './contexts/SubscriptionContext';
+import { SubscriptionProvider, useSubscription } from './contexts/SubscriptionContext';
 import { SubscriptionGuard } from './components/SubscriptionGuard';
 import { ExpenseProvider } from './contexts/ExpenseContext';
 import { BillingScreen } from './screens/Billing';
@@ -55,11 +55,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation(); // Accurate location tracking for stable transitions
 
   return (
-    <div className="flex h-screen w-screen bg-[#FAFAF3] font-sans overflow-hidden antialiased selection:bg-[#C4633F] selection:text-white koso-app">
+    <div className="flex h-screen w-screen bg-servirest-hueso font-sans overflow-hidden antialiased selection:bg-servirest-terracota selection:text-servirest-hueso">
       <div className="no-print hidden lg:block">
         <Sidebar onLock={clearActiveEmployee} />
       </div>
-      <main className="flex-1 h-full overflow-hidden relative bg-[#FAFAF3] pb-28 lg:pb-0">
+      <main className="flex-1 h-full overflow-hidden relative bg-servirest-hueso pb-28 lg:pb-0">
         {children}
         <MobileNavbar />
       </main>
@@ -70,7 +70,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AppContent: React.FC = () => {
   const { authProfile, isAuthenticating, activeEmployee, isSuperAdmin } = useUser();
   const { settings } = useSettings();
+  const { tier } = useSubscription();
   const [showSplash, setShowSplash] = useState(true);
+
+  // Apply commercial tier to <body> so CSS overrides in index.css can
+  // promote Prestige to its editorial typography/spacing/radii layer.
+  useEffect(() => {
+    document.body.dataset.tier = tier;
+    return () => { delete document.body.dataset.tier; };
+  }, [tier]);
 
   // Splash Screen Timer
   useEffect(() => {
@@ -80,20 +88,13 @@ const AppContent: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Theme Application Logic
+  // Theme Application Logic — locked to Sobremesa Lúcida (ServiRest brand).
+  // The legacy multi-theme picker is preserved in Settings for the future but
+  // every theme now resolves to the brand palette so older screens never drift.
   useEffect(() => {
-    const themes = {
-      indigo: { primary: '#5D5FEF', secondary: '#A5A6F6', rgb: '93, 95, 239' },
-      emerald: { primary: '#10B981', secondary: '#A7F3D0', rgb: '16, 185, 129' },
-      ruby: { primary: '#EF4444', secondary: '#FECACA', rgb: '239, 68, 68' },
-      amber: { primary: '#f97316', secondary: '#fb923c', rgb: '249, 115, 22' },
-      midnight: { primary: '#334155', secondary: '#94A3B8', rgb: '51, 65, 85' }
-    } as const;
-
-    const activeTheme = themes[settings.themeId as keyof typeof themes || 'amber'];
-    document.documentElement.style.setProperty('--primary-color', activeTheme.primary);
-    document.documentElement.style.setProperty('--secondary-color', activeTheme.secondary);
-    document.documentElement.style.setProperty('--primary-rgb', activeTheme.rgb);
+    document.documentElement.style.setProperty('--primary-color',   '#C4633F'); // terracota
+    document.documentElement.style.setProperty('--secondary-color', '#C9A24A'); // mostaza
+    document.documentElement.style.setProperty('--primary-rgb',     '196, 99, 63');
   }, [settings.themeId]);
 
   if (isAuthenticating || showSplash) {

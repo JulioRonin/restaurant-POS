@@ -164,7 +164,7 @@ export const AuthScreen: React.FC = () => {
                                     <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin" />
                                 ) : (
                                     <>
-                                        {isLogin ? 'Acceder al Nodo' : 'Iniciar Secuencia de Registro'}
+                                        {isLogin ? 'Entrar' : 'Crear mi restaurante'}
                                         <ArrowRight size={20} />
                                     </>
                                 )}
@@ -174,7 +174,7 @@ export const AuthScreen: React.FC = () => {
                 </GlowCard>
 
                 <p className="text-center mt-12 text-[10px] font-black text-white/30 uppercase tracking-[0.5em] italic mb-16">
-                    ServiRest POS v1.0 • Secure Restaurant Management
+                    ServiRest — Aliados del rubro
                 </p>
             </motion.div>
         </div>

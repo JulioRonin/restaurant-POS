@@ -160,17 +160,17 @@ export const MenuScreen: React.FC = () => {
     };
 
     return (
-        <div className="h-full w-full bg-[#FAFAF3] text-[#1a1c14] flex flex-col overflow-hidden antialiased">
+        <div className="h-full w-full bg-[#FAF8F4] text-[#1a1c14] flex flex-col overflow-hidden antialiased">
             {/* Header */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center px-8 pt-8 pb-6 gap-4 shrink-0 border-b border-white/5">
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-center px-8 pt-8 pb-6 gap-4 shrink-0 border-b border-[rgba(42,40,38,0.12)]">
                 <div className="mb-8">
                     <h1 
                         className="text-4xl font-medium tracking-tighter uppercase mb-1"
                         style={{ fontFamily: '"Fraunces", Georgia, serif' }}
                     >
-                        ServiRest Menu
+                        Menú
                     </h1>
-                    <p className="text-[#505530]/40 font-bold text-[10px] uppercase tracking-[0.4em] italic">Node Inventory & Asset Registry</p>
+                    <p className="text-[#2A2826]/40 font-bold text-[10px] uppercase tracking-[0.4em] italic">Catálogo de platillos</p>
                 </div>
                 <div className="flex gap-3">
                     <button
@@ -181,30 +181,30 @@ export const MenuScreen: React.FC = () => {
                     </button>
                     <button
                         onClick={() => setIsImportModalOpen(true)}
-                        className="flex items-center gap-2 px-5 py-3 bg-white/[0.03] border border-white/5 text-[#505530]/45 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/[0.06] transition-all"
+                        className="flex items-center gap-2 px-5 py-3 bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[#2A2826]/45 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/[0.06] transition-all"
                     >
-                        <Upload size={15} /> Bulk Import
+                        <Upload size={15} /> Importar CSV
                     </button>
                     <button
                         onClick={handleOpenAdd}
-                        className="flex items-center gap-2 px-6 py-3 bg-[#F98359] text-[#1a1c14] text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-105 transition-all"
+                        className="flex items-center gap-2 px-6 py-3 bg-[#C4633F] text-[#1a1c14] text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-105 transition-all"
                     >
-                        <Plus size={15} /> Register Asset
+                        <Plus size={15} /> Nuevo platillo
                     </button>
                 </div>
             </header>
 
             {/* Filters Bar */}
-            <div className="px-8 py-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center shrink-0 border-b border-white/5">
+            <div className="px-8 py-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center shrink-0 border-b border-[rgba(42,40,38,0.12)]">
                 {/* Search */}
-                <div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-2xl px-5 py-3 flex-1 max-w-sm">
-                    <Search className="text-[#505530]/30 shrink-0" size={16} />
+                <div className="flex items-center gap-3 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl px-5 py-3 flex-1 max-w-sm">
+                    <Search className="text-[#2A2826]/30 shrink-0" size={16} />
                     <input
                         type="text"
                         placeholder="Search by name..."
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
-                        className="bg-transparent outline-none text-[#1a1c14] text-sm font-bold w-full placeholder:text-[#505530]/10"
+                        className="bg-transparent outline-none text-[#1a1c14] text-sm font-bold w-full placeholder:text-[#2A2826]/10"
                     />
                 </div>
 
@@ -216,8 +216,8 @@ export const MenuScreen: React.FC = () => {
                             onClick={() => setActiveCategory(cat)}
                             className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
                                 activeCategory === cat
-                                    ? 'bg-[#F98359] text-[#1a1c14] border-solaris-orange shadow-solaris-glow'
-                                    : 'bg-white/[0.03] text-[#505530]/45 border-white/5 hover:text-[#1a1c14] hover:border-white/20'
+                                    ? 'bg-[#C4633F] text-[#1a1c14] border-solaris-orange shadow-solaris-glow'
+                                    : 'bg-servirest-surface text-[#2A2826]/45 border-[rgba(42,40,38,0.12)] hover:text-[#1a1c14] hover:border-[rgba(42,40,38,0.20)]'
                             }`}
                         >
                             {cat}
@@ -227,8 +227,8 @@ export const MenuScreen: React.FC = () => {
 
                 {/* Counter */}
                 <div className="shrink-0 ml-auto text-right">
-                    <p className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest">Total Registry</p>
-                    <p className="text-2xl font-black italic text-solaris-orange leading-tight">{menuItems.length}</p>
+                    <p className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest">Total platillos</p>
+                    <p className="text-2xl font-black italic text-servirest-terracota leading-tight">{menuItems.length}</p>
                 </div>
             </div>
 
@@ -237,13 +237,13 @@ export const MenuScreen: React.FC = () => {
                 {filteredItems.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 opacity-10">
                         <Utensils size={64} className="mb-4" />
-                        <p className="text-[11px] font-black uppercase tracking-widest">No assets in registry</p>
+                        <p className="text-[11px] font-black uppercase tracking-widest">Aún no tienes platillos</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-8">
                         {filteredItems.map(item => (
                             <motion.div key={item.id} layout>
-                                <div className={`group relative rounded-[28px] border overflow-hidden flex flex-col bg-[#FAFAF3] transition-all ${item.status === 'ACTIVE' ? 'border-white/[0.07]' : 'border-red-500/10 opacity-60'}`}>
+                                <div className={`group relative rounded-[28px] border overflow-hidden flex flex-col bg-[#FAF8F4] transition-all ${item.status === 'ACTIVE' ? 'border-[rgba(42,40,38,0.12)]' : 'border-red-500/10 opacity-60'}`}>
                                     {/* Image */}
                                     <div className="h-44 relative overflow-hidden shrink-0">
                                         <img
@@ -270,13 +270,13 @@ export const MenuScreen: React.FC = () => {
                                     <div className="p-5 flex flex-col flex-1">
                                         <div className="flex justify-between items-start mb-1">
                                             <h3 className="font-black italic text-[#1a1c14] uppercase tracking-tight text-base leading-tight flex-1 mr-2 truncate">{item.name}</h3>
-                                            <span className="text-solaris-orange font-black italic text-lg shrink-0">${item.price.toFixed(0)}</span>
+                                            <span className="text-servirest-terracota font-black italic text-lg shrink-0">${item.price.toFixed(0)}</span>
                                         </div>
-                                        <p className="text-[9px] font-black uppercase tracking-widest text-[#505530]/30 mb-4 flex items-center gap-1.5">
+                                        <p className="text-[9px] font-black uppercase tracking-widest text-[#2A2826]/30 mb-4 flex items-center gap-1.5">
                                             <Tag size={9} /> {item.category}
                                         </p>
-                                        <div className="bg-white/[0.02] border border-white/5 p-3 rounded-2xl mb-4 flex-1">
-                                            <p className="text-[10px] text-[#505530]/45 line-clamp-2 italic font-medium leading-relaxed">
+                                        <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-3 rounded-2xl mb-4 flex-1">
+                                            <p className="text-[10px] text-[#2A2826]/45 line-clamp-2 italic font-medium leading-relaxed">
                                                 {item.description || 'No description recorded.'}
                                             </p>
                                         </div>
@@ -284,7 +284,7 @@ export const MenuScreen: React.FC = () => {
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => handleOpenEdit(item)}
-                                                className="flex-1 py-2.5 bg-white/[0.04] border border-white/5 text-[9px] font-black uppercase tracking-widest text-[#505530]/45 hover:text-[#1a1c14] hover:bg-white/10 transition-all flex items-center justify-center gap-2 rounded-xl"
+                                                className="flex-1 py-2.5 bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[9px] font-black uppercase tracking-widest text-[#2A2826]/45 hover:text-[#1a1c14] hover:bg-white/10 transition-all flex items-center justify-center gap-2 rounded-xl"
                                             >
                                                 <Edit3 size={12} /> Edit
                                             </button>
@@ -312,20 +312,20 @@ export const MenuScreen: React.FC = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[600] flex items-center justify-center bg-black/90 backdrop-blur-3xl p-4"
                     >
-                        <div className="w-full max-w-3xl bg-[#FAFAF3] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: '92vh' }}>
+                        <div className="w-full max-w-3xl bg-[#FAF8F4] border border-[rgba(42,40,38,0.20)] rounded-[40px] shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: '92vh' }}>
                             {/* Modal Header */}
-                            <div className="flex justify-between items-center px-10 py-7 border-b border-white/5 shrink-0">
+                            <div className="flex justify-between items-center px-10 py-7 border-b border-[rgba(42,40,38,0.12)] shrink-0">
                                 <div>
                                     <h2 className="text-3xl font-black italic uppercase tracking-tighter text-[#1a1c14]">
-                                        {editingItem ? 'Edit Asset' : 'New Menu Registry'}
+                                        {editingItem ? 'Editar platillo' : 'Nuevo platillo'}
                                     </h2>
-                                    <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.4em] mt-1 italic">
+                                    <p className="text-[10px] font-black uppercase text-servirest-terracota/40 tracking-[0.4em] mt-1 italic">
                                         {editingItem ? `Recalibrating: ${editingItem.name}` : 'Register new gastronomical asset'}
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => setIsAddModalOpen(false)}
-                                    className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-[#505530]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
+                                    className="w-12 h-12 bg-servirest-surface rounded-full flex items-center justify-center text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
                                 >
                                     <XCircle size={22} />
                                 </button>
@@ -335,38 +335,38 @@ export const MenuScreen: React.FC = () => {
                             <form onSubmit={handleSaveItem} className="flex-1 overflow-y-auto no-scrollbar">
                                 <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-0">
                                     {/* Left: Image upload */}
-                                    <div className="p-8 border-r border-white/5 flex flex-col items-center gap-4">
+                                    <div className="p-8 border-r border-[rgba(42,40,38,0.12)] flex flex-col items-center gap-4">
                                         <div
                                             onClick={() => fileInputRef.current?.click()}
-                                            className="w-full aspect-square bg-white/[0.02] border-2 border-dashed border-white/10 rounded-3xl overflow-hidden cursor-pointer flex items-center justify-center transition-all hover:border-solaris-orange/40 relative group"
+                                            className="w-full aspect-square bg-servirest-surface border-2 border-dashed border-[rgba(42,40,38,0.20)] rounded-3xl overflow-hidden cursor-pointer flex items-center justify-center transition-all hover:border-solaris-orange/40 relative group"
                                         >
                                             {imagePreview ? (
                                                 <img src={imagePreview} alt="" className="w-full h-full object-cover" />
                                             ) : (
                                                 <div className="text-center">
-                                                    <Plus className="mx-auto text-[#505530]/10 mb-3 group-hover:text-solaris-orange transition-colors" size={36} />
-                                                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#505530]/10 group-hover:text-[#505530]/45 transition-colors">Upload Image</p>
+                                                    <Plus className="mx-auto text-[#2A2826]/10 mb-3 group-hover:text-servirest-terracota transition-colors" size={36} />
+                                                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2A2826]/10 group-hover:text-[#2A2826]/45 transition-colors">Upload Image</p>
                                                 </div>
                                             )}
                                             <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" />
                                         </div>
-                                        <p className="text-[8px] font-black uppercase text-[#505530]/10 tracking-[0.3em] text-center italic">Image Verification Buffer</p>
+                                        <p className="text-[8px] font-black uppercase text-[#2A2826]/10 tracking-[0.3em] text-center italic">Image Verification Buffer</p>
 
                                         {/* Active/Inactive Toggle */}
-                                        <div className="w-full bg-white/[0.02] border border-white/5 rounded-2xl p-4">
-                                            <p className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest mb-3 italic">Status on POS</p>
+                                        <div className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl p-4">
+                                            <p className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest mb-3 italic">Status on POS</p>
                                             <div className="grid grid-cols-2 gap-2">
                                                 <button
                                                     type="button"
                                                     onClick={() => setFormStatus('ACTIVE')}
-                                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-1.5 ${formStatus === 'ACTIVE' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-white/[0.02] text-[#505530]/30 border-white/5'}`}
+                                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-1.5 ${formStatus === 'ACTIVE' ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-servirest-surface text-[#2A2826]/30 border-[rgba(42,40,38,0.12)]'}`}
                                                 >
                                                     <Circle size={7} fill="currentColor" /> Active
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setFormStatus('INACTIVE')}
-                                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-1.5 ${formStatus === 'INACTIVE' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-white/[0.02] text-[#505530]/30 border-white/5'}`}
+                                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-1.5 ${formStatus === 'INACTIVE' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-servirest-surface text-[#2A2826]/30 border-[rgba(42,40,38,0.12)]'}`}
                                                 >
                                                     <Circle size={7} fill="currentColor" /> Inactive
                                                 </button>
@@ -378,20 +378,20 @@ export const MenuScreen: React.FC = () => {
                                     <div className="p-8 space-y-5">
                                         {/* Name */}
                                         <div>
-                                            <label className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest block mb-2">Dish Name *</label>
+                                            <label className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest block mb-2">Dish Name *</label>
                                             <input
                                                 name="name"
                                                 defaultValue={editingItem?.name}
                                                 required
                                                 placeholder="e.g. Corte New York"
-                                                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold text-sm"
+                                                className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-2xl py-4 px-5 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold text-sm"
                                             />
                                         </div>
 
                                         {/* Price + Gramaje */}
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest block mb-2">Price (MXN) *</label>
+                                                <label className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest block mb-2">Price (MXN) *</label>
                                                 <input
                                                     name="price"
                                                     type="number"
@@ -399,38 +399,38 @@ export const MenuScreen: React.FC = () => {
                                                     defaultValue={editingItem?.price}
                                                     required
                                                     placeholder="0.00"
-                                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold"
+                                                    className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest block mb-2">Gramaje / Portion</label>
+                                                <label className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest block mb-2">Gramaje / Portion</label>
                                                 <input
                                                     name="gramaje"
                                                     defaultValue={editingItem?.gramaje}
                                                     placeholder="e.g. 300g"
-                                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold"
+                                                    className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold"
                                                 />
                                             </div>
                                         </div>
 
                                         {/* Category */}
                                         <div>
-                                            <label className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest block mb-2">Category</label>
+                                            <label className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest block mb-2">Category</label>
                                             {!isAddingNewCategory ? (
                                                 <div className="flex gap-2">
                                                     <select
                                                         value={formCategory}
                                                         onChange={e => setFormCategory(e.target.value)}
-                                                        className="flex-1 bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold appearance-none cursor-pointer"
+                                                        className="flex-1 bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-bold appearance-none cursor-pointer"
                                                     >
                                                         {allCategories.map(cat => (
-                                                            <option key={cat} value={cat} className="bg-[#FAFAF3]">{cat}</option>
+                                                            <option key={cat} value={cat} className="bg-[#FAF8F4]">{cat}</option>
                                                         ))}
                                                     </select>
                                                     <button
                                                         type="button"
                                                         onClick={() => setIsAddingNewCategory(true)}
-                                                        className="px-4 bg-[#F98359]/10 border border-solaris-orange/20 text-solaris-orange rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-[#F98359]/20 transition-all whitespace-nowrap"
+                                                        className="px-4 bg-[#C4633F]/10 border border-solaris-orange/20 text-servirest-terracota rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-[#C4633F]/20 transition-all whitespace-nowrap"
                                                     >
                                                         + New
                                                     </button>
@@ -443,12 +443,12 @@ export const MenuScreen: React.FC = () => {
                                                         onChange={e => setNewCategoryName(e.target.value)}
                                                         placeholder="New category name..."
                                                         autoFocus
-                                                        className="flex-1 bg-white/[0.03] border border-solaris-orange/40 rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none font-bold"
+                                                        className="flex-1 bg-servirest-surface border border-solaris-orange/40 rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none font-bold"
                                                     />
                                                     <button
                                                         type="button"
                                                         onClick={() => setIsAddingNewCategory(false)}
-                                                        className="px-4 bg-white/[0.03] border border-white/10 text-[#505530]/45 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:text-[#1a1c14] transition-all"
+                                                        className="px-4 bg-servirest-surface border border-[rgba(42,40,38,0.20)] text-[#2A2826]/45 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:text-[#1a1c14] transition-all"
                                                     >
                                                         Cancel
                                                     </button>
@@ -458,35 +458,35 @@ export const MenuScreen: React.FC = () => {
 
                                         {/* Description */}
                                         <div>
-                                            <label className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest block mb-2">Description</label>
+                                            <label className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest block mb-2">Description</label>
                                             <textarea
                                                 name="description"
                                                 defaultValue={editingItem?.description}
                                                 placeholder="Describe ingredients, preparation, allergens..."
                                                 rows={3}
-                                                className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-medium resize-none"
+                                                className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-medium resize-none"
                                             />
                                         </div>
 
                                         {/* Variants */}
-                                        <div className="border border-white/5 rounded-2xl p-5 bg-white/[0.01]">
+                                        <div className="border border-[rgba(42,40,38,0.12)] rounded-2xl p-5 bg-servirest-surface">
                                             <div className="flex justify-between items-center mb-4">
                                                 <div className="flex items-center gap-2">
-                                                    <Layers size={14} className="text-solaris-orange" />
-                                                    <span className="text-[9px] font-black uppercase text-[#505530]/45 tracking-widest">Variantes <span className="text-solaris-orange">({variants.length}/10)</span></span>
+                                                    <Layers size={14} className="text-servirest-terracota" />
+                                                    <span className="text-[9px] font-black uppercase text-[#2A2826]/45 tracking-widest">Variantes <span className="text-servirest-terracota">({variants.length}/10)</span></span>
                                                 </div>
                                                 {variants.length < 10 && (
                                                     <button
                                                         type="button"
                                                         onClick={addVariant}
-                                                        className="flex items-center gap-1.5 px-3 py-2 bg-[#F98359]/10 border border-solaris-orange/20 text-solaris-orange rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-[#F98359]/20 transition-all"
+                                                        className="flex items-center gap-1.5 px-3 py-2 bg-[#C4633F]/10 border border-solaris-orange/20 text-servirest-terracota rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-[#C4633F]/20 transition-all"
                                                     >
                                                         <Plus size={10} /> Variante
                                                     </button>
                                                 )}
                                             </div>
                                             {variants.length === 0 && (
-                                                <p className="text-[9px] text-[#505530]/10 font-black uppercase tracking-widest text-center py-3 italic">Sin variantes — añade hasta 10</p>
+                                                <p className="text-[9px] text-[#2A2826]/10 font-black uppercase tracking-widest text-center py-3 italic">Sin variantes — añade hasta 10</p>
                                             )}
                                             <div className="space-y-3">
                                                 {variants.map((v, idx) => (
@@ -496,14 +496,14 @@ export const MenuScreen: React.FC = () => {
                                                             placeholder={`Variante ${idx + 1} (ej. Grande)`}
                                                             value={v.name}
                                                             onChange={e => updateVariant(idx, 'name', e.target.value)}
-                                                            className="flex-1 bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-[#1a1c14] text-xs outline-none focus:border-solaris-orange/40 font-bold"
+                                                            className="flex-1 bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-xl py-3 px-4 text-[#1a1c14] text-xs outline-none focus:border-solaris-orange/40 font-bold"
                                                         />
                                                         <input
                                                             type="number"
                                                             placeholder="Precio"
                                                             value={v.price}
                                                             onChange={e => updateVariant(idx, 'price', e.target.value)}
-                                                            className="w-24 bg-white/[0.03] border border-white/10 rounded-xl py-3 px-3 text-[#1a1c14] text-xs outline-none focus:border-solaris-orange/40 font-bold text-center"
+                                                            className="w-24 bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-xl py-3 px-3 text-[#1a1c14] text-xs outline-none focus:border-solaris-orange/40 font-bold text-center"
                                                         />
                                                         <button
                                                             type="button"
@@ -520,7 +520,7 @@ export const MenuScreen: React.FC = () => {
                                         {/* Submit */}
                                         <button
                                             type="submit"
-                                            className="w-full bg-[#F98359] text-[#1a1c14] font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-500 active:scale-95 transition-all text-[11px] flex items-center justify-center gap-3"
+                                            className="w-full bg-[#C4633F] text-[#1a1c14] font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-500 active:scale-95 transition-all text-[11px] flex items-center justify-center gap-3"
                                         >
                                             <CheckCircle size={18} />
                                             {editingItem ? 'Save Changes' : 'Add to Menu'}
@@ -542,21 +542,21 @@ export const MenuScreen: React.FC = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[600] flex items-center justify-center bg-black/90 backdrop-blur-3xl p-4"
                     >
-                        <div className="w-full max-w-2xl bg-[#FAFAF3] border border-white/10 rounded-[40px] shadow-2xl overflow-hidden">
-                            <div className="flex justify-between items-center px-10 py-7 border-b border-white/5">
-                                <h2 className="text-2xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Bulk Import CSV</h2>
-                                <button onClick={() => setIsImportModalOpen(false)} className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-[#505530]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">
+                        <div className="w-full max-w-2xl bg-[#FAF8F4] border border-[rgba(42,40,38,0.20)] rounded-[40px] shadow-2xl overflow-hidden">
+                            <div className="flex justify-between items-center px-10 py-7 border-b border-[rgba(42,40,38,0.12)]">
+                                <h2 className="text-2xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Importar CSV CSV</h2>
+                                <button onClick={() => setIsImportModalOpen(false)} className="w-12 h-12 bg-servirest-surface rounded-full flex items-center justify-center text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all">
                                     <XCircle size={22} />
                                 </button>
                             </div>
                             <div className="p-10 space-y-6">
                                 <div className="flex justify-between items-center">
-                                    <p className="text-[10px] text-[#505530]/45 font-black uppercase tracking-widest">
-                                        Format: <span className="text-solaris-orange">name, category, price, description</span>
+                                    <p className="text-[10px] text-[#2A2826]/45 font-black uppercase tracking-widest">
+                                        Format: <span className="text-servirest-terracota">name, category, price, description</span>
                                     </p>
                                     <button
                                         onClick={() => csvFileInputRef.current?.click()}
-                                        className="flex items-center gap-2 px-4 py-2 bg-white/[0.03] border border-white/10 text-[#505530]/60 text-[8px] font-black uppercase tracking-widest rounded-xl hover:bg-white/10 hover:text-[#1a1c14] transition-all transition-colors"
+                                        className="flex items-center gap-2 px-4 py-2 bg-servirest-surface border border-[rgba(42,40,38,0.20)] text-[#2A2826]/60 text-[8px] font-black uppercase tracking-widest rounded-xl hover:bg-white/10 hover:text-[#1a1c14] transition-all transition-colors"
                                     >
                                         <Upload size={12} /> Upload CSV File
                                     </button>
@@ -573,14 +573,14 @@ export const MenuScreen: React.FC = () => {
                                     onChange={e => setCsvInput(e.target.value)}
                                     placeholder={"Tacos de Carne, Tacos, 75, Tacos de carne asada\nEnsalada César, Entradas, 120, Lechuga romana, aderezo"}
                                     rows={8}
-                                    className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-mono resize-none"
+                                    className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-2xl py-4 px-5 text-[#1a1c14] text-sm outline-none focus:border-solaris-orange/50 transition-all font-mono resize-none"
                                 />
                                 {importResult && (
                                     <div className={`p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest ${importResult.errors.length ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
                                         {importResult.errors.length ? importResult.errors.join(', ') : `${importResult.count} assets imported successfully`}
                                     </div>
                                 )}
-                                <button onClick={handleImport} className="w-full py-5 bg-[#F98359] text-[#1a1c14] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all text-[11px]">
+                                <button onClick={handleImport} className="w-full py-5 bg-[#C4633F] text-[#1a1c14] font-black uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] active:scale-95 transition-all text-[11px]">
                                     Execute Import
                                 </button>
                             </div>

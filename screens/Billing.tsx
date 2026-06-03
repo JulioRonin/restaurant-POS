@@ -1,471 +1,626 @@
 import React, { useState } from 'react';
-import { useSubscription } from '../contexts/SubscriptionContext';
+import { useSubscription, BusinessTier, TIER_PRICING, TIER_LIMITS } from '../contexts/SubscriptionContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { SubscriptionStatus } from '../types';
-import { GlowCard } from '../components/ui/spotlight-card';
+import { SubscriptionStatus, PaymentRecord } from '../types';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  CheckCircle2, AlertTriangle, Lock, Sparkles, ShieldCheck,
+  ArrowRight, X, CreditCard, Receipt, Crown, Building2, Zap, History, Calendar,
+} from 'lucide-react';
+import {
+  SrCard, SrButton, SrChip, SrLabel, SrKicker, SrModal, SrModalHeader,
+  SrAlert, SrSpinner, SrEmptyState, SrPanel, SrMono, SrTierBadge,
+} from '../components/ui/servirest';
 
-export const BillingScreen: React.FC = () => {
-    const { daysRemaining, status, expiryDate, paymentHistory, paySubscription, payEquipment, posStatus, saasStatus } = useSubscription();
-    const { settings } = useSettings();
-    const [isEquipmentModalOpen, setIsEquipmentModalOpen] = useState(false);
-    const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
-    const [selectedEquipmentPlan, setSelectedEquipmentPlan] = useState<{name: string, price: number} | null>(null);
-    const [isPaying, setIsPaying] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false);
-    const [stripeModalConfig, setStripeModalConfig] = useState<{isOpen: boolean, amount: number, title: string, onPay: () => void} | null>(null);
-
-    const PLAN_TIERS = [
-        {
-            id: 'basico',
-            name: 'Plan Básico',
-            price: 550,
-            color: 'blue' as const,
-            priceId: 'price_1TWMW07vbDuHdmHoPmOOuBCx',
-            description: 'Software Only',
-            features: ['Punto de Venta Base', 'Gestión de Menú', 'Ventas y Recibos', 'Soporte por Email']
-        },
-        {
-            id: 'pro',
-            name: 'Plan PRO',
-            price: 849.99,
-            color: 'purple' as const,
-            priceId: 'price_1TWMWX7vbDuHdmHofLolyZcZ',
-            popular: true,
-            description: 'Software POS Avanzado',
-            features: ['Todas las funciones Básicas', 'Kitchen Display System (KDS)', 'Inventario Avanzado', 'Soporte Prioritario WhatsApp', 'Múltiples Terminales']
-        }
-    ];
-
-    const handleSubscribe = async (planId: string, priceId: string, planName: string) => {
-        setIsPaying(true);
-        const success = await paySubscription(priceId, planName);
-        if (!success) {
-            setIsPaying(false);
-        }
-        // If success, it redirects to Stripe, so no need to stop spinner
-    };
-
-    const handleEquipmentPayment = async () => {
-        if (!selectedEquipmentPlan) return;
-        
-        setStripeModalConfig({
-            isOpen: true,
-            amount: selectedEquipmentPlan.price,
-            title: `Pago Equipo POS - ${selectedEquipmentPlan.name}`,
-            onPay: async () => {
-                setIsPaying(true);
-                const success = await payEquipment(selectedEquipmentPlan!.price, selectedEquipmentPlan!.name);
-                if (success) {
-                    setIsPaying(false);
-                    setStripeModalConfig(null);
-                    setIsEquipmentModalOpen(false);
-                    setSelectedEquipmentPlan(null);
-                    setShowSuccess(true);
-                    setTimeout(() => setShowSuccess(false), 5000);
-                }
-            }
-        });
-    };
-
-    const handleRecurringEquipmentPayment = () => {
-        if (!posStatus.plan) return;
-        
-        let amount = 0;
-        if (posStatus.plan === '3_MESES') amount = 1666.66;
-        else if (posStatus.plan === '6_MESES') amount = 833.33;
-        else if (posStatus.plan === '8_MESES') amount = 625.00;
-
-        setStripeModalConfig({
-            isOpen: true,
-            amount: amount,
-            title: `Pago Mensualidad Equipo POS`,
-            onPay: async () => {
-                setIsPaying(true);
-                const success = await payEquipment(amount, posStatus.plan!);
-                if (success) {
-                    setIsPaying(true);
-                    setTimeout(() => {
-                        setIsPaying(false);
-                        setStripeModalConfig(null);
-                        setShowSuccess(true);
-                        setTimeout(() => setShowSuccess(false), 5000);
-                    }, 1000);
-                }
-            }
-        });
-    };
-
-    const handleEquipmentButtonClick = () => {
-        if (posStatus.isFullyPaid) return;
-        if (posStatus.plan) {
-            setIsProgressModalOpen(true);
-        } else {
-            setIsEquipmentModalOpen(true);
-        }
-    };
-
-    const statusConfig = {
-        [SubscriptionStatus.ACTIVE]: { bg: 'bg-green-500/20 text-green-400 border border-green-500/30', text: 'Suscripción Activa', icon: 'check_circle', glow: 'shadow-[0_0_20px_rgba(34,197,94,0.3)]' },
-        [SubscriptionStatus.WARNING]: { bg: 'bg-orange-500/20 text-orange-400 border border-orange-500/30', text: 'Próxima a Vencer', icon: 'error_outline', glow: 'shadow-[0_0_20px_rgba(249,115,22,0.3)]' },
-        [SubscriptionStatus.EXPIRED]: { bg: 'bg-red-500/20 text-red-400 border border-red-500/30', text: 'Suscripción Vencida', icon: 'lock', glow: 'shadow-[0_0_20px_rgba(239,68,68,0.3)]' },
-        [SubscriptionStatus.DEMO]: { bg: 'bg-amber-500/20 text-amber-400 border border-amber-500/30', text: 'Demo (Prueba Gratuita)', icon: 'workspace_premium', glow: 'shadow-[0_0_20px_rgba(245,158,11,0.3)]' },
-        [SubscriptionStatus.DEMO_EXPIRED]: { bg: 'bg-red-500/20 text-red-400 border border-red-500/30', text: 'Demo Finalizada', icon: 'lock', glow: 'shadow-[0_0_20px_rgba(239,68,68,0.3)]' },
-        [SubscriptionStatus.DEBT_BLOCKED]: { bg: 'bg-red-500/20 text-red-400 border border-red-500/30', text: 'Bloqueo por Adeudo', icon: 'block', glow: 'shadow-[0_0_20px_rgba(239,68,68,0.3)]' },
-    }[status] || { bg: 'bg-slate-500/20 text-slate-400 border border-slate-500/30', text: 'Desconocido', icon: 'help_outline', glow: '' };
-
-    return (
-        <div className="p-8 h-full overflow-y-auto bg-[#0a0a0a] text-white">
-            <header className="mb-10 flex justify-between items-end">
-                <div>
-                    <h1 className="text-4xl font-black tracking-tight mb-2 uppercase bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">Suscripción & Facturación</h1>
-                    <p className="text-slate-400 font-medium">Gestiona tu licencia, planes y equipo POS.</p>
-                </div>
-                <button 
-                    onClick={handleEquipmentButtonClick}
-                    className={`px-6 py-3 rounded-2xl transition-all font-black flex items-center gap-2 border ${posStatus.isFullyPaid ? 'bg-green-500/10 border-green-500/30 text-green-400 cursor-default' : 'bg-slate-800/50 border-slate-700 hover:bg-slate-800 text-white shadow-xl'}`}
-                >
-                    <span className="material-icons-round">{posStatus.isFullyPaid ? 'check_circle' : 'devices'}</span>
-                    {posStatus.isFullyPaid ? 'Equipo Pagado' : 'Adeudo de Equipo POS'}
-                </button>
-            </header>
-
-            {/* Current Status Card */}
-            <div className={`mb-12 rounded-[32px] p-8 flex flex-col md:flex-row justify-between items-center relative overflow-hidden backdrop-blur-xl bg-white/5 border border-white/10 ${statusConfig.glow}`}>
-                <div className="flex items-center gap-6 mb-6 md:mb-0">
-                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center backdrop-blur-md ${statusConfig.bg}`}>
-                        <span className="material-icons-round text-3xl">{statusConfig.icon}</span>
-                    </div>
-                    <div>
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 block">Estado Actual</span>
-                        <div className="flex items-baseline gap-3">
-                            <h2 className="text-2xl font-black text-white">{statusConfig.text}</h2>
-                            {(status === SubscriptionStatus.DEMO || saasStatus === 'ACTIVE') && (
-                                <span className="text-sm font-bold text-slate-400">
-                                    — {daysRemaining} días restantes
-                                </span>
-                            )}
-                        </div>
-                    </div>
-                </div>
-                <div className="text-right">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block">ID de Establecimiento</span>
-                    <span className="text-xl font-mono font-bold uppercase text-white/80 bg-black/40 px-4 py-2 rounded-xl border border-white/5">
-                        POS-{settings.name.substring(0, 3).toUpperCase()}-{Math.floor(100+Math.random()*899)}
-                    </span>
-                </div>
-            </div>
-
-            {/* Plans Section */}
-            <div className="mb-12">
-                <div className="text-center mb-10">
-                    <h2 className="text-3xl font-black mb-3">Elige el plan ideal para tu negocio</h2>
-                    <p className="text-slate-400">Mejora tus herramientas y desbloquea todo el potencial de KŌSO POS.</p>
-                </div>
-
-                <div className="flex flex-wrap justify-center gap-8">
-                    {PLAN_TIERS.map((plan) => (
-                        <GlowCard key={plan.id} glowColor={plan.color} customSize className="w-full max-w-[340px] flex flex-col min-h-[500px]">
-                            {plan.popular && (
-                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded-full shadow-lg z-20">
-                                    Más Popular
-                                </div>
-                            )}
-                            <div className="text-center mb-6 relative z-10">
-                                <h3 className="text-2xl font-black mb-2">{plan.name}</h3>
-                                <p className="text-slate-400 text-sm mb-6 min-h-[40px]">{plan.description}</p>
-                                <div className="flex items-end justify-center gap-1">
-                                    <span className="text-xl font-bold text-slate-400">$</span>
-                                    <span className="text-5xl font-black tracking-tighter">{plan.price}</span>
-                                    <span className="text-sm font-bold text-slate-400 mb-1 uppercase">/ mes</span>
-                                </div>
-                            </div>
-                            
-                            <div className="flex-1 relative z-10">
-                                <ul className="space-y-4 mb-8">
-                                    {plan.features.map((feature, idx) => (
-                                        <li key={idx} className="flex items-start gap-3 text-sm text-slate-300 font-medium">
-                                            <span className="material-icons-round text-green-400 text-sm mt-0.5">check_circle</span>
-                                            {feature}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            <button 
-                                onClick={() => handleSubscribe(plan.id, plan.priceId, plan.name)}
-                                disabled={isPaying}
-                                className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 relative z-10 disabled:opacity-50
-                                    ${plan.popular ? 'bg-white text-black hover:bg-slate-200' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                            >
-                                {isPaying ? (
-                                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                                ) : (
-                                    <>
-                                        <span className="material-icons-round text-lg">bolt</span>
-                                        {status === SubscriptionStatus.DEMO ? 'Mejorar Plan' : 'Suscribirse'}
-                                    </>
-                                )}
-                            </button>
-                        </GlowCard>
-                    ))}
-                </div>
-            </div>
-
-            {/* History Table */}
-            <div className="bg-white/5 rounded-[32px] p-8 border border-white/10 mb-20 backdrop-blur-xl">
-                <h3 className="text-xl font-black text-white tracking-tight mb-8 flex items-center gap-3">
-                    <span className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center material-icons-round text-slate-300">history</span>
-                    Historial de Pagos
-                </h3>
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="text-left border-b border-white/10">
-                                <th className="pb-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">ID TRANSACCIÓN</th>
-                                <th className="pb-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">FECHA</th>
-                                <th className="pb-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">MÉTODO</th>
-                                <th className="pb-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">MONTO</th>
-                                <th className="pb-4 text-right text-[10px] font-black text-slate-500 uppercase tracking-widest">ESTADO</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {paymentHistory.length > 0 ? paymentHistory.map(record => (
-                                <tr key={record.id} className="hover:bg-white/5 transition-colors">
-                                    <td className="py-5">
-                                        <div className="text-sm font-black text-white">{record.transactionId}</div>
-                                        <div className="text-[10px] text-slate-400 uppercase font-black tracking-tighter">
-                                            {record.id.startsWith('EQU-') ? 'Pago Equipo POS' : 'Suscripción'}
-                                        </div>
-                                    </td>
-                                    <td className="py-5 text-sm text-slate-300 font-bold">{new Date(record.date).toLocaleDateString()}</td>
-                                    <td className="py-5 text-sm text-slate-400 font-medium">{record.method}</td>
-                                    <td className="py-5 text-sm font-black text-white">${record.amount.toFixed(2)}</td>
-                                    <td className="py-5 text-right">
-                                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-500/10 text-green-400 border border-green-500/20 rounded-lg text-[10px] font-black uppercase tracking-wider">PAGADO</span>
-                                    </td>
-                                </tr>
-                            )) : (
-                                <tr>
-                                    <td colSpan={5} className="py-20 text-center text-slate-500 font-bold uppercase tracking-widest text-xs">Aún no hay registros de pago</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Payment Success Toast */}
-            {showSuccess && (
-                <div className="fixed top-8 right-8 bg-green-500 text-black px-8 py-4 rounded-2xl shadow-2xl z-[100] animate-in slide-in-from-right flex items-center gap-4 font-black">
-                    <span className="material-icons-round bg-black text-green-500 rounded-full p-1">check</span>
-                    <div>
-                        <p className="text-sm uppercase tracking-wider">¡Operación Exitosa!</p>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal de Equipo POS */}
-            {isEquipmentModalOpen && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-[#111] border border-white/10 rounded-[32px] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="p-8 border-b border-white/10 flex justify-between items-center bg-white/5">
-                            <div>
-                                <h1 className="text-2xl font-black text-white tracking-tight uppercase tracking-widest leading-none mb-1">Planes de Equipo POS</h1>
-                                <p className="text-slate-400 font-medium text-sm">Selecciona el plan de financiamiento</p>
-                            </div>
-                            <button onClick={() => !isPaying && setIsEquipmentModalOpen(false)} className="w-12 h-12 bg-white/5 border border-white/10 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-all hover:bg-white/10 hover:rotate-90">
-                                <span className="material-icons-round">close</span>
-                            </button>
-                        </div>
-
-                        <div className="p-8">
-                            <div className="grid grid-cols-2 gap-4 mb-8">
-                                {[
-                                    { id: 'CONTADO', name: 'Contado', price: 5000, label: 'Pago Único' },
-                                    { id: '3_MESES', name: '3 Meses', price: 1666.66, label: 'Mensual' },
-                                    { id: '6_MESES', name: '6 Meses', price: 833.33, label: 'Mensual' },
-                                    { id: '8_MESES', name: '8 Meses', price: 625.00, label: 'Mensual' },
-                                ].map((plan) => (
-                                    <button
-                                        key={plan.id}
-                                        onClick={() => setSelectedEquipmentPlan({name: plan.id, price: plan.price})}
-                                        className={`p-6 rounded-[24px] border-2 transition-all flex flex-col items-start gap-1 text-left ${selectedEquipmentPlan?.name === plan.id ? 'border-blue-500 bg-blue-500/10 ring-4 ring-blue-500/20' : 'border-white/10 bg-white/5 hover:border-white/20'}`}
-                                    >
-                                        <div className="flex justify-between w-full items-center mb-1">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{plan.label}</span>
-                                            {selectedEquipmentPlan?.name === plan.id && <span className="material-icons-round text-blue-500 text-sm">check_circle</span>}
-                                        </div>
-                                        <span className="text-xl font-black text-white">{plan.name}</span>
-                                        <span className="text-2xl font-black text-blue-400">${plan.price.toLocaleString()} <span className="text-[10px] font-bold text-slate-500 uppercase">MXN</span></span>
-                                    </button>
-                                ))}
-                            </div>
-
-                            {selectedEquipmentPlan && (
-                                <div className="animate-in slide-in-from-bottom-4 duration-500">
-                                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-6 mb-8 flex items-center justify-between">
-                                        <div>
-                                            <p className="text-blue-400 text-[10px] font-black uppercase tracking-widest mb-1">Total a Pagar Hoy</p>
-                                            <p className="text-3xl font-black text-white">${selectedEquipmentPlan.price.toLocaleString()} MXN</p>
-                                        </div>
-                                        <div className="w-12 h-12 bg-blue-500 text-black rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(59,130,246,0.5)]">
-                                            <span className="material-icons-round">shopping_cart</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <button
-                                        onClick={handleEquipmentPayment}
-                                        className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-[24px] font-black text-xl shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all flex items-center justify-center gap-3 active:scale-95"
-                                    >
-                                        <span className="material-icons-round">credit_card</span>
-                                        CONTINUAR AL PAGO
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal de Progreso de Equipo */}
-            {isProgressModalOpen && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-[#111] border border-white/10 rounded-[32px] w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-                        <div className="p-8 border-b border-white/10 flex justify-between items-center bg-white/5">
-                            <div>
-                                <h3 className="text-xl font-black text-white uppercase tracking-widest">Mi Plan Equipo POS</h3>
-                                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Plan: {posStatus.plan?.replace('_', ' ')}</p>
-                            </div>
-                            <button onClick={() => setIsProgressModalOpen(false)} className="text-slate-400 hover:text-white transition-colors">
-                                <span className="material-icons-round text-3xl">close</span>
-                            </button>
-                        </div>
-                        
-                        <div className="p-8">
-                            <div className="mb-10 text-center">
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 block">Progreso de Pago</span>
-                                <div className="text-5xl font-black text-white tracking-tighter mb-2">
-                                    ${posStatus.amountPaid.toLocaleString()}
-                                    <span className="text-xl font-bold text-slate-500 ml-2">/ $5,000</span>
-                                </div>
-                                <div className="w-full bg-white/5 h-4 rounded-full overflow-hidden mt-6 mb-2 border border-white/10 relative">
-                                    <div 
-                                        className="h-full bg-blue-500 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(59,130,246,0.8)] relative z-10" 
-                                        style={{ width: `${(posStatus.amountPaid / 5000) * 100}%` }}
-                                    ></div>
-                                </div>
-                                <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">
-                                    <span>Pagado</span>
-                                    <span>Restante: ${(5000 - posStatus.amountPaid).toLocaleString()} MXN</span>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4 mb-10">
-                                <div className="p-5 rounded-2xl bg-white/5 border border-white/10 flex justify-between items-center">
-                                    <div>
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Monto Mensual</p>
-                                        <p className="text-xl font-black text-white">${(posStatus.plan === '3_MESES' ? 1666.66 : posStatus.plan === '6_MESES' ? 833.33 : 625).toLocaleString()} MXN</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Estatus</p>
-                                        <span className="text-xs font-black text-orange-400 p-2 bg-orange-500/10 border border-orange-500/20 rounded-lg">PENDIENTE</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={handleRecurringEquipmentPayment}
-                                className="w-full py-5 bg-white text-black hover:bg-slate-200 rounded-2xl font-black text-lg shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-all flex items-center justify-center gap-3 active:scale-95"
-                            >
-                                <span className="material-icons-round">payment</span>
-                                PAGAR MENSUALIDAD
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {stripeModalConfig?.isOpen && (
-                <PaymentStripeModal 
-                    onClose={() => setStripeModalConfig(null)}
-                    onPay={stripeModalConfig.onPay}
-                    amount={stripeModalConfig.amount}
-                    isPaying={isPaying}
-                    title={stripeModalConfig.title}
-                />
-            )}
-        </div>
-    );
+/* -------------------------------------------------------------------------- */
+/* Tier card — used in the 3-up pricing comparison                            */
+/* -------------------------------------------------------------------------- */
+type TierCardProps = {
+  id: BusinessTier;
+  current: BusinessTier;
+  recommended?: boolean;
+  bullets: string[];
+  description: string;
+  highlightTone: 'midnight' | 'terracota' | 'mostaza';
+  onSelect: () => void;
+  busy?: boolean;
 };
 
-const PaymentStripeModal: React.FC<{
-    onClose: () => void;
-    onPay: () => void;
-    amount: number;
-    isPaying: boolean;
-    title: string;
-}> = ({ onClose, onPay, amount, isPaying, title }) => (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-        <div className="bg-[#111] border border-white/10 rounded-[24px] w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="bg-white/5 p-6 border-b border-white/10 flex justify-between items-center text-white">
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-                        <span className="material-icons-round text-black text-sm">payments</span>
-                    </div>
-                    <span className="font-black tracking-tight">{title}</span>
-                </div>
-                <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
-                    <span className="material-icons-round">close</span>
-                </button>
-            </div>
+const TierCard: React.FC<TierCardProps> = ({
+  id, current, recommended, bullets, description, highlightTone, onSelect, busy,
+}) => {
+  const tone = {
+    midnight:  { ring: 'border-[rgba(42,40,38,0.12)]', accent: 'text-servirest-midnight',  bg: 'bg-servirest-surface' },
+    terracota: { ring: 'border-servirest-terracota/40', accent: 'text-servirest-terracota', bg: 'bg-servirest-surface' },
+    mostaza:   { ring: 'border-servirest-mostaza/50',  accent: 'text-servirest-mostaza',   bg: 'bg-servirest-surface' },
+  }[highlightTone];
 
-            <div className="p-8">
-                <div className="mb-8">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">Monto a Pagar</span>
-                    <div className="text-3xl font-black text-white leading-none flex items-baseline gap-1">
-                        ${amount.toFixed(2)} 
-                        <span className="text-sm font-bold text-slate-500 uppercase">MXN</span>
-                    </div>
-                </div>
+  const isCurrent = id === current;
+  const isDowngrade =
+    (current === 'profesional' && id === 'esencial') ||
+    (current === 'prestige' && (id === 'esencial' || id === 'profesional')) ||
+    (current === 'enterprise' && id !== 'enterprise');
 
-                <div className="space-y-4">
-                    <div>
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Correo Electrónico</label>
-                        <input type="email" placeholder="ejemplo@correo.com" className="w-full p-3 bg-black border border-white/10 rounded-xl outline-none focus:border-blue-500 transition-all font-medium text-white placeholder-slate-600" />
-                    </div>
+  const pricing = TIER_PRICING[id];
+  const limits = TIER_LIMITS[id];
 
-                    <div>
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Información de la Tarjeta</label>
-                        <div className="border border-white/10 rounded-xl overflow-hidden shadow-sm bg-black flex flex-col focus-within:border-blue-500 transition-colors">
-                            <input type="text" placeholder="Número de tarjeta" className="w-full p-4 bg-transparent outline-none font-mono text-white placeholder-slate-600 border-b border-white/10" />
-                            <div className="flex">
-                                <input type="text" placeholder="MM / YY" className="w-1/2 p-4 bg-transparent border-r border-white/10 outline-none font-mono text-white placeholder-slate-600" />
-                                <input type="text" placeholder="CVC" className="w-1/2 p-4 bg-transparent outline-none font-mono text-white placeholder-slate-600" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <button
-                    onClick={onPay}
-                    disabled={isPaying}
-                    className={`w-full mt-10 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-lg transition-all flex items-center justify-center gap-3 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:scale-[1.02] active:scale-95 disabled:opacity-50`}
-                >
-                    {isPaying ? (
-                        <>
-                            <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
-                            PROCESANDO PAGO...
-                        </>
-                    ) : (
-                        `PAGAR $${amount.toFixed(2)}`
-                    )}
-                </button>
-
-                <p className="mt-8 text-center text-slate-500 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-                    <span className="material-icons-round text-sm">security</span>
-                    Pagos Seguros
-                </p>
-            </div>
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      className="relative"
+    >
+      {recommended && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+          <SrChip tone="mostaza" size="sm">
+            <Sparkles size={10} className="mr-1.5" /> Recomendado para tu zona
+          </SrChip>
         </div>
+      )}
+      <div
+        className={`relative bg-servirest-surface rounded-sr-2xl border-2 ${tone.ring} shadow-sr-lift overflow-hidden h-full flex flex-col`}
+        style={{ borderColor: recommended ? '#C9A24A' : undefined }}
+      >
+        {recommended && (
+          <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ background: 'radial-gradient(circle at 50% 0%, #C9A24A 0%, transparent 60%)' }} />
+        )}
+        <div className="p-8 pb-4 relative">
+          <SrTierBadge tier={id} size="md" />
+          <h3 className="font-serif italic font-medium text-[34px] text-servirest-midnight tracking-[-0.02em] mt-4 mb-2 leading-none">
+            {pricing.label}
+          </h3>
+          <p className="text-[13px] text-[rgba(42,40,38,0.6)] font-medium leading-relaxed min-h-[48px]">
+            {description}
+          </p>
+        </div>
+
+        <div className="px-8 pt-2 pb-6 relative">
+          {id === 'enterprise' ? (
+            <div className="flex items-baseline gap-2">
+              <span className="font-serif italic font-medium text-[34px] text-servirest-midnight leading-none">
+                A medida
+              </span>
+              <span className="sr-label">contacta ventas</span>
+            </div>
+          ) : (
+            <div className="flex items-baseline gap-1">
+              <span className="font-bold text-[18px] text-servirest-midnight">$</span>
+              <span className="font-black italic text-[52px] text-servirest-midnight tracking-[-0.03em] leading-none">
+                {pricing.monthly.toLocaleString()}
+              </span>
+              <span className="font-mono text-[11px] text-[rgba(42,40,38,0.6)] ml-1 mb-1.5">MXN / mes</span>
+            </div>
+          )}
+          {id !== 'enterprise' && (
+            <div className="mt-2">
+              <SrLabel className="text-[8px]">
+                ó ${pricing.yearly.toLocaleString()} al año <span className="text-servirest-terracota">— ahorra 2 meses</span>
+              </SrLabel>
+            </div>
+          )}
+        </div>
+
+        <div className="px-8 pb-6 flex-1">
+          <ul className="space-y-3">
+            {bullets.map((b, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-[13px] text-servirest-carbon font-medium leading-snug">
+                <CheckCircle2 size={15} className={`flex-shrink-0 mt-0.5 ${tone.accent}`} />
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Limit footer — gives the buyer a feel for the boundary */}
+        <div className="px-8 py-4 border-t border-[rgba(42,40,38,0.08)] bg-servirest-hueso-sunken/60">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] font-medium text-[rgba(42,40,38,0.6)]">
+            <span>Mesas</span><span className="font-mono text-right">{limits.maxTables >= 999 ? '∞' : limits.maxTables}</span>
+            <span>Empleados</span><span className="font-mono text-right">{limits.maxEmployees >= 999 ? '∞' : limits.maxEmployees}</span>
+            <span>Sucursales</span><span className="font-mono text-right">{limits.maxLocations >= 999 ? '∞' : limits.maxLocations}</span>
+            <span>Terminales</span><span className="font-mono text-right">{limits.maxConcurrentTerminals >= 999 ? '∞' : limits.maxConcurrentTerminals}</span>
+          </div>
+        </div>
+
+        <div className="p-6 pt-4">
+          {isCurrent ? (
+            <SrButton variant="outline" size="md" fullWidth disabled icon={<CheckCircle2 size={14} />}>
+              Tu plan actual
+            </SrButton>
+          ) : isDowngrade ? (
+            <SrButton variant="ghost" size="md" fullWidth disabled>
+              Cambiar a plan menor — escríbenos
+            </SrButton>
+          ) : id === 'enterprise' ? (
+            <SrButton variant="midnight" size="md" fullWidth iconRight={<ArrowRight size={16} />}>
+              Hablar con ventas
+            </SrButton>
+          ) : (
+            <SrButton
+              variant={recommended ? 'primary' : 'midnight'}
+              size="md"
+              fullWidth
+              iconRight={busy ? <SrSpinner size={14} /> : <ArrowRight size={16} />}
+              disabled={busy}
+              onClick={onSelect}
+            >
+              {busy ? 'Conectando…' : current === 'esencial' && id === 'esencial' ? 'Suscribirme' : `Pasar a ${pricing.label}`}
+            </SrButton>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/* Status pill — top of page                                                  */
+/* -------------------------------------------------------------------------- */
+const STATUS_LABEL: Record<SubscriptionStatus, { label: string; tone: 'success' | 'warning' | 'danger' | 'mostaza' }> = {
+  [SubscriptionStatus.ACTIVE]:        { label: 'Suscripción activa',     tone: 'success' },
+  [SubscriptionStatus.WARNING]:       { label: 'Próxima a vencer',        tone: 'warning' },
+  [SubscriptionStatus.EXPIRED]:       { label: 'Suscripción vencida',     tone: 'danger'  },
+  [SubscriptionStatus.DEMO]:          { label: 'Demo gratuito',           tone: 'mostaza' },
+  [SubscriptionStatus.DEMO_EXPIRED]:  { label: 'Demo finalizado',         tone: 'danger'  },
+  [SubscriptionStatus.DEBT_BLOCKED]:  { label: 'Bloqueo por equipo',      tone: 'danger'  },
+};
+
+/* -------------------------------------------------------------------------- */
+/* BillingScreen                                                              */
+/* -------------------------------------------------------------------------- */
+export const BillingScreen: React.FC = () => {
+  const {
+    daysRemaining, status, paymentHistory, paySubscription, payEquipment,
+    posStatus, tier,
+  } = useSubscription();
+  const { settings } = useSettings();
+
+  const [isEquipmentModalOpen, setIsEquipmentModalOpen] = useState(false);
+  const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+  const [selectedEquipmentPlan, setSelectedEquipmentPlan] = useState<{ name: string; price: number } | null>(null);
+  const [isPaying, setIsPaying] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
+  const statusInfo = STATUS_LABEL[status] || { label: 'Sin estado', tone: 'warning' as const };
+
+  /* ── TIER DEFINITIONS (kept here so it's the single source of truth for UX) */
+  const TIERS: Array<{
+    id: BusinessTier;
+    description: string;
+    bullets: string[];
+    tone: 'midnight' | 'terracota' | 'mostaza';
+    priceId?: string;
+  }> = [
+    {
+      id: 'esencial',
+      description: 'Para fondas, cafés, taquerías y locales chicos. Lo justo para vender, cobrar y cerrar el día sin perder tiempo.',
+      bullets: [
+        'POS Línea de Órdenes',
+        'Menú con variantes',
+        'Mesas, caja y tickets',
+        'Inventario básico',
+        'CFDI 4.0 — 50 timbres al mes',
+        'Soporte por email + WhatsApp (lun-sáb)',
+      ],
+      tone: 'midnight',
+      priceId: 'price_1TWMW07vbDuHdmHoPmOOuBCx',
+    },
+    {
+      id: 'profesional',
+      description: 'Para restaurantes pyme con cocina y meseros. Suma cocina en pantalla, inventario fino y operación multi-terminal.',
+      bullets: [
+        'Todo lo de Esencial',
+        'Kitchen Display System (KDS)',
+        'Hostess y waitlist',
+        'Bar y comandas separadas',
+        'Inventario con proveedores y food cost',
+        'Hasta 5 terminales en paralelo',
+        'Orden remota (Rappi, Uber Eats, DiDi)',
+        'CFDI 4.0 — 200 timbres / mes',
+        'Soporte WhatsApp prioritario',
+      ],
+      tone: 'terracota',
+      priceId: 'price_1TWMWX7vbDuHdmHofLolyZcZ',
+    },
+    {
+      id: 'prestige',
+      description: 'Para restaurantes en corredor premium, hoteles y conceptos boutique. Reservaciones, carta digital pública y look editorial.',
+      bullets: [
+        'Todo lo de Profesional',
+        'Reservaciones con confirmación WhatsApp + email',
+        'Carta digital pública con URL propia + QR',
+        'Wine list con maridajes y coctelería con costeo',
+        'Hasta 5 sucursales en consolidador',
+        'Reportes con KPIs hospitality + análisis de menú',
+        'Branding co-cliente (tu logo encima)',
+        'Cuenta dedicada + onboarding asistido',
+        'SLA 99.5% mensual',
+      ],
+      tone: 'mostaza',
+    },
+    {
+      id: 'enterprise',
+      description: 'Cadenas, franquicias y grupos. White label total, API privada y pricing por volumen.',
+      bullets: [
+        'Todo lo de Prestige',
+        'Sucursales ilimitadas',
+        'White label completo (tu marca, sin ServiRest visible)',
+        'API privada + integración ERP (SAP, Microsip, Contpaqi)',
+        'Auditoría avanzada y roles personalizados',
+        'SLA 99.9% + soporte 24/7',
+      ],
+      tone: 'midnight',
+    },
+  ];
+
+  const handleSubscribe = async (planId: BusinessTier, priceId?: string) => {
+    setIsPaying(true);
+    const planName = `ServiRest ${TIER_PRICING[planId].label} — Renovación mensual`;
+    const success = await paySubscription(priceId, planName);
+    if (!success) setIsPaying(false);
+  };
+
+  const handleEquipmentPayment = async () => {
+    if (!selectedEquipmentPlan) return;
+    setIsPaying(true);
+    const ok = await payEquipment(selectedEquipmentPlan.price, selectedEquipmentPlan.name);
+    if (ok) {
+      setIsPaying(false);
+      setIsEquipmentModalOpen(false);
+      setSelectedEquipmentPlan(null);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 4000);
+    } else {
+      setIsPaying(false);
+    }
+  };
+
+  const handleRecurringEquipmentPayment = async () => {
+    if (!posStatus.plan) return;
+    const amount = posStatus.plan === '3_MESES' ? 1666.66
+                 : posStatus.plan === '6_MESES' ? 833.33
+                 : posStatus.plan === '8_MESES' ? 625.00 : 0;
+    setIsPaying(true);
+    const ok = await payEquipment(amount, posStatus.plan);
+    if (ok) {
+      setIsPaying(false);
+      setIsProgressModalOpen(false);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 4000);
+    } else {
+      setIsPaying(false);
+    }
+  };
+
+  return (
+    <div className="h-full w-full overflow-y-auto custom-scrollbar bg-servirest-hueso text-servirest-carbon">
+      <div className="px-[38px] py-10 max-w-[1400px] mx-auto">
+        {/* HEADER */}
+        <div className="flex justify-between items-start flex-wrap gap-5 mb-10">
+          <div>
+            <SrKicker className="block mb-2">Plan & facturación</SrKicker>
+            <h1 className="sr-h1 m-0 mb-2">Tu plan de ServiRest</h1>
+            <p className="text-[14px] text-[rgba(42,40,38,0.6)] font-medium max-w-[600px]">
+              Escoge el plan que mejor le queda a tu restaurante. Sube o baja cuando quieras, sin penalización.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <SrButton
+              variant={posStatus.isFullyPaid ? 'outline' : 'midnight'}
+              size="md"
+              icon={posStatus.isFullyPaid ? <CheckCircle2 size={14} /> : <CreditCard size={14} />}
+              onClick={() => {
+                if (posStatus.isFullyPaid) return;
+                if (posStatus.plan) setIsProgressModalOpen(true);
+                else setIsEquipmentModalOpen(true);
+              }}
+              disabled={posStatus.isFullyPaid}
+            >
+              {posStatus.isFullyPaid ? 'Equipo pagado' : 'Equipo POS'}
+            </SrButton>
+          </div>
+        </div>
+
+        {/* CURRENT STATUS — narrative card, not a dashboard widget */}
+        <SrCard variant="solaris" className="p-8 mb-10">
+          <div className="flex items-start justify-between gap-6 flex-wrap">
+            <div className="flex items-start gap-5">
+              <div className="w-14 h-14 rounded-sr-lg bg-servirest-midnight text-servirest-mostaza flex items-center justify-center flex-shrink-0">
+                {tier === 'prestige' ? <Crown size={26} /> : tier === 'profesional' ? <Zap size={26} /> : tier === 'enterprise' ? <Building2 size={26} /> : <Receipt size={26} />}
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <SrLabel>Tu plan</SrLabel>
+                  <SrTierBadge tier={tier} />
+                </div>
+                <div className="font-serif italic font-medium text-[34px] text-servirest-midnight tracking-[-0.02em] leading-none mb-1.5">
+                  {TIER_PRICING[tier].label}
+                </div>
+                <SrChip tone={statusInfo.tone === 'mostaza' ? 'mostaza' : statusInfo.tone}>
+                  {statusInfo.label}
+                </SrChip>
+              </div>
+            </div>
+            <div className="text-right">
+              <SrLabel className="block mb-1">Días restantes</SrLabel>
+              <div className="font-black italic text-[44px] text-servirest-midnight tracking-[-0.03em] leading-none">
+                {daysRemaining}<span className="text-[20px] text-[rgba(42,40,38,0.4)] ml-1">d</span>
+              </div>
+              <div className="font-mono text-[10px] text-[rgba(42,40,38,0.4)] mt-1">
+                ID {settings.name?.substring(0, 3).toUpperCase() || 'SRV'}-{(Math.floor(100 + Math.random() * 899))}
+              </div>
+            </div>
+          </div>
+        </SrCard>
+
+        {/* WARNING ALERTS */}
+        {status === SubscriptionStatus.WARNING && (
+          <SrAlert tone="warning" title="Tu plan vence pronto" className="mb-8">
+            Te quedan {daysRemaining} días. Renueva ahora para no interrumpir el servicio en cocina.
+          </SrAlert>
+        )}
+        {status === SubscriptionStatus.EXPIRED && (
+          <SrAlert tone="danger" title="Tu suscripción expiró" className="mb-8">
+            Algunas funciones quedaron bloqueadas. Renueva para regresar a tu operación normal.
+          </SrAlert>
+        )}
+        {status === SubscriptionStatus.DEMO_EXPIRED && (
+          <SrAlert tone="danger" title="Tu demo terminó" className="mb-8">
+            Escoge un plan para seguir usando ServiRest. Tu data está intacta esperándote.
+          </SrAlert>
+        )}
+
+        {/* BILLING CYCLE TOGGLE */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+          <div>
+            <SrKicker className="block mb-1">Modalidades</SrKicker>
+            <h2 className="sr-h-brutal text-[22px] m-0">El plan que le queda a tu restaurante</h2>
+          </div>
+          <div className="flex items-center gap-2 p-1 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-sr-xl">
+            {(['monthly', 'yearly'] as const).map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setBillingCycle(c)}
+                className={`px-4 py-2 rounded-sr-md text-[10px] font-black uppercase tracking-[0.14em] transition-colors ${billingCycle === c ? 'bg-servirest-midnight text-servirest-hueso' : 'text-[rgba(42,40,38,0.6)] hover:text-servirest-carbon'}`}
+              >
+                {c === 'monthly' ? 'Mensual' : (
+                  <>Anual <span className="text-servirest-mostaza ml-1">−2 meses</span></>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 3-up tier comparison + Enterprise rail */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
+          {TIERS.filter((t) => t.id !== 'enterprise').map((t) => (
+            <TierCard
+              key={t.id}
+              id={t.id}
+              current={tier}
+              recommended={t.id === 'profesional' && tier === 'esencial'}
+              description={t.description}
+              bullets={t.bullets}
+              highlightTone={t.tone}
+              busy={isPaying}
+              onSelect={() => handleSubscribe(t.id, t.priceId)}
+            />
+          ))}
+        </div>
+
+        {/* Enterprise rail — narrower, sits below the 3-up */}
+        <SrCard variant="solaris" className="p-8 mb-12 flex items-center justify-between gap-6 flex-wrap">
+          <div className="flex items-start gap-5 flex-1 min-w-0">
+            <div className="w-14 h-14 rounded-sr-lg bg-servirest-midnight text-servirest-mostaza flex items-center justify-center flex-shrink-0">
+              <Building2 size={26} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <SrTierBadge tier="enterprise" />
+                <SrLabel>Para cadenas y franquicias</SrLabel>
+              </div>
+              <h3 className="font-serif italic font-medium text-[26px] text-servirest-midnight tracking-[-0.02em] m-0 mb-1.5 leading-tight">
+                Enterprise — white label y API privada
+              </h3>
+              <p className="text-[13px] text-[rgba(42,40,38,0.6)] font-medium leading-relaxed max-w-[600px]">
+                Sucursales ilimitadas, integración ERP, auditoría avanzada, soporte 24/7 y precio por volumen. Hablamos.
+              </p>
+            </div>
+          </div>
+          <SrButton variant="midnight" size="md" iconRight={<ArrowRight size={16} />}>
+            Solicitar propuesta
+          </SrButton>
+        </SrCard>
+
+        {/* PAYMENT HISTORY — editorial table */}
+        <SrPanel title="Historial de pagos" kicker="Movimientos">
+          {paymentHistory.length === 0 ? (
+            <SrEmptyState
+              icon={<History size={28} />}
+              title="Aún no hay pagos registrados"
+              description="Cuando renueves tu plan o abones a tu equipo, los movimientos aparecerán aquí."
+            />
+          ) : (
+            <div className="overflow-x-auto -mx-7 px-7">
+              <table className="w-full min-w-[640px]">
+                <thead>
+                  <tr className="border-b border-[rgba(42,40,38,0.12)]">
+                    <th className="text-left py-3 sr-label">Transacción</th>
+                    <th className="text-left py-3 sr-label">Fecha</th>
+                    <th className="text-left py-3 sr-label">Método</th>
+                    <th className="text-right py-3 sr-label">Monto</th>
+                    <th className="text-right py-3 sr-label">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paymentHistory.map((r: PaymentRecord) => (
+                    <tr key={r.id} className="border-b border-[rgba(42,40,38,0.06)] hover:bg-servirest-hueso-sunken/40 transition-colors">
+                      <td className="py-4">
+                        <SrMono className="block text-servirest-midnight">{r.transactionId}</SrMono>
+                        <span className="text-[10px] text-[rgba(42,40,38,0.4)] font-bold uppercase tracking-[0.12em]">
+                          {r.id.startsWith('EQU-') || (r as any).type === 'EQUIPMENT' ? 'Equipo' : 'Suscripción'}
+                        </span>
+                      </td>
+                      <td className="py-4 text-[13px] font-medium text-servirest-carbon">
+                        {new Date(r.date).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </td>
+                      <td className="py-4 text-[13px] font-medium text-[rgba(42,40,38,0.6)]">{r.method}</td>
+                      <td className="py-4 text-right">
+                        <SrMono>${r.amount.toFixed(2)}</SrMono>
+                      </td>
+                      <td className="py-4 text-right">
+                        <SrChip tone="success" size="xs">Pagado</SrChip>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </SrPanel>
+      </div>
+
+      {/* Success toast */}
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="fixed top-6 right-6 z-[200]"
+          >
+            <SrCard className="px-5 py-4 flex items-center gap-3 shadow-sr-modal min-w-[280px]">
+              <div className="w-9 h-9 rounded-full bg-servirest-success/10 text-servirest-success flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 size={18} />
+              </div>
+              <div>
+                <div className="font-extrabold text-sm text-servirest-midnight">¡Operación exitosa!</div>
+                <div className="text-[11px] text-[rgba(42,40,38,0.6)] font-medium">Movimiento registrado.</div>
+              </div>
+            </SrCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* EQUIPMENT MODAL — select a plan */}
+      <AnimatePresence>
+        {isEquipmentModalOpen && (
+          <SrModal open onClose={() => !isPaying && setIsEquipmentModalOpen(false)} maxWidth={720}>
+            <SrModalHeader
+              title="Tu equipo POS"
+              kicker="Escoge tu plan de financiamiento"
+              onClose={() => !isPaying && setIsEquipmentModalOpen(false)}
+            />
+            <div className="grid grid-cols-2 gap-3.5 mb-6">
+              {[
+                { id: 'CONTADO',  name: 'Contado',  price: 5000,    label: 'Pago único' },
+                { id: '3_MESES',  name: '3 Meses',  price: 1666.66, label: 'Mensual × 3' },
+                { id: '6_MESES',  name: '6 Meses',  price: 833.33,  label: 'Mensual × 6' },
+                { id: '8_MESES',  name: '8 Meses',  price: 625.00,  label: 'Mensual × 8' },
+              ].map((p) => {
+                const on = selectedEquipmentPlan?.name === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelectedEquipmentPlan({ name: p.id, price: p.price })}
+                    className={`p-5 rounded-sr-xl border-2 text-left transition-all ${on ? 'border-servirest-terracota bg-[rgba(196,99,63,0.06)] shadow-sr-glow' : 'border-[rgba(42,40,38,0.12)] bg-servirest-surface hover:border-[rgba(42,40,38,0.20)]'}`}
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <SrLabel className="text-[8px]">{p.label}</SrLabel>
+                      {on && <CheckCircle2 size={16} className="text-servirest-terracota" />}
+                    </div>
+                    <div className="font-serif italic font-medium text-[22px] text-servirest-midnight mb-1 leading-none">{p.name}</div>
+                    <div className={`font-mono font-bold ${on ? 'text-servirest-terracota' : 'text-servirest-carbon'}`}>
+                      ${p.price.toLocaleString()} <span className="text-[10px] font-medium text-[rgba(42,40,38,0.4)]">MXN</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {selectedEquipmentPlan && (
+              <>
+                <SrAlert tone="info" title="A pagar hoy" className="mb-5">
+                  <span className="font-mono font-bold text-base">${selectedEquipmentPlan.price.toLocaleString()} MXN</span>
+                  {' · '} Stripe Checkout abre en una pestaña nueva.
+                </SrAlert>
+                <SrButton
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  iconRight={isPaying ? <SrSpinner size={16} /> : <ArrowRight size={18} />}
+                  onClick={handleEquipmentPayment}
+                  disabled={isPaying}
+                >
+                  {isPaying ? 'Procesando…' : 'Continuar al pago'}
+                </SrButton>
+              </>
+            )}
+          </SrModal>
+        )}
+      </AnimatePresence>
+
+      {/* EQUIPMENT PROGRESS MODAL — show how much paid */}
+      <AnimatePresence>
+        {isProgressModalOpen && (
+          <SrModal open onClose={() => setIsProgressModalOpen(false)} maxWidth={520}>
+            <SrModalHeader
+              title="Tu equipo POS"
+              kicker={`Plan ${posStatus.plan?.replace('_', ' ') || ''}`}
+              onClose={() => setIsProgressModalOpen(false)}
+            />
+            <div className="mb-7">
+              <SrLabel className="block mb-2">Progreso de pago</SrLabel>
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="font-black italic text-[44px] text-servirest-midnight tracking-[-0.03em] leading-none">
+                  ${posStatus.amountPaid.toLocaleString()}
+                </span>
+                <span className="font-mono text-[14px] text-[rgba(42,40,38,0.4)]">
+                  / ${(posStatus.totalAmount || 5000).toLocaleString()}
+                </span>
+              </div>
+              <div className="w-full h-2 rounded-sr-pill bg-[rgba(42,40,38,0.08)] overflow-hidden">
+                <div
+                  className="h-full bg-servirest-terracota rounded-sr-pill transition-all duration-700"
+                  style={{
+                    width: `${Math.min(100, (posStatus.amountPaid / (posStatus.totalAmount || 5000)) * 100)}%`,
+                    boxShadow: '0 0 12px rgba(196,99,63,0.4)',
+                  }}
+                />
+              </div>
+              <div className="flex justify-between text-[10px] mt-2 font-mono text-[rgba(42,40,38,0.6)]">
+                <span>Pagado</span>
+                <span>Restan ${((posStatus.totalAmount || 5000) - posStatus.amountPaid).toLocaleString()}</span>
+              </div>
+            </div>
+
+            <SrCard className="p-5 mb-6 flex justify-between items-center">
+              <div>
+                <SrLabel className="block mb-1">Mensualidad</SrLabel>
+                <SrMono className="text-base">
+                  ${(posStatus.plan === '3_MESES' ? 1666.66 : posStatus.plan === '6_MESES' ? 833.33 : 625).toLocaleString()} MXN
+                </SrMono>
+              </div>
+              <SrChip tone="mostaza">Pendiente</SrChip>
+            </SrCard>
+
+            <SrButton
+              variant="primary"
+              size="lg"
+              fullWidth
+              iconRight={isPaying ? <SrSpinner size={16} /> : <ArrowRight size={18} />}
+              onClick={handleRecurringEquipmentPayment}
+              disabled={isPaying}
+            >
+              {isPaying ? 'Procesando…' : 'Pagar mensualidad'}
+            </SrButton>
+          </SrModal>
+        )}
+      </AnimatePresence>
     </div>
-);
+  );
+};
+
+export default BillingScreen;

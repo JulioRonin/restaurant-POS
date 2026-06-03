@@ -1,112 +1,69 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es" class="bg-servirest-hueso" style="color-scheme: light; background-color: #FAF8F4;">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ServiRest - Restaurant POS</title>
-    <meta name="theme-color" content="#1A1E2E" />
-    <meta name="description" content="ServiRest - Sistema de Punto de Venta para Restaurantes" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="light only" />
+    <title>ServiRest — Administración, atención y operación de tu restaurante</title>
+    <meta name="theme-color" content="#FAF8F4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1A1E2E" media="(prefers-color-scheme: dark)" />
+    <meta name="description" content="ServiRest · POS, KDS, hostess, caja y reportes en un solo lugar. Aliados del rubro, no proveedores carísimos." />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ServiRest" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://js.stripe.com/v3/"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Manrope', 'Inter', 'sans-serif'],
-            },
-            colors: {
-              primary: {
-                DEFAULT: 'var(--primary-color, #5D5FEF)',
-                50: 'var(--primary-50, #EEF2FF)',
-                100: 'var(--primary-100, #E0E7FF)',
-                200: 'var(--primary-200, #C7D2FE)',
-                300: 'var(--primary-300, #A5B4FC)',
-                400: 'var(--primary-400, #818CF8)',
-                500: 'var(--primary-500, #5D5FEF)',
-                600: 'var(--primary-600, #4F46E5)',
-                700: 'var(--primary-700, #4338CA)',
-                800: 'var(--primary-800, #3730A3)',
-                900: 'var(--primary-900, #312E81)',
-              },
-              secondary: 'var(--secondary-color, #A5A6F6)',
-              accent: '#EA7C69',
-              bg: {
-                main: '#F3F4F6',
-                panel: '#FFFFFF',
-              },
-              pastel: {
-                peach: '#FFEBE5',
-                peachText: '#8A4A38',
-                blue: '#E3F2FD',
-                blueText: '#2B4A6F',
-                pink: '#FCE4EC',
-                pinkText: '#883956',
-                lavender: '#F3E5F5',
-                lavenderText: '#6A1B9A',
-                yellow: '#FFF8E1',
-                yellowText: '#8D6E08',
-                mint: '#E0F2F1',
-                mintText: '#00695C'
-              }
-            },
-            boxShadow: {
-              'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
-              'card': '0 2px 10px rgba(0,0,0,0.03)'
-            }
-          }
-        }
-      }
-    </script>
+
+    <!--
+      CRITICAL CSS FALLBACK
+      Inlined so the page renders with brand canvas + sane container limits
+      even before Vite's compiled CSS arrives (or if a stylesheet 404s on a
+      bad deploy). Without this the LockScreen avatars render at full viewport
+      width because Tailwind utilities are absent and <img> has no constraint.
+      Keep this minimal — only what's needed to prevent visual catastrophes.
+    -->
     <style>
-      :root {
-        --primary-color: #5D5FEF;
-        --secondary-color: #A5A6F6;
-        --primary-rgb: 93, 95, 239;
+      html, body {
+        margin: 0;
+        padding: 0;
+        background-color: #FAF8F4;
+        color: #2A2826;
+        font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+      body { overflow: hidden; }
+      img { max-width: 100%; height: auto; display: block; }
+      button { font-family: inherit; cursor: pointer; }
+      *, *::before, *::after { box-sizing: border-box; }
+      /* Ensure any image inside a constrained avatar wrapper can't blow up
+         even before utility classes apply. */
+      [class*="rounded-full"] > img,
+      [class*="rounded-2xl"] > img,
+      [class*="rounded-3xl"] > img,
+      [class*="rounded-solaris"] > img,
+      .profile img,
+      .avatar img,
+      .sb-mark img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: inherit;
       }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #D1D5DB;
-        border-radius: 10px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #9CA3AF;
-      }
-      body {
-        overflow: hidden; /* App-like feel */
-      }
+      /* Hide the empty React root until CSS is ready, so users never see
+         a flash of giant unstyled HTML. Removed in 250ms in case CSS races. */
+      #root:empty + script + style ~ noscript { display: none; }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.2.4",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "recharts": "https://esm.sh/recharts@^3.7.0",
-    "react-router-dom": "https://esm.sh/react-router-dom@^7.13.0"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
-</head>
-  <body class="bg-[#1f2937] text-white/50 transition-colors duration-300">
+
+    <link rel="stylesheet" href="/index.css">
+  </head>
+  <body class="bg-servirest-hueso text-servirest-carbon antialiased" style="background-color: #FAF8F4; color: #2A2826; overflow: hidden;">
     <div id="root"></div>
     <div id="print-root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>

@@ -129,40 +129,40 @@ export const InventoryScreen: React.FC = () => {
     const getStockStatus = (qty: number, max: number, min: number) => {
         const pct = (qty / (max || 100)) * 100;
         if (qty <= min) return { label: 'CRITICAL', color: 'text-red-500', bar: 'bg-red-500', pct };
-        if (pct < 40) return { label: 'LOW', color: 'text-solaris-orange', bar: 'bg-[#F98359]', pct };
+        if (pct < 40) return { label: 'LOW', color: 'text-servirest-terracota', bar: 'bg-[#C4633F]', pct };
         return { label: 'STABLE', color: 'text-green-500', bar: 'bg-green-500', pct };
     };
 
     return (
-        <div className="h-full bg-[#FAFAF3] text-[#1a1c14] p-6 md:p-10 overflow-y-auto antialiased">
+        <div className="h-full bg-[#FAF8F4] text-[#1a1c14] p-6 md:p-10 overflow-y-auto antialiased">
             <div className="max-w-7xl mx-auto w-full">
                 {/* Header */}
                 <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
                     <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">ServiRest Logistics</h1>
-                        <p className="text-gray-600 font-bold text-[10px] uppercase tracking-[0.4em]">Resource Flow & Inventory Architecture</p>
+                        <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-2">Inventario</h1>
+                        <p className="text-gray-600 font-bold text-[10px] uppercase tracking-[0.4em]">Stock, mermas y proveedores</p>
                     </motion.div>
                     
                     <div className="flex gap-4">
-                        <div className="bg-white/[0.03] border border-white/5 p-1 rounded-2xl flex">
-                            <button onClick={() => setActiveTab('stock')} className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'stock' ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-gray-500'}`}>
-                                <Package size={14} /> Stock Matrix
+                        <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-1 rounded-2xl flex">
+                            <button onClick={() => setActiveTab('stock')} className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'stock' ? 'bg-servirest-surface text-servirest-terracota border border-solaris-orange/20' : 'text-gray-500'}`}>
+                                <Package size={14} /> Inventario
                             </button>
-                            <button onClick={() => setActiveTab('orders')} className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'orders' ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-gray-500'}`}>
-                                <Truck size={14} /> Procurement
+                            <button onClick={() => setActiveTab('orders')} className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${activeTab === 'orders' ? 'bg-servirest-surface text-servirest-terracota border border-solaris-orange/20' : 'text-gray-500'}`}>
+                                <Truck size={14} /> Compras
                             </button>
                         </div>
 
-                        <button onClick={() => setIsCartOpen(true)} className="relative group bg-white/[0.03] border border-white/5 p-3 rounded-2xl hover:bg-white/[0.05] transition-all">
+                        <button onClick={() => setIsCartOpen(true)} className="relative group bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-3 rounded-2xl hover:bg-servirest-surface transition-all">
                              <ShoppingCart size={20} className="text-gray-400 group-hover:text-[#1a1c14]" />
-                             {cart.length > 0 && <span className="absolute -top-1 -right-1 bg-[#F98359] text-[#1a1c14] text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-solaris-glow">{cart.length}</span>}
+                             {cart.length > 0 && <span className="absolute -top-1 -right-1 bg-[#C4633F] text-[#1a1c14] text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-solaris-glow">{cart.length}</span>}
                         </button>
 
                         <button 
                             onClick={() => { setEditingItem(null); setIsAddModalOpen(true); }}
-                            className="bg-[#F98359] text-[#1a1c14] px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-solaris-glow hover:scale-105 transition-all"
+                            className="bg-[#C4633F] text-[#1a1c14] px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 shadow-solaris-glow hover:scale-105 transition-all"
                         >
-                             <Plus size={16} /> Add Supply
+                             <Plus size={16} /> Agregar producto
                         </button>
                     </div>
                 </header>
@@ -170,17 +170,17 @@ export const InventoryScreen: React.FC = () => {
                 {activeTab === 'stock' && (
                     <>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-                             <div className="md:col-span-3 bg-white/[0.02] border border-white/5 p-2 rounded-2xl flex items-center gap-2 overflow-x-auto no-scrollbar">
+                             <div className="md:col-span-3 bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-2 rounded-2xl flex items-center gap-2 overflow-x-auto no-scrollbar">
                                 {INVENTORY_CATEGORIES.map(cat => (
-                                    <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeCategory === cat ? 'bg-white/[0.05] text-solaris-orange border border-solaris-orange/20' : 'text-gray-500'}`}>
+                                    <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeCategory === cat ? 'bg-servirest-surface text-servirest-terracota border border-solaris-orange/20' : 'text-gray-500'}`}>
                                         {cat}
                                     </button>
                                 ))}
                              </div>
-                             <div className="bg-white/[0.02] border border-white/5 p-4 rounded-solaris flex items-center justify-between">
+                             <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-4 rounded-solaris flex items-center justify-between">
                                  <div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-700">Stock Assets</p>
-                                    <p className="text-2xl font-black italic text-solaris-orange">{inventory.length}</p>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-700">Productos</p>
+                                    <p className="text-2xl font-black italic text-servirest-terracota">{inventory.length}</p>
                                  </div>
                                  <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: 'linear' }} className="text-gray-800">
                                     <Package size={28} />
@@ -188,14 +188,14 @@ export const InventoryScreen: React.FC = () => {
                              </div>
                         </div>
 
-                        <div className="bg-white/[0.02] border border-white/5 rounded-solaris overflow-hidden">
+                        <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-solaris overflow-hidden">
                             <table className="w-full text-left">
                                 <thead>
-                                    <tr className="border-b border-white/5 text-gray-600 text-[9px] font-black uppercase tracking-[0.3em]">
-                                        <th className="py-6 px-8">Asset Name / Category</th>
-                                        <th className="py-6 px-4">Level Indicator</th>
-                                        <th className="py-6 px-4 text-center">Unit Valuation</th>
-                                        <th className="py-6 px-4">Supplier Origin</th>
+                                    <tr className="border-b border-[rgba(42,40,38,0.12)] text-gray-600 text-[9px] font-black uppercase tracking-[0.3em]">
+                                        <th className="py-6 px-8">Producto / Categoría</th>
+                                        <th className="py-6 px-4">Stock</th>
+                                        <th className="py-6 px-4 text-center">Costo</th>
+                                        <th className="py-6 px-4">Proveedor</th>
                                         <th className="py-6 px-8 text-right">Actions</th>
                                     </tr>
                                 </thead>
@@ -203,10 +203,10 @@ export const InventoryScreen: React.FC = () => {
                                     {filteredInventory.map(item => {
                                         const status = getStockStatus(item.quantity, item.maxStock, item.minStock || 0);
                                         return (
-                                            <tr key={item.id} className="border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors group">
+                                            <tr key={item.id} className="border-b border-[rgba(42,40,38,0.12)] hover:bg-servirest-surface transition-colors group">
                                                 <td className="py-6 px-8">
                                                     <div className="cursor-pointer" onClick={() => { setEditingItem(item); setIsAddModalOpen(true); }}>
-                                                        <p className="font-bold text-[#1a1c14] group-hover:text-solaris-orange transition-colors uppercase italic">{item.name}</p>
+                                                        <p className="font-bold text-[#1a1c14] group-hover:text-servirest-terracota transition-colors uppercase italic">{item.name}</p>
                                                         <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest">{item.category}</p>
                                                     </div>
                                                 </td>
@@ -229,13 +229,13 @@ export const InventoryScreen: React.FC = () => {
                                                     <div className="flex justify-end gap-3">
                                                         <button 
                                                             onClick={() => { setRestockItem(item); setRestockQty(Math.max(0, item.maxStock - item.quantity)); }}
-                                                            className="px-4 py-2 bg-white/[0.03] border border-white/5 text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-[#1a1c14] hover:border-white/20 transition-all rounded-xl"
+                                                            className="px-4 py-2 bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-[#1a1c14] hover:border-[rgba(42,40,38,0.20)] transition-all rounded-xl"
                                                         >
                                                             Restock
                                                         </button>
                                                         <button 
                                                             onClick={() => { setEditingItem(item); setIsAddModalOpen(true); }}
-                                                            className="p-2 text-gray-700 hover:text-solaris-orange transition-colors"
+                                                            className="p-2 text-gray-700 hover:text-servirest-terracota transition-colors"
                                                         >
                                                             <Edit3 size={16} />
                                                         </button>
@@ -254,13 +254,13 @@ export const InventoryScreen: React.FC = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
                         {orders.map(order => (
                             <div key={order.id}>
-                                <GlowCard glowColor="orange" className={`relative border !p-8 ${order.status === 'PENDING' ? 'border-solaris-orange/20' : 'border-white/5'}`}>
+                                <GlowCard glowColor="orange" className={`relative border !p-8 ${order.status === 'PENDING' ? 'border-solaris-orange/20' : 'border-[rgba(42,40,38,0.12)]'}`}>
                                     <div className="flex justify-between items-start mb-6">
                                         <div>
                                             <h3 className="text-xl font-black italic text-[#1a1c14] uppercase tracking-tight mb-1">Order #{order.id.slice(0, 8)}</h3>
                                             <p className="text-[9px] font-black uppercase tracking-widest text-gray-600 italic">{new Date(order.date).toLocaleDateString()} • {order.supplier}</p>
                                         </div>
-                                        <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.3em] border ${order.status === 'RECEIVED' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-[#F98359]/10 text-solaris-orange border-solaris-orange/20'}`}>
+                                        <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-[0.3em] border ${order.status === 'RECEIVED' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 'bg-[#C4633F]/10 text-servirest-terracota border-solaris-orange/20'}`}>
                                             {order.status}
                                         </div>
                                     </div>
@@ -274,7 +274,7 @@ export const InventoryScreen: React.FC = () => {
                                         ))}
                                     </div>
 
-                                    <div className="flex justify-between items-center pt-6 border-t border-white/[0.02]">
+                                    <div className="flex justify-between items-center pt-6 border-t border-[rgba(42,40,38,0.12)]">
                                         <div>
                                             <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest mb-1">Payload Total</p>
                                             <p className="text-2xl font-black italic text-[#1a1c14] tracking-tighter">${order.totalCost.toFixed(2)}</p>
@@ -291,7 +291,7 @@ export const InventoryScreen: React.FC = () => {
                                             {order.status === 'PENDING' && (
                                                 <button 
                                                     onClick={() => handleUpdateStatus(order.id, SupplyOrderStatus.ORDERED)}
-                                                    className="bg-[#F98359] text-[#1a1c14] px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-solaris-glow"
+                                                    className="bg-[#C4633F] text-[#1a1c14] px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-solaris-glow"
                                                 >
                                                     Ship
                                                 </button>
@@ -309,7 +309,7 @@ export const InventoryScreen: React.FC = () => {
             <AnimatePresence>
                 {isAddModalOpen && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
-                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-white/10 rounded-solaris w-full max-w-lg overflow-hidden shadow-2xl">
+                        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-[rgba(42,40,38,0.20)] rounded-solaris w-full max-w-lg overflow-hidden shadow-2xl">
                              <form onSubmit={handleSaveItem} className="p-10">
                                 <div className="flex justify-between items-center mb-10">
                                     <h2 className="text-2xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Supply Registry</h2>
@@ -318,18 +318,18 @@ export const InventoryScreen: React.FC = () => {
                                 <div className="space-y-5">
                                     <div className="space-y-2">
                                         <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Nombre del insumo</label>
-                                        <input name="name" defaultValue={editingItem?.name} required className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold" />
+                                        <input name="name" defaultValue={editingItem?.name} required className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-6 text-[#1a1c14] outline-none focus:border-solaris-orange/50 transition-all font-bold" />
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Categoría</label>
-                                            <select name="category" defaultValue={editingItem?.category || 'General'} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-[#1a1c14] outline-none appearance-none font-bold">
+                                            <select name="category" defaultValue={editingItem?.category || 'General'} className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-6 text-[#1a1c14] outline-none appearance-none font-bold">
                                                 {INVENTORY_CATEGORIES.filter(c => c !== 'All').map(c => <option key={c} value={c} className="bg-white">{c}</option>)}
                                             </select>
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Proveedor</label>
-                                            <input name="supplier" defaultValue={editingItem?.supplier} required placeholder="Nombre del proveedor" className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-6 text-[#1a1c14] outline-none font-bold" />
+                                            <input name="supplier" defaultValue={editingItem?.supplier} required placeholder="Nombre del proveedor" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-6 text-[#1a1c14] outline-none font-bold" />
                                         </div>
                                     </div>
                                     {/* Unit type selector */}
@@ -339,7 +339,7 @@ export const InventoryScreen: React.FC = () => {
                                             {['PZ', 'gr', 'Bolsa'].map(u => (
                                                 <label key={u} className="cursor-pointer">
                                                     <input type="radio" name="unit" value={u} defaultChecked={editingItem?.unit === u || (!editingItem && u === 'PZ')} className="sr-only peer" />
-                                                    <div className="peer-checked:bg-[#F98359]/20 peer-checked:border-solaris-orange peer-checked:text-[#1a1c14] bg-white/[0.03] border border-white/5 rounded-2xl py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-500 transition-all">{u}</div>
+                                                    <div className="peer-checked:bg-[#C4633F]/20 peer-checked:border-solaris-orange peer-checked:text-[#1a1c14] bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-3 text-center text-[10px] font-black uppercase tracking-widest text-gray-500 transition-all">{u}</div>
                                                 </label>
                                             ))}
                                         </div>
@@ -347,18 +347,18 @@ export const InventoryScreen: React.FC = () => {
                                     <div className="grid grid-cols-3 gap-4">
                                         <div className="space-y-2">
                                             <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Mín. Crítico</label>
-                                            <input name="minStock" type="number" defaultValue={editingItem?.minStock || 10} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-[#1a1c14] text-center font-bold" />
+                                            <input name="minStock" type="number" defaultValue={editingItem?.minStock || 10} className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-4 text-[#1a1c14] text-center font-bold" />
                                         </div>
                                         <div className="space-y-2">
                                              <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Cap. Ideal</label>
-                                             <input name="maxStock" type="number" defaultValue={editingItem?.maxStock || 100} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-[#1a1c14] text-center font-bold" />
+                                             <input name="maxStock" type="number" defaultValue={editingItem?.maxStock || 100} className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-4 text-[#1a1c14] text-center font-bold" />
                                         </div>
                                         <div className="space-y-2">
                                              <label className="text-[9px] font-black uppercase text-gray-600 tracking-widest px-1">Costo/Unidad</label>
-                                             <input name="cost" type="number" step="0.01" defaultValue={editingItem?.costPerUnit} className="w-full bg-white/[0.03] border border-white/5 rounded-2xl py-4 px-4 text-[#1a1c14] text-center font-bold" />
+                                             <input name="cost" type="number" step="0.01" defaultValue={editingItem?.costPerUnit} className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl py-4 px-4 text-[#1a1c14] text-center font-bold" />
                                         </div>
                                     </div>
-                                    <button type="submit" className="w-full bg-[#F98359] text-[#1a1c14] font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-600 transition-all text-[11px] mt-2">
+                                    <button type="submit" className="w-full bg-[#C4633F] text-[#1a1c14] font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-solaris-glow hover:bg-orange-600 transition-all text-[11px] mt-2">
                                         Guardar Cambios
                                     </button>
                                 </div>
@@ -369,20 +369,20 @@ export const InventoryScreen: React.FC = () => {
 
                 {restockItem && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
-                         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-white/10 rounded-solaris w-full max-w-sm overflow-hidden shadow-2xl">
+                         <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-white border border-[rgba(42,40,38,0.20)] rounded-solaris w-full max-w-sm overflow-hidden shadow-2xl">
                              <div className="p-8">
                                  <h3 className="text-xl font-black italic uppercase text-[#1a1c14] mb-2">Restock Payload</h3>
-                                 <p className="text-[9px] font-black uppercase text-solaris-orange tracking-[0.3em] mb-10">{restockItem.name}</p>
+                                 <p className="text-[9px] font-black uppercase text-servirest-terracota tracking-[0.3em] mb-10">{restockItem.name}</p>
                                  
                                  <div className="flex items-center gap-6 mb-10">
-                                     <button onClick={() => setRestockQty(Math.max(0, restockQty - 1))} className="w-14 h-14 rounded-2xl border border-white/5 flex items-center justify-center text-xl hover:bg-white/5 transition-all">-</button>
-                                     <input type="number" value={restockQty} onChange={e => setRestockQty(Number(e.target.value))} className="flex-1 bg-transparent border-b-2 border-white/10 outline-none text-4xl font-black italic text-center text-[#1a1c14]" />
-                                     <button onClick={() => setRestockQty(restockQty + 1)} className="w-14 h-14 rounded-2xl border border-white/5 flex items-center justify-center text-xl hover:bg-white/5 transition-all">+</button>
+                                     <button onClick={() => setRestockQty(Math.max(0, restockQty - 1))} className="w-14 h-14 rounded-2xl border border-[rgba(42,40,38,0.12)] flex items-center justify-center text-xl hover:bg-white/5 transition-all">-</button>
+                                     <input type="number" value={restockQty} onChange={e => setRestockQty(Number(e.target.value))} className="flex-1 bg-transparent border-b-2 border-[rgba(42,40,38,0.20)] outline-none text-4xl font-black italic text-center text-[#1a1c14]" />
+                                     <button onClick={() => setRestockQty(restockQty + 1)} className="w-14 h-14 rounded-2xl border border-[rgba(42,40,38,0.12)] flex items-center justify-center text-xl hover:bg-white/5 transition-all">+</button>
                                  </div>
 
                                  <div className="flex gap-4">
                                      <button onClick={() => setRestockItem(null)} className="flex-1 py-4 text-[10px] font-black uppercase text-gray-700 tracking-widest hover:text-[#1a1c14] transition-colors">Abort</button>
-                                     <button onClick={() => addToCart(restockItem, restockQty)} className="flex-1 py-4 bg-[#F98359] text-[#1a1c14] font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-solaris-glow">Add to Queue</button>
+                                     <button onClick={() => addToCart(restockItem, restockQty)} className="flex-1 py-4 bg-[#C4633F] text-[#1a1c14] font-black uppercase text-[10px] tracking-widest rounded-2xl shadow-solaris-glow">Add to Queue</button>
                                  </div>
                              </div>
                          </motion.div>
@@ -390,11 +390,11 @@ export const InventoryScreen: React.FC = () => {
                 )}
 
                 {isCartOpen && (
-                    <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed inset-y-0 right-0 w-full md:w-[450px] bg-white border-l border-white/10 shadow-2xl z-50 flex flex-col">
-                        <div className="p-10 border-b border-white/5 flex justify-between items-center">
+                    <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed inset-y-0 right-0 w-full md:w-[450px] bg-white border-l border-[rgba(42,40,38,0.20)] shadow-2xl z-50 flex flex-col">
+                        <div className="p-10 border-b border-[rgba(42,40,38,0.12)] flex justify-between items-center">
                             <div>
-                                <h2 className="text-2xl font-black italic text-[#1a1c14] uppercase tracking-tight">Procurement Loop</h2>
-                                <p className="text-[9px] font-black uppercase text-solaris-orange tracking-widest mt-1">{cart.length} Assets Enqueued</p>
+                                <h2 className="text-2xl font-black italic text-[#1a1c14] uppercase tracking-tight">Compras Loop</h2>
+                                <p className="text-[9px] font-black uppercase text-servirest-terracota tracking-widest mt-1">{cart.length} Assets Enqueued</p>
                             </div>
                             <X onClick={() => setIsCartOpen(false)} className="text-gray-700 hover:text-[#1a1c14] cursor-pointer" size={24} />
                         </div>
@@ -411,19 +411,19 @@ export const InventoryScreen: React.FC = () => {
                             ).map(([supplier, items]) => (
                                 <div key={supplier}>
                                     <div className="flex items-center gap-3 mb-3">
-                                        <Truck size={12} className="text-solaris-orange" />
-                                        <span className="text-[9px] font-black uppercase text-solaris-orange tracking-widest">{supplier}</span>
+                                        <Truck size={12} className="text-servirest-terracota" />
+                                        <span className="text-[9px] font-black uppercase text-servirest-terracota tracking-widest">{supplier}</span>
                                         <span className="ml-auto text-[9px] font-black text-gray-600">${items.reduce((s, i) => s + i.costPerUnit * i.orderQuantity, 0).toFixed(2)}</span>
                                     </div>
                                     <div className="space-y-3 pl-4 border-l border-solaris-orange/20">
                                         {items.map(item => (
-                                            <div key={item.id} className="flex justify-between items-center bg-white/[0.02] border border-white/5 p-4 rounded-2xl">
+                                            <div key={item.id} className="flex justify-between items-center bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-4 rounded-2xl">
                                                 <div>
                                                     <h4 className="font-bold text-[#1a1c14] uppercase italic text-sm">{item.name}</h4>
                                                     <p className="text-[8px] font-black uppercase text-gray-700 tracking-widest">{item.orderQuantity} {item.unit} · ${item.costPerUnit}/{item.unit}</p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="font-black text-solaris-orange italic">${(item.costPerUnit * item.orderQuantity).toFixed(2)}</p>
+                                                    <p className="font-black text-servirest-terracota italic">${(item.costPerUnit * item.orderQuantity).toFixed(2)}</p>
                                                     <button onClick={() => setCart(prev => prev.filter(c => c.id !== item.id))} className="text-[8px] font-black uppercase text-red-500/60 hover:text-red-500 transition-colors">Quitar</button>
                                                 </div>
                                             </div>
@@ -433,13 +433,13 @@ export const InventoryScreen: React.FC = () => {
                             ))}
                         </div>
 
-                        <div className="p-10 border-t border-white/5 bg-white/[0.01]">
+                        <div className="p-10 border-t border-[rgba(42,40,38,0.12)] bg-servirest-surface">
                             <div className="flex justify-between items-center mb-10">
                                 <span className="text-[9px] font-black uppercase text-gray-700 tracking-widest">Aggregate Cost</span>
                                 <span className="text-3xl font-black italic text-[#1a1c14] tracking-tighter">${cartTotal.toFixed(2)}</span>
                             </div>
-                            <button onClick={handleCreateOrder} disabled={cart.length === 0} className="w-full bg-[#F98359] text-[#1a1c14] font-black uppercase tracking-[0.2em] py-6 rounded-2xl shadow-solaris-glow disabled:opacity-30 flex items-center justify-center gap-3">
-                                <ShoppingCart size={20} /> Authorize Procurement
+                            <button onClick={handleCreateOrder} disabled={cart.length === 0} className="w-full bg-[#C4633F] text-[#1a1c14] font-black uppercase tracking-[0.2em] py-6 rounded-2xl shadow-solaris-glow disabled:opacity-30 flex items-center justify-center gap-3">
+                                <ShoppingCart size={20} /> Authorize Compras
                             </button>
                         </div>
                     </motion.div>

@@ -60,10 +60,10 @@ export const MobileNavbar: React.FC = () => {
             <div
                 ref={scrollRef}
                 style={{
-                    background: 'linear-gradient(160deg, #505530 0%, #3d4124 80%, #2e3018 100%)',
+                    background: 'linear-gradient(160deg, #1A1E2E 0%, #232839 60%, #1A1E2E 100%)',
                     backdropFilter: 'blur(24px)',
                     WebkitBackdropFilter: 'blur(24px)',
-                    border: '1px solid rgba(255,255,255,0.12)',
+                    border: '1px solid rgba(250,248,244,0.10)',
                     borderRadius: '28px',
                     padding: '8px 12px',
                     display: 'flex',
@@ -75,7 +75,7 @@ export const MobileNavbar: React.FC = () => {
                     scrollbarWidth: 'none',
                     msOverflowStyle: 'none',
                     gap: '4px',
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
+                    boxShadow: '0 20px 60px rgba(26,30,46,0.55)',
                 }}
             >
                 {visibleItems.map((item) => (
@@ -83,11 +83,7 @@ export const MobileNavbar: React.FC = () => {
                         key={item.to}
                         to={item.to}
                         style={{ textDecoration: 'none' }}
-                        className={({ isActive }) =>
-                            isActive
-                                ? 'flex flex-col items-center justify-center rounded-2xl transition-all bg-[#F98359] text-white shadow-lg'
-                                : 'flex flex-col items-center justify-center rounded-2xl transition-all text-white/50 active:scale-95'
-                        }
+                        className="flex flex-col items-center justify-center transition-all active:scale-95"
                     >
                         {({ isActive }) => (
                             <div
@@ -101,11 +97,11 @@ export const MobileNavbar: React.FC = () => {
                                     height: '58px',
                                     flexShrink: 0,
                                     borderRadius: '16px',
-                                    background: isActive ? '#F98359' : 'transparent',
-                                    color: isActive ? '#FAFAF3' : 'rgba(250,250,243,0.45)',
-                                    transition: 'all 0.2s ease',
+                                    background: isActive ? '#C4633F' : 'transparent',
+                                    color: isActive ? '#FAF8F4' : 'rgba(250,248,244,0.45)',
+                                    transition: 'all 0.2s cubic-bezier(0.16,1,0.3,1)',
                                     transform: isActive ? 'scale(1.05)' : 'scale(1)',
-                                    boxShadow: isActive ? '0 0 20px rgba(249,131,89,0.5)' : 'none',
+                                    boxShadow: isActive ? '0 0 20px rgba(196,99,63,0.40)' : 'none',
                                 }}
                             >
                                 <item.icon size={20} />
@@ -114,8 +110,8 @@ export const MobileNavbar: React.FC = () => {
                                     fontWeight: 900,
                                     textTransform: 'uppercase',
                                     marginTop: '4px',
-                                    letterSpacing: '-0.02em',
-                                    opacity: 0.8,
+                                    letterSpacing: '0.04em',
+                                    opacity: 0.9,
                                     whiteSpace: 'nowrap',
                                 }}>
                                     {item.label}

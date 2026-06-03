@@ -50,7 +50,7 @@ const OrderTimer: React.FC<{ timestamp: Date }> = ({ timestamp }) => {
     }, [timestamp]);
 
     return (
-        <span className={`px-4 py-1.5 rounded-xl font-mono text-lg font-black italic tracking-tighter ${isLate ? 'bg-red-500 text-[#1a1c14] shadow-lg animate-pulse' : 'bg-solaris-orange/10 text-solaris-orange border border-solaris-orange/20'}`}>
+        <span className={`px-4 py-1.5 rounded-xl font-mono text-lg font-black italic tracking-tighter ${isLate ? 'bg-red-500 text-[#1a1c14] shadow-lg animate-pulse' : 'bg-servirest-terracota/10 text-servirest-terracota border border-solaris-orange/20'}`}>
             {elapsed}
         </span>
     );
@@ -68,24 +68,24 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
             : order.tableId;
 
     return (
-        <GlowCard glowColor="orange" className="!p-0 border border-white/5 bg-white/[0.01] flex flex-col min-w-[320px] max-w-[360px] h-[550px] overflow-hidden group">
+        <GlowCard glowColor="orange" className="!p-0 border border-[rgba(42,40,38,0.12)] bg-servirest-surface flex flex-col min-w-[320px] max-w-[360px] h-[550px] overflow-hidden group">
             {/* Header */}
-            <div className="p-5 bg-white/[0.03] border-b border-white/5 flex justify-between items-start gap-4">
+            <div className="p-5 bg-servirest-surface border-b border-[rgba(42,40,38,0.12)] flex justify-between items-start gap-4">
                 <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 mb-1">
                         {isDineIn
-                            ? <Utensils size={12} className="text-solaris-orange shrink-0" />
+                            ? <Utensils size={12} className="text-servirest-terracota shrink-0" />
                             : <Truck size={12} className="text-green-400 shrink-0" />
                         }
-                        <span className={`text-[9px] font-black uppercase tracking-widest ${isDineIn ? 'text-solaris-orange/60' : 'text-green-400/70'}`}>
+                        <span className={`text-[9px] font-black uppercase tracking-widest ${isDineIn ? 'text-servirest-terracota/60' : 'text-green-400/70'}`}>
                             {isDineIn ? 'Comedor' : (order.source || 'Delivery')}
                         </span>
                     </div>
                     <h3 className="text-xl font-black italic uppercase tracking-tighter text-[#1a1c14] leading-tight">
                         {tableLabel}
                     </h3>
-                    <p className="text-[9px] font-black uppercase text-[#505530]/30 tracking-widest mt-1 italic">
-                        PKT: {order.id.slice(0, 8).toUpperCase()}
+                    <p className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest mt-1 italic">
+                        Mesa {order.id.slice(0, 8).toUpperCase()}
                     </p>
                 </div>
                 <div className="shrink-0 pt-1">
@@ -97,8 +97,8 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
             <div className="flex-1 p-4 space-y-2.5 overflow-y-auto no-scrollbar">
                 {order.items.map((item, idx) => (
                     <div key={idx} className="space-y-1">
-                        <div className="flex items-center gap-3 bg-white/[0.02] p-3 rounded-2xl border border-white/5">
-                            <span className="w-8 h-8 rounded-xl bg-solaris-orange/10 border border-solaris-orange/20 flex items-center justify-center font-black italic text-solaris-orange text-sm shrink-0">
+                        <div className="flex items-center gap-3 bg-servirest-surface p-3 rounded-2xl border border-[rgba(42,40,38,0.12)]">
+                            <span className="w-8 h-8 rounded-xl bg-servirest-terracota/10 border border-solaris-orange/20 flex items-center justify-center font-black italic text-servirest-terracota text-sm shrink-0">
                                 {item.quantity}
                             </span>
                             <span className="font-black italic text-[#1a1c14] uppercase tracking-tight text-sm">{item.name}</span>
@@ -114,10 +114,10 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
             </div>
 
             {/* Complete button — always locked at bottom */}
-            <div className="p-4 border-t border-white/5 bg-white/[0.01]">
+            <div className="p-4 border-t border-[rgba(42,40,38,0.12)] bg-servirest-surface">
                 <button
                     onClick={() => onComplete(order.id)}
-                    className="w-full py-4 bg-solaris-orange text-[#1a1c14] font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] hover:bg-orange-500 active:scale-95 transition-all flex items-center justify-center gap-3"
+                    className="w-full py-4 bg-servirest-terracota text-[#1a1c14] font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] hover:bg-orange-500 active:scale-95 transition-all flex items-center justify-center gap-3"
                 >
                     <CheckCircle2 size={18} /> Pedido Listo
                 </button>
@@ -128,7 +128,7 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
 
 // Empty column placeholder
 const EmptyColumn: React.FC<{ label: string }> = ({ label }) => (
-    <div className="flex-1 flex flex-col items-center justify-center opacity-10 border-2 border-dashed border-white/5 rounded-[32px] min-h-[300px]">
+    <div className="flex-1 flex flex-col items-center justify-center opacity-10 border-2 border-dashed border-[rgba(42,40,38,0.12)] rounded-[32px] min-h-[300px]">
         <Package size={48} className="mb-4" />
         <p className="text-[10px] font-black uppercase tracking-[0.4em]">{label}</p>
     </div>
@@ -183,7 +183,7 @@ export const KitchenScreen: React.FC = () => {
     };
 
     return (
-        <div className="h-full bg-[#FAFAF3] text-[#1a1c14] flex flex-col overflow-hidden antialiased relative">
+        <div className="h-full bg-[#FAF8F4] text-[#1a1c14] flex flex-col overflow-hidden antialiased relative">
             {/* New Order Alert */}
             <AnimatePresence>
                 {alert && (
@@ -193,47 +193,47 @@ export const KitchenScreen: React.FC = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
                     >
-                        <div className="p-16 rounded-[4rem] bg-solaris-orange text-[#1a1c14] shadow-solaris-glow border-[10px] border-white/20 flex flex-col items-center">
+                        <div className="p-16 rounded-[4rem] bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow border-[10px] border-[rgba(42,40,38,0.20)] flex flex-col items-center">
                             <Bell size={80} className="mb-6 animate-bounce" />
-                            <h2 className="text-6xl font-black italic uppercase tracking-tighter">New Asset Inbound</h2>
-                            <p className="text-[12px] font-black uppercase tracking-[0.5em] mt-2 opacity-60">Synchronizing Kitchen Cluster</p>
+                            <h2 className="text-6xl font-black italic uppercase tracking-tighter">Pedido nuevo</h2>
+                            <p className="text-[12px] font-black uppercase tracking-[0.5em] mt-2 opacity-60">Cocina sincronizada</p>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {/* Header */}
-            <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 px-8 pt-8 pb-6 border-b border-white/5 shrink-0">
+            <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 px-8 pt-8 pb-6 border-b border-[rgba(42,40,38,0.12)] shrink-0">
                 <div>
-                    <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-1">Production Cluster</h1>
-                    <p className="text-[#505530]/30 font-bold text-[10px] uppercase tracking-[0.4em]">Real-time Asset Manifest & Synthesis</p>
+                    <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-1">Cocina</h1>
+                    <p className="text-[#2A2826]/30 font-bold text-[10px] uppercase tracking-[0.4em]">Pedidos en preparación</p>
                 </div>
 
                 <div className="flex gap-4 items-center">
                     {/* View toggle */}
-                    <div className="bg-white/[0.03] border border-white/5 p-1 rounded-2xl flex">
+                    <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-1 rounded-2xl flex">
                         <button
                             onClick={() => setIsSplit(false)}
-                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${!isSplit ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-[#505530]/45 hover:text-[#1a1c14]'}`}
+                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${!isSplit ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/45 hover:text-[#1a1c14]'}`}
                         >
-                            <LayoutGrid size={14} /> Global Stream
+                            <LayoutGrid size={14} /> Todos
                         </button>
                         <button
                             onClick={() => setIsSplit(true)}
-                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${isSplit ? 'bg-solaris-orange text-[#1a1c14] shadow-solaris-glow' : 'text-[#505530]/45 hover:text-[#1a1c14]'}`}
+                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${isSplit ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/45 hover:text-[#1a1c14]'}`}
                         >
-                            <Columns2 size={14} /> Matrix View
+                            <Columns2 size={14} /> Por mesa
                         </button>
                     </div>
 
                     {/* Counters */}
                     <div className="flex gap-3">
-                        <div className="bg-white/[0.03] border border-white/5 px-5 py-3 rounded-2xl text-center">
-                            <p className="text-[8px] font-black uppercase text-[#505530]/30 tracking-widest">Queue</p>
-                            <p className="text-xl font-black italic text-solaris-orange leading-none">{pending.length}</p>
+                        <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] px-5 py-3 rounded-2xl text-center">
+                            <p className="text-[8px] font-black uppercase text-[#2A2826]/30 tracking-widest">Queue</p>
+                            <p className="text-xl font-black italic text-servirest-terracota leading-none">{pending.length}</p>
                         </div>
-                        <div className="bg-white/[0.03] border border-white/5 px-5 py-3 rounded-2xl text-center">
-                            <p className="text-[8px] font-black uppercase text-[#505530]/30 tracking-widest">Listos</p>
+                        <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] px-5 py-3 rounded-2xl text-center">
+                            <p className="text-[8px] font-black uppercase text-[#2A2826]/30 tracking-widest">Listos</p>
                             <p className="text-xl font-black italic text-green-400 leading-none">{orders.filter(o => o.status === OrderStatus.READY).length}</p>
                         </div>
                     </div>
@@ -245,10 +245,10 @@ export const KitchenScreen: React.FC = () => {
                 /* ── MATRIX VIEW: Dine-In | Delivery ── */
                 <div className="flex-1 flex gap-0 overflow-hidden">
                     {/* Left: Dine-In */}
-                    <div className="flex-1 flex flex-col border-r border-white/5 overflow-hidden">
-                        <div className="flex items-center gap-3 px-8 py-4 bg-white/[0.02] border-b border-white/5 shrink-0">
-                            <Utensils size={16} className="text-solaris-orange" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-solaris-orange">Comedor — {dineInOrders.length} pedidos</span>
+                    <div className="flex-1 flex flex-col border-r border-[rgba(42,40,38,0.12)] overflow-hidden">
+                        <div className="flex items-center gap-3 px-8 py-4 bg-servirest-surface border-b border-[rgba(42,40,38,0.12)] shrink-0">
+                            <Utensils size={16} className="text-servirest-terracota" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-servirest-terracota">Comedor — {dineInOrders.length} pedidos</span>
                         </div>
                         <div className="flex-1 overflow-x-auto overflow-y-auto no-scrollbar p-6">
                             {dineInOrders.length === 0 ? (
@@ -265,7 +265,7 @@ export const KitchenScreen: React.FC = () => {
 
                     {/* Right: Delivery / To-Go */}
                     <div className="flex-1 flex flex-col overflow-hidden">
-                        <div className="flex items-center gap-3 px-8 py-4 bg-white/[0.02] border-b border-white/5 shrink-0">
+                        <div className="flex items-center gap-3 px-8 py-4 bg-servirest-surface border-b border-[rgba(42,40,38,0.12)] shrink-0">
                             <Truck size={16} className="text-green-400" />
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-green-400">Delivery / Para llevar — {deliveryOrders.length} pedidos</span>
                         </div>
@@ -286,9 +286,9 @@ export const KitchenScreen: React.FC = () => {
                 /* ── GLOBAL STREAM: All orders in a row ── */
                 <main className="flex-1 overflow-x-auto no-scrollbar py-6 px-8">
                     {sorted.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center opacity-10 border-2 border-dashed border-white/5 rounded-[32px]">
+                        <div className="h-full flex flex-col items-center justify-center opacity-10 border-2 border-dashed border-[rgba(42,40,38,0.12)] rounded-[32px]">
                             <Package size={80} className="mb-6" />
-                            <p className="text-[12px] font-black uppercase tracking-[0.4em]">Manifest Clean</p>
+                            <p className="text-[12px] font-black uppercase tracking-[0.4em]">Cocina al día</p>
                         </div>
                     ) : (
                         <div className="flex gap-6 min-w-max h-full">

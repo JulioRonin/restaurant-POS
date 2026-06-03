@@ -99,22 +99,22 @@ export const MyTablesScreen: React.FC = () => {
     };
 
     return (
-        <div className="h-full bg-[#FAFAF3] text-[#1a1c14] p-6 md:p-10 flex flex-col overflow-y-auto no-scrollbar antialiased">
+        <div className="h-full bg-[#FAF8F4] text-[#1a1c14] p-6 md:p-10 flex flex-col overflow-y-auto no-scrollbar antialiased">
             <header className="mb-10 flex justify-between items-start md:items-end flex-wrap gap-6 shrink-0">
                 <div>
-                    <h1 className="text-5xl font-black italic tracking-tighter uppercase mb-2 text-[#1a1c14]">Node Matrix Monitor</h1>
-                    <p className="text-solaris-orange/40 font-black text-[11px] uppercase tracking-[0.5em] italic">Active Duty Node Monitoring • ServiRest v1</p>
+                    <h1 className="text-5xl font-black italic tracking-tighter uppercase mb-2 text-[#1a1c14]">Mesas activas</h1>
+                    <p className="text-servirest-terracota/40 font-black text-[11px] uppercase tracking-[0.5em] italic">Pedidos en curso · ServiRest</p>
                 </div>
-                <div className="bg-white/[0.03] border border-white/5 px-8 py-5 rounded-2xl text-right">
-                    <p className="text-[10px] font-black text-[#505530]/30 uppercase tracking-[0.3em] mb-1 italic">Active Clusters</p>
-                    <p className="text-4xl font-black italic text-solaris-orange tracking-tighter leading-none">{myOrders.length}</p>
+                <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] px-8 py-5 rounded-2xl text-right">
+                    <p className="text-[10px] font-black text-[#2A2826]/30 uppercase tracking-[0.3em] mb-1 italic">Mesas con pedido</p>
+                    <p className="text-4xl font-black italic text-servirest-terracota tracking-tighter leading-none">{myOrders.length}</p>
                 </div>
             </header>
 
             {myOrders.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center opacity-20 border-2 border-dashed border-white/5 rounded-3xl py-32">
-                    <Package size={80} className="mb-6 text-solaris-orange/20" />
-                    <p className="text-[12px] font-black uppercase tracking-[0.4em] italic">Zero Assets Assigned</p>
+                <div className="flex-1 flex flex-col items-center justify-center opacity-20 border-2 border-dashed border-[rgba(42,40,38,0.12)] rounded-3xl py-32">
+                    <Package size={80} className="mb-6 text-servirest-terracota/20" />
+                    <p className="text-[12px] font-black uppercase tracking-[0.4em] italic">Sin pedidos asignados</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 pb-10">
@@ -123,31 +123,31 @@ export const MyTablesScreen: React.FC = () => {
                         return (
                             <div
                                 key={order.id}
-                                className={`flex flex-col rounded-[28px] border relative overflow-hidden transition-all ${isRequested ? 'border-solaris-orange shadow-solaris-glow' : 'border-white/[0.07] bg-white/[0.015]'}`}
+                                className={`flex flex-col rounded-[28px] border relative overflow-hidden transition-all ${isRequested ? 'border-servirest-terracota shadow-solaris-glow' : 'border-[rgba(42,40,38,0.12)] bg-white/[0.015]'}`}
                             >
                                 {isRequested && (
-                                    <div className="absolute top-0 right-0 bg-solaris-orange text-[#1a1c14] px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.3em] animate-pulse rounded-bl-2xl z-10">
-                                        PAYOUT_REQD
+                                    <div className="absolute top-0 right-0 bg-servirest-terracota text-[#1a1c14] px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.3em] animate-pulse rounded-bl-2xl z-10">
+                                        POR COBRAR
                                     </div>
                                 )}
                                 {!isRequested && order.status === OrderStatus.READY && (
-                                    <div className="absolute top-0 right-0 bg-[#F98359] text-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] animate-bounce shadow-salmon-glow rounded-bl-2xl z-10 flex items-center gap-1.5">
+                                    <div className="absolute top-0 right-0 bg-[#C4633F] text-white px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] animate-bounce shadow-salmon-glow rounded-bl-2xl z-10 flex items-center gap-1.5">
                                         <BellRing size={14} className="animate-pulse" /> LISTA PARA SERVIR
                                     </div>
                                 )}
 
                                 {/* Header */}
-                                <div className="px-6 pt-6 pb-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center gap-3">
+                                <div className="px-6 pt-6 pb-4 border-b border-[rgba(42,40,38,0.12)] bg-servirest-surface flex justify-between items-center gap-3">
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-[8px] font-black text-solaris-orange/40 uppercase tracking-widest mb-1 italic">NODE_ID</p>
+                                        <p className="text-[8px] font-black text-servirest-terracota/40 uppercase tracking-widest mb-1 italic">MESA</p>
                                         <h3 className="text-base font-black italic tracking-tighter uppercase text-[#1a1c14] leading-tight font-mono truncate">
                                             {order.tableId.length > 16 ? `${order.tableId.slice(0, 10)}...${order.tableId.slice(-4)}` : order.tableId}
                                         </h3>
                                     </div>
                                     <div className="text-right shrink-0">
-                                        <p className="text-[8px] font-black text-solaris-orange/40 uppercase tracking-widest mb-1 italic">UPTIME</p>
+                                        <p className="text-[8px] font-black text-servirest-terracota/40 uppercase tracking-widest mb-1 italic">TIEMPO</p>
                                         <p className="text-xs font-black italic text-[#1a1c14] flex items-center gap-1 justify-end">
-                                            <Clock size={11} className="text-solaris-orange" /> {getElapsedTime(order.timestamp)}
+                                            <Clock size={11} className="text-servirest-terracota" /> {getElapsedTime(order.timestamp)}
                                         </p>
                                     </div>
                                 </div>
@@ -156,20 +156,20 @@ export const MyTablesScreen: React.FC = () => {
                                 <div className="px-6 py-4 overflow-y-auto no-scrollbar" style={{ maxHeight: '150px' }}>
                                     <div className="space-y-2">
                                         {order.items.map((item: any, i: number) => (
-                                            <div key={i} className="flex justify-between items-center text-[11px] py-1 border-b border-white/[0.03] last:border-0">
+                                            <div key={i} className="flex justify-between items-center text-[11px] py-1 border-b border-[rgba(42,40,38,0.12)] last:border-0">
                                                 <span className="text-[#1a1c14] font-black italic uppercase tracking-tight flex-1 truncate mr-2">
-                                                    <span className="text-solaris-orange mr-1">{item.quantity}×</span>{item.name}
+                                                    <span className="text-servirest-terracota mr-1">{item.quantity}×</span>{item.name}
                                                 </span>
-                                                <span className="font-black italic text-[#505530]/65 shrink-0">${(item.price * item.quantity).toFixed(0)}</span>
+                                                <span className="font-black italic text-[#2A2826]/65 shrink-0">${(item.price * item.quantity).toFixed(0)}</span>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
 
                                 {/* Total */}
-                                <div className="px-6 py-4 border-t border-white/5 flex justify-between items-center">
-                                    <p className="text-[9px] font-black text-[#505530]/30 uppercase tracking-[0.3em] italic">Accumulated Yield</p>
-                                    <p className="text-3xl font-black italic text-solaris-orange tracking-tighter leading-none">${order.total.toFixed(0)}</p>
+                                <div className="px-6 py-4 border-t border-[rgba(42,40,38,0.12)] flex justify-between items-center">
+                                    <p className="text-[9px] font-black text-[#2A2826]/30 uppercase tracking-[0.3em] italic">Total acumulado</p>
+                                    <p className="text-3xl font-black italic text-servirest-terracota tracking-tighter leading-none">${order.total.toFixed(0)}</p>
                                 </div>
 
                                 {/* Actions */}
@@ -178,33 +178,33 @@ export const MyTablesScreen: React.FC = () => {
                                         <>
                                             <button
                                                 onClick={() => handleCancelOrder(order.id)}
-                                                className="w-11 h-11 bg-white/[0.03] border border-white/5 rounded-2xl flex items-center justify-center text-red-500/30 hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-90"
+                                                className="w-11 h-11 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl flex items-center justify-center text-red-500/30 hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-90"
                                             >
                                                 <Trash2 size={16} />
                                             </button>
                                             <button
                                                 onClick={() => handleOpenEdit(order)}
-                                                className="w-11 h-11 bg-white/[0.03] border border-white/5 rounded-2xl flex items-center justify-center text-solaris-orange/30 hover:text-solaris-orange hover:bg-solaris-orange/10 transition-all active:scale-90"
+                                                className="w-11 h-11 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl flex items-center justify-center text-servirest-terracota/30 hover:text-servirest-terracota hover:bg-servirest-terracota/10 transition-all active:scale-90"
                                             >
                                                 <Edit3 size={16} />
                                             </button>
                                             <button
                                                 onClick={() => updateOrderStatus(order.id, OrderStatus.BILL_REQUESTED)}
-                                                className="flex-1 py-3 bg-white text-black rounded-2xl font-black italic uppercase tracking-[0.15em] text-[10px] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-solaris-orange hover:text-[#1a1c14]"
+                                                className="flex-1 py-3 bg-white text-black rounded-2xl font-black italic uppercase tracking-[0.15em] text-[10px] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-servirest-terracota hover:text-[#1a1c14]"
                                             >
-                                                Settle Account <ChevronRight size={14} />
+                                                Cobrar cuenta <ChevronRight size={14} />
                                             </button>
                                         </>
                                     ) : (
                                         <>
                                             <button
                                                 onClick={() => handleCancelOrder(order.id)}
-                                                className="w-11 h-11 bg-white/[0.03] border border-white/5 rounded-2xl flex items-center justify-center text-red-500/30 hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-90"
+                                                className="w-11 h-11 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl flex items-center justify-center text-red-500/30 hover:text-red-500 hover:bg-red-500/10 transition-all active:scale-90"
                                             >
                                                 <Trash2 size={16} />
                                             </button>
-                                            <div className="flex-1 py-3 bg-solaris-orange/10 border border-solaris-orange/20 text-solaris-orange font-black italic uppercase tracking-[0.3em] text-[9px] rounded-2xl flex items-center justify-center gap-2 animate-pulse">
-                                                Awaiting Reception Hub...
+                                            <div className="flex-1 py-3 bg-servirest-terracota/10 border border-servirest-terracota/20 text-servirest-terracota font-black italic uppercase tracking-[0.3em] text-[9px] rounded-2xl flex items-center justify-center gap-2 animate-pulse">
+                                                Esperando confirmación de cocina…
                                             </div>
                                         </>
                                     )}
@@ -225,20 +225,20 @@ export const MyTablesScreen: React.FC = () => {
                         className="fixed inset-0 z-[600] flex items-center justify-center bg-black/95 backdrop-blur-3xl p-4"
                     >
                         <div
-                            className="w-full max-w-5xl bg-[#FAFAF3] border border-white/10 rounded-[40px] shadow-2xl flex flex-col"
+                            className="w-full max-w-5xl bg-[#FAF8F4] border border-[rgba(42,40,38,0.20)] rounded-[40px] shadow-2xl flex flex-col"
                             style={{ maxHeight: '90vh' }}
                         >
                             {/* Header */}
-                            <div className="flex justify-between items-center px-10 py-7 border-b border-white/5 bg-white/[0.01] shrink-0 rounded-t-[40px]">
+                            <div className="flex justify-between items-center px-10 py-7 border-b border-[rgba(42,40,38,0.12)] bg-servirest-surface shrink-0 rounded-t-[40px]">
                                 <div>
-                                    <h2 className="text-3xl font-black italic tracking-tighter uppercase text-[#1a1c14]">Modify Manifest</h2>
-                                    <p className="text-[10px] font-black uppercase text-solaris-orange/50 tracking-[0.4em] mt-1 italic">
+                                    <h2 className="text-3xl font-black italic tracking-tighter uppercase text-[#1a1c14]">Modificar pedido</h2>
+                                    <p className="text-[10px] font-black uppercase text-servirest-terracota/50 tracking-[0.4em] mt-1 italic">
                                         Node: {editingOrder.tableId}
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => setEditingOrder(null)}
-                                    className="w-12 h-12 bg-white/[0.04] rounded-full flex items-center justify-center text-[#505530]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
+                                    className="w-12 h-12 bg-servirest-surface rounded-full flex items-center justify-center text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
                                 >
                                     <X size={22} />
                                 </button>
@@ -248,30 +248,30 @@ export const MyTablesScreen: React.FC = () => {
                             <div className="flex-1 flex flex-col xl:flex-row overflow-hidden min-h-0">
 
                                 {/* Left: item list */}
-                                <div className="flex-1 flex flex-col overflow-hidden border-r border-white/5">
+                                <div className="flex-1 flex flex-col overflow-hidden border-r border-[rgba(42,40,38,0.12)]">
                                     {/* Toolbar */}
-                                    <div className="flex justify-between items-center px-8 py-5 border-b border-white/5 shrink-0 bg-white/[0.01]">
+                                    <div className="flex justify-between items-center px-8 py-5 border-b border-[rgba(42,40,38,0.12)] shrink-0 bg-servirest-surface">
                                         <div>
-                                            <p className="text-[10px] font-black uppercase text-solaris-orange tracking-[0.3em] italic">Active Packet Stream</p>
-                                            <p className="text-[9px] text-[#505530]/30 font-mono mt-0.5">{tempItems.length} modules loaded</p>
+                                            <p className="text-[10px] font-black uppercase text-servirest-terracota tracking-[0.3em] italic">Pedido actual</p>
+                                            <p className="text-[9px] text-[#2A2826]/30 font-mono mt-0.5">{tempItems.length} modules loaded</p>
                                         </div>
                                         <button
                                             onClick={() => { setShowItemPicker(v => !v); setPickerSearch(''); }}
-                                            className="px-6 py-3 bg-solaris-orange rounded-xl text-[10px] font-black uppercase text-[#1a1c14] shadow-solaris-glow hover:scale-105 active:scale-95 transition-all"
+                                            className="px-6 py-3 bg-servirest-terracota rounded-xl text-[10px] font-black uppercase text-[#1a1c14] shadow-solaris-glow hover:scale-105 active:scale-95 transition-all"
                                         >
-                                            {showItemPicker ? '✕ Close' : '+ Add Asset'}
+                                            {showItemPicker ? '✕ Cerrar' : '+ Agregar platillo'}
                                         </button>
                                     </div>
 
                                     {/* Picker panel */}
                                     {showItemPicker && (
-                                        <div className="px-8 py-5 border-b border-white/5 bg-white/[0.02] space-y-4 shrink-0">
+                                        <div className="px-8 py-5 border-b border-[rgba(42,40,38,0.12)] bg-servirest-surface space-y-4 shrink-0">
                                             <div className="relative">
-                                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-solaris-orange/30" size={16} />
+                                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-servirest-terracota/30" size={16} />
                                                 <input
                                                     type="text"
                                                     placeholder="Search menu items..."
-                                                    className="w-full pl-11 pr-5 py-3 bg-white/[0.04] border border-white/10 rounded-2xl outline-none font-black text-sm italic placeholder:text-[#505530]/10 focus:border-solaris-orange/40 transition-all text-[#1a1c14]"
+                                                    className="w-full pl-11 pr-5 py-3 bg-servirest-surface border border-[rgba(42,40,38,0.20)] rounded-2xl outline-none font-black text-sm italic placeholder:text-[#2A2826]/10 focus:border-servirest-terracota/40 transition-all text-[#1a1c14]"
                                                     value={pickerSearch}
                                                     onChange={e => setPickerSearch(e.target.value)}
                                                     autoFocus
@@ -294,7 +294,7 @@ export const MyTablesScreen: React.FC = () => {
                                                                 setShowItemPicker(false);
                                                                 setPickerSearch('');
                                                             }}
-                                                            className="p-4 bg-white/[0.03] hover:bg-solaris-orange text-[#505530]/65 hover:text-[#1a1c14] rounded-2xl border border-white/5 transition-all text-left"
+                                                            className="p-4 bg-servirest-surface hover:bg-servirest-terracota text-[#2A2826]/65 hover:text-[#1a1c14] rounded-2xl border border-[rgba(42,40,38,0.12)] transition-all text-left"
                                                         >
                                                             <p className="font-black italic uppercase text-sm leading-tight truncate">{item.name}</p>
                                                             <p className="text-[10px] opacity-50 mt-0.5">${item.price.toFixed(0)}</p>
@@ -308,20 +308,20 @@ export const MyTablesScreen: React.FC = () => {
                                     <div className="flex-1 overflow-y-auto no-scrollbar px-8 py-6 space-y-3">
                                         {tempItems.length === 0 ? (
                                             <div className="h-full flex items-center justify-center opacity-20 py-16">
-                                                <p className="text-[11px] font-black uppercase tracking-widest italic text-center">No items — press Add Asset</p>
+                                                <p className="text-[11px] font-black uppercase tracking-widest italic text-center">Sin platillos — toca Agregar platillo</p>
                                             </div>
                                         ) : tempItems.map((item, idx) => (
                                             <div
                                                 key={idx}
-                                                className="flex items-center justify-between bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-5 hover:border-solaris-orange/20 transition-all"
+                                                className="flex items-center justify-between bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl px-6 py-5 hover:border-servirest-terracota/20 transition-all"
                                             >
                                                 <div className="min-w-0 flex-1 mr-4">
                                                     <p className="font-black italic text-[#1a1c14] uppercase tracking-tight leading-tight truncate">{item.name}</p>
-                                                    <p className="text-[10px] text-solaris-orange/40 font-black italic mt-0.5">
+                                                    <p className="text-[10px] text-servirest-terracota/40 font-black italic mt-0.5">
                                                         ${item.price.toFixed(0)} × {item.quantity} = ${(item.price * item.quantity).toFixed(0)}
                                                     </p>
                                                 </div>
-                                                <div className="flex items-center gap-3 bg-black/40 border border-white/5 px-3 py-2 rounded-2xl shrink-0">
+                                                <div className="flex items-center gap-3 bg-black/40 border border-[rgba(42,40,38,0.12)] px-3 py-2 rounded-2xl shrink-0">
                                                     <button
                                                         onClick={() => {
                                                             const n = [...tempItems];
@@ -329,7 +329,7 @@ export const MyTablesScreen: React.FC = () => {
                                                             if (n[idx].quantity === 0) n.splice(idx, 1);
                                                             setTempItems(n);
                                                         }}
-                                                        className="w-9 h-9 rounded-xl bg-white/[0.03] hover:bg-red-500/20 text-[#505530]/45 hover:text-red-500 transition-all flex items-center justify-center text-xl font-black"
+                                                        className="w-9 h-9 rounded-xl bg-servirest-surface hover:bg-red-500/20 text-[#2A2826]/45 hover:text-red-500 transition-all flex items-center justify-center text-xl font-black"
                                                     >−</button>
                                                     <span className="min-w-[24px] text-center font-black italic text-xl text-[#1a1c14]">{item.quantity}</span>
                                                     <button
@@ -338,7 +338,7 @@ export const MyTablesScreen: React.FC = () => {
                                                             n[idx].quantity += 1;
                                                             setTempItems(n);
                                                         }}
-                                                        className="w-9 h-9 rounded-xl bg-white/[0.03] hover:bg-green-500/20 text-[#505530]/45 hover:text-green-500 transition-all flex items-center justify-center text-xl font-black"
+                                                        className="w-9 h-9 rounded-xl bg-servirest-surface hover:bg-green-500/20 text-[#2A2826]/45 hover:text-green-500 transition-all flex items-center justify-center text-xl font-black"
                                                     >+</button>
                                                 </div>
                                             </div>
@@ -347,27 +347,27 @@ export const MyTablesScreen: React.FC = () => {
                                 </div>
 
                                 {/* Right: summary + save */}
-                                <div className="xl:w-72 w-full shrink-0 flex flex-col p-8 gap-5 bg-white/[0.01]">
+                                <div className="xl:w-72 w-full shrink-0 flex flex-col p-8 gap-5 bg-servirest-surface">
                                     <div className="flex-1 flex flex-col justify-center gap-5">
-                                        <div className="bg-white/[0.03] rounded-2xl p-7 border border-white/5 text-center">
-                                            <p className="text-[9px] font-black uppercase text-[#505530]/45 tracking-widest mb-3 italic">Calculated Flux</p>
-                                            <p className="text-5xl font-black italic text-solaris-orange tracking-tighter leading-none">
+                                        <div className="bg-servirest-surface rounded-2xl p-7 border border-[rgba(42,40,38,0.12)] text-center">
+                                            <p className="text-[9px] font-black uppercase text-[#2A2826]/45 tracking-widest mb-3 italic">Calculated Flux</p>
+                                            <p className="text-5xl font-black italic text-servirest-terracota tracking-tighter leading-none">
                                                 ${tempItems.reduce((s, i) => s + (i.price * i.quantity), 0).toFixed(0)}
                                             </p>
                                         </div>
 
-                                        <div className="bg-white/[0.02] rounded-2xl p-5 border border-white/5 space-y-3">
+                                        <div className="bg-servirest-surface rounded-2xl p-5 border border-[rgba(42,40,38,0.12)] space-y-3">
                                             <div className="flex justify-between items-center text-[11px]">
-                                                <span className="text-[#505530]/45 font-black italic uppercase">Total Qty</span>
+                                                <span className="text-[#2A2826]/45 font-black italic uppercase">Total Qty</span>
                                                 <span className="text-[#1a1c14] font-black italic">{tempItems.reduce((a, i) => a + i.quantity, 0)}</span>
                                             </div>
                                             <div className="flex justify-between items-center text-[11px]">
-                                                <span className="text-[#505530]/45 font-black italic uppercase">Lines</span>
+                                                <span className="text-[#2A2826]/45 font-black italic uppercase">Lines</span>
                                                 <span className="text-[#1a1c14] font-black italic">{tempItems.length}</span>
                                             </div>
-                                            <div className="flex justify-between items-center text-[11px] border-t border-white/5 pt-3">
-                                                <span className="text-solaris-orange font-black italic uppercase">Total</span>
-                                                <span className="text-solaris-orange font-black italic">
+                                            <div className="flex justify-between items-center text-[11px] border-t border-[rgba(42,40,38,0.12)] pt-3">
+                                                <span className="text-servirest-terracota font-black italic uppercase">Total</span>
+                                                <span className="text-servirest-terracota font-black italic">
                                                     ${tempItems.reduce((s, i) => s + (i.price * i.quantity), 0).toFixed(2)}
                                                 </span>
                                             </div>
@@ -382,7 +382,7 @@ export const MyTablesScreen: React.FC = () => {
                                             });
                                             if (isRed) setShowPinModal(true); else finalizeSave();
                                         }}
-                                        className="w-full py-6 bg-white text-black rounded-2xl font-black italic uppercase tracking-[0.3em] text-base shadow-2xl hover:bg-solaris-orange hover:text-[#1a1c14] transition-all active:scale-95 flex items-center justify-center gap-3"
+                                        className="w-full py-6 bg-white text-black rounded-2xl font-black italic uppercase tracking-[0.3em] text-base shadow-2xl hover:bg-servirest-terracota hover:text-[#1a1c14] transition-all active:scale-95 flex items-center justify-center gap-3"
                                     >
                                         <Save size={20} /> Commit Changes
                                     </button>
@@ -402,16 +402,16 @@ export const MyTablesScreen: React.FC = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[700] flex items-center justify-center bg-black/98 backdrop-blur-3xl p-6"
                     >
-                        <div className="w-full max-w-md bg-[#FAFAF3] border border-white/10 rounded-[40px] shadow-2xl p-12 text-center">
-                            <div className="w-20 h-20 bg-solaris-orange/10 rounded-full flex items-center justify-center text-solaris-orange mx-auto mb-8 border border-solaris-orange/20">
+                        <div className="w-full max-w-md bg-[#FAF8F4] border border-[rgba(42,40,38,0.20)] rounded-[40px] shadow-2xl p-12 text-center">
+                            <div className="w-20 h-20 bg-servirest-terracota/10 rounded-full flex items-center justify-center text-servirest-terracota mx-auto mb-8 border border-servirest-terracota/20">
                                 <Lock size={36} />
                             </div>
                             <h3 className="text-3xl font-black italic tracking-tighter uppercase text-[#1a1c14] mb-2">Auth Code Required</h3>
-                            <p className="text-[10px] font-black uppercase text-solaris-orange/40 tracking-[0.5em] mb-10 italic">Security Interlock Active</p>
+                            <p className="text-[10px] font-black uppercase text-servirest-terracota/40 tracking-[0.5em] mb-10 italic">Security Interlock Active</p>
 
                             <div className="flex justify-center gap-6 mb-10">
                                 {[0, 1, 2, 3].map((_, i) => (
-                                    <div key={i} className={`w-5 h-5 rounded-full transition-all duration-300 ${pin.length > i ? 'bg-solaris-orange scale-125' : 'bg-white/5 border border-white/10'}`} />
+                                    <div key={i} className={`w-5 h-5 rounded-full transition-all duration-300 ${pin.length > i ? 'bg-servirest-terracota scale-125' : 'bg-white/5 border border-[rgba(42,40,38,0.20)]'}`} />
                                 ))}
                             </div>
 
@@ -420,22 +420,22 @@ export const MyTablesScreen: React.FC = () => {
                                     <button
                                         key={n}
                                         onClick={() => pin.length < 4 && setPin(pin + n)}
-                                        className="w-full h-16 rounded-2xl bg-white/[0.03] hover:bg-white text-[#505530]/55 hover:text-black text-2xl font-black italic transition-all active:scale-90 border border-white/5"
+                                        className="w-full h-16 rounded-2xl bg-servirest-surface hover:bg-white text-[#2A2826]/55 hover:text-black text-2xl font-black italic transition-all active:scale-90 border border-[rgba(42,40,38,0.12)]"
                                     >{n}</button>
                                 ))}
                             </div>
                             <div className="grid grid-cols-3 gap-4 mb-8">
-                                <button onClick={() => setPin('')} className="text-[10px] font-black text-[#505530]/30 uppercase tracking-widest hover:text-red-500 transition-colors italic">Reset</button>
-                                <button onClick={() => pin.length < 4 && setPin(pin + '0')} className="w-full h-16 rounded-2xl bg-white/[0.03] hover:bg-white text-[#505530]/55 hover:text-black text-2xl font-black italic transition-all active:scale-90 border border-white/5">0</button>
+                                <button onClick={() => setPin('')} className="text-[10px] font-black text-[#2A2826]/30 uppercase tracking-widest hover:text-red-500 transition-colors italic">Reset</button>
+                                <button onClick={() => pin.length < 4 && setPin(pin + '0')} className="w-full h-16 rounded-2xl bg-servirest-surface hover:bg-white text-[#2A2826]/55 hover:text-black text-2xl font-black italic transition-all active:scale-90 border border-[rgba(42,40,38,0.12)]">0</button>
                                 <button
                                     onClick={() => { if (pin === '0000') finalizeSave(); else { alert('ACCESS_DENIED'); setPin(''); } }}
-                                    className="w-full h-16 rounded-2xl bg-solaris-orange text-[#1a1c14] flex items-center justify-center hover:scale-105 transition-all active:scale-95"
+                                    className="w-full h-16 rounded-2xl bg-servirest-terracota text-[#1a1c14] flex items-center justify-center hover:scale-105 transition-all active:scale-95"
                                 >
                                     <CheckCircle2 size={28} />
                                 </button>
                             </div>
-                            <button onClick={() => { setShowPinModal(false); setPin(''); }} className="text-[#505530]/10 hover:text-[#1a1c14] transition-colors uppercase font-black text-[10px] tracking-widest italic flex items-center justify-center gap-2 mx-auto">
-                                <X size={14} /> Discard Protocol
+                            <button onClick={() => { setShowPinModal(false); setPin(''); }} className="text-[#2A2826]/10 hover:text-[#1a1c14] transition-colors uppercase font-black text-[10px] tracking-widest italic flex items-center justify-center gap-2 mx-auto">
+                                <X size={14} /> Descartar
                             </button>
                         </div>
                     </motion.div>

@@ -10,6 +10,34 @@ export interface PosStatus {
   isFullyPaid: boolean;
 }
 
+/* ─── Business tier (commercial modality, distinct from equipment plan) ──── */
+export type BusinessTier = 'esencial' | 'profesional' | 'prestige' | 'enterprise';
+
+export interface PlanLimits {
+  maxTables: number;
+  maxEmployees: number;
+  maxProducts: number;
+  maxLocations: number;
+  maxConcurrentTerminals: number;
+  cfdiStampsPerMonth: number;
+  branding: 'shared' | 'cobranded' | 'whitelabel';
+  slaUptime: number; // 0.99, 0.993, 0.995, 0.999
+}
+
+export const TIER_LIMITS: Record<BusinessTier, PlanLimits> = {
+  esencial:    { maxTables: 8,        maxEmployees: 5,   maxProducts: 200,        maxLocations: 1,    maxConcurrentTerminals: 1,    cfdiStampsPerMonth: 50,    branding: 'shared',     slaUptime: 0.990 },
+  profesional: { maxTables: 50,       maxEmployees: 20,  maxProducts: 1000,       maxLocations: 1,    maxConcurrentTerminals: 5,    cfdiStampsPerMonth: 200,   branding: 'shared',     slaUptime: 0.993 },
+  prestige:    { maxTables: 999,      maxEmployees: 50,  maxProducts: 999999,     maxLocations: 5,    maxConcurrentTerminals: 12,   cfdiStampsPerMonth: 1000,  branding: 'cobranded',  slaUptime: 0.995 },
+  enterprise:  { maxTables: 999999,   maxEmployees: 999, maxProducts: 999999,     maxLocations: 999,  maxConcurrentTerminals: 999,  cfdiStampsPerMonth: 999999, branding: 'whitelabel', slaUptime: 0.999 },
+};
+
+export const TIER_PRICING: Record<BusinessTier, { monthly: number; yearly: number; label: string }> = {
+  esencial:    { monthly: 549,   yearly: 5490,  label: 'Esencial' },
+  profesional: { monthly: 899,   yearly: 8990,  label: 'Profesional' },
+  prestige:    { monthly: 2499,  yearly: 24990, label: 'Prestige' },
+  enterprise:  { monthly: 0,     yearly: 0,     label: 'Enterprise' },
+};
+
 interface SubscriptionContextType {
   expiryDate: Date | null;
   daysRemaining: number;
@@ -27,7 +55,19 @@ interface SubscriptionContextType {
   extendSubscription: (days: number) => Promise<boolean>;
   membershipPrice: number;
   updateMembershipPrice: (price: number) => Promise<void>;
+  /** Current business tier (modality). */
+  tier: BusinessTier;
+  /** Hard limits for the current tier. */
+  planLimits: PlanLimits;
+  /** Returns true if `currentValue` is within the limit for `key`. */
+  isWithinLimit: (key: keyof PlanLimits, currentValue: number) => boolean;
+  /** Whether tier feature is allowed at or above `requiredTier`. */
+  meetsTier: (requiredTier: BusinessTier) => boolean;
 }
+
+const TIER_RANK: Record<BusinessTier, number> = {
+  esencial: 0, profesional: 1, prestige: 2, enterprise: 3,
+};
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
@@ -42,8 +82,9 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     amountPaid: 0,
     isFullyPaid: false
   });
-  const [membershipPrice, setMembershipPrice] = useState(850);
+  const [membershipPrice, setMembershipPrice] = useState(899);
   const [demoUntil, setDemoUntil] = useState<Date | null>(null);
+  const [tier, setTier] = useState<BusinessTier>('esencial');
 
   // Fetch Global Config (Price)
   const fetchGlobalConfig = async () => {
@@ -86,11 +127,19 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
       // 2. Fetch Subscription & Debt Status
       const { data: bizData, error: bError } = await supabase
         .from('businesses')
-        .select('subscription_expiry, equipment_total_debt, equipment_balance, plan, custom_price, demo_until')
+        .select('subscription_expiry, equipment_total_debt, equipment_balance, plan, custom_price, demo_until, business_tier')
         .eq('id', authProfile.businessId)
         .single();
 
       if (bError) throw bError;
+
+      // Derive commercial tier (modality). Column may not exist in older DBs.
+      const rawTier = (bizData as any)?.business_tier as string | null | undefined;
+      const validTier: BusinessTier =
+        rawTier === 'profesional' || rawTier === 'prestige' || rawTier === 'enterprise'
+          ? rawTier
+          : 'esencial';
+      setTier(validTier);
 
       // 3. Fetch Payment History
       const { data: historyData, error: hError } = await supabase
@@ -441,7 +490,11 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
         if (!supabase) return;
         await supabase.from('app_config').upsert({ key: 'membership_monthly_price', value: price.toString() }, { onConflict: 'key' });
         setMembershipPrice(price);
-      }
+      },
+      tier,
+      planLimits: TIER_LIMITS[tier],
+      isWithinLimit: (key, currentValue) => currentValue <= TIER_LIMITS[tier][key as keyof PlanLimits] as unknown as number,
+      meetsTier: (requiredTier) => TIER_RANK[tier] >= TIER_RANK[requiredTier],
     }}>
       {children}
     </SubscriptionContext.Provider>

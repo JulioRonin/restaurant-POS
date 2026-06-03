@@ -1,338 +1,376 @@
-﻿import React, { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Order, Expense } from '../types';
 import { useSettings } from '../contexts/SettingsContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid } from 'recharts';
+import { FileText, TrendingUp, Calendar, X, ChevronUp } from 'lucide-react';
+import { SrButton, SrLabel, SrKicker, SrMono } from './ui/servirest';
 
 interface FinancialReportProps {
-    isOpen: boolean;
-    onClose: () => void;
-    orders: Order[];
-    expenses: Expense[];
-    periodLabel: string;
-    categoryLabel: string;
-    restaurantName: string;
+  isOpen: boolean;
+  onClose: () => void;
+  orders: Order[];
+  expenses: Expense[];
+  periodLabel: string;
+  categoryLabel: string;
+  restaurantName: string;
 }
 
-export const FinancialReportModal: React.FC<FinancialReportProps> = ({ 
-    isOpen, 
-    onClose, 
-    orders, 
-    expenses, 
-    periodLabel, 
-    categoryLabel,
-    restaurantName 
+/* Brand chart palette — only Sobremesa Lúcida + semantic tokens. */
+const CHART_PALETTE = {
+  cashNet:    '#22A06B', // success — efectivo neto
+  expenses:   '#E1554B', // danger — gastos
+  card:       '#C4633F', // terracota — tarjeta
+  transfer:   '#A14C2D', // terracota-dark — transferencia
+  uber:       '#C9A24A', // mostaza — uber
+  didi:       '#2A2F42', // midnight-card — didi
+  rappi:      '#1A1E2E', // midnight — rappi
+};
+
+export const FinancialReportModal: React.FC<FinancialReportProps> = ({
+  isOpen, onClose, orders, expenses, periodLabel, categoryLabel, restaurantName,
 }) => {
-    const { settings } = useSettings();
-    if (!isOpen) return null;
+  const { settings } = useSettings();
+  if (!isOpen) return null;
 
-    const totalSales = orders.reduce((sum, o) => sum + o.total, 0);
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-    const taxIVA = 0; // Impuestos omitidos por solicitud
-    const subtotal = totalSales;
-    const netFlow = totalSales - totalExpenses;
-    const averageTicket = orders.length > 0 ? totalSales / orders.length : 0;
+  const totalSales = orders.reduce((sum, o) => sum + o.total, 0);
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const netFlow = totalSales - totalExpenses;
+  const averageTicket = orders.length > 0 ? totalSales / orders.length : 0;
 
-    const waiterStats = useMemo(() => {
-        const stats: Record<string, number> = {};
-        orders.forEach(o => {
-            if (o.waiterName) stats[o.waiterName] = (stats[o.waiterName] || 0) + o.total;
-        });
-        return Object.entries(stats).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    }, [orders]);
+  const waiterStats = useMemo(() => {
+    const stats: Record<string, number> = {};
+    orders.forEach((o) => { if (o.waiterName) stats[o.waiterName] = (stats[o.waiterName] || 0) + o.total; });
+    return Object.entries(stats).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  }, [orders]);
 
-    const cashTotal = orders.filter(o => o.paymentMethod === 'CASH' && (!o.source || o.source === 'DINE_IN' || o.source === 'TO_GO' || o.source === 'PICKUP' || o.source === 'DRIVE_THRU')).reduce((sum, o) => sum + o.total, 0);
-    const cardTotal = orders.filter(o => o.paymentMethod === 'CARD' && (!o.source || o.source === 'DINE_IN' || o.source === 'TO_GO' || o.source === 'PICKUP' || o.source === 'DRIVE_THRU')).reduce((sum, o) => sum + o.total, 0);
-    const transferTotal = orders.filter(o => o.paymentMethod === 'TRANSFER' && (!o.source || o.source === 'DINE_IN' || o.source === 'TO_GO' || o.source === 'PICKUP' || o.source === 'DRIVE_THRU')).reduce((sum, o) => sum + o.total, 0);
-    
-    const uberTotal = orders.filter(o => o.source === 'UBER_EATS').reduce((sum, o) => sum + o.total, 0);
-    const didiTotal = orders.filter(o => o.source === 'DIDI').reduce((sum, o) => sum + o.total, 0);
-    const rappiTotal = orders.filter(o => o.source === 'RAPPI').reduce((sum, o) => sum + o.total, 0);
+  const counterSources = ['DINE_IN', 'TO_GO', 'PICKUP', 'DRIVE_THRU'];
+  const cashTotal     = orders.filter((o) => o.paymentMethod === 'CASH'     && (!o.source || counterSources.includes(o.source))).reduce((s, o) => s + o.total, 0);
+  const cardTotal     = orders.filter((o) => o.paymentMethod === 'CARD'     && (!o.source || counterSources.includes(o.source))).reduce((s, o) => s + o.total, 0);
+  const transferTotal = orders.filter((o) => o.paymentMethod === 'TRANSFER' && (!o.source || counterSources.includes(o.source))).reduce((s, o) => s + o.total, 0);
 
-    const cashflowData = useMemo(() => [
-        { name: 'Efectivo Neto', amount: cashTotal - totalExpenses, date: 'Disponible', fill: '#10B981', note: 'En Caja (Tras Gastos)' },
-        { name: 'Gastos Pagados', amount: totalExpenses, date: 'Liquidado', fill: '#EF4444', note: 'Salida de Caja' },
-        { name: 'Tarjetas', amount: cardTotal, date: 'Día Siguiente', fill: '#6366F1', note: 'Ingreso Bancario' },
-        { name: 'Transferencias', amount: transferTotal, date: 'Al Instante', fill: '#3B82F6', note: 'Ingreso Bancario' },
-        { name: 'Uber Eats', amount: uberTotal, date: settings.uberPayoutDay || 'Lunes', fill: '#059669', note: 'Paga Aplicación' },
-        { name: 'DiDi Food', amount: didiTotal, date: settings.didiPayoutDay || 'Martes', fill: '#F97316', note: 'Paga Aplicación' },
-        { name: 'Rappi', amount: rappiTotal, date: 'Personalizado', fill: '#EAB308', note: settings.rappiPayoutNotes || 'Al sumar monto' },
-    ].filter(item => Math.abs(item.amount) > 0), [cashTotal, cardTotal, transferTotal, uberTotal, didiTotal, rappiTotal, totalExpenses, settings]);
+  const uberTotal  = orders.filter((o) => o.source === 'UBER_EATS').reduce((s, o) => s + o.total, 0);
+  const didiTotal  = orders.filter((o) => o.source === 'DIDI').reduce((s, o) => s + o.total, 0);
+  const rappiTotal = orders.filter((o) => o.source === 'RAPPI').reduce((s, o) => s + o.total, 0);
 
-    const handlePrint = () => {
-        window.print();
-    };
+  const cashflowData = useMemo(() => ([
+    { name: 'Efectivo neto',  amount: cashTotal - totalExpenses, date: 'Disponible',                            fill: CHART_PALETTE.cashNet,   note: 'En caja (tras gastos)' },
+    { name: 'Gastos',         amount: totalExpenses,             date: 'Liquidado',                             fill: CHART_PALETTE.expenses,  note: 'Salida de caja' },
+    { name: 'Tarjeta',        amount: cardTotal,                 date: 'Día siguiente',                         fill: CHART_PALETTE.card,      note: 'Ingreso bancario' },
+    { name: 'Transferencia',  amount: transferTotal,             date: 'Al instante',                           fill: CHART_PALETTE.transfer,  note: 'Ingreso bancario' },
+    { name: 'Uber Eats',      amount: uberTotal,                 date: settings.uberPayoutDay || 'Lunes',       fill: CHART_PALETTE.uber,      note: 'Paga aplicación' },
+    { name: 'DiDi Food',      amount: didiTotal,                 date: settings.didiPayoutDay || 'Martes',      fill: CHART_PALETTE.didi,      note: 'Paga aplicación' },
+    { name: 'Rappi',          amount: rappiTotal,                date: 'Personalizado',                         fill: CHART_PALETTE.rappi,     note: settings.rappiPayoutNotes || 'Al sumar monto' },
+  ]).filter((it) => Math.abs(it.amount) > 0), [cashTotal, cardTotal, transferTotal, uberTotal, didiTotal, rappiTotal, totalExpenses, settings]);
 
-    if (!isOpen) return null;
+  const handlePrint = () => window.print();
 
-    return createPortal(
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 print-manifest-container print:relative print:block print:h-auto print:inset-auto print:p-0">
-            <style>{`
-                @media print {
-                    body { background: white !important; }
-                    #root { display: none !important; }
-                    .no-print { display: none !important; }
-                    .print-manifest-container { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: auto !important; padding: 0 !important; margin: 0 !important; display: block !important; }
-                    .printable-content { width: 100% !important; margin: 0 !important; padding: 0 !important; }
-                }
-            `}</style>
-            {/* Backdrop - Manual backdrop instead of no-print on parent to avoid hiding everything in print */}
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm no-print" onClick={onClose} />
-            
-            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300 relative z-10 print:h-auto print:shadow-none print:rounded-none print:overflow-visible print:block print:max-w-none">
-                {/* Header - Buttons */}
-                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 no-print">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                            <span className="material-icons-round">analytics</span>
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-black text-gray-900 tracking-tight">Reporte Financiero</h2>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Vista Previa de Exportación</p>
-                        </div>
-                    </div>
-                    <div className="flex gap-3">
-                        <button 
-                            onClick={onClose} 
-                            className="px-6 py-2.5 bg-white border border-gray-200 text-gray-400 font-bold rounded-xl hover:bg-gray-50 transition-all text-sm"
-                        >
-                            Cerrar
-                        </button>
-                        <button 
-                            onClick={handlePrint}
-                            className="px-8 py-2.5 bg-primary text-white font-black rounded-xl hover:bg-primary-dark transition-all flex items-center gap-2 shadow-lg shadow-primary/20 text-sm"
-                        >
-                            <span className="material-icons-round text-lg">picture_as_pdf</span>
-                            Descargar Reporte PDF
-                        </button>
-                    </div>
-                </div>
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 print-manifest-container print:relative print:block print:h-auto print:inset-auto print:p-0">
+      <style>{`
+        @media print {
+          body { background: white !important; }
+          #root { display: none !important; }
+          .no-print { display: none !important; }
+          .print-manifest-container { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; height: auto !important; padding: 0 !important; margin: 0 !important; display: block !important; }
+          .printable-content { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+        }
+      `}</style>
 
-                {/* Report Content - This part is what will be printed */}
-                <div id="financial-report" className="flex-1 overflow-y-auto p-12 bg-white print:p-0 print:overflow-visible print:block printable-content">
-                    {/* Page 1: Executive Summary */}
-                    <div className="max-w-4xl mx-auto print:max-w-none print:w-full">
-                        <div className="flex justify-between items-start mb-12">
-                            <div>
-                                <h1 className="text-4xl font-black text-gray-900 tracking-tighter mb-2">{restaurantName.toUpperCase()}</h1>
-                                <p className="text-gray-500 font-bold uppercase tracking-[0.3em] text-[10px]">Reporte Ejecutivo de Caja y Operaciones</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-sm font-black text-gray-900">{periodLabel}</p>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Generado: {new Date().toLocaleString()}</p>
-                            </div>
-                        </div>
+      <div className="absolute inset-0 bg-[rgba(10,12,20,0.6)] backdrop-blur-md no-print" onClick={onClose} />
 
-                        {/* Summary Section */}
-                        <div className="grid grid-cols-2 gap-12 mb-16">
-                            <div>
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Información del Período</h3>
-                                <div className="space-y-3">
-                                    <div className="flex justify-between border-b border-gray-100 pb-2">
-                                        <span className="text-sm font-bold text-gray-500">Rango:</span>
-                                        <span className="text-sm font-black text-gray-900">{periodLabel}</span>
-                                    </div>
-                                    <div className="flex justify-between border-b border-gray-100 pb-2">
-                                        <span className="text-sm font-bold text-gray-500">Categoría:</span>
-                                        <span className="text-sm font-black text-gray-900">{categoryLabel}</span>
-                                    </div>
-                                    <div className="flex justify-between border-b border-gray-100 pb-2">
-                                        <span className="text-sm font-bold text-gray-500">Total Transacciones:</span>
-                                        <span className="text-sm font-black text-gray-900">{orders.length}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-gray-900 text-white p-8 rounded-3xl relative overflow-hidden">
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Estado de Utilidades</h3>
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-end">
-                                        <span className="text-xs font-bold opacity-60">Ingreso Bruto</span>
-                                        <span className="text-2xl font-black">${totalSales.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex justify-between items-end border-t border-white/10 pt-4">
-                                        <span className="text-xs font-bold opacity-60">Flujo Neto</span>
-                                        <span className="text-2xl font-black text-green-400">${netFlow.toLocaleString()}</span>
-                                    </div>
-                                </div>
-                                <div className="absolute -right-4 -bottom-4 opacity-10">
-                                    <span className="material-icons-round text-8xl">trending_up</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Metrics Table */}
-                        <div className="mb-16">
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Desglose Financiero (MXN)</h3>
-                            <table className="w-full border-collapse">
-                                <thead>
-                                    <tr className="bg-gray-50">
-                                        <th className="text-left py-4 px-6 text-[10px] font-black text-gray-400 uppercase">Concepto</th>
-                                        <th className="text-right py-4 px-6 text-[10px] font-black text-gray-400 uppercase">Monto Bruto</th>
-                                        <th className="text-right py-4 px-6 text-[10px] font-black text-gray-400 uppercase">Impuestos (16%)</th>
-                                        <th className="text-right py-4 px-6 text-[10px] font-black text-gray-400 uppercase">Monto Neto</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr className="border-b border-gray-100">
-                                        <td className="py-5 px-6 font-bold text-gray-900">Ventas Totales</td>
-                                        <td className="py-5 px-6 text-right font-bold">${totalSales.toLocaleString()}</td>
-                                        <td className="py-5 px-6 text-right font-medium text-amber-500">Delivery: ${orders.filter(o => o.source === 'UBER_EATS' || o.source === 'RAPPI').reduce((sum, o) => sum + (o.total || 0), 0).toLocaleString()}</td>
-                                        <td className="py-5 px-6 text-right font-black text-primary">${totalSales.toLocaleString()}</td>
-                                    </tr>
-                                    <tr className="border-b border-gray-100">
-                                        <td className="py-5 px-6 font-bold text-gray-900">Gastos (Caja Chica)</td>
-                                        <td className="py-5 px-6 text-right font-bold">${totalExpenses.toLocaleString()}</td>
-                                        <td className="py-5 px-6 text-right font-medium text-gray-400">$0.00</td>
-                                        <td className="py-5 px-6 text-right font-black text-red-500">-${totalExpenses.toLocaleString()}</td>
-                                    </tr>
-                                    <tr className="bg-primary/5">
-                                        <td className="py-6 px-6 font-black text-gray-900 text-lg">Balance Final</td>
-                                        <td colSpan={2}></td>
-                                        <td className="py-6 px-6 text-right font-black text-2xl text-primary">${netFlow.toLocaleString()}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Expenses Detail Section */}
-                        {expenses.length > 0 && (
-                           <div className="mb-16 print:break-inside-avoid">
-                               <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Detalle de Gastos Operativos</h3>
-                               <table className="w-full border-collapse border border-gray-100 rounded-2xl overflow-hidden">
-                                   <thead>
-                                       <tr className="bg-gray-50 border-b border-gray-100">
-                                           <th className="text-left py-3 px-6 text-[9px] font-black text-gray-400 uppercase">Concepto / Descripción</th>
-                                           <th className="text-left py-3 px-6 text-[9px] font-black text-gray-400 uppercase">Categoría</th>
-                                           <th className="text-right py-3 px-6 text-[9px] font-black text-gray-400 uppercase">Monto Total</th>
-                                       </tr>
-                                   </thead>
-                                   <tbody>
-                                       {expenses.map((exp, idx) => (
-                                           <tr key={exp.id || idx} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                                               <td className="py-4 px-6 text-sm font-bold text-gray-800">{exp.description}</td>
-                                               <td className="py-4 px-6">
-                                                   <span className="text-[10px] font-black uppercase px-2 py-1 bg-gray-100 text-gray-500 rounded-md">
-                                                       {exp.category}
-                                                   </span>
-                                               </td>
-                                               <td className="py-4 px-6 text-right font-black text-red-500 text-sm">
-                                                   -${exp.amount.toLocaleString()}
-                                               </td>
-                                           </tr>
-                                       ))}
-                                       <tr className="bg-red-50/30">
-                                           <td colSpan={2} className="py-4 px-6 text-right text-[10px] font-black text-gray-400 uppercase">Total Gastos en Período</td>
-                                           <td className="py-4 px-6 text-right font-black text-red-600 text-lg">
-                                               -${totalExpenses.toLocaleString()}
-                                           </td>
-                                       </tr>
-                                   </tbody>
-                               </table>
-                           </div>
-                        )}
-
-                        {/* Cashflow Map (Recharts) */}
-                        <div className="mb-16 print:break-inside-avoid shadow-sm border border-gray-100 rounded-3xl p-8 bg-white">
-                            <div className="flex justify-between items-end mb-8">
-                                <div>
-                                    <h3 className="text-[12px] font-black text-gray-800 uppercase tracking-[0.2em] mb-1">Flujo de Efectivo Proyectado</h3>
-                                    <p className="text-sm font-bold text-gray-400">Distribución de ingresos por canales y días de compensación</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Proyectado</p>
-                                    <p className="text-xl font-black text-gray-900">${cashflowData.reduce((acc, curr) => acc + curr.amount, 0).toLocaleString()}</p>
-                                </div>
-                            </div>
-                            <div className="h-72 w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={cashflowData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 700 }} dy={10} />
-                                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 700 }} tickFormatter={(val) => `$${val}`} />
-                                        <Tooltip 
-                                            cursor={{ fill: '#F3F4F6' }}
-                                            content={({ active, payload }) => {
-                                                if (active && payload && payload.length) {
-                                                    const data = payload[0].payload;
-                                                    return (
-                                                        <div className="bg-white p-4 shadow-xl rounded-2xl border border-gray-100">
-                                                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">{data.name}</p>
-                                                            <p className="text-lg font-black text-gray-900 mb-2">${data.amount.toLocaleString()}</p>
-                                                            <p className="text-xs font-bold text-primary flex items-center gap-1">
-                                                                <span className="material-icons-round text-sm">event</span>
-                                                                Día/Nota: {data.date}
-                                                            </p>
-                                                        </div>
-                                                    );
-                                                }
-                                                return null;
-                                            }}
-                                        />
-                                        <Bar dataKey="amount" radius={[8, 8, 0, 0]} maxBarSize={60}>
-                                            {cashflowData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                            <div className="mt-6 flex flex-wrap gap-4 pt-6 border-t border-gray-100">
-                                {cashflowData.map(item => (
-                                    <div key={item.name} className="flex items-center gap-2">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.fill }}></div>
-                                        <div>
-                                            <p className="text-[10px] font-black uppercase text-gray-800">{item.name}</p>
-                                            <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider scale-90 origin-left">{item.date}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Performance Grid */}
-                        <div className="grid grid-cols-2 gap-12">
-                            <div>
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Eficiencia de Staff</h3>
-                                <div className="space-y-4">
-                                    {waiterStats.map(([name, total], i) => (
-                                        <div key={name} className="flex items-center gap-4">
-                                            <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-black text-gray-400">{i + 1}</div>
-                                            <div className="flex-1">
-                                                <div className="flex justify-between mb-1">
-                                                    <span className="text-sm font-bold text-gray-700">{name}</span>
-                                                    <span className="text-sm font-black text-gray-900">${total.toLocaleString()}</span>
-                                                </div>
-                                                <div className="w-full bg-gray-100 h-1 rounded-full overflow-hidden">
-                                                    <div className="bg-primary h-full" style={{ width: `${(total / (waiterStats[0]?.[1] || 1)) * 100}%` }}></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Indicadores Operativos</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Ticket Promedio</p>
-                                        <p className="text-xl font-black text-gray-900">${averageTicket.toFixed(2)}</p>
-                                    </div>
-                                    <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Volumen Pedidos</p>
-                                        <p className="text-xl font-black text-gray-900">{orders.length}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="mt-24 pt-8 border-t border-gray-100 text-center">
-                            <p className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">KŌSO POS System — Finanzas Verificadas</p>
-                        </div>
-                    </div>
-                </div>
+      <div className="bg-servirest-surface rounded-sr-2xl shadow-sr-modal w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden relative z-10 print:h-auto print:shadow-none print:rounded-none print:overflow-visible print:block print:max-w-none">
+        {/* HEADER (no-print) */}
+        <div className="px-8 py-6 border-b border-[rgba(42,40,38,0.08)] flex justify-between items-center bg-servirest-hueso-sunken/40 no-print">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-sr-md bg-servirest-midnight text-servirest-mostaza flex items-center justify-center">
+              <FileText size={20} />
             </div>
-        </div>,
-        document.body
-    );
+            <div>
+              <SrKicker className="block mb-0.5">Vista previa de exportación</SrKicker>
+              <h2 className="sr-h-brutal text-[20px] m-0">Reporte ejecutivo</h2>
+            </div>
+          </div>
+          <div className="flex gap-2.5">
+            <SrButton variant="outline" size="md" icon={<X size={14} />} onClick={onClose}>
+              Cerrar
+            </SrButton>
+            <SrButton variant="primary" size="md" icon={<FileText size={14} />} onClick={handlePrint}>
+              Descargar PDF
+            </SrButton>
+          </div>
+        </div>
+
+        {/* REPORT BODY */}
+        <div id="financial-report" className="flex-1 overflow-y-auto custom-scrollbar p-12 bg-servirest-surface print:p-0 print:overflow-visible print:block printable-content">
+          <div className="max-w-4xl mx-auto print:max-w-none print:w-full">
+            {/* Title bar — editorial */}
+            <div className="flex justify-between items-start mb-12 pb-8 border-b border-[rgba(42,40,38,0.12)]">
+              <div>
+                <SrKicker className="block mb-2">Reporte ejecutivo · Caja & operación</SrKicker>
+                <h1 className="font-serif italic font-medium text-[48px] text-servirest-midnight tracking-[-0.02em] leading-[1.05] m-0">
+                  {restaurantName}
+                </h1>
+              </div>
+              <div className="text-right">
+                <SrMono className="block text-servirest-midnight font-extrabold">{periodLabel}</SrMono>
+                <span className="text-[10px] text-[rgba(42,40,38,0.4)] font-bold uppercase tracking-[0.2em] mt-1 block">
+                  Generado {new Date().toLocaleString('es-MX')}
+                </span>
+              </div>
+            </div>
+
+            {/* Summary — period info + utility card */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+              <div>
+                <SrLabel className="block mb-4">Información del período</SrLabel>
+                <div className="space-y-3">
+                  {[
+                    ['Rango', periodLabel],
+                    ['Categoría', categoryLabel],
+                    ['Total transacciones', String(orders.length)],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex justify-between border-b border-[rgba(42,40,38,0.08)] pb-2">
+                      <span className="text-[13px] font-medium text-[rgba(42,40,38,0.6)]">{k}</span>
+                      <span className="text-[13px] font-extrabold text-servirest-midnight">{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-servirest-midnight text-servirest-hueso p-8 rounded-sr-2xl relative overflow-hidden">
+                <SrLabel className="block mb-6" style={{ color: 'rgba(250,248,244,0.55)' }}>
+                  Estado de utilidades
+                </SrLabel>
+                <div className="space-y-5">
+                  <div className="flex justify-between items-end">
+                    <span className="text-xs font-bold opacity-60">Ingreso bruto</span>
+                    <span className="font-black italic text-[28px] tracking-[-0.02em]">${totalSales.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-end border-t border-white/10 pt-5">
+                    <span className="text-xs font-bold opacity-60">Flujo neto</span>
+                    <span className="font-black italic text-[28px] tracking-[-0.02em] text-servirest-mostaza">
+                      ${netFlow.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <div className="absolute -right-6 -bottom-6 opacity-[0.07] pointer-events-none">
+                  <TrendingUp size={140} />
+                </div>
+              </div>
+            </div>
+
+            {/* Financial breakdown */}
+            <div className="mb-16">
+              <SrLabel className="block mb-6">Desglose financiero (MXN)</SrLabel>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-servirest-hueso-sunken">
+                    <th className="text-left py-4 px-6 text-[10px] font-black text-[rgba(42,40,38,0.6)] uppercase tracking-[0.18em]">Concepto</th>
+                    <th className="text-right py-4 px-6 text-[10px] font-black text-[rgba(42,40,38,0.6)] uppercase tracking-[0.18em]">Bruto</th>
+                    <th className="text-right py-4 px-6 text-[10px] font-black text-[rgba(42,40,38,0.6)] uppercase tracking-[0.18em]">Delivery</th>
+                    <th className="text-right py-4 px-6 text-[10px] font-black text-[rgba(42,40,38,0.6)] uppercase tracking-[0.18em]">Neto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-[rgba(42,40,38,0.08)]">
+                    <td className="py-5 px-6 font-extrabold text-servirest-midnight">Ventas totales</td>
+                    <td className="py-5 px-6 text-right"><SrMono>${totalSales.toLocaleString()}</SrMono></td>
+                    <td className="py-5 px-6 text-right">
+                      <SrMono className="text-servirest-mostaza">
+                        ${orders.filter((o) => o.source === 'UBER_EATS' || o.source === 'RAPPI').reduce((s, o) => s + (o.total || 0), 0).toLocaleString()}
+                      </SrMono>
+                    </td>
+                    <td className="py-5 px-6 text-right">
+                      <SrMono className="text-servirest-terracota text-[16px]">${totalSales.toLocaleString()}</SrMono>
+                    </td>
+                  </tr>
+                  <tr className="border-b border-[rgba(42,40,38,0.08)]">
+                    <td className="py-5 px-6 font-extrabold text-servirest-midnight">Gastos operativos</td>
+                    <td className="py-5 px-6 text-right"><SrMono>${totalExpenses.toLocaleString()}</SrMono></td>
+                    <td className="py-5 px-6 text-right text-[rgba(42,40,38,0.4)]"><SrMono>—</SrMono></td>
+                    <td className="py-5 px-6 text-right"><SrMono className="text-servirest-danger">−${totalExpenses.toLocaleString()}</SrMono></td>
+                  </tr>
+                  <tr className="bg-[rgba(196,99,63,0.06)]">
+                    <td className="py-6 px-6 font-black italic text-servirest-midnight text-[16px]">Balance final</td>
+                    <td colSpan={2}></td>
+                    <td className="py-6 px-6 text-right">
+                      <span className="font-black italic text-[28px] text-servirest-terracota tracking-[-0.03em]">
+                        ${netFlow.toLocaleString()}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Expenses detail */}
+            {expenses.length > 0 && (
+              <div className="mb-16 print:break-inside-avoid">
+                <SrLabel className="block mb-6">Detalle de gastos</SrLabel>
+                <table className="w-full border-collapse border border-[rgba(42,40,38,0.08)] rounded-sr-lg overflow-hidden">
+                  <thead>
+                    <tr className="bg-servirest-hueso-sunken border-b border-[rgba(42,40,38,0.08)]">
+                      <th className="text-left py-3 px-6 text-[10px] font-black text-[rgba(42,40,38,0.6)] uppercase tracking-[0.18em]">Concepto</th>
+                      <th className="text-left py-3 px-6 text-[10px] font-black text-[rgba(42,40,38,0.6)] uppercase tracking-[0.18em]">Categoría</th>
+                      <th className="text-right py-3 px-6 text-[10px] font-black text-[rgba(42,40,38,0.6)] uppercase tracking-[0.18em]">Monto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {expenses.map((exp, idx) => (
+                      <tr key={exp.id || idx} className="border-b border-[rgba(42,40,38,0.05)] hover:bg-servirest-hueso-sunken/40 transition-colors">
+                        <td className="py-4 px-6 text-sm font-extrabold text-servirest-midnight">{exp.description}</td>
+                        <td className="py-4 px-6">
+                          <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-[rgba(42,40,38,0.05)] text-[rgba(42,40,38,0.6)] rounded-md tracking-[0.12em]">
+                            {exp.category}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 text-right">
+                          <SrMono className="text-servirest-danger">−${exp.amount.toLocaleString()}</SrMono>
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="bg-[rgba(225,85,75,0.04)]">
+                      <td colSpan={2} className="py-4 px-6 text-right text-[10px] font-black text-[rgba(42,40,38,0.6)] uppercase tracking-[0.2em]">Total gastos del período</td>
+                      <td className="py-4 px-6 text-right">
+                        <span className="font-black italic text-[18px] text-servirest-danger">−${totalExpenses.toLocaleString()}</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Cashflow chart */}
+            <div className="mb-16 print:break-inside-avoid border border-[rgba(42,40,38,0.08)] rounded-sr-2xl p-8 bg-servirest-surface shadow-sr-card">
+              <div className="flex justify-between items-end mb-8">
+                <div>
+                  <SrKicker className="block mb-1">Tesorería</SrKicker>
+                  <h3 className="sr-h-brutal text-[19px] m-0">Flujo de efectivo por canal</h3>
+                  <p className="text-[13px] text-[rgba(42,40,38,0.6)] font-medium mt-1.5">Distribución por método y días de compensación</p>
+                </div>
+                <div className="text-right">
+                  <SrLabel className="block mb-1">Total proyectado</SrLabel>
+                  <span className="font-black italic text-[26px] text-servirest-midnight tracking-[-0.02em]">
+                    ${cashflowData.reduce((acc, c) => acc + c.amount, 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={cashflowData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(42,40,38,0.08)" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#2A2826', fontSize: 11, fontWeight: 700, opacity: 0.6 }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#2A2826', fontSize: 11, fontWeight: 700, opacity: 0.6 }} tickFormatter={(v) => `$${v}`} />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(196,99,63,0.05)' }}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload as any;
+                          return (
+                            <div className="sr-card p-4 max-w-[220px]">
+                              <SrLabel className="block mb-1">{data.name}</SrLabel>
+                              <SrMono className="block text-base text-servirest-midnight font-extrabold mb-2">
+                                ${Number(data.amount).toLocaleString()}
+                              </SrMono>
+                              <p className="text-[11px] font-bold text-servirest-terracota flex items-center gap-1.5">
+                                <Calendar size={11} /> {data.date}
+                              </p>
+                              <p className="text-[10px] text-[rgba(42,40,38,0.6)] font-medium mt-1">{data.note}</p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar dataKey="amount" radius={[6, 6, 0, 0]} maxBarSize={60}>
+                      {cashflowData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-6 flex flex-wrap gap-4 pt-6 border-t border-[rgba(42,40,38,0.08)]">
+                {cashflowData.map((item) => (
+                  <div key={item.name} className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.fill }} />
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.12em] text-servirest-midnight">{item.name}</p>
+                      <p className="text-[9px] font-bold text-[rgba(42,40,38,0.4)] uppercase tracking-[0.1em]">{item.date}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Performance — staff + KPIs */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <SrLabel className="block mb-6">Top meseros por ventas</SrLabel>
+                <div className="space-y-4">
+                  {waiterStats.map(([name, total], i) => (
+                    <div key={name} className="flex items-center gap-3.5">
+                      <div className="w-9 h-9 rounded-sr-md bg-servirest-hueso-sunken flex items-center justify-center font-black italic text-[14px] text-servirest-terracota">
+                        {i + 1}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm font-extrabold text-servirest-midnight">{name}</span>
+                          <SrMono className="text-servirest-midnight font-bold">${total.toLocaleString()}</SrMono>
+                        </div>
+                        <div className="w-full bg-[rgba(42,40,38,0.08)] h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className="bg-servirest-terracota h-full transition-all duration-700"
+                            style={{ width: `${(total / (waiterStats[0]?.[1] || 1)) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {waiterStats.length === 0 && (
+                    <p className="text-[12px] text-[rgba(42,40,38,0.4)] font-medium italic">Sin datos suficientes para este período.</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <SrLabel className="block mb-6">Indicadores operativos</SrLabel>
+                <div className="grid grid-cols-2 gap-3.5">
+                  <div className="bg-servirest-hueso-sunken p-5 rounded-sr-lg border border-[rgba(42,40,38,0.08)]">
+                    <SrLabel className="block mb-1.5">Ticket promedio</SrLabel>
+                    <span className="font-black italic text-[22px] text-servirest-midnight tracking-[-0.02em]">
+                      ${averageTicket.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="bg-servirest-hueso-sunken p-5 rounded-sr-lg border border-[rgba(42,40,38,0.08)]">
+                    <SrLabel className="block mb-1.5">Pedidos</SrLabel>
+                    <span className="font-black italic text-[22px] text-servirest-midnight tracking-[-0.02em]">
+                      {orders.length}
+                    </span>
+                  </div>
+                  <div className="bg-servirest-hueso-sunken p-5 rounded-sr-lg border border-[rgba(42,40,38,0.08)] col-span-2">
+                    <SrLabel className="block mb-1.5">Mix de canales</SrLabel>
+                    <div className="flex flex-wrap gap-2 text-[11px] font-bold mt-2">
+                      <span className="font-mono"><span className="text-[rgba(42,40,38,0.6)]">Mesa:</span> ${(cashTotal + cardTotal + transferTotal).toLocaleString()}</span>
+                      <span className="text-[rgba(42,40,38,0.3)]">·</span>
+                      <span className="font-mono"><span className="text-[rgba(42,40,38,0.6)]">Delivery:</span> ${(uberTotal + didiTotal + rappiTotal).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="mt-20 pt-8 border-t border-[rgba(42,40,38,0.08)] text-center">
+              <p className="text-[10px] font-black text-[rgba(42,40,38,0.3)] uppercase tracking-[0.3em]">
+                ServiRest — Reporte verificado · Aliados del rubro
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
 };
