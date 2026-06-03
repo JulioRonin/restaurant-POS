@@ -203,6 +203,64 @@
 }
 
 /* ============================================================================
+   TERMINAL MODE OVERRIDES — tablet / kiosk / mobile
+   Body carries data-terminal-mode set by App.tsx. CSS variables shift to
+   scale touch targets (POS on a 10" tablet wants 48px+ minimum hit zones).
+   ============================================================================ */
+[data-terminal-mode="tablet-pos"],
+[data-terminal-mode="tablet-host"] {
+  /* Bump the comfortable hit zone — Apple HIG / Material both target 44-48px
+     for touch. Buttons inherit larger padding via these radii bumps. */
+  --sr-r-md:   14px;
+  --sr-r-lg:   18px;
+  --sr-r-xl:   26px;
+  --sr-r-2xl:  34px;
+}
+
+[data-terminal-mode="tablet-pos"] button,
+[data-terminal-mode="tablet-host"] button,
+[data-terminal-mode="tablet-pos"] [role="button"],
+[data-terminal-mode="tablet-host"] [role="button"] {
+  min-height: 44px;
+}
+
+/* Inputs feel cramped on tablets — give them air */
+[data-terminal-mode="tablet-pos"] input,
+[data-terminal-mode="tablet-host"] input,
+[data-terminal-mode="tablet-pos"] select,
+[data-terminal-mode="tablet-host"] select,
+[data-terminal-mode="tablet-pos"] textarea,
+[data-terminal-mode="tablet-host"] textarea {
+  font-size: 15px;
+  min-height: 44px;
+}
+
+/* Prevent text selection / context menus / pinch-zoom that don't make sense
+   on a fixed kiosk screen. */
+[data-terminal-mode="tablet-pos"],
+[data-terminal-mode="tablet-host"] {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* But still let users type in form fields */
+[data-terminal-mode="tablet-pos"] input,
+[data-terminal-mode="tablet-host"] input,
+[data-terminal-mode="tablet-pos"] textarea,
+[data-terminal-mode="tablet-host"] textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Mobile PWA — waiter on their phone. Smaller text, but the existing
+   responsive layout already handles most of this. We just tighten gutters. */
+[data-terminal-mode="mobile-pwa"] {
+  --sr-r-xl:   20px;
+  --sr-r-2xl:  28px;
+}
+
+/* ============================================================================
    GLOBAL BASE
    ============================================================================ */
 html {

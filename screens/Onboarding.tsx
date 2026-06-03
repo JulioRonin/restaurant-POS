@@ -26,6 +26,7 @@ import { useUser } from '../contexts/UserContext';
 import { useMenu } from '../contexts/MenuContext';
 import { useInventory } from '../contexts/InventoryContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { printerService } from '../services/PrinterService';
 import {
   SrCard,
   SrButton,
@@ -251,17 +252,129 @@ export default function OnboardingScreen() {
     }
   };
 
-  const scanHardware = () => {
+  const scanHardware = async () => {
     setHardware((prev) => ({ ...prev, scanning: true }));
-    setTimeout(() => {
-      setHardware((prev) => ({
-        ...prev,
-        scanning: false,
-        printers: [{ id: 'p1', name: 'Epson TM-T88VI', connection: 'IP 192.168.1.50', status: 'En línea' }],
-        scanners: [{ id: 's1', name: 'Scanner HID', status: 'Conectado por USB' }],
-        drawer: true,
-      }));
-    }, 2000);
+    try {
+      // Real Bluetooth printer scan — opens the OS device picker. The user
+      // physically selects their printer; we capture name + the device handle.
+      const device = await printerService.requestBluetoothPrinter();
+      if (device) {
+        const connected = await printerService.connect(device);
+        setHardware((prev) => ({
+          ...prev,
+          scanning: false,
+          printers: connected
+            ? [
+                {
+                  id: device.id || device.name,
+                  name: device.name || 'Impresora',
+                  connection: 'Bluetooth',
+                  status: 'Conectada',
+                  isReal: true,
+                },
+              ]
+            : prev.printers,
+          // The cash drawer pulses through the printer, so if the printer is
+          // connected we mark the drawer as ready too — physical drawers don't
+          // announce themselves; we'll verify with the test pulse below.
+          drawer: connected,
+        }));
+      } else {
+        setHardware((prev) => ({ ...prev, scanning: false }));
+      }
+    } catch (err) {
+      console.error('[Onboarding] Bluetooth scan failed:', err);
+      setHardware((prev) => ({ ...prev, scanning: false }));
+      alert(
+        'No pudimos abrir el selector Bluetooth. Confirma que estás en HTTPS o que el navegador permite emparejar dispositivos.'
+      );
+    }
+  };
+
+  // Manual USB printer pick. Some thermal printers expose themselves as USB
+  // instead of Bluetooth; this is the path for those.
+  const scanUsbPrinter = async () => {
+    setHardware((prev) => ({ ...prev, scanning: true }));
+    try {
+      const device = await printerService.requestPrinter();
+      if (device) {
+        const connected = await printerService.connect(device);
+        setHardware((prev) => ({
+          ...prev,
+          scanning: false,
+          printers: connected
+            ? [
+                {
+                  id: (device as any).productId?.toString() || 'usb-printer',
+                  name: (device as any).productName || 'Impresora USB',
+                  connection: 'USB',
+                  status: 'Conectada',
+                  isReal: true,
+                },
+                ...prev.printers.filter((p: any) => !p.isReal),
+              ]
+            : prev.printers,
+          drawer: connected,
+        }));
+      } else {
+        setHardware((prev) => ({ ...prev, scanning: false }));
+      }
+    } catch (err) {
+      console.error('[Onboarding] USB scan failed:', err);
+      setHardware((prev) => ({ ...prev, scanning: false }));
+      alert('No pudimos abrir el selector USB. Confirma que el navegador soporta WebUSB.');
+    }
+  };
+
+  // Diagnostic — print a real test ticket so the user can confirm the
+  // printer is alive and the cuts/feeds are correct.
+  const testPrint = async () => {
+    if (!printerService.isConnected()) {
+      alert('No hay impresora conectada. Conecta una primero.');
+      return;
+    }
+    setHardware((prev) => ({ ...prev, testing: 'print' }));
+    try {
+      const testOrder: any = {
+        id: 'TEST-' + Date.now().toString(36).toUpperCase(),
+        tableId: 'PRUEBA',
+        items: [
+          { name: 'Impresión de prueba', quantity: 1, price: 0, notes: 'Si lees esto, tu impresora está conectada.' },
+        ],
+        total: 0,
+        timestamp: new Date(),
+        waiterName: authProfile?.fullName || 'ServiRest',
+      };
+      const ok = await printerService.printOrder(testOrder, {
+        name: restaurantInfo.name || 'ServiRest',
+        ticketFooter: '¡Gracias! · ServiRest',
+        isReceiptPrintingEnabled: true,
+      } as any);
+      if (!ok) alert('La impresión de prueba no se pudo completar. Revisa la conexión.');
+    } catch (err) {
+      console.error('[Onboarding] Test print failed:', err);
+      alert('Error en la impresión de prueba.');
+    } finally {
+      setHardware((prev) => ({ ...prev, testing: null }));
+    }
+  };
+
+  // Diagnostic — fire the cash-drawer pulse through the printer's COM line.
+  const testCashDrawer = async () => {
+    if (!printerService.isConnected()) {
+      alert('No hay impresora conectada. El cajón se abre por la línea de pulso de la impresora.');
+      return;
+    }
+    setHardware((prev) => ({ ...prev, testing: 'drawer' }));
+    try {
+      const ok = await printerService.openCashDrawer();
+      if (!ok) alert('No pudimos enviar el pulso. Revisa que el cajón esté conectado al RJ-11 de la impresora.');
+    } catch (err) {
+      console.error('[Onboarding] Cash drawer test failed:', err);
+      alert('Error abriendo el cajón.');
+    } finally {
+      setHardware((prev) => ({ ...prev, testing: null }));
+    }
   };
 
   return (
@@ -433,7 +546,13 @@ export default function OnboardingScreen() {
                 )}
 
                 {currentStep === 'HARDWARE' && (
-                  <HardwareStep hardware={hardware} onScan={scanHardware} />
+                  <HardwareStep
+                    hardware={hardware}
+                    onScanBluetooth={scanHardware}
+                    onScanUsb={scanUsbPrinter}
+                    onTestPrint={testPrint}
+                    onTestDrawer={testCashDrawer}
+                  />
                 )}
 
                 {currentStep === 'COMPLETE' && (
@@ -877,7 +996,18 @@ const TablesStep: React.FC<{
           <button
             type="button"
             onClick={() =>
-              setTables((prev) => [...prev, { id: `T${prev.length + 1}`, name: `Mesa ${prev.length + 1}`, seats: 4 }])
+              setTables((prev) => [
+                ...prev,
+                {
+                  // Use crypto.randomUUID so Supabase (uuid column) accepts it. The
+                  // user-facing name still increments naturally ('Mesa 1', 'Mesa 2'...).
+                  id: typeof crypto !== 'undefined' && crypto.randomUUID
+                    ? crypto.randomUUID()
+                    : `t-${Date.now()}-${prev.length}`,
+                  name: `Mesa ${prev.length + 1}`,
+                  seats: 4,
+                },
+              ])
             }
             className="w-11 h-11 rounded-full bg-servirest-terracota text-servirest-hueso flex items-center justify-center shadow-sr-glow hover:scale-105 transition-transform text-xl font-bold"
           >
@@ -1026,8 +1156,13 @@ const StaffStep: React.FC<{
 
 const HardwareStep: React.FC<{
   hardware: any;
-  onScan: () => void;
-}> = ({ hardware, onScan }) => (
+  onScanBluetooth: () => void;
+  onScanUsb: () => void;
+  onTestPrint: () => void;
+  onTestDrawer: () => void;
+}> = ({ hardware, onScanBluetooth, onScanUsb, onTestPrint, onTestDrawer }) => {
+  const hasDevice = hardware.printers.length > 0;
+  return (
   <div className="space-y-5">
     <SrCard variant="solaris" className="p-8 text-center">
       {hardware.scanning ? (
@@ -1035,10 +1170,10 @@ const HardwareStep: React.FC<{
           <div className="w-14 h-14 mx-auto border-[3px] border-servirest-terracota/20 border-t-servirest-terracota rounded-full animate-spin" />
           <div>
             <h3 className="font-serif italic font-medium text-[22px] text-servirest-midnight tracking-[-0.02em] m-0 leading-tight">
-              Buscando aparatos en la red
+              Buscando tus aparatos
             </h3>
             <p className="text-[13px] text-[rgba(42,40,38,0.6)] mt-2 leading-relaxed">
-              Verifica que tus impresoras estén encendidas y en la misma red WiFi.
+              Confirma el dispositivo en la ventana del navegador. Si no aparece, asegúrate de que esté encendido.
             </p>
           </div>
         </div>
@@ -1048,17 +1183,26 @@ const HardwareStep: React.FC<{
             <Wifi size={28} />
           </div>
           <div>
-            <SrKicker className="block mb-1.5">Detección automática</SrKicker>
+            <SrKicker className="block mb-1.5">Conexión real</SrKicker>
             <h3 className="font-serif italic font-medium text-[26px] text-servirest-midnight tracking-[-0.02em] m-0 leading-tight">
-              Vamos a buscar tus aparatos
+              Conecta tu impresora térmica
             </h3>
             <p className="text-[13px] text-[rgba(42,40,38,0.6)] mt-2 max-w-md mx-auto leading-relaxed">
-              Escanearemos impresoras en IP, scanners por USB y dispositivos Bluetooth. Si no aparecen, los puedes agregar manualmente.
+              Tu navegador abrirá el selector de dispositivos. Elige tu impresora (la mayoría son Epson, Star o genéricas
+              compatibles ESC/POS). El cajón de dinero se conecta al RJ-11 de la impresora y se acciona por pulso.
             </p>
           </div>
-          <SrButton variant="primary" size="md" icon={<Sparkles size={14} />} onClick={onScan}>
-            Empezar escaneo
-          </SrButton>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <SrButton variant="primary" size="md" icon={<Wifi size={14} />} onClick={onScanBluetooth}>
+              Bluetooth
+            </SrButton>
+            <SrButton variant="midnight" size="md" icon={<Usb size={14} />} onClick={onScanUsb}>
+              USB
+            </SrButton>
+          </div>
+          <p className="text-[11px] text-[rgba(42,40,38,0.5)] font-medium">
+            Si no tienes la impresora aquí, también lo puedes conectar después desde Ajustes → Hardware.
+          </p>
         </div>
       )}
     </SrCard>
@@ -1149,8 +1293,68 @@ const HardwareStep: React.FC<{
         )}
       </div>
     </SrCard>
+
+    {/* ─── DIAGNÓSTICO — sólo aparece cuando hay impresora real conectada ─── */}
+    {hasDevice && (
+      <SrCard variant="solaris" className="p-7">
+        <div className="flex items-start justify-between mb-5 gap-4 flex-wrap">
+          <div>
+            <SrKicker className="block mb-1">Diagnóstico</SrKicker>
+            <h3 className="font-serif italic font-medium text-[20px] text-servirest-midnight tracking-[-0.02em] m-0 leading-tight">
+              Prueba que todo funcione antes de seguir
+            </h3>
+            <p className="text-[12px] text-[rgba(42,40,38,0.6)] mt-1.5 max-w-md leading-relaxed">
+              Imprime un ticket de prueba y abre el cajón. Si tu impresora no responde, revisa el cable de alimentación y el papel.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={onTestPrint}
+            disabled={hardware.testing === 'print'}
+            className="flex items-center gap-3 p-4 rounded-sr-md border border-[rgba(42,40,38,0.12)] bg-servirest-surface hover:border-servirest-terracota hover:bg-[rgba(196,99,63,0.04)] transition-colors text-left disabled:opacity-60 disabled:cursor-wait"
+          >
+            <div className="w-10 h-10 rounded-sr-sm bg-servirest-midnight text-servirest-mostaza flex items-center justify-center shrink-0">
+              <Printer size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-extrabold text-servirest-midnight m-0">
+                {hardware.testing === 'print' ? 'Imprimiendo…' : 'Imprimir prueba'}
+              </p>
+              <p className="text-[11px] text-[rgba(42,40,38,0.6)] m-0 mt-0.5">
+                Ticket de muestra con tu nombre del negocio
+              </p>
+            </div>
+            <ChevronRight size={16} className="text-[rgba(42,40,38,0.4)]" />
+          </button>
+
+          <button
+            type="button"
+            onClick={onTestDrawer}
+            disabled={hardware.testing === 'drawer'}
+            className="flex items-center gap-3 p-4 rounded-sr-md border border-[rgba(42,40,38,0.12)] bg-servirest-surface hover:border-servirest-mostaza hover:bg-[rgba(201,162,74,0.06)] transition-colors text-left disabled:opacity-60 disabled:cursor-wait"
+          >
+            <div className="w-10 h-10 rounded-sr-sm bg-servirest-mostaza/15 text-servirest-mostaza flex items-center justify-center shrink-0">
+              <Smartphone size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-extrabold text-servirest-midnight m-0">
+                {hardware.testing === 'drawer' ? 'Abriendo…' : 'Probar cajón'}
+              </p>
+              <p className="text-[11px] text-[rgba(42,40,38,0.6)] m-0 mt-0.5">
+                Manda el pulso al RJ-11 de la impresora
+              </p>
+            </div>
+            <ChevronRight size={16} className="text-[rgba(42,40,38,0.4)]" />
+          </button>
+        </div>
+      </SrCard>
+    )}
   </div>
-);
+  );
+};
 
 const CompleteStep: React.FC<{
   fullName: string;

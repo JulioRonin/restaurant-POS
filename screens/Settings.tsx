@@ -336,6 +336,8 @@ export const SettingsScreen: React.FC = () => {
                 isConnecting={isConnecting}
                 onConnectUSB={handleConnectUSB}
                 onConnectBT={handleConnectBT}
+                onPrintTest={handlePrintTest}
+                onDrawerTest={handleDrawerTest}
                 connectionStatus={connectionStatus}
               />
             )}
@@ -855,6 +857,66 @@ const AppearanceTab: React.FC<{
         })}
       </div>
     </SrCard>
+
+    {/* ─── MODO TERMINAL — tablet / kiosko / móvil ──────────────────────── */}
+    <SrCard variant="solaris" className="p-8">
+      <SectionHeading
+        kicker="Modo del dispositivo"
+        title="¿Cómo se usa este equipo?"
+        right={<SrChip tone="mostaza">Avanzado</SrChip>}
+      />
+      <p className="text-[13px] text-[rgba(42,40,38,0.6)] font-medium mb-5 max-w-2xl leading-relaxed">
+        Si vas a usar este equipo como una tablet en mostrador o un teléfono del mesero, el modo terminal oculta el menú lateral
+        y deja la pantalla limpia. Para volver al modo estándar regresas a esta sección.
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        {([
+          { id: 'standard',    icon: Building2,  title: 'Estándar',       sub: 'Computadora con menú lateral, todo a la mano.' },
+          { id: 'tablet-pos',  icon: Smartphone, title: 'Tablet POS',     sub: 'Tablet 10" en barra. Se abre directo en POS.' },
+          { id: 'tablet-host', icon: Smartphone, title: 'Tablet host',    sub: 'Tablet en la puerta. Se abre directo en Hostess.' },
+          { id: 'mobile-pwa',  icon: Smartphone, title: 'Móvil mesero',   sub: 'Teléfono del mesero con barra inferior, sin menú.' },
+        ] as const).map((m, idx) => {
+          const active = (localSettings.terminalMode || 'standard') === m.id;
+          const Icon = m.icon;
+          return (
+            <motion.button
+              key={m.id}
+              type="button"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: idx * 0.04 }}
+              onClick={() => setLocalSettings((prev) => ({ ...prev, terminalMode: m.id }))}
+              className={`text-left p-5 rounded-sr-xl border transition-all ${
+                active
+                  ? 'border-servirest-terracota bg-[rgba(196,99,63,0.06)] shadow-sr-glow'
+                  : 'border-[rgba(42,40,38,0.12)] bg-servirest-surface hover:border-[rgba(42,40,38,0.2)]'
+              }`}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className={`w-10 h-10 rounded-sr-md flex items-center justify-center ${active ? 'bg-servirest-terracota text-servirest-hueso' : 'bg-servirest-hueso-sunken text-[rgba(42,40,38,0.6)]'}`}>
+                  <Icon size={18} />
+                </div>
+                {active && <CheckCircle2 size={14} className="text-servirest-terracota" />}
+              </div>
+              <h3 className="font-serif italic font-medium text-[17px] text-servirest-midnight tracking-[-0.02em] m-0 mb-1 leading-tight">
+                {m.title}
+              </h3>
+              <p className="text-[11px] text-[rgba(42,40,38,0.6)] m-0 leading-relaxed">{m.sub}</p>
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {(localSettings.terminalMode === 'tablet-pos' || localSettings.terminalMode === 'tablet-host') && (
+        <div className="mt-5">
+          <SrAlert tone="warning" title="Modo bloqueado activado">
+            Al guardar, este equipo se abrirá directo en {localSettings.terminalMode === 'tablet-pos' ? 'POS' : 'Hostess'} y se ocultará
+            el menú lateral. Para volver al modo estándar regresa a Ajustes → Apariencia desde esta misma sesión, o pide al admin que lo
+            haga desde otro equipo.
+          </SrAlert>
+        </div>
+      )}
+    </SrCard>
   </>
 );
 
@@ -864,8 +926,10 @@ const HardwareTab: React.FC<{
   isConnecting: boolean;
   onConnectUSB: () => void;
   onConnectBT: () => void;
+  onPrintTest: () => void;
+  onDrawerTest: () => void;
   connectionStatus: { type: 'success' | 'error'; message: string } | null;
-}> = ({ localSettings, setLocalSettings, isConnecting, onConnectUSB, onConnectBT, connectionStatus }) => {
+}> = ({ localSettings, setLocalSettings, isConnecting, onConnectUSB, onConnectBT, onPrintTest, onDrawerTest, connectionStatus }) => {
   const printerConnected = localSettings.connectedDeviceName && localSettings.connectedDeviceName !== 'None';
   const terminalConnected = !!localSettings.connectedTerminalName && localSettings.connectedTerminalName !== 'None';
 
@@ -947,6 +1011,50 @@ const HardwareTab: React.FC<{
             </motion.div>
           )}
         </AnimatePresence>
+      </SrCard>
+
+      {/* ─── DIAGNÓSTICO de hardware — probar que todo realmente funciona ─── */}
+      <SrCard variant="solaris" className="p-8">
+        <SectionHeading kicker="Diagnóstico" title="Prueba tus aparatos" />
+        <p className="text-[13px] text-[rgba(42,40,38,0.6)] font-medium mb-5 max-w-xl leading-relaxed">
+          Manda una impresión real y abre el cajón con el pulso ESC/POS. Si algo no responde, revisa la conexión y el papel — la mayoría
+          de fallas son cable suelto o cajón mal cableado al RJ-11 de la impresora.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={onPrintTest}
+            disabled={!printerConnected}
+            className="flex items-center gap-3 p-4 rounded-sr-md border border-[rgba(42,40,38,0.12)] bg-servirest-surface hover:border-servirest-terracota hover:bg-[rgba(196,99,63,0.04)] transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-[rgba(42,40,38,0.12)] disabled:hover:bg-servirest-surface"
+          >
+            <div className="w-10 h-10 rounded-sr-sm bg-servirest-midnight text-servirest-mostaza flex items-center justify-center shrink-0">
+              <PrinterIcon size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-extrabold text-servirest-midnight m-0">Imprimir prueba</p>
+              <p className="text-[11px] text-[rgba(42,40,38,0.6)] m-0 mt-0.5">
+                {printerConnected ? 'Ticket de muestra con tu negocio' : 'Conecta una impresora primero'}
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={onDrawerTest}
+            disabled={!printerConnected}
+            className="flex items-center gap-3 p-4 rounded-sr-md border border-[rgba(42,40,38,0.12)] bg-servirest-surface hover:border-servirest-mostaza hover:bg-[rgba(201,162,74,0.06)] transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-[rgba(42,40,38,0.12)] disabled:hover:bg-servirest-surface"
+          >
+            <div className="w-10 h-10 rounded-sr-sm bg-servirest-mostaza/15 text-servirest-mostaza flex items-center justify-center shrink-0">
+              <Smartphone size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-extrabold text-servirest-midnight m-0">Probar cajón</p>
+              <p className="text-[11px] text-[rgba(42,40,38,0.6)] m-0 mt-0.5">
+                {printerConnected ? 'Envía el pulso de apertura' : 'Conecta una impresora primero'}
+              </p>
+            </div>
+          </button>
+        </div>
       </SrCard>
 
       <SrCard variant="solaris" className="p-8">
