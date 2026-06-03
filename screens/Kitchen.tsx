@@ -1,304 +1,301 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { Order, OrderStatus, OrderSource } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GlowCard } from '../components/ui/spotlight-card';
 import {
-  ChefHat,
-  Timer,
-  CheckCircle2,
-  Truck,
-  Utensils,
-  AlertTriangle,
-  LayoutGrid,
-  Columns2,
-  Bell,
-  Zap,
-  Package,
-  UtensilsCrossed
+  Utensils, Truck, AlertTriangle, Bell, Package,
+  CheckCircle2, ChefHat,
 } from 'lucide-react';
+import {
+  SrCard, SrButton, SrChip, SrLabel, SrKicker, SrEmptyState, SrTabs,
+} from '../components/ui/servirest';
 
+type KitchenView = 'todos' | 'comedor' | 'delivery';
+
+/* -------------------------------------------------------------------------- */
+/* Audio notification when new orders arrive                                   */
+/* -------------------------------------------------------------------------- */
 const playBeep = () => {
-    try {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        if (!AudioContext) return;
-        const ctx = new AudioContext();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime);
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        osc.start(); osc.stop(ctx.currentTime + 0.5);
-    } catch (e) { console.error("Audio play failed", e); }
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    osc.start(); osc.stop(ctx.currentTime + 0.5);
+  } catch (e) { console.error('Audio play failed', e); }
 };
 
+/* -------------------------------------------------------------------------- */
+/* OrderTimer — visible from 6ft away. Big mono digits, red+animate when late. */
+/* -------------------------------------------------------------------------- */
 const OrderTimer: React.FC<{ timestamp: Date }> = ({ timestamp }) => {
-    const [elapsed, setElapsed] = useState('');
-    const [isLate, setIsLate] = useState(false);
-
-    useEffect(() => {
-        const updateTimer = () => {
-            const diff = Date.now() - new Date(timestamp).getTime();
-            const min = Math.floor(diff / 60000);
-            const sec = Math.floor((diff % 60000) / 1000);
-            setElapsed(`${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`);
-            setIsLate(min >= 15);
-        };
-        updateTimer();
-        const interval = setInterval(updateTimer, 1000);
-        return () => clearInterval(interval);
-    }, [timestamp]);
-
-    return (
-        <span className={`px-4 py-1.5 rounded-xl font-mono text-lg font-black italic tracking-tighter ${isLate ? 'bg-red-500 text-[#1a1c14] shadow-lg animate-pulse' : 'bg-servirest-terracota/10 text-servirest-terracota border border-solaris-orange/20'}`}>
-            {elapsed}
-        </span>
-    );
-};
-
-const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ order, onComplete }) => {
-    const isDineIn = !order.source || order.source === OrderSource.DINE_IN;
-
-    // Smart table label: if tableId looks like a UUID, shorten it
-    const isUUID = /^[0-9a-f]{8}-/i.test(order.tableId);
-    const tableLabel = isUUID
-        ? `Mesa #${order.id.slice(0, 6).toUpperCase()}`
-        : order.tableId.length > 14
-            ? `${order.tableId.slice(0, 12)}…`
-            : order.tableId;
-
-    return (
-        <GlowCard glowColor="orange" className="!p-0 border border-[rgba(42,40,38,0.12)] bg-servirest-surface flex flex-col min-w-[320px] max-w-[360px] h-[550px] overflow-hidden group">
-            {/* Header */}
-            <div className="p-5 bg-servirest-surface border-b border-[rgba(42,40,38,0.12)] flex justify-between items-start gap-4">
-                <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        {isDineIn
-                            ? <Utensils size={12} className="text-servirest-terracota shrink-0" />
-                            : <Truck size={12} className="text-green-400 shrink-0" />
-                        }
-                        <span className={`text-[9px] font-black uppercase tracking-widest ${isDineIn ? 'text-servirest-terracota/60' : 'text-green-400/70'}`}>
-                            {isDineIn ? 'Comedor' : (order.source || 'Delivery')}
-                        </span>
-                    </div>
-                    <h3 className="text-xl font-black italic uppercase tracking-tighter text-[#1a1c14] leading-tight">
-                        {tableLabel}
-                    </h3>
-                    <p className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest mt-1 italic">
-                        Mesa {order.id.slice(0, 8).toUpperCase()}
-                    </p>
-                </div>
-                <div className="shrink-0 pt-1">
-                    <OrderTimer timestamp={order.timestamp} />
-                </div>
-            </div>
-
-            {/* Items — scrollable area that takes all remaining middle space */}
-            <div className="flex-1 p-4 space-y-2.5 overflow-y-auto no-scrollbar">
-                {order.items.map((item, idx) => (
-                    <div key={idx} className="space-y-1">
-                        <div className="flex items-center gap-3 bg-servirest-surface p-3 rounded-2xl border border-[rgba(42,40,38,0.12)]">
-                            <span className="w-8 h-8 rounded-xl bg-servirest-terracota/10 border border-solaris-orange/20 flex items-center justify-center font-black italic text-servirest-terracota text-sm shrink-0">
-                                {item.quantity}
-                            </span>
-                            <span className="font-black italic text-[#1a1c14] uppercase tracking-tight text-sm">{item.name}</span>
-                        </div>
-                        {item.notes && (
-                            <div className="mx-1 p-2.5 rounded-xl bg-red-500/5 border border-red-500/10 flex items-center gap-2">
-                                <AlertTriangle size={12} className="text-red-500 shrink-0" />
-                                <span className="text-[10px] font-black uppercase text-red-400 tracking-widest leading-relaxed">{item.notes}</span>
-                            </div>
-                        )}
-                    </div>
-                ))}
-            </div>
-
-            {/* Complete button — always locked at bottom */}
-            <div className="p-4 border-t border-[rgba(42,40,38,0.12)] bg-servirest-surface">
-                <button
-                    onClick={() => onComplete(order.id)}
-                    className="w-full py-4 bg-servirest-terracota text-[#1a1c14] font-black italic uppercase tracking-[0.2em] rounded-2xl shadow-solaris-glow hover:scale-[1.02] hover:bg-orange-500 active:scale-95 transition-all flex items-center justify-center gap-3"
-                >
-                    <CheckCircle2 size={18} /> Pedido Listo
-                </button>
-            </div>
-        </GlowCard>
-    );
-};
-
-// Empty column placeholder
-const EmptyColumn: React.FC<{ label: string }> = ({ label }) => (
-    <div className="flex-1 flex flex-col items-center justify-center opacity-10 border-2 border-dashed border-[rgba(42,40,38,0.12)] rounded-[32px] min-h-[300px]">
-        <Package size={48} className="mb-4" />
-        <p className="text-[10px] font-black uppercase tracking-[0.4em]">{label}</p>
-    </div>
-);
-
-export const KitchenScreen: React.FC = () => {
-    const { orders, updateOrderStatus } = useOrders();
-    const [prevCount, setPrevCount] = useState(0);
-    const [isSplit, setIsSplit] = useState(false);
-    const [alert, setAlert] = useState(false);
-
-    const isDrink = (item: any) => 
-        item.category?.toLowerCase().includes('bebida') ||
-        item.category?.toLowerCase().includes('bar') ||
-        item.category?.toLowerCase().includes('vino') ||
-        item.category?.toLowerCase().includes('trago') ||
-        item.category?.toLowerCase().includes('cerveza') ||
-        item.category?.toLowerCase().includes('drink') ||
-        item.category?.toLowerCase().includes('cocktail');
-
-    const hasFood = (order: Order) => order.items.some(i => !isDrink(i));
-    const hasDrinks = (order: Order) => order.items.some(i => isDrink(i));
-
-    const pending = orders.filter(o => 
-        !o.isKitchenReady && 
-        hasFood(o) &&
-        (o.status === OrderStatus.PENDING || o.status === OrderStatus.COOKING || o.status === OrderStatus.READY)
-    );
-    const sorted = [...pending].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-    // Split by source
-    const dineInOrders = sorted.filter(o => !o.source || o.source === OrderSource.DINE_IN);
-    const deliveryOrders = sorted.filter(o => o.source && o.source !== OrderSource.DINE_IN);
-
-    useEffect(() => {
-        if (pending.length > prevCount && prevCount !== 0) {
-            playBeep(); setAlert(true); setTimeout(() => setAlert(false), 4000);
-        }
-        setPrevCount(pending.length);
-    }, [pending.length, prevCount]);
-
-    const handleComplete = (id: string) => {
-        const order = orders.find(o => o.id === id);
-        if (!order) return;
-
-        const isFullyReady = !hasDrinks(order) || order.isBarReady;
-        
-        updateOrderStatus(id, isFullyReady ? OrderStatus.READY : order.status, {
-            ...order,
-            isKitchenReady: true
-        });
+  const [elapsed, setElapsed] = useState({ min: 0, sec: 0 });
+  useEffect(() => {
+    const update = () => {
+      const diff = Date.now() - new Date(timestamp).getTime();
+      setElapsed({ min: Math.floor(diff / 60000), sec: Math.floor((diff % 60000) / 1000) });
     };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [timestamp]);
 
-    return (
-        <div className="h-full bg-[#FAF8F4] text-[#1a1c14] flex flex-col overflow-hidden antialiased relative">
-            {/* New Order Alert */}
-            <AnimatePresence>
-                {alert && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center"
-                    >
-                        <div className="p-16 rounded-[4rem] bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow border-[10px] border-[rgba(42,40,38,0.20)] flex flex-col items-center">
-                            <Bell size={80} className="mb-6 animate-bounce" />
-                            <h2 className="text-6xl font-black italic uppercase tracking-tighter">Pedido nuevo</h2>
-                            <p className="text-[12px] font-black uppercase tracking-[0.5em] mt-2 opacity-60">Cocina sincronizada</p>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+  const total = elapsed.min;
+  const tone =
+    total >= 25 ? 'bg-servirest-danger text-servirest-hueso animate-pulse'
+    : total >= 15 ? 'bg-servirest-mostaza text-servirest-midnight'
+    : 'bg-[rgba(196,99,63,0.10)] text-servirest-terracota';
+  const subtle = total >= 25 ? 'Tarde' : total >= 15 ? 'Apura' : 'A tiempo';
 
-            {/* Header */}
-            <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 px-8 pt-8 pb-6 border-b border-[rgba(42,40,38,0.12)] shrink-0">
-                <div>
-                    <h1 className="text-4xl font-black italic tracking-tighter uppercase mb-1">Cocina</h1>
-                    <p className="text-[#2A2826]/30 font-bold text-[10px] uppercase tracking-[0.4em]">Pedidos en preparación</p>
-                </div>
-
-                <div className="flex gap-4 items-center">
-                    {/* View toggle */}
-                    <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-1 rounded-2xl flex">
-                        <button
-                            onClick={() => setIsSplit(false)}
-                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${!isSplit ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/45 hover:text-[#1a1c14]'}`}
-                        >
-                            <LayoutGrid size={14} /> Todos
-                        </button>
-                        <button
-                            onClick={() => setIsSplit(true)}
-                            className={`px-5 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all ${isSplit ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/45 hover:text-[#1a1c14]'}`}
-                        >
-                            <Columns2 size={14} /> Por mesa
-                        </button>
-                    </div>
-
-                    {/* Counters */}
-                    <div className="flex gap-3">
-                        <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] px-5 py-3 rounded-2xl text-center">
-                            <p className="text-[8px] font-black uppercase text-[#2A2826]/30 tracking-widest">Queue</p>
-                            <p className="text-xl font-black italic text-servirest-terracota leading-none">{pending.length}</p>
-                        </div>
-                        <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] px-5 py-3 rounded-2xl text-center">
-                            <p className="text-[8px] font-black uppercase text-[#2A2826]/30 tracking-widest">Listos</p>
-                            <p className="text-xl font-black italic text-green-400 leading-none">{orders.filter(o => o.status === OrderStatus.READY).length}</p>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            {/* Main content */}
-            {isSplit ? (
-                /* ── MATRIX VIEW: Dine-In | Delivery ── */
-                <div className="flex-1 flex gap-0 overflow-hidden">
-                    {/* Left: Dine-In */}
-                    <div className="flex-1 flex flex-col border-r border-[rgba(42,40,38,0.12)] overflow-hidden">
-                        <div className="flex items-center gap-3 px-8 py-4 bg-servirest-surface border-b border-[rgba(42,40,38,0.12)] shrink-0">
-                            <Utensils size={16} className="text-servirest-terracota" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-servirest-terracota">Comedor — {dineInOrders.length} pedidos</span>
-                        </div>
-                        <div className="flex-1 overflow-x-auto overflow-y-auto no-scrollbar p-6">
-                            {dineInOrders.length === 0 ? (
-                                <EmptyColumn label="Comedor vacío" />
-                            ) : (
-                                <div className="flex gap-6 min-w-max">
-                                    {dineInOrders.map(order => (
-                                        <Ticket key={order.id} order={order} onComplete={handleComplete} />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Right: Delivery / To-Go */}
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                        <div className="flex items-center gap-3 px-8 py-4 bg-servirest-surface border-b border-[rgba(42,40,38,0.12)] shrink-0">
-                            <Truck size={16} className="text-green-400" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-green-400">Delivery / Para llevar — {deliveryOrders.length} pedidos</span>
-                        </div>
-                        <div className="flex-1 overflow-x-auto overflow-y-auto no-scrollbar p-6">
-                            {deliveryOrders.length === 0 ? (
-                                <EmptyColumn label="Sin pedidos delivery" />
-                            ) : (
-                                <div className="flex gap-6 min-w-max">
-                                    {deliveryOrders.map(order => (
-                                        <Ticket key={order.id} order={order} onComplete={handleComplete} />
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                /* ── GLOBAL STREAM: All orders in a row ── */
-                <main className="flex-1 overflow-x-auto no-scrollbar py-6 px-8">
-                    {sorted.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center opacity-10 border-2 border-dashed border-[rgba(42,40,38,0.12)] rounded-[32px]">
-                            <Package size={80} className="mb-6" />
-                            <p className="text-[12px] font-black uppercase tracking-[0.4em]">Cocina al día</p>
-                        </div>
-                    ) : (
-                        <div className="flex gap-6 min-w-max h-full">
-                            {sorted.map(order => (
-                                <Ticket key={order.id} order={order} onComplete={handleComplete} />
-                            ))}
-                        </div>
-                    )}
-                </main>
-            )}
-        </div>
-    );
+  return (
+    <div className={`px-3 py-2 rounded-sr-md ${tone} flex flex-col items-center`}>
+      <span className="font-mono font-extrabold text-[20px] leading-none tracking-tight">
+        {String(elapsed.min).padStart(2, '0')}:{String(elapsed.sec).padStart(2, '0')}
+      </span>
+      <span className="text-[8px] font-black uppercase tracking-[0.2em] mt-1 opacity-80">{subtle}</span>
+    </div>
+  );
 };
+
+/* -------------------------------------------------------------------------- */
+/* Ticket — single order card. Built for 6ft scanability.                       */
+/* -------------------------------------------------------------------------- */
+const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ order, onComplete }) => {
+  const isDineIn = !order.source || order.source === OrderSource.DINE_IN;
+  const isUUID = /^[0-9a-f]{8}-/i.test(order.tableId);
+  const tableLabel = isUUID
+    ? `#${order.id.slice(0, 6).toUpperCase()}`
+    : order.tableId.length > 16
+    ? `${order.tableId.slice(0, 14)}…`
+    : order.tableId;
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      className="w-[340px] flex-shrink-0"
+    >
+      <SrCard variant="solaris" className="flex flex-col h-[560px] overflow-hidden">
+        {/* Source banner — thin ribbon */}
+        <div className={`px-4 py-2 flex items-center gap-2 ${isDineIn ? 'bg-servirest-midnight text-servirest-mostaza' : 'bg-servirest-success text-servirest-hueso'}`}>
+          {isDineIn ? <Utensils size={12} /> : <Truck size={12} />}
+          <span className="font-black italic uppercase tracking-[0.18em] text-[9px]">
+            {isDineIn ? 'Comedor' : (order.source || 'Delivery')}
+          </span>
+        </div>
+
+        {/* Hero row: table label + timer */}
+        <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-3 border-b border-[rgba(42,40,38,0.08)]">
+          <div className="min-w-0 flex-1">
+            <SrLabel className="block mb-1">Mesa</SrLabel>
+            <div className="font-serif italic font-medium text-[34px] text-servirest-midnight tracking-[-0.02em] leading-none truncate">
+              {tableLabel}
+            </div>
+            <div className="font-mono text-[10px] text-[rgba(42,40,38,0.4)] mt-1">
+              #{(order.id || '').slice(0, 8).toUpperCase()}
+            </div>
+          </div>
+          <OrderTimer timestamp={order.timestamp} />
+        </div>
+
+        {/* Items list — quantity badge LARGE for scanability */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
+          {order.items.map((item, idx) => (
+            <div key={idx} className="space-y-1.5">
+              <div className="flex items-center gap-3 p-3 bg-servirest-hueso-sunken/40 rounded-sr-md">
+                <span className="w-10 h-10 rounded-sr-sm bg-servirest-terracota text-servirest-hueso flex items-center justify-center font-black italic text-[18px] shrink-0">
+                  {item.quantity}
+                </span>
+                <span className="font-extrabold text-[14px] text-servirest-midnight tracking-tight leading-tight">
+                  {item.name}
+                </span>
+              </div>
+              {item.notes && (
+                <div className="ml-2 px-3 py-2 rounded-sr-sm bg-[rgba(225,85,75,0.06)] border-l-2 border-servirest-danger flex items-start gap-2">
+                  <AlertTriangle size={12} className="text-servirest-danger shrink-0 mt-0.5" />
+                  <span className="text-[11px] font-bold text-servirest-danger leading-snug">{item.notes}</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Complete CTA — full width, glow */}
+        <div className="p-3 border-t border-[rgba(42,40,38,0.08)] bg-servirest-hueso-sunken/30">
+          <SrButton
+            variant="primary"
+            size="lg"
+            fullWidth
+            icon={<CheckCircle2 size={18} />}
+            onClick={() => onComplete(order.id)}
+          >
+            Pedido listo
+          </SrButton>
+        </div>
+      </SrCard>
+    </motion.div>
+  );
+};
+
+/* -------------------------------------------------------------------------- */
+/* KitchenScreen — editorial header + tabs + scrollable ticket row              */
+/* -------------------------------------------------------------------------- */
+export const KitchenScreen: React.FC = () => {
+  const { orders, updateOrderStatus } = useOrders();
+  const [prevCount, setPrevCount] = useState(0);
+  const [alert, setAlert] = useState(false);
+  const [view, setView] = useState<KitchenView>('todos');
+
+  const isDrink = (item: any) =>
+    item.category?.toLowerCase().includes('bebida') ||
+    item.category?.toLowerCase().includes('bar') ||
+    item.category?.toLowerCase().includes('vino') ||
+    item.category?.toLowerCase().includes('trago') ||
+    item.category?.toLowerCase().includes('cerveza') ||
+    item.category?.toLowerCase().includes('drink') ||
+    item.category?.toLowerCase().includes('cocktail');
+
+  const hasFood = (order: Order) => order.items.some((i) => !isDrink(i));
+  const hasDrinks = (order: Order) => order.items.some((i) => isDrink(i));
+
+  const pending = orders.filter(
+    (o) =>
+      !o.isKitchenReady &&
+      hasFood(o) &&
+      (o.status === OrderStatus.PENDING || o.status === OrderStatus.COOKING || o.status === OrderStatus.READY)
+  );
+  const sorted = [...pending].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+
+  const dineInOrders = sorted.filter((o) => !o.source || o.source === OrderSource.DINE_IN);
+  const deliveryOrders = sorted.filter((o) => o.source && o.source !== OrderSource.DINE_IN);
+
+  const visibleOrders =
+    view === 'comedor' ? dineInOrders : view === 'delivery' ? deliveryOrders : sorted;
+
+  useEffect(() => {
+    if (pending.length > prevCount && prevCount !== 0) {
+      playBeep();
+      setAlert(true);
+      setTimeout(() => setAlert(false), 4000);
+    }
+    setPrevCount(pending.length);
+  }, [pending.length, prevCount]);
+
+  const handleComplete = (id: string) => {
+    const order = orders.find((o) => o.id === id);
+    if (!order) return;
+    const isFullyReady = !hasDrinks(order) || order.isBarReady;
+    updateOrderStatus(id, isFullyReady ? OrderStatus.READY : order.status, {
+      ...order, isKitchenReady: true,
+    });
+  };
+
+  const readyCount = orders.filter((o) => o.status === OrderStatus.READY).length;
+
+  const TABS = [
+    { id: 'todos' as KitchenView,    label: 'Todos',    count: sorted.length },
+    { id: 'comedor' as KitchenView,  label: 'Comedor',  count: dineInOrders.length },
+    { id: 'delivery' as KitchenView, label: 'Delivery', count: deliveryOrders.length },
+  ] as const;
+
+  return (
+    <div className="h-full w-full bg-servirest-hueso text-servirest-carbon flex flex-col overflow-hidden antialiased relative">
+      {/* New-order overlay */}
+      <AnimatePresence>
+        {alert && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed inset-0 z-[100] pointer-events-none flex items-center justify-center"
+          >
+            <div className="p-14 rounded-sr-2xl bg-servirest-terracota text-servirest-hueso shadow-sr-glow border-[6px] border-servirest-mostaza/40 flex flex-col items-center">
+              <Bell size={64} className="mb-5 animate-bounce" />
+              <div className="font-serif italic font-medium text-[60px] tracking-[-0.02em] leading-none mb-2">
+                Pedido nuevo
+              </div>
+              <SrLabel className="text-servirest-hueso/80 text-[11px]">Cocina sincronizada</SrLabel>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* HEADER */}
+      <div className="px-[38px] pt-10 pb-6 shrink-0">
+        <div className="flex justify-between items-start flex-wrap gap-6 mb-7">
+          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
+            <SrKicker className="block mb-2">Estación de cocina</SrKicker>
+            <h1 className="font-serif italic font-medium text-[56px] text-servirest-midnight tracking-[-0.025em] leading-[0.95] m-0">
+              Cocina
+            </h1>
+            <p className="text-[14px] text-[rgba(42,40,38,0.6)] font-medium mt-2 max-w-[480px] leading-relaxed">
+              Pedidos por preparar, en orden de llegada. El tiempo arriba a la derecha te avisa cuál apurar.
+            </p>
+          </motion.div>
+
+          <div className="flex gap-3 flex-wrap">
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">Por preparar</SrLabel>
+              <div className="font-black italic text-[32px] text-servirest-terracota tracking-[-0.03em] leading-none">
+                {sorted.length}
+              </div>
+            </SrCard>
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">Listos</SrLabel>
+              <div className="font-black italic text-[32px] text-servirest-success tracking-[-0.03em] leading-none">
+                {readyCount}
+              </div>
+            </SrCard>
+            <SrCard className="px-5 py-4">
+              <SrLabel className="block mb-1.5">Hora</SrLabel>
+              <div className="font-mono font-bold text-[20px] text-servirest-midnight tracking-tight leading-none">
+                {new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false })}
+              </div>
+            </SrCard>
+          </div>
+        </div>
+
+        <SrTabs<KitchenView> tabs={TABS} active={view} onChange={setView} />
+      </div>
+
+      {/* TICKET ROW (horizontal scroll) */}
+      <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar px-[38px] pb-10">
+        {visibleOrders.length === 0 ? (
+          <div className="h-full flex items-center justify-center">
+            <SrCard variant="solaris" className="p-12 max-w-md">
+              <SrEmptyState
+                icon={<ChefHat size={28} />}
+                title="Cocina al día"
+                description={
+                  view === 'comedor' ? 'No hay pedidos del comedor por preparar. Buen ritmo.'
+                  : view === 'delivery' ? 'No hay pedidos de delivery por ahora.'
+                  : 'No hay pedidos por preparar. Listos para el siguiente.'
+                }
+              />
+            </SrCard>
+          </div>
+        ) : (
+          <div className="flex gap-5 min-w-max h-full pt-1">
+            <AnimatePresence mode="popLayout">
+              {visibleOrders.map((order) => (
+                <Ticket key={order.id} order={order} onComplete={handleComplete} />
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default KitchenScreen;

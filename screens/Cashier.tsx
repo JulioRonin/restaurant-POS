@@ -172,9 +172,9 @@ export const CashierScreen: React.FC = () => {
                                     <Bell size={18} />
                                 </div>
                                 <div>
-                                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2A2826]/80">Bill Request Pipeline • Active Alert</p>
+                                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-[#2A2826]/80">Cuenta solicitada por meseros</p>
                                     <p className="text-sm font-black italic uppercase tracking-tight text-[#1a1c14] leading-tight">
-                                        Node: {activeRequests.map(o => o.tableId).join(', ')} — Cuenta solicitada
+                                        Mesas: {activeRequests.map(o => o.tableId).join(', ')}
                                     </p>
                                 </div>
                             </div>
@@ -191,22 +191,25 @@ export const CashierScreen: React.FC = () => {
 
             <div className="flex-1 flex overflow-hidden flex-col lg:flex-row relative">
                 {/* Left Navigation Panel — Reduced width for more workspace */}
-                <div className={`${selectedOrder ? 'hidden lg:flex' : 'flex'} w-full lg:w-80 border-r border-[rgba(42,40,38,0.12)] flex-col no-print bg-[#F0F0E8]/50 shrink-0 h-full`}>
+                <div className={`${selectedOrder ? 'hidden lg:flex' : 'flex'} w-full lg:w-80 border-r border-[rgba(42,40,38,0.12)] flex-col no-print bg-servirest-hueso-sunken/50 shrink-0 h-full`}>
                     <div className="p-6 md:p-8 space-y-6 md:space-y-8">
                         <div>
-                           <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase mb-2">Terminal Ops</h1>
-                           <p className="text-servirest-terracota/40 font-bold text-[8px] md:text-[10px] uppercase tracking-[0.4em]">Cobros y caja</p>
+                           <p className="font-black italic uppercase tracking-[0.3em] text-[10px] text-servirest-terracota mb-2">Cobros & caja</p>
+                           <h1 className="font-serif italic font-medium text-[42px] text-servirest-midnight tracking-[-0.025em] leading-[0.95] m-0">Caja</h1>
+                           <p className="text-[12px] text-[rgba(42,40,38,0.6)] font-medium mt-2 leading-relaxed">
+                              Cobra cuentas, registra gastos y consulta tu historial del día.
+                           </p>
                         </div>
-                        <div className="flex bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-1 rounded-2xl">
+                        <div className="flex bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-1 rounded-sr-xl">
                              {[
-                                { id: 'tables', icon: Wallet, label: 'Nodes' },
-                                { id: 'delivery', icon: Truck, label: 'Grid' },
-                                { id: 'expenses', icon: TrendingDown, label: 'Burden' },
-                                { id: 'history', icon: History, label: 'Logs' }
+                                { id: 'tables', icon: Wallet, label: 'Mesas' },
+                                { id: 'delivery', icon: Truck, label: 'Delivery' },
+                                { id: 'expenses', icon: TrendingDown, label: 'Gastos' },
+                                { id: 'history', icon: History, label: 'Historial' }
                              ].map(tab => (
-                                <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex-1 flex flex-col items-center gap-2 py-3 rounded-xl transition-all ${activeTab === tab.id ? 'bg-servirest-terracota text-[#1a1c14] shadow-solaris-glow' : 'text-[#2A2826]/30 hover:text-[#1a1c14]'}`}>
-                                    <tab.icon size={16} />
-                                    <span className="text-[8px] font-black uppercase tracking-widest">{tab.label}</span>
+                                <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-sr-md transition-all ${activeTab === tab.id ? 'bg-servirest-terracota text-servirest-hueso shadow-sr-glow' : 'text-[rgba(42,40,38,0.5)] hover:text-servirest-carbon'}`}>
+                                    <tab.icon size={14} />
+                                    <span className="text-[8px] font-black uppercase tracking-[0.16em]">{tab.label}</span>
                                 </button>
                              ))}
                         </div>
@@ -225,13 +228,13 @@ export const CashierScreen: React.FC = () => {
                                 >
                                     {isRequested && (
                                         <div className="absolute top-0 right-0 bg-servirest-terracota text-[#1a1c14] px-3 py-1 text-[8px] font-black tracking-widest uppercase animate-pulse italic">
-                                            REQ_BILL
+                                            POR COBRAR
                                         </div>
                                     )}
                                     <div className="flex justify-between items-end">
                                         <div>
                                             <p className="text-lg font-black italic uppercase tracking-tighter text-[#1a1c14]">{table.name}</p>
-                                            <p className="text-[8px] font-black uppercase text-servirest-terracota/40 tracking-widest mt-0.5">{order ? `TX: ${order.id.slice(0,6)}` : 'Sin actividad'}</p>
+                                            <p className="text-[8px] font-black uppercase text-servirest-terracota/40 tracking-widest mt-0.5">{order ? `Pedido ${order.id.slice(0,6)}` : 'Sin actividad'}</p>
                                         </div>
                                         {order && <p className="text-lg font-black italic text-servirest-terracota tracking-tighter">${order.total.toFixed(0)}</p>}
                                     </div>
@@ -255,8 +258,8 @@ export const CashierScreen: React.FC = () => {
                             <div className="space-y-4">
                                 {/* Add expense form */}
                                 <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl p-5 space-y-3">
-                                    <p className="text-[9px] font-black uppercase text-servirest-terracota/40 tracking-widest italic">Register Expense</p>
-                                    <input value={newExpenseDesc} onChange={e => setNewExpenseDesc(e.target.value)} placeholder="Description..." className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40" />
+                                    <p className="text-[9px] font-black uppercase text-servirest-terracota/40 tracking-widest italic">Registrar gasto</p>
+                                    <input value={newExpenseDesc} onChange={e => setNewExpenseDesc(e.target.value)} placeholder="Descripción del gasto…" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40" />
                                     <div className="grid grid-cols-2 gap-2">
                                         <input value={newExpenseAmount} onChange={e => setNewExpenseAmount(e.target.value)} type="number" placeholder="$0.00" className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40" />
                                         <select value={newExpenseCategory} onChange={e => setNewExpenseCategory(e.target.value as any)} className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-xl py-3 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40 appearance-none">
@@ -264,7 +267,7 @@ export const CashierScreen: React.FC = () => {
                                         </select>
                                     </div>
                                     <div className="flex flex-col gap-1">
-                                        <p className="text-[8px] font-black uppercase text-[#2A2826]/30 tracking-widest pl-1">Expsense Date</p>
+                                        <p className="text-[8px] font-black uppercase text-[#2A2826]/30 tracking-widest pl-1">Fecha del gasto</p>
                                         <input 
                                             type="date" 
                                             value={newExpenseDate} 
@@ -364,7 +367,7 @@ export const CashierScreen: React.FC = () => {
                                         </button>
                                         <button
                                             onClick={() => {
-                                                const rows = [['ID', 'Manifest', 'Method', 'Total', 'Status', 'Hora'], ...filteredByDateOrders.map(o => [o.id.slice(0, 8), '"' + (o.items || []).map(i => `${i.quantity}x ${i.name}`).join(', ') + '"', o.paymentMethod || 'N/A', o.total.toFixed(2), o.status, new Date(o.timestamp).toLocaleTimeString('es-MX')])].map(r => r.join(',')).join('\n');
+                                                const rows = [['ID', 'Manifest', 'Método', 'Total', 'Estado', 'Hora'], ...filteredByDateOrders.map(o => [o.id.slice(0, 8), '"' + (o.items || []).map(i => `${i.quantity}x ${i.name}`).join(', ') + '"', o.paymentMethod || 'N/A', o.total.toFixed(2), o.status, new Date(o.timestamp).toLocaleTimeString('es-MX')])].map(r => r.join(',')).join('\n');
                                                 const blob = new Blob([rows], { type: 'text/csv' });
                                                 const url = URL.createObjectURL(blob);
                                                 const a = document.createElement('a'); a.href = url; a.download = `reporte-${selectedDate}.csv`; a.click();
@@ -398,7 +401,7 @@ export const CashierScreen: React.FC = () => {
                                 <div className="flex gap-4">
                                     <div className="px-6 py-3 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl flex items-center gap-4">
                                         <div className={`w-3 h-3 rounded-full ${navigator.onLine ? 'bg-green-500 shadow-[0_0_10px_green]' : 'bg-red-500 animate-pulse'}`} />
-                                        <span className="text-[10px] font-black uppercase text-[#2A2826]/55 tracking-widest">{navigator.onLine ? 'Uplink Stable' : 'Offline Mode'}</span>
+                                        <span className="text-[10px] font-black uppercase text-[#2A2826]/55 tracking-widest">{navigator.onLine ? 'Conectado' : 'Sin conexión'}</span>
                                     </div>
                                 </div>
                             </div>
@@ -406,9 +409,9 @@ export const CashierScreen: React.FC = () => {
                             {/* Métricas del día */}
                             <div className="grid grid-cols-4 gap-6 shrink-0">
                                 {[
-                                    { label: 'Aggregated Revenue', value: salesMetrics.totalRevenue, color: 'text-[#1a1c14]', icon: DollarSign, glow: 'orange' },
-                                    { label: 'Efectivo (Cash)', value: salesMetrics.cashSales, color: 'text-green-400', icon: Wallet, glow: 'green' },
-                                    { label: 'Tarjeta (Card)', value: salesMetrics.cardSales, color: 'text-blue-400', icon: CreditCard, glow: 'blue' },
+                                    { label: 'Ventas brutas', value: salesMetrics.totalRevenue, color: 'text-[#1a1c14]', icon: DollarSign, glow: 'orange' },
+                                    { label: 'Efectivo', value: salesMetrics.cashSales, color: 'text-green-400', icon: Wallet, glow: 'green' },
+                                    { label: 'Tarjeta', value: salesMetrics.cardSales, color: 'text-blue-400', icon: CreditCard, glow: 'blue' },
                                     { label: 'Total', value: salesMetrics.totalRevenue - expenses.filter(e => e.date.startsWith(selectedDate)).reduce((s, e) => s + Number(e.amount || 0), 0), color: 'text-servirest-terracota', icon: TrendingUp, glow: 'orange' }
                                 ].map((kpi, i) => (
                                     <GlowCard key={i} glowColor={kpi.glow as any} customSize className="w-full !p-8 bg-servirest-surface border-[rgba(42,40,38,0.12)] rounded-[32px]">
@@ -421,23 +424,23 @@ export const CashierScreen: React.FC = () => {
                                 ))}
                             </div>
 
-                            {/* Detailed Transaction Ledger */}
+                            {/* Ventas detalladas */}
                             <div className="flex-1 flex flex-col min-h-0">
                                 <GlowCard customSize glowColor="orange" className="w-full h-full !p-0 bg-servirest-surface border-[rgba(42,40,38,0.12)] rounded-[40px] flex flex-col overflow-hidden">
                                      <div className="px-10 py-6 border-b border-[rgba(42,40,38,0.12)] bg-servirest-surface flex justify-between items-center shrink-0">
-                                        <p className="text-[10px] font-black uppercase text-[#2A2826]/45 tracking-widest italic font-mono">Detailed Transaction Ledger</p>
+                                        <p className="text-[10px] font-black uppercase text-[#2A2826]/45 tracking-widest italic font-mono">Ventas detalladas</p>
                                         <p className="text-[10px] font-black uppercase text-[#2A2826]/45 tracking-widest italic font-mono">Count: {filteredByDateOrders.length} Events</p>
                                      </div>
                                      <div className="flex-1 overflow-y-auto no-scrollbar p-10">
                                         <table className="w-full text-left border-separate border-spacing-y-4">
                                             <thead>
                                                 <tr className="text-[9px] font-black uppercase text-servirest-terracota tracking-widest italic">
-                                                    <th className="px-6 pb-2">TX Sequence</th>
+                                                    <th className="px-6 pb-2">Folio</th>
                                                     <th className="px-6 pb-2">Hora</th>
                                                     <th className="px-6 pb-2">Productos</th>
-                                                    <th className="px-6 pb-2">Method</th>
-                                                    <th className="px-6 pb-2">Status</th>
-                                                    <th className="px-6 pb-2 text-right">Value (USD)</th>
+                                                    <th className="px-6 pb-2">Método</th>
+                                                    <th className="px-6 pb-2">Estado</th>
+                                                    <th className="px-6 pb-2 text-right">Monto</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -452,7 +455,7 @@ export const CashierScreen: React.FC = () => {
                 {item.quantity}x {item.name}
             </span>
         ))}
-        {(!order.items || order.items.length === 0) && <span className="text-[#2A2826]/20">Empty Node</span>}
+        {(!order.items || order.items.length === 0) && <span className="text-[#2A2826]/20">Sin platillos</span>}
     </div>
 </td>
                                                         <td className="px-6 py-5 bg-servirest-surface border-y border-[rgba(42,40,38,0.12)]">
@@ -494,7 +497,7 @@ export const CashierScreen: React.FC = () => {
                                                 </button>
                                                 <div>
                                                     <h2 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter text-[#1a1c14]">Acciones</h2>
-                                                    <p className="text-[9px] md:text-[11px] font-black uppercase text-servirest-terracota/40 tracking-[0.4em] mt-1 md:mt-2">Node: {selectedOrder.tableId} • Movimientos locales</p>
+                                                    <p className="text-[9px] md:text-[11px] font-black uppercase text-servirest-terracota/40 tracking-[0.4em] mt-1 md:mt-2">Mesa {selectedOrder.tableId}</p>
                                                 </div>
                                             </div>
                                             <div className="flex gap-2 md:gap-3">
@@ -580,7 +583,7 @@ export const CashierScreen: React.FC = () => {
                                         </div>
 
                                         <div className="flex-1 space-y-3 md:space-y-4">
-                                            <p className="text-[9px] md:text-[10px] font-black uppercase text-[#2A2826]/30 tracking-widest italic mb-4 md:mb-6">Execution Method</p>
+                                            <p className="text-[9px] md:text-[10px] font-black uppercase text-[#2A2826]/30 tracking-widest italic mb-4 md:mb-6">Método de pago</p>
                                             <GlowButton 
                                                 onClick={() => setPaymentMethod(PaymentMethod.CASH)}
                                                 variant={paymentMethod === PaymentMethod.CASH ? 'primary' : 'secondary'}
@@ -704,7 +707,7 @@ export const CashierScreen: React.FC = () => {
                                         </div>
 
                                         <div className="space-y-2 md:space-y-3 pt-2">
-                                            <p className="text-[8px] md:text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest italic">Payment Method</p>
+                                            <p className="text-[8px] md:text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest italic">Método de pago</p>
                                             <div className="grid grid-cols-2 xl:grid-cols-1 gap-2">
                                                 <GlowButton
                                                     onClick={() => setPaymentMethod(PaymentMethod.CASH)}
