@@ -22,28 +22,33 @@ import {
 
 export const MobileNavbar: React.FC = () => {
     const { activeEmployee, isSuperAdmin } = useUser();
-    const { isFeatureEnabled } = useSubscription();
+    const { isFeatureEnabled, meetsTier } = useSubscription();
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    const navItems = [
-        { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', feature: 'dashboard' },
-        { to: '/pos', icon: Zap, label: 'POS', path: '/pos', feature: 'pos' },
-        { to: '/my-tables', icon: Table2, label: 'Mesas Activas', path: '/my-tables', feature: 'tables' },
-        { to: '/hostess', icon: MonitorCheck, label: 'Hostes', path: '/hostess', feature: 'hostess' },
-        { to: '/cashier', icon: Receipt, label: 'Caja', path: '/cashier', feature: 'cashier' },
-        { to: '/kitchen', icon: ChefHat, label: 'Cocina', path: '/kitchen', feature: 'kitchen' },
-        { to: '/bar', icon: Wine, label: 'Bar', path: '/bar', feature: 'bar' },
-        { to: '/remote-order', icon: Smartphone, label: 'Remoto', path: '/remote-order', feature: 'remote_order' },
-        { to: '/menu', icon: MenuSquare, label: 'Menú', path: '/menu', feature: 'menu_admin' },
-        { to: '/staff', icon: Users, label: 'Personal', path: '/staff', feature: 'staff' },
-        { to: '/inventory', icon: Boxes, label: 'Inventario', path: '/inventory', feature: 'inventory' },
-        { to: '/invoice', icon: FileText, label: 'Facturas', path: '/invoice', feature: 'cfdi' },
-        { to: '/billing', icon: CreditCard, label: 'Membresia', path: '/billing', feature: null },
-        { to: '/settings', icon: Settings2, label: 'Ajustes', path: '/settings', feature: null },
+    // Tier-gated nav. Each item declares its minimum tier; below that, the
+    // entry doesn't render. Matches the Sidebar gating exactly.
+    const navItems: Array<{ to: string; icon: any; label: string; path: string; feature: string | null; tier: 'esencial' | 'profesional' | 'prestige' }> = [
+        { to: '/dashboard',   icon: LayoutDashboard, label: 'Dashboard',  path: '/dashboard',   feature: 'dashboard',   tier: 'esencial' },
+        { to: '/pos',         icon: Zap,             label: 'POS',        path: '/pos',         feature: 'pos',         tier: 'esencial' },
+        { to: '/my-tables',   icon: Table2,          label: 'Mis mesas',  path: '/my-tables',   feature: 'tables',      tier: 'esencial' },
+        { to: '/cashier',     icon: Receipt,         label: 'Caja',       path: '/cashier',     feature: 'cashier',     tier: 'esencial' },
+        { to: '/menu',        icon: MenuSquare,      label: 'Menú',       path: '/menu',        feature: 'menu_admin',  tier: 'esencial' },
+        { to: '/hostess',     icon: MonitorCheck,    label: 'Hostess',    path: '/hostess',     feature: 'hostess',     tier: 'profesional' },
+        { to: '/kitchen',     icon: ChefHat,         label: 'Cocina',     path: '/kitchen',     feature: 'kitchen',     tier: 'profesional' },
+        { to: '/bar',         icon: Wine,            label: 'Bar',        path: '/bar',         feature: 'bar',         tier: 'profesional' },
+        { to: '/remote-order', icon: Smartphone,     label: 'Remoto',     path: '/remote-order', feature: 'remote_order', tier: 'profesional' },
+        { to: '/invoice',     icon: FileText,        label: 'Facturas',   path: '/invoice',     feature: 'cfdi',        tier: 'profesional' },
+        { to: '/staff',       icon: Users,           label: 'Personal',   path: '/staff',       feature: 'staff',       tier: 'esencial' },
+        { to: '/inventory',   icon: Boxes,           label: 'Inventario', path: '/inventory',   feature: 'inventory',   tier: 'esencial' },
+        { to: '/billing',     icon: CreditCard,      label: 'Membresía',  path: '/billing',     feature: null,          tier: 'esencial' },
+        { to: '/settings',    icon: Settings2,       label: 'Ajustes',    path: '/settings',    feature: null,          tier: 'esencial' },
     ];
 
     const visibleItems = navItems.filter(item =>
-        isSuperAdmin || (canAccess(activeEmployee?.role, item.path) && (!item.feature || isFeatureEnabled(item.feature)))
+        isSuperAdmin
+        || (canAccess(activeEmployee?.role, item.path)
+            && meetsTier(item.tier)
+            && (!item.feature || isFeatureEnabled(item.feature)))
     );
 
     return (

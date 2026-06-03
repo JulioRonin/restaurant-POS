@@ -3,6 +3,7 @@ import { MOCK_STAFF } from '../constants';
 import { Table, TableStatus, WaitlistEntry, OrderStatus } from '../types';
 import { useTables } from '../contexts/TableContext';
 import { useOrders } from '../contexts/OrderContext';
+import { useSubscription, TIER_PRICING } from '../contexts/SubscriptionContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Minus, UserPlus, Hourglass, Users, GripVertical,
@@ -11,7 +12,7 @@ import {
 } from 'lucide-react';
 import {
   SrCard, SrButton, SrChip, SrInput, SrLabel, SrKicker, SrMono,
-  SrModal, SrModalHeader, SrEmptyState, SrTabs,
+  SrModal, SrModalHeader, SrEmptyState, SrTabs, SrTierUpgradeModal,
 } from '../components/ui/servirest';
 
 type ViewMode = 'plano' | 'lista';
@@ -34,6 +35,8 @@ export const HostessScreen: React.FC = () => {
   // ── Contexts ─────────────────────────────────────────────────────────────
   const { tables: activeTables, addTable, updateTableStatus, deleteTable, updateTable } = useTables();
   const { orders, updateOrderStatus } = useOrders();
+  const { planLimits, tier, isWithinLimit } = useSubscription();
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   // ── Local state ──────────────────────────────────────────────────────────
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
@@ -84,6 +87,13 @@ export const HostessScreen: React.FC = () => {
 
   const handleAddTable = () => {
     if (!newTableName) return;
+    // Tier limit check — if this would exceed the plan's max, bail and show
+    // upsell modal instead of letting the operator quietly add over the cap.
+    if (!isWithinLimit('maxTables', activeTables.length + 1)) {
+      setIsAddTableModalOpen(false);
+      setShowLimitModal(true);
+      return;
+    }
     let row = 0, col = 0, newX = 10, newY = 10, isOccupied = true;
     while (isOccupied) {
       newX = 10 + (col * 30);
@@ -933,6 +943,14 @@ export const HostessScreen: React.FC = () => {
           </SrModal>
         )}
       </AnimatePresence>
+
+      {/* Tier limit modal — contextual upsell when adding the (max+1)th mesa */}
+      <SrTierUpgradeModal
+        open={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        limit="maxTables"
+        currentTier={tier}
+      />
     </div>
   );
 };

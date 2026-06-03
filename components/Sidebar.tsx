@@ -104,8 +104,28 @@ const SyncBadge = () => {
 export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const { activeEmployee, isSuperAdmin, signOut, authProfile, switchBusiness } = useUser();
-  const { daysRemaining, status, isFeatureEnabled } = useSubscription();
+  const { daysRemaining, status, isFeatureEnabled, meetsTier } = useSubscription();
   const { settings } = useSettings();
+
+  /**
+   * Module visibility — combines RBAC (employee role can access path),
+   * feature flag (super_admin enabled the feature for this business),
+   * AND business tier (the plan includes this module).
+   *
+   * Esencial sees: Dashboard / POS / Mis mesas / Caja / Menú / Inventario
+   * (simple) / Personal / Ajustes / Membresía.
+   *
+   * Profesional adds: Cocina (KDS) / Bar / Hostess / Orden remota /
+   * Facturación CFDI / Inventario profesional.
+   *
+   * Prestige adds: Reservaciones / Carta digital pública / Wine list.
+   */
+  const showModule = (path: string, feature: string | null, minTier: 'esencial' | 'profesional' | 'prestige' = 'esencial') => {
+    if (!canAccess(activeEmployee, path)) return false;
+    if (!meetsTier(minTier)) return false;
+    if (feature && !isFeatureEnabled(feature)) return false;
+    return true;
+  };
 
   const statusConfig = {
     [SubscriptionStatus.ACTIVE]: { color: 'text-green-500 border-green-500/20 bg-green-500/5', label: 'ServiRest Activo' },
@@ -164,60 +184,27 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
         </div>
       </div>
 
-      <nav className="flex-1 flex flex-col w-full px-3 overflow-y-auto no-scrollbar space-y-1">
-        {canAccess(activeEmployee, '/dashboard') && isFeatureEnabled('dashboard') && (
-          <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" isExpanded={isExpanded} />
-        )}
-        
-        {canAccess(activeEmployee, '/pos') && isFeatureEnabled('pos') && (
-          <NavItem to="/pos" icon={Zap} label="POS" isExpanded={isExpanded} />
-        )}
+      <nav className="flex-1 flex flex-col w-full px-3 overflow-y-auto no-scrollbar gap-0.5">
+        {/* ─── Operación diaria (todos los tiers) ─────────────────── */}
+        {showModule('/dashboard', 'dashboard')        && <NavItem to="/dashboard"    icon={LayoutDashboard} label="Dashboard"     isExpanded={isExpanded} />}
+        {showModule('/pos',       'pos')              && <NavItem to="/pos"          icon={Zap}             label="POS"           isExpanded={isExpanded} />}
+        {showModule('/my-tables', 'tables')           && <NavItem to="/my-tables"    icon={Table2}          label="Mis mesas"     isExpanded={isExpanded} />}
+        {showModule('/cashier',   'cashier')          && <NavItem to="/cashier"      icon={Receipt}         label="Caja"          isExpanded={isExpanded} />}
+        {showModule('/menu',      'menu_admin')       && <NavItem to="/menu"         icon={MenuSquare}      label="Menú"          isExpanded={isExpanded} />}
 
-        {canAccess(activeEmployee, '/my-tables') && isFeatureEnabled('tables') && (
-          <NavItem to="/my-tables" icon={Table2} label="Mesas Activas" isExpanded={isExpanded} />
-        )}
+        {/* ─── Profesional+ ───────────────────────────────────────── */}
+        {showModule('/hostess',      'hostess',      'profesional') && <NavItem to="/hostess"      icon={MonitorCheck} label="Hostess"       isExpanded={isExpanded} />}
+        {showModule('/kitchen',      'kitchen',      'profesional') && <NavItem to="/kitchen"      icon={ChefHat}      label="Cocina (KDS)"  isExpanded={isExpanded} />}
+        {showModule('/bar',          'bar',          'profesional') && <NavItem to="/bar"          icon={Wine}         label="Bar"           isExpanded={isExpanded} />}
+        {showModule('/remote-order', 'remote_order', 'profesional') && <NavItem to="/remote-order" icon={Smartphone}   label="Orden remota"  isExpanded={isExpanded} />}
+        {showModule('/invoice',      'cfdi',         'profesional') && <NavItem to="/invoice"      icon={FileText}     label="Facturación"   isExpanded={isExpanded} />}
 
-        {canAccess(activeEmployee, '/hostess') && isFeatureEnabled('hostess') && (
-          <NavItem to="/hostess" icon={MonitorCheck} label="Hostes" isExpanded={isExpanded} />
-        )}
+        {/* ─── Administración (todos los tiers) ───────────────────── */}
+        <div className={`h-px my-4 ${isExpanded ? 'w-full' : 'w-8 mx-auto'}`} style={{ background: 'rgba(250,248,244,0.10)' }} />
 
-        {canAccess(activeEmployee, '/cashier') && isFeatureEnabled('cashier') && (
-          <NavItem to="/cashier" icon={Receipt} label="Caja" isExpanded={isExpanded} />
-        )}
-
-        {canAccess(activeEmployee, '/kitchen') && isFeatureEnabled('kitchen') && (
-          <NavItem to="/kitchen" icon={ChefHat} label="Cocina" isExpanded={isExpanded} />
-        )}
-
-        {canAccess(activeEmployee, '/bar') && isFeatureEnabled('bar') && (
-          <NavItem to="/bar" icon={Wine} label="Bar" isExpanded={isExpanded} />
-        )}
-
-        {canAccess(activeEmployee, '/remote-order') && isFeatureEnabled('remote_order') && (
-          <NavItem to="/remote-order" icon={Smartphone} label="Orden Remota" isExpanded={isExpanded} />
-        )}
-        
-        {canAccess(activeEmployee, '/menu') && isFeatureEnabled('menu_admin') && (
-          <NavItem to="/menu" icon={MenuSquare} label="Menu" isExpanded={isExpanded} />
-        )}
-
-        <div className={`h-px my-5 ${isExpanded ? 'w-full' : 'w-8 mx-auto'}`} style={{ background: 'rgba(250,248,244,0.1)' }}></div>
-
-        {canAccess(activeEmployee, '/staff') && isFeatureEnabled('staff') && (
-          <NavItem to="/staff" icon={Users} label="Personal" isExpanded={isExpanded} />
-        )}
-        
-        {canAccess(activeEmployee, '/inventory') && isFeatureEnabled('inventory') && (
-          <NavItem to="/inventory" icon={Boxes} label="Inventario" isExpanded={isExpanded} />
-        )}
-
-        {canAccess(activeEmployee, '/invoice') && isFeatureEnabled('cfdi') && (
-          <NavItem to="/invoice" icon={FileText} label="Facturación" isExpanded={isExpanded} />
-        )}
-
-        {canAccess(activeEmployee, '/billing') && (
-          <NavItem to="/billing" icon={CreditCard} label="Membresia" isExpanded={isExpanded} />
-        )}
+        {showModule('/staff',     'staff')     && <NavItem to="/staff"     icon={Users} label="Personal"   isExpanded={isExpanded} />}
+        {showModule('/inventory', 'inventory') && <NavItem to="/inventory" icon={Boxes} label="Inventario" isExpanded={isExpanded} />}
+        {showModule('/billing',   null)        && <NavItem to="/billing"   icon={CreditCard} label="Membresía"  isExpanded={isExpanded} />}
 
         {isSuperAdmin && (
           <NavItem to="/super-admin" icon={ShieldCheck} label="Super Admin" isExpanded={isExpanded} />
