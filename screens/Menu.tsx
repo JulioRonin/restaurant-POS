@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useMenu } from '../contexts/MenuContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import { MenuItem } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -8,13 +9,15 @@ import {
 } from 'lucide-react';
 import {
   SrCard, SrButton, SrChip, SrInput, SrLabel, SrKicker, SrMono,
-  SrModal, SrModalHeader, SrEmptyState, SrTabs,
+  SrModal, SrModalHeader, SrEmptyState, SrTabs, SrTierUpgradeModal,
 } from '../components/ui/servirest';
 
 const BASE_CATEGORIES = ['Variante', 'Entradas', 'Plato Fuerte', 'Bebidas', 'Postres', 'Extras', 'Tacos', 'Tortas', 'General'];
 
 export const MenuScreen: React.FC = () => {
   const { menuItems, addItem, updateItem, deleteItem, toggleStatus, importCSV, clearMenu } = useMenu();
+  const { tier, isWithinLimit } = useSubscription();
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -141,6 +144,11 @@ export const MenuScreen: React.FC = () => {
     if (editingItem) {
       updateItem(editingItem.id, data as Partial<MenuItem>);
     } else {
+      // Tier limit — bail if creating this would cross the maxProducts cap.
+      if (!isWithinLimit('maxProducts', menuItems.length + 1)) {
+        setShowLimitModal(true);
+        return;
+      }
       addItem(data);
     }
     setIsAddModalOpen(false);
@@ -643,6 +651,13 @@ export const MenuScreen: React.FC = () => {
           </SrModal>
         )}
       </AnimatePresence>
+
+      <SrTierUpgradeModal
+        open={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        limit="maxProducts"
+        currentTier={tier}
+      />
     </div>
   );
 };
