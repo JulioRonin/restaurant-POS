@@ -26,6 +26,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, string[]> = {
     '/inventory',
     '/staff',
     '/billing',
+    '/invoice',
     '/settings',
     '/onboarding',
     '/super-admin',
@@ -39,11 +40,13 @@ export const ROLE_PERMISSIONS: Record<AppRole, string[]> = {
     '/kitchen',
     '/menu',
     '/inventory',
+    '/invoice',
     '/billing'
   ],
   [ROLES.CASHIER]: [
     '/cashier',
-    '/hostess'
+    '/hostess',
+    '/invoice'
   ],
   [ROLES.HOSTESS]: [
     '/hostess',

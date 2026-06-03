@@ -20,6 +20,7 @@ import {
   ChefHat,
   MenuSquare,
   CreditCard,
+  FileText,
   Users,
   Boxes,
   Wine,
@@ -208,6 +209,10 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
         
         {canAccess(activeEmployee, '/inventory') && isFeatureEnabled('inventory') && (
           <NavItem to="/inventory" icon={Boxes} label="Inventario" isExpanded={isExpanded} />
+        )}
+
+        {canAccess(activeEmployee, '/invoice') && isFeatureEnabled('cfdi') && (
+          <NavItem to="/invoice" icon={FileText} label="Facturación" isExpanded={isExpanded} />
         )}
 
         {canAccess(activeEmployee, '/billing') && (

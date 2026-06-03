@@ -20,6 +20,7 @@ import { SubscriptionProvider, useSubscription } from './contexts/SubscriptionCo
 import { SubscriptionGuard } from './components/SubscriptionGuard';
 import { ExpenseProvider } from './contexts/ExpenseContext';
 import { BillingScreen } from './screens/Billing';
+import { InvoiceScreen } from './screens/Invoice';
 import { MenuScreen } from './screens/Menu';
 import { MenuProvider } from './contexts/MenuContext';
 import { InventoryProvider } from './contexts/InventoryContext';
@@ -155,6 +156,7 @@ const AppContent: React.FC = () => {
             <Route path="/inventory" element={<InventoryScreen />} />
             <Route path="/cashier" element={<CashierScreen />} />
             <Route path="/billing" element={<BillingScreen />} />
+            <Route path="/invoice" element={<InvoiceScreen />} />
             <Route path="/menu" element={<MenuScreen />} />
             <Route path="/settings" element={<SettingsScreen />} />
             <Route path="/remote-order" element={<RemoteOrderScreen />} />
@@ -192,6 +194,7 @@ const AppContent: React.FC = () => {
               <Route path="/inventory" element={<RoleGuard path="/inventory"><InventoryScreen /></RoleGuard>} />
               <Route path="/cashier" element={<RoleGuard path="/cashier"><CashierScreen /></RoleGuard>} />
               <Route path="/billing" element={<RoleGuard path="/billing"><BillingScreen /></RoleGuard>} />
+              <Route path="/invoice" element={<RoleGuard path="/invoice"><InvoiceScreen /></RoleGuard>} />
               <Route path="/menu" element={<RoleGuard path="/menu"><MenuScreen /></RoleGuard>} />
               <Route path="/settings" element={<RoleGuard path="/settings"><SettingsScreen /></RoleGuard>} />
               <Route path="/remote-order" element={<RoleGuard path="/remote-order"><RemoteOrderScreen /></RoleGuard>} />

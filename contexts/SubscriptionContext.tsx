@@ -25,7 +25,10 @@ export interface PlanLimits {
 }
 
 export const TIER_LIMITS: Record<BusinessTier, PlanLimits> = {
-  esencial:    { maxTables: 8,        maxEmployees: 5,   maxProducts: 200,        maxLocations: 1,    maxConcurrentTerminals: 1,    cfdiStampsPerMonth: 50,    branding: 'shared',     slaUptime: 0.990 },
+  // Esencial: stock simple, sin CFDI (los micro-negocios casi no facturan).
+  // CFDI desde Profesional es un anchor fuerte de upsell — ver
+  // docs/business-plan/koso-pos/CFDI_IMPLEMENTATION.md.
+  esencial:    { maxTables: 8,        maxEmployees: 5,   maxProducts: 200,        maxLocations: 1,    maxConcurrentTerminals: 1,    cfdiStampsPerMonth: 0,     branding: 'shared',     slaUptime: 0.990 },
   profesional: { maxTables: 50,       maxEmployees: 20,  maxProducts: 1000,       maxLocations: 1,    maxConcurrentTerminals: 5,    cfdiStampsPerMonth: 200,   branding: 'shared',     slaUptime: 0.993 },
   prestige:    { maxTables: 999,      maxEmployees: 50,  maxProducts: 999999,     maxLocations: 5,    maxConcurrentTerminals: 12,   cfdiStampsPerMonth: 1000,  branding: 'cobranded',  slaUptime: 0.995 },
   enterprise:  { maxTables: 999999,   maxEmployees: 999, maxProducts: 999999,     maxLocations: 999,  maxConcurrentTerminals: 999,  cfdiStampsPerMonth: 999999, branding: 'whitelabel', slaUptime: 0.999 },
@@ -50,6 +53,12 @@ interface SubscriptionContextType {
   payEquipment: (amount: number, planName: string) => Promise<boolean>;
   isExpired: boolean;
   isDebtBlocked: boolean; // New: Block for hardware debt
+  /** True when past expiry but within the 5-day grace window. */
+  isInGracePeriod: boolean;
+  /** How many grace days the operator still has before full lock (0-5). */
+  gracePeriodDaysLeft: number;
+  /** How many days past the expiry date (0 when not yet expired). */
+  daysPastExpiry: number;
   saasStatus: 'ACTIVE' | 'WARNING' | 'SUSPENDED' | 'DEBT_BLOCKED';
   refreshFeatures: () => Promise<void>;
   extendSubscription: (days: number) => Promise<boolean>;
@@ -267,7 +276,7 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     return enabledFeatures.includes(key);
   };
 
-  const paySubscription = async (priceId?: string, planName: string = 'KŌSO POS - Renovación Mensual') => {
+  const paySubscription = async (priceId?: string, planName: string = 'ServiRest — Renovación mensual') => {
     if (!authProfile?.businessId) return false;
     
     try {
@@ -362,18 +371,38 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
   };
 
   const now = new Date();
-  
-  // Expiry for standard plans
-  const diffTime = expiryDate ? expiryDate.getTime() - now.getTime() : 0;
-  const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-  
-  const isExpired = daysRemaining <= 0 && posStatus.plan !== 'demo';
-  
+
+  // ─── EXPIRY LOGIC ────────────────────────────────────────────────────
+  // We give the operator a 5-day grace period after subscription_expiry to
+  // settle late payments without losing access. The screen shows reminders
+  // every day during grace. Only after day 6 the app is fully locked.
+  const GRACE_DAYS = 5;
+  const WARNING_DAYS = 5; // start warning 5 days BEFORE expiry too
+
+  // diffTime can be negative (already past expiry); we use raw diff to detect
+  // how many days into grace we are.
+  const rawDiffTime = expiryDate ? expiryDate.getTime() - now.getTime() : 0;
+  const rawDaysRemaining = Math.ceil(rawDiffTime / (1000 * 60 * 60 * 24));
+  const daysRemaining = Math.max(0, rawDaysRemaining); // for backwards compat
+
+  // Past expiry, but within grace window → operator can still operate, with
+  // banner reminder each render of how many grace days are left.
+  const daysPastExpiry = rawDaysRemaining < 0 ? Math.abs(rawDaysRemaining) : 0;
+  const isInGracePeriod = rawDaysRemaining < 0
+    && daysPastExpiry <= GRACE_DAYS
+    && posStatus.plan !== 'demo';
+  const gracePeriodDaysLeft = Math.max(0, GRACE_DAYS - daysPastExpiry);
+
+  // Fully expired = past expiry AND past the grace window.
+  const isExpired = rawDaysRemaining < 0
+    && daysPastExpiry > GRACE_DAYS
+    && posStatus.plan !== 'demo';
+
   // New SaaS Hardening Logic: Block if debt exceeds 2500 (threshold) or plan is active but unpaid
-  const isDebtBlocked = posStatus.plan !== null && 
+  const isDebtBlocked = posStatus.plan !== null &&
                        posStatus.plan !== 'demo' &&
-                       !posStatus.isFullyPaid && 
-                       (posStatus.totalAmount - posStatus.amountPaid > 2500); 
+                       !posStatus.isFullyPaid &&
+                       (posStatus.totalAmount - posStatus.amountPaid > 2500);
 
   // Demo Status Logic
   const isDemoActive = posStatus.plan === 'demo';
@@ -383,25 +412,29 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
     ? 'SUSPENDED'
     : isDemoActive
       ? 'ACTIVE'
-      : isExpired 
-        ? 'SUSPENDED' 
+      : isExpired
+        ? 'SUSPENDED'
         : isDebtBlocked
           ? 'DEBT_BLOCKED'
-          : daysRemaining <= 3 
-            ? 'WARNING' 
-            : 'ACTIVE';
+          : isInGracePeriod
+            ? 'WARNING'
+            : daysRemaining <= WARNING_DAYS
+              ? 'WARNING'
+              : 'ACTIVE';
 
   const status = isDemoExpired
     ? SubscriptionStatus.DEMO_EXPIRED
     : isDemoActive
       ? SubscriptionStatus.DEMO
-      : isExpired 
-        ? SubscriptionStatus.EXPIRED 
+      : isExpired
+        ? SubscriptionStatus.EXPIRED
         : isDebtBlocked
           ? SubscriptionStatus.DEBT_BLOCKED
-          : daysRemaining <= 3 
-            ? SubscriptionStatus.WARNING 
-            : SubscriptionStatus.ACTIVE;
+          : isInGracePeriod
+            ? SubscriptionStatus.WARNING
+            : daysRemaining <= WARNING_DAYS
+              ? SubscriptionStatus.WARNING
+              : SubscriptionStatus.ACTIVE;
 
   const extendSubscription = async (days: number) => {
     console.log('[SubscriptionContext] Starting manual extension for Business:', authProfile?.businessId);
@@ -481,6 +514,9 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
       payEquipment,
       isExpired,
       isDebtBlocked,
+      isInGracePeriod,
+      gracePeriodDaysLeft,
+      daysPastExpiry,
       saasStatus,
       refreshFeatures: fetchSubscriptionData,
       extendSubscription,
