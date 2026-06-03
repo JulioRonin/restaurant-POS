@@ -127,7 +127,7 @@ export default function SuperAdminScreen() {
       const updates: any = { plan };
       if (plan === 'demo') {
         const demoUntil = new Date();
-        demoUntil.setDate(demoUntil.getDate() + 15);
+        demoUntil.setDate(demoUntil.getDate() + 20);
         updates.demo_until = demoUntil.toISOString();
       } else {
         updates.demo_until = null;
@@ -521,7 +521,7 @@ export default function SuperAdminScreen() {
                       const isSelected = selectedBusiness.plan === p;
                       const label =
                         p === 'demo'
-                          ? 'Demo (15 días)'
+                          ? 'Demo (20 días)'
                           : p === 'basic'
                           ? 'Básico'
                           : p === 'premium'
