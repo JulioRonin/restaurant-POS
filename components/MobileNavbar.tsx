@@ -15,6 +15,7 @@ import {
   Users,
   Boxes,
   CreditCard,
+  FileText,
   Settings2,
   MonitorCheck
 } from 'lucide-react';
@@ -36,6 +37,7 @@ export const MobileNavbar: React.FC = () => {
         { to: '/menu', icon: MenuSquare, label: 'Menú', path: '/menu', feature: 'menu_admin' },
         { to: '/staff', icon: Users, label: 'Personal', path: '/staff', feature: 'staff' },
         { to: '/inventory', icon: Boxes, label: 'Inventario', path: '/inventory', feature: 'inventory' },
+        { to: '/invoice', icon: FileText, label: 'Facturas', path: '/invoice', feature: 'cfdi' },
         { to: '/billing', icon: CreditCard, label: 'Membresia', path: '/billing', feature: null },
         { to: '/settings', icon: Settings2, label: 'Ajustes', path: '/settings', feature: null },
     ];

@@ -33,17 +33,22 @@ interface Feature {
 }
 
 const DEFAULT_FEATURES = [
-  { key: 'dashboard',    name: 'Dashboard',           description: 'Panel de métricas y resumen de ventas' },
-  { key: 'pos',          name: 'Punto de Venta',      description: 'Toma de pedidos principal' },
-  { key: 'tables',       name: 'Gestión de mesas',    description: 'Mapa de mesas y estados' },
-  { key: 'hostess',      name: 'Hostess y reservas',  description: 'Recepción y waitlist' },
-  { key: 'cashier',      name: 'Caja y gastos',       description: 'Cortes de caja y egresos' },
-  { key: 'kitchen',      name: 'Monitor de cocina',   description: 'Pedidos para el área de cocina' },
-  { key: 'bar',          name: 'Monitor de barra',    description: 'Pedidos para el área de barra' },
-  { key: 'remote_order', name: 'Comandero remoto',    description: 'Tablets para meseros' },
-  { key: 'inventory',    name: 'Inventario',          description: 'Control de stock e insumos' },
-  { key: 'staff',        name: 'Personal',            description: 'Gestión de empleados y roles' },
-  { key: 'menu_admin',   name: 'Catálogo de menú',    description: 'Edición de platillos y precios' },
+  { key: 'dashboard',          name: 'Dashboard',                  description: 'Panel de métricas y resumen de ventas' },
+  { key: 'pos',                name: 'Punto de Venta',             description: 'Toma de pedidos principal' },
+  { key: 'tables',             name: 'Gestión de mesas',           description: 'Mapa de mesas y estados' },
+  { key: 'hostess',            name: 'Hostess y reservas',         description: 'Recepción y waitlist (Profesional+)' },
+  { key: 'cashier',            name: 'Caja y gastos',              description: 'Cortes de caja y egresos' },
+  { key: 'kitchen',            name: 'Monitor de cocina',          description: 'Pedidos para el área de cocina (Profesional+)' },
+  { key: 'bar',                name: 'Monitor de barra',           description: 'Pedidos para el área de barra (Profesional+)' },
+  { key: 'remote_order',       name: 'Comandero remoto',           description: 'Tablets para meseros (Profesional+)' },
+  { key: 'inventory',          name: 'Inventario simple',          description: 'Stock básico con alertas (todos los planes)' },
+  { key: 'inventory_advanced', name: 'Inventario profesional',     description: 'Proveedores, food cost, pedidos (Profesional+)' },
+  { key: 'staff',              name: 'Personal',                   description: 'Gestión de empleados y roles' },
+  { key: 'menu_admin',         name: 'Catálogo de menú',           description: 'Edición de platillos y precios' },
+  { key: 'cfdi',               name: 'Facturación CFDI 4.0',       description: 'Timbrado fiscal con Facturama (Profesional+)' },
+  { key: 'reservations',       name: 'Reservaciones',              description: 'Confirmación WhatsApp + email (Prestige+)' },
+  { key: 'digital_menu',       name: 'Carta digital pública',      description: 'URL propia + QR (Prestige+)' },
+  { key: 'wine_list',          name: 'Wine list y coctelería',     description: 'Maridajes y costeo (Prestige+)' },
 ];
 
 export default function SuperAdminScreen() {

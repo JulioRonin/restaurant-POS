@@ -2,10 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { INVENTORY_CATEGORIES } from '../constants';
 import { InventoryItem, CartItem, SupplierOrder, SupplyOrderStatus } from '../types';
 import { useInventory } from '../contexts/InventoryContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Package, Truck, ShoppingCart, Plus, Edit3, Trash2, AlertTriangle,
-  CheckCircle2, Search, ArrowRight, X, Minus, Boxes,
+  CheckCircle2, Search, ArrowRight, X, Minus, Boxes, Sparkles,
 } from 'lucide-react';
 import {
   SrCard, SrButton, SrChip, SrInput, SrLabel, SrKicker, SrMono,
@@ -19,6 +20,14 @@ export const InventoryScreen: React.FC = () => {
     inventory, orders, addInventoryItem, updateInventoryItem,
     deleteInventoryItem, createSupplierOrder, updateSupplierOrder,
   } = useInventory();
+
+  // Tier gating — inventario tiene dos modos:
+  //   Esencial:  stock simple. Nombre + cantidad + alerta mínima + categoría.
+  //              No proveedores, no food cost, no pedidos a proveedor.
+  //   Pro+:      modo profesional con proveedores, costo unitario, valor
+  //              total amarrado, pedidos a proveedor, restock workflow.
+  const { meetsTier, isFeatureEnabled } = useSubscription();
+  const isPro = meetsTier('profesional') && isFeatureEnabled('inventory_advanced');
 
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [activeTab, setActiveTab] = useState<Tab>('stock');
@@ -184,6 +193,33 @@ export const InventoryScreen: React.FC = () => {
           </div>
         </div>
 
+        {/* ─── UPSELL BANNER — solo visible en Esencial ────────────── */}
+        {!isPro && (
+          <SrCard
+            variant="solaris"
+            className="mb-6 p-5 flex items-center gap-4 flex-wrap border-2 border-servirest-mostaza/40 bg-[rgba(201,162,74,0.04)]"
+          >
+            <div className="w-12 h-12 rounded-sr-md bg-servirest-midnight text-servirest-mostaza flex items-center justify-center shrink-0">
+              <Sparkles size={20} />
+            </div>
+            <div className="flex-1 min-w-[260px]">
+              <SrLabel className="block mb-1 !text-servirest-mostaza">Inventario profesional</SrLabel>
+              <p className="font-serif italic font-medium text-[18px] text-servirest-midnight tracking-[-0.015em] m-0 mb-1 leading-tight">
+                Lleva costo unitario, proveedores y pedidos a proveedor
+              </p>
+              <p className="text-[12px] text-[rgba(42,40,38,0.6)] font-medium leading-relaxed m-0">
+                Sube a Profesional ($899/mes) para amarrar tu food cost, conectar a tus proveedores y armar pedidos en un click.
+              </p>
+            </div>
+            <a
+              href="#/billing"
+              className="px-5 py-3 rounded-sr-md bg-servirest-mostaza text-servirest-midnight font-black italic uppercase tracking-[0.16em] text-[10px] hover:scale-[1.02] active:scale-95 transition-transform shadow-[0_0_20px_rgba(201,162,74,0.25)]"
+            >
+              Subir a Profesional
+            </a>
+          </SrCard>
+        )}
+
         {/* ─── ACTIONS BAR ───────────────────────────────────────── */}
         <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between mb-8">
           <div className="flex gap-3">
@@ -198,45 +234,51 @@ export const InventoryScreen: React.FC = () => {
             >
               <Package size={14} /> Stock
             </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('orders')}
-              className={`px-5 py-3 rounded-sr-md text-[10px] font-black uppercase tracking-[0.16em] transition-colors flex items-center gap-2 border ${
-                activeTab === 'orders'
-                  ? 'bg-servirest-midnight text-servirest-hueso border-servirest-midnight'
-                  : 'bg-servirest-surface text-[rgba(42,40,38,0.6)] border-[rgba(42,40,38,0.12)] hover:text-servirest-carbon'
-              }`}
-            >
-              <Truck size={14} /> Pedidos
-              {orders.length > 0 && (
-                <span className="text-[rgba(255,255,255,0.6)]">· {orders.length}</span>
-              )}
-            </button>
+            {isPro && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('orders')}
+                className={`px-5 py-3 rounded-sr-md text-[10px] font-black uppercase tracking-[0.16em] transition-colors flex items-center gap-2 border ${
+                  activeTab === 'orders'
+                    ? 'bg-servirest-midnight text-servirest-hueso border-servirest-midnight'
+                    : 'bg-servirest-surface text-[rgba(42,40,38,0.6)] border-[rgba(42,40,38,0.12)] hover:text-servirest-carbon'
+                }`}
+              >
+                <Truck size={14} /> Pedidos
+                {orders.length > 0 && (
+                  <span className="text-[rgba(255,255,255,0.6)]">· {orders.length}</span>
+                )}
+              </button>
+            )}
           </div>
 
           <div className="flex gap-3 flex-wrap">
-            <button
-              type="button"
-              onClick={() => setIsCartOpen(true)}
-              className="relative px-5 py-3 rounded-sr-md bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[rgba(42,40,38,0.6)] hover:text-servirest-carbon hover:border-servirest-terracota/40 transition-colors flex items-center gap-2"
-            >
-              <ShoppingCart size={14} />
-              <span className="font-black italic uppercase tracking-[0.18em] text-[10px]">Carrito</span>
-              {cart.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-servirest-terracota text-servirest-hueso text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-sr-glow">
-                  {cart.length}
-                </span>
-              )}
-            </button>
-            <SrButton
-              variant="outline"
-              size="md"
-              icon={<Truck size={14} />}
-              onClick={() => setIsCartOpen(true)}
-              disabled={cart.length === 0}
-            >
-              Pedir a proveedor
-            </SrButton>
+            {isPro && (
+              <button
+                type="button"
+                onClick={() => setIsCartOpen(true)}
+                className="relative px-5 py-3 rounded-sr-md bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[rgba(42,40,38,0.6)] hover:text-servirest-carbon hover:border-servirest-terracota/40 transition-colors flex items-center gap-2"
+              >
+                <ShoppingCart size={14} />
+                <span className="font-black italic uppercase tracking-[0.18em] text-[10px]">Carrito</span>
+                {cart.length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-servirest-terracota text-servirest-hueso text-[9px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-sr-glow">
+                    {cart.length}
+                  </span>
+                )}
+              </button>
+            )}
+            {isPro && (
+              <SrButton
+                variant="outline"
+                size="md"
+                icon={<Truck size={14} />}
+                onClick={() => setIsCartOpen(true)}
+                disabled={cart.length === 0}
+              >
+                Pedir a proveedor
+              </SrButton>
+            )}
             <SrButton
               variant="primary"
               size="md"
@@ -323,22 +365,26 @@ export const InventoryScreen: React.FC = () => {
                               </div>
                             </div>
 
-                            {/* Cost */}
-                            <div className="text-center min-w-[100px]">
-                              <SrLabel className="block mb-1">Costo / {item.unit}</SrLabel>
-                              <SrMono className="text-[14px] text-servirest-terracota font-extrabold">
-                                ${item.costPerUnit.toFixed(2)}
-                              </SrMono>
-                            </div>
+                            {/* Cost — solo Pro+ */}
+                            {isPro && (
+                              <div className="text-center min-w-[100px]">
+                                <SrLabel className="block mb-1">Costo / {item.unit}</SrLabel>
+                                <SrMono className="text-[14px] text-servirest-terracota font-extrabold">
+                                  ${item.costPerUnit.toFixed(2)}
+                                </SrMono>
+                              </div>
+                            )}
 
-                            {/* Supplier */}
-                            <div className="min-w-0">
-                              <SrLabel className="block mb-1.5">Proveedor</SrLabel>
-                              <SrChip tone="neutral">
-                                <Truck size={9} className="mr-1.5" />
-                                {item.supplier || 'Sin asignar'}
-                              </SrChip>
-                            </div>
+                            {/* Supplier — solo Pro+ */}
+                            {isPro && (
+                              <div className="min-w-0">
+                                <SrLabel className="block mb-1.5">Proveedor</SrLabel>
+                                <SrChip tone="neutral">
+                                  <Truck size={9} className="mr-1.5" />
+                                  {item.supplier || 'Sin asignar'}
+                                </SrChip>
+                              </div>
+                            )}
 
                             {/* Actions */}
                             <div className="flex gap-2 justify-end">

@@ -25,7 +25,10 @@ export interface PlanLimits {
 }
 
 export const TIER_LIMITS: Record<BusinessTier, PlanLimits> = {
-  esencial:    { maxTables: 8,        maxEmployees: 5,   maxProducts: 200,        maxLocations: 1,    maxConcurrentTerminals: 1,    cfdiStampsPerMonth: 50,    branding: 'shared',     slaUptime: 0.990 },
+  // Esencial: stock simple, sin CFDI (los micro-negocios casi no facturan).
+  // CFDI desde Profesional es un anchor fuerte de upsell — ver
+  // docs/business-plan/koso-pos/CFDI_IMPLEMENTATION.md.
+  esencial:    { maxTables: 8,        maxEmployees: 5,   maxProducts: 200,        maxLocations: 1,    maxConcurrentTerminals: 1,    cfdiStampsPerMonth: 0,     branding: 'shared',     slaUptime: 0.990 },
   profesional: { maxTables: 50,       maxEmployees: 20,  maxProducts: 1000,       maxLocations: 1,    maxConcurrentTerminals: 5,    cfdiStampsPerMonth: 200,   branding: 'shared',     slaUptime: 0.993 },
   prestige:    { maxTables: 999,      maxEmployees: 50,  maxProducts: 999999,     maxLocations: 5,    maxConcurrentTerminals: 12,   cfdiStampsPerMonth: 1000,  branding: 'cobranded',  slaUptime: 0.995 },
   enterprise:  { maxTables: 999999,   maxEmployees: 999, maxProducts: 999999,     maxLocations: 999,  maxConcurrentTerminals: 999,  cfdiStampsPerMonth: 999999, branding: 'whitelabel', slaUptime: 0.999 },
