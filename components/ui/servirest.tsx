@@ -523,3 +523,94 @@ export const SrPanel: React.FC<PanelProps> = ({ title, kicker, right, className 
     <div className={bodyClassName}>{children}</div>
   </SrCard>
 );
+
+/* -------------------------------------------------------------------------- */
+/* SrTierUpgradeModal — contextual upsell when the operator hits a plan limit  */
+/* -------------------------------------------------------------------------- */
+type LimitKey =
+  | 'maxTables'
+  | 'maxEmployees'
+  | 'maxProducts'
+  | 'maxLocations'
+  | 'maxConcurrentTerminals'
+  | 'cfdiStampsPerMonth';
+
+type TierUpgradeProps = {
+  open: boolean;
+  onClose: () => void;
+  /** Which limit the operator just hit. Drives the headline and CTA copy. */
+  limit: LimitKey;
+  /** Current tier — for messaging "estás en Esencial, sube a Profesional". */
+  currentTier: Tier;
+  /** Which tier unlocks more. Default 'profesional'. */
+  suggestedTier?: Tier;
+};
+
+const LIMIT_LABELS: Record<LimitKey, { title: string; helper: string; metric: string }> = {
+  maxTables:              { title: 'Llegaste al máximo de mesas',      helper: 'Tu plan permite registrar un número limitado de mesas. Para abrir más, sube tu plan.',                                                  metric: 'mesas' },
+  maxEmployees:           { title: 'Llegaste al máximo de empleados',  helper: 'Tu plan permite registrar un número limitado de empleados. Para sumar más al equipo, sube tu plan.',                                  metric: 'empleados' },
+  maxProducts:            { title: 'Llegaste al máximo de platillos',  helper: 'Tu plan permite registrar un número limitado de platillos en el menú. Para ampliar tu catálogo, sube tu plan.',                       metric: 'platillos' },
+  maxLocations:           { title: 'Solo una sucursal con este plan',  helper: 'Para administrar más de una sucursal desde un mismo panel, necesitas Prestige o Enterprise.',                                          metric: 'sucursales' },
+  maxConcurrentTerminals: { title: 'Llegaste al máximo de terminales', helper: 'Tu plan permite operar con un número limitado de cajas POS al mismo tiempo. Para conectar más terminales, sube tu plan.',             metric: 'terminales en paralelo' },
+  cfdiStampsPerMonth:     { title: 'Llegaste al tope de timbres',      helper: 'Cada timbre extra se cobra al precio de sobreuso de tu plan. Si tu volumen es alto cada mes, considera subir a Prestige o Enterprise.', metric: 'timbres este mes' },
+};
+
+const TIER_NEXT: Record<Tier, Tier> = {
+  esencial: 'profesional',
+  profesional: 'prestige',
+  prestige: 'enterprise',
+  enterprise: 'enterprise',
+};
+
+export const SrTierUpgradeModal: React.FC<TierUpgradeProps> = ({
+  open,
+  onClose,
+  limit,
+  currentTier,
+  suggestedTier,
+}) => {
+  const next = suggestedTier || TIER_NEXT[currentTier];
+  const meta = LIMIT_LABELS[limit];
+
+  return (
+    <SrModal open={open} onClose={onClose} maxWidth={520}>
+      <div className="text-center py-4">
+        <div className="w-16 h-16 rounded-full bg-servirest-midnight text-servirest-mostaza flex items-center justify-center mx-auto mb-5 border border-servirest-mostaza/40">
+          <AlertTriangle size={26} />
+        </div>
+        <SrKicker className="block mb-2">Llegaste al límite</SrKicker>
+        <h2 className="font-serif italic font-medium text-[30px] text-servirest-midnight tracking-[-0.02em] m-0 mb-3 leading-tight">
+          {meta.title}
+        </h2>
+        <p className="text-[13px] text-[rgba(42,40,38,0.7)] font-medium leading-relaxed m-0 mb-7 max-w-[400px] mx-auto">
+          {meta.helper}
+        </p>
+
+        <div className="bg-servirest-hueso-sunken rounded-sr-lg p-5 mb-6 flex items-center justify-between gap-4">
+          <div className="text-left">
+            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[rgba(42,40,38,0.5)] mb-1">Estás en</div>
+            <SrTierBadge tier={currentTier} />
+          </div>
+          <ArrowRight size={18} className="text-[rgba(42,40,38,0.4)]" />
+          <div className="text-right">
+            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[rgba(42,40,38,0.5)] mb-1">Sugerido</div>
+            <SrTierBadge tier={next} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <SrButton variant="outline" size="md" fullWidth onClick={onClose}>
+            Ahora no
+          </SrButton>
+          <a
+            href="#/billing"
+            onClick={onClose}
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-sr-lg bg-servirest-terracota text-servirest-hueso font-black italic uppercase tracking-[0.18em] text-[11px] shadow-sr-glow hover:scale-[1.02] active:scale-95 transition-transform"
+          >
+            Ver planes <ArrowRight size={12} />
+          </a>
+        </div>
+      </div>
+    </SrModal>
+  );
+};

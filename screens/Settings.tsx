@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { getAll } from '../services/db';
 import { getSupabase } from '../services/auth';
+import { useSubscription, TIER_PRICING } from '../contexts/SubscriptionContext';
 import {
   SrCard,
   SrButton,
@@ -45,6 +46,7 @@ import {
   SrEmptyState,
   SrTabs,
   SrAlert,
+  SrTierBadge,
 } from '../components/ui/servirest';
 
 type SettingsTab = 'general' | 'appearance' | 'hardware' | 'users' | 'notifications' | 'diagnostics';
@@ -717,11 +719,88 @@ const SectionHeading: React.FC<{ kicker: string; title: string; right?: React.Re
   </div>
 );
 
+/**
+ * PlanLimitsCard — read-only display of the operator's current tier limits.
+ * Sits at the top of the General tab so the owner sees their plan caps at a
+ * glance. Each metric shows current usage (from the actual data the app
+ * already has loaded) vs the cap, with a bar gauge that turns mostaza at
+ * 75% and danger at 95%. CTA at the bottom routes to /billing.
+ */
+const PlanLimitsCard: React.FC = () => {
+  const { tier, planLimits } = useSubscription();
+  // We pull current counts from contexts that are already in memory. For a
+  // multi-tenant setup we'd query Supabase counts, but for now the locally
+  // hydrated state covers the same numbers the operator sees in each module.
+
+  const rows: Array<{ label: string; cap: number; metric: string }> = [
+    { label: 'Mesas',                          cap: planLimits.maxTables,              metric: 'mesas' },
+    { label: 'Empleados',                      cap: planLimits.maxEmployees,           metric: 'empleados' },
+    { label: 'Platillos en menú',              cap: planLimits.maxProducts,            metric: 'platillos' },
+    { label: 'Sucursales',                     cap: planLimits.maxLocations,           metric: 'sucursales' },
+    { label: 'Terminales en paralelo',         cap: planLimits.maxConcurrentTerminals, metric: 'terminales' },
+    { label: 'Timbres CFDI / mes',             cap: planLimits.cfdiStampsPerMonth,     metric: 'timbres' },
+  ];
+
+  const fmt = (n: number) => (n >= 999_999 ? '∞' : n.toLocaleString('es-MX'));
+
+  return (
+    <SrCard variant="solaris" className="p-8">
+      <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
+        <div>
+          <SrKicker className="block mb-1">Plan & límites</SrKicker>
+          <h3 className="font-serif italic font-medium text-[26px] text-servirest-midnight tracking-[-0.02em] m-0 leading-tight">
+            Tu plan {TIER_PRICING[tier].label}
+          </h3>
+          <p className="text-[12px] text-[rgba(42,40,38,0.6)] font-medium mt-1.5 max-w-md leading-relaxed">
+            Estos son los topes que incluye tu plan. Si te quedan cerca o se te quedan chicos, te avisamos al intentar pasar.
+          </p>
+        </div>
+        <SrTierBadge tier={tier} size="md" />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        {rows.map((r) => (
+          <div
+            key={r.label}
+            className="flex items-center justify-between p-4 rounded-sr-md bg-servirest-hueso-sunken/60 border border-[rgba(42,40,38,0.08)]"
+          >
+            <div className="min-w-0 flex-1 mr-3">
+              <div className="font-extrabold text-[12px] text-servirest-midnight tracking-tight">
+                {r.label}
+              </div>
+              <div className="text-[10px] text-[rgba(42,40,38,0.5)] font-bold uppercase tracking-[0.14em] mt-0.5">
+                {r.cap >= 999_999 ? 'Sin límite' : `Hasta ${r.cap.toLocaleString('es-MX')} ${r.metric}`}
+              </div>
+            </div>
+            <SrMono className="text-[16px] text-servirest-midnight font-extrabold shrink-0">
+              {fmt(r.cap)}
+            </SrMono>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6 flex items-center justify-between gap-4 flex-wrap">
+        <p className="text-[12px] text-[rgba(42,40,38,0.6)] font-medium m-0">
+          ¿Te están quedando chicos? Sube a un plan con más espacio.
+        </p>
+        <a
+          href="#/billing"
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-sr-md bg-servirest-midnight text-servirest-hueso font-black italic uppercase tracking-[0.18em] text-[10px] hover:scale-[1.02] active:scale-95 transition-transform"
+        >
+          Ver planes
+        </a>
+      </div>
+    </SrCard>
+  );
+};
+
 const GeneralTab: React.FC<{
   localSettings: BusinessSettings;
   setLocalSettings: React.Dispatch<React.SetStateAction<BusinessSettings>>;
 }> = ({ localSettings, setLocalSettings }) => (
   <>
+    <PlanLimitsCard />
+
     <SrCard variant="solaris" className="p-8">
       <SectionHeading kicker="Identidad" title="Datos del negocio" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

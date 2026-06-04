@@ -3,6 +3,7 @@ import { MOCK_STAFF } from '../constants';
 import { Table, TableStatus, WaitlistEntry, OrderStatus } from '../types';
 import { useTables } from '../contexts/TableContext';
 import { useOrders } from '../contexts/OrderContext';
+import { useSubscription, TIER_PRICING } from '../contexts/SubscriptionContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Minus, UserPlus, Hourglass, Users, GripVertical,
@@ -11,7 +12,7 @@ import {
 } from 'lucide-react';
 import {
   SrCard, SrButton, SrChip, SrInput, SrLabel, SrKicker, SrMono,
-  SrModal, SrModalHeader, SrEmptyState, SrTabs,
+  SrModal, SrModalHeader, SrEmptyState, SrTabs, SrTierUpgradeModal,
 } from '../components/ui/servirest';
 
 type ViewMode = 'plano' | 'lista';
@@ -34,6 +35,8 @@ export const HostessScreen: React.FC = () => {
   // ── Contexts ─────────────────────────────────────────────────────────────
   const { tables: activeTables, addTable, updateTableStatus, deleteTable, updateTable } = useTables();
   const { orders, updateOrderStatus } = useOrders();
+  const { planLimits, tier, isWithinLimit } = useSubscription();
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   // ── Local state ──────────────────────────────────────────────────────────
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
@@ -58,6 +61,19 @@ export const HostessScreen: React.FC = () => {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [newTableName, setNewTableName] = useState('');
   const [newTableSeats, setNewTableSeats] = useState(4);
+
+  // ── Visual table placement ──────────────────────────────────────────────
+  // When `pendingTable` is set, the operator is in "place mode": the next
+  // click on the floor plan drops the table at that position. We also let
+  // them drag existing tables to reposition (snap to grid).
+  const [pendingTable, setPendingTable] = useState<{ name: string; seats: number } | null>(null);
+  const [draggingTableId, setDraggingTableId] = useState<string | null>(null);
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
+  const floorRef = React.useRef<HTMLDivElement | null>(null);
+
+  // Snap to a 5% grid so floor plans look orderly and reflow predictably.
+  const SNAP_PCT = 5;
+  const snap = (v: number) => Math.round(v / SNAP_PCT) * SNAP_PCT;
 
   // Drag-drop state
   const [isDraggingOver, setIsDraggingOver] = useState<string | null>(null);
@@ -84,28 +100,72 @@ export const HostessScreen: React.FC = () => {
 
   const handleAddTable = () => {
     if (!newTableName) return;
-    let row = 0, col = 0, newX = 10, newY = 10, isOccupied = true;
-    while (isOccupied) {
-      newX = 10 + (col * 30);
-      newY = 10 + (row * 40);
-      isOccupied = activeTables.some((t) => Math.abs(t.x - newX) < 5 && Math.abs(t.y - newY) < 5);
-      if (isOccupied) {
-        col++;
-        if (col > 2) { col = 0; row++; }
-        if (row > 20) break;
-      }
+    // Tier limit check
+    if (!isWithinLimit('maxTables', activeTables.length + 1)) {
+      setIsAddTableModalOpen(false);
+      setShowLimitModal(true);
+      return;
     }
-    const newTable: Omit<Table, 'id'> = {
-      name: newTableName,
-      seats: newTableSeats,
-      status: TableStatus.AVAILABLE,
-      x: newX,
-      y: newY,
-    };
-    addTable(newTable);
+    // Enter visual-placement mode instead of dropping the table on a guessed
+    // coordinate. The next click on the floor plan locks the position.
+    setPendingTable({ name: newTableName, seats: newTableSeats });
     setIsAddTableModalOpen(false);
     setNewTableName('');
     setNewTableSeats(4);
+  };
+
+  /** Read coordinates from a mouse/touch event relative to the floor container,
+   *  return them as percentages snapped to the grid. */
+  const eventToPct = (e: React.MouseEvent | React.TouchEvent): { x: number; y: number } | null => {
+    const el = floorRef.current;
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    const ev = 'touches' in e ? e.touches[0] : (e as React.MouseEvent);
+    const x = ((ev.clientX - rect.left) / rect.width) * 100;
+    const y = ((ev.clientY - rect.top) / rect.height) * 100;
+    // Clamp so the table stays fully inside the canvas (it has its own width).
+    const clamped = (v: number) => Math.max(2, Math.min(78, v));
+    return { x: snap(clamped(x)), y: snap(clamped(y)) };
+  };
+
+  /** Click on the floor while in place mode → drop the pending table. */
+  const handleFloorClick = (e: React.MouseEvent) => {
+    if (!pendingTable) return;
+    const pos = eventToPct(e);
+    if (!pos) return;
+    addTable({
+      name: pendingTable.name,
+      seats: pendingTable.seats,
+      status: TableStatus.AVAILABLE,
+      x: pos.x,
+      y: pos.y,
+    });
+    setPendingTable(null);
+    setHoverPos(null);
+  };
+
+  /** Live preview while in place mode — ghost table follows the cursor. */
+  const handleFloorMouseMove = (e: React.MouseEvent) => {
+    if (!pendingTable && !draggingTableId) return;
+    const pos = eventToPct(e);
+    if (pos) setHoverPos(pos);
+  };
+
+  /** Drag-to-reposition: while user holds a table and moves the cursor,
+   *  update the table's stored position so it snaps on release. */
+  const handleTablePointerDown = (e: React.MouseEvent, tableId: string) => {
+    if (pendingTable) return; // don't conflict with placement
+    e.stopPropagation();
+    setDraggingTableId(tableId);
+    setSelectedTableId(tableId);
+  };
+
+  const handleFloorPointerUp = () => {
+    if (draggingTableId && hoverPos) {
+      updateTable(draggingTableId, { x: hoverPos.x, y: hoverPos.y } as any);
+    }
+    setDraggingTableId(null);
+    setHoverPos(null);
   };
 
   const handleUpdateTable = () => {
@@ -386,23 +446,69 @@ export const HostessScreen: React.FC = () => {
           >
             {viewMode === 'plano' ? (
               <div
-                className="relative w-full p-6 min-w-[600px] min-h-[520px]"
+                ref={floorRef}
+                className={`relative w-full p-6 min-w-[600px] min-h-[520px] ${pendingTable ? 'cursor-crosshair' : draggingTableId ? 'cursor-grabbing' : ''}`}
                 onDragOver={(e) => e.preventDefault()}
+                onClick={handleFloorClick}
+                onMouseMove={handleFloorMouseMove}
+                onMouseUp={handleFloorPointerUp}
+                onMouseLeave={() => { setHoverPos(null); setDraggingTableId(null); }}
               >
-                {/* Subtle dot grid */}
+                {/* Dot grid — visible (8% vs 4%) while in placement mode for orientation */}
                 <div
-                  className="absolute inset-0 opacity-[0.04] pointer-events-none"
+                  className={`absolute inset-0 pointer-events-none transition-opacity ${pendingTable ? 'opacity-[0.10]' : 'opacity-[0.04]'}`}
                   style={{
                     backgroundImage: 'radial-gradient(circle, #2A2826 1px, transparent 1px)',
                     backgroundSize: '36px 36px',
                   }}
                 />
+
+                {/* Placement-mode banner — sticky tip strip */}
+                {pendingTable && (
+                  <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-servirest-terracota text-servirest-hueso px-5 py-2.5 rounded-sr-pill shadow-sr-glow flex items-center gap-3">
+                    <Plus size={16} />
+                    <span className="font-black italic uppercase tracking-[0.18em] text-[10px]">
+                      Toca donde quieras la {pendingTable.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setPendingTable(null); setHoverPos(null); }}
+                      className="ml-2 w-6 h-6 rounded-full bg-servirest-hueso/20 hover:bg-servirest-hueso/30 flex items-center justify-center transition-colors"
+                      title="Cancelar"
+                    >
+                      <XCircle size={12} />
+                    </button>
+                  </div>
+                )}
+
+                {/* Ghost preview while placing or dragging */}
+                {(pendingTable || draggingTableId) && hoverPos && (
+                  <div
+                    className="absolute pointer-events-none z-10"
+                    style={{
+                      left: `${hoverPos.x}%`,
+                      top: `${hoverPos.y}%`,
+                      width: 160,
+                      height: 112,
+                    }}
+                  >
+                    <div className="w-full h-full rounded-sr-xl border-2 border-dashed border-servirest-terracota bg-[rgba(196,99,63,0.10)] flex flex-col items-center justify-center">
+                      <div className="font-serif italic font-medium text-[20px] text-servirest-terracota tracking-[-0.02em] leading-none">
+                        {pendingTable?.name || activeTables.find(t => t.id === draggingTableId)?.name}
+                      </div>
+                      <SrMono className="text-[10px] text-servirest-terracota mt-1">
+                        {hoverPos.x}, {hoverPos.y}
+                      </SrMono>
+                    </div>
+                  </div>
+                )}
+
                 {activeTables.length === 0 ? (
                   <div className="h-[480px] flex items-center justify-center">
                     <SrEmptyState
                       icon={<Layers size={28} />}
-                      title="Plano sin mesas"
-                      description="Da de alta tu primera mesa y aparecerá en este plano. Después la mueves a su lugar."
+                      title="Plano vacío"
+                      description="Toca «Crear mesa», pónle nombre y luego toca el plano donde la quieres. Después la arrastras si la necesitas mover."
                       action={
                         <SrButton variant="primary" icon={<Plus size={14} />} onClick={() => setIsAddTableModalOpen(true)}>
                           Crear mesa
@@ -437,15 +543,20 @@ export const HostessScreen: React.FC = () => {
                         key={table.id}
                         layout
                         initial={false}
-                        onClick={() => setSelectedTableId(table.id)}
+                        onClick={(e) => { e.stopPropagation(); if (!pendingTable) setSelectedTableId(table.id); }}
+                        onMouseDown={(e) => handleTablePointerDown(e, table.id)}
                         onDragOver={(e) => {
                           e.preventDefault();
                           if (isAvail) setIsDraggingOver(table.id);
                         }}
                         onDragLeave={() => setIsDraggingOver(null)}
                         onDrop={(e) => handleDrop(e, table.id)}
-                        style={{ left: `${table.x}%`, top: `${table.y}%` }}
-                        className={`absolute w-40 h-28 rounded-sr-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 border-2 shadow-sr-card p-3 ${stateClasses}`}
+                        style={{
+                          left: `${table.x}%`,
+                          top: `${table.y}%`,
+                          opacity: draggingTableId === table.id ? 0.4 : 1,
+                        }}
+                        className={`absolute w-40 h-28 rounded-sr-xl flex flex-col items-center justify-center transition-all duration-300 border-2 shadow-sr-card p-3 select-none ${pendingTable ? 'cursor-crosshair pointer-events-none' : draggingTableId === table.id ? 'cursor-grabbing' : 'cursor-grab hover:cursor-grab'} ${stateClasses}`}
                       >
                         <div className="font-serif italic font-medium text-[22px] text-servirest-midnight tracking-[-0.02em] leading-none mb-1">
                           {table.name}
@@ -933,6 +1044,14 @@ export const HostessScreen: React.FC = () => {
           </SrModal>
         )}
       </AnimatePresence>
+
+      {/* Tier limit modal — contextual upsell when adding the (max+1)th mesa */}
+      <SrTierUpgradeModal
+        open={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        limit="maxTables"
+        currentTier={tier}
+      />
     </div>
   );
 };

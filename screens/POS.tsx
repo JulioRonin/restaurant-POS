@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Plus, Printer, ShoppingCart, X, Minus, ChefHat,
   Table as TableIcon, ShoppingBag, Truck, ArrowRight, Trash2,
-  SlidersHorizontal, Cpu, Rocket, Check, Wifi, WifiOff, Sparkles,
+  SlidersHorizontal, Check, Wifi, WifiOff,
 } from 'lucide-react';
 import {
   SrCard, SrButton, SrChip, SrInput, SrLabel, SrKicker, SrMono,
@@ -19,50 +19,6 @@ import {
   SrEmptyState,
 } from '../components/ui/servirest';
 
-/* -------------------------------------------------------------------------- */
-/* PromoBanner — dismissible promo row, refined                                */
-/* -------------------------------------------------------------------------- */
-const PromoBanner: React.FC<{ onDismiss: () => void }> = ({ onDismiss }) => (
-  <motion.div
-    initial={{ opacity: 0, y: -8, scale: 0.98 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    exit={{ opacity: 0, y: -8, scale: 0.98 }}
-    transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-    className="relative flex items-center gap-5 p-5 rounded-sr-xl bg-servirest-surface shadow-sr-card overflow-hidden mb-6"
-    style={{ border: '1px solid rgba(196,99,63,0.30)' }}
-  >
-    <div className="absolute inset-0 pointer-events-none opacity-[0.04]" aria-hidden="true">
-      <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 80% 50%, #C4633F 0%, transparent 50%)' }} />
-    </div>
-    <div className="w-14 h-14 flex-shrink-0 rounded-sr-lg bg-servirest-midnight text-servirest-mostaza flex items-center justify-center relative">
-      <Sparkles size={22} />
-    </div>
-    <div className="flex-1 min-w-0 relative">
-      <div className="font-serif italic font-medium text-[18px] text-servirest-midnight tracking-[-0.01em] leading-tight">
-        Versión nueva disponible
-      </div>
-      <p className="m-0 mt-1 text-[12px] text-[rgba(42,40,38,0.6)] font-medium">
-        Activa las funciones que sumamos para tu restaurante esta semana.
-      </p>
-    </div>
-    <SrButton
-      variant="primary"
-      size="sm"
-      icon={<Rocket size={14} />}
-      className="flex-shrink-0"
-    >
-      Actualizar
-    </SrButton>
-    <button
-      type="button"
-      onClick={onDismiss}
-      aria-label="Cerrar"
-      className="absolute top-3 right-3 w-7 h-7 rounded-full bg-servirest-hueso-sunken text-[rgba(42,40,38,0.4)] hover:text-servirest-carbon hover:bg-[rgba(42,40,38,0.10)] flex items-center justify-center transition-colors"
-    >
-      <X size={14} />
-    </button>
-  </motion.div>
-);
 
 /* -------------------------------------------------------------------------- */
 /* OrderProgressCard — kitchen-line ticket. Bigger, more editorial.            */
@@ -137,6 +93,20 @@ const DishCard: React.FC<DishCardProps> = ({ item, onClick }) => {
             <ChefHat size={36} className="text-[rgba(42,40,38,0.2)]" />
           </div>
         )}
+
+        {/* Subtle dark wash so the price tag and badges always pop over any image */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-2/3 pointer-events-none"
+          style={{ background: 'linear-gradient(to top, rgba(26,30,46,0.55) 0%, transparent 100%)' }}
+          aria-hidden="true"
+        />
+
+        {/* Price tag — top-right, terracota, ESC-POS receipt vibe */}
+        <span className="absolute top-2.5 right-2.5 bg-servirest-terracota text-servirest-hueso font-mono font-extrabold text-[13px] px-3 py-1.5 rounded-sr-md shadow-sr-glow">
+          ${item.price.toFixed(0)}
+        </span>
+
+        {/* State badges — top-left */}
         {!available && (
           <span className="absolute top-2.5 left-2.5 font-black text-[8px] uppercase tracking-[0.16em] text-servirest-hueso bg-[rgba(225,85,75,0.92)] px-2.5 py-1 rounded-sr-sm">
             Agotado
@@ -147,19 +117,18 @@ const DishCard: React.FC<DishCardProps> = ({ item, onClick }) => {
             Variantes
           </span>
         )}
-        <span className="absolute bottom-2.5 right-2.5 w-9 h-9 rounded-full bg-servirest-terracota text-servirest-hueso flex items-center justify-center opacity-0 translate-y-1.5 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 shadow-sr-glow">
+
+        {/* Dish name at bottom, over the dark wash for readability */}
+        <span className="absolute bottom-2 left-3 right-12 font-serif italic font-medium text-[15px] text-servirest-hueso tracking-[-0.01em] leading-tight truncate drop-shadow-md">
+          {item.name}
+        </span>
+
+        {/* Quick-add CTA bottom-right */}
+        <span className="absolute bottom-2 right-2 w-9 h-9 rounded-full bg-servirest-terracota text-servirest-hueso flex items-center justify-center opacity-0 translate-y-1.5 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 shadow-sr-glow">
           <Plus size={18} />
         </span>
       </div>
-      <div className="flex items-baseline justify-between gap-2 mt-3 mx-0.5">
-        <span className="font-extrabold text-[14px] text-servirest-midnight tracking-[-0.005em] truncate leading-tight">
-          {item.name}
-        </span>
-        <SrMono className="text-servirest-terracota font-extrabold text-[13px] flex-shrink-0">
-          ${item.price.toFixed(0)}
-        </SrMono>
-      </div>
-      <div className="text-[11px] text-[rgba(42,40,38,0.5)] mt-1 mx-0.5 font-medium truncate uppercase tracking-[0.06em]">
+      <div className="text-[11px] text-[rgba(42,40,38,0.5)] mt-2 mx-0.5 font-medium truncate uppercase tracking-[0.06em]">
         {item.category}
       </div>
     </motion.button>
@@ -187,7 +156,6 @@ export const POSScreen: React.FC = () => {
   const [variantItem, setVariantItem] = useState<MenuItem | null>(null);
   const [selectedVariants, setSelectedVariants] = useState<MenuItemVariant[]>([]);
   const [printerReady, setPrinterReady] = useState(false);
-  const [showPromo, setShowPromo] = useState(true);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
@@ -378,10 +346,6 @@ export const POSScreen: React.FC = () => {
           </div>
         </div>
 
-        <AnimatePresence>
-          {showPromo && <PromoBanner onDismiss={() => setShowPromo(false)} />}
-        </AnimatePresence>
-
         {/* Active kitchen orders */}
         {activeKitchenOrders.length > 0 && (
           <div className="mb-9">
@@ -499,22 +463,15 @@ export const POSScreen: React.FC = () => {
         `}
       >
         {/* Rail header */}
-        <div className="px-7 pt-7 pb-5 flex items-start justify-between border-b border-[rgba(42,40,38,0.08)]">
-          <div>
-            <SrKicker className="block mb-1">Tu orden</SrKicker>
-            <h2 className="font-serif italic font-medium text-[28px] text-servirest-midnight tracking-[-0.02em] m-0 mb-2 leading-none">
-              Orden actual
-            </h2>
-            <button
-              type="button"
-              onClick={() => setShowTableModal(true)}
-              className={`inline-flex items-center gap-1.5 font-black uppercase tracking-[0.18em] text-[10px] transition-colors ${selectedTable ? 'text-servirest-terracota' : 'text-[rgba(42,40,38,0.5)] hover:text-servirest-terracota'}`}
-            >
-              <TableIcon size={11} />
-              {selectedTable ? selectedTable.name : 'Asignar mesa'}
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
+        <div className="px-7 pt-7 pb-4 border-b border-[rgba(42,40,38,0.08)]">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <SrKicker className="block mb-1">Tu orden</SrKicker>
+              <h2 className="font-serif italic font-medium text-[28px] text-servirest-midnight tracking-[-0.02em] m-0 leading-none">
+                Orden actual
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
             {cart.length > 0 && (
               <button
                 type="button"
@@ -534,6 +491,30 @@ export const POSScreen: React.FC = () => {
               <X size={16} />
             </button>
           </div>
+          </div>
+
+          {/* Prominent table picker — full-width button so the waiter never
+              forgets to assign before sending to kitchen */}
+          <button
+            type="button"
+            onClick={() => setShowTableModal(true)}
+            className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-sr-md border-2 transition-all ${selectedTable
+              ? 'bg-[rgba(196,99,63,0.08)] border-servirest-terracota text-servirest-terracota hover:bg-[rgba(196,99,63,0.12)]'
+              : 'bg-servirest-hueso-sunken border-dashed border-[rgba(42,40,38,0.20)] text-[rgba(42,40,38,0.6)] hover:border-servirest-terracota hover:text-servirest-terracota'}`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={`w-8 h-8 rounded-sr-sm flex items-center justify-center shrink-0 ${selectedTable ? 'bg-servirest-terracota text-servirest-hueso' : 'bg-[rgba(42,40,38,0.08)]'}`}>
+                <TableIcon size={14} />
+              </div>
+              <div className="text-left min-w-0">
+                <div className="font-black italic uppercase tracking-[0.16em] text-[9px] opacity-70">Mesa</div>
+                <div className="font-serif italic font-medium text-[16px] leading-none mt-0.5 truncate">
+                  {selectedTable ? selectedTable.name : 'Sin asignar'}
+                </div>
+              </div>
+            </div>
+            <ArrowRight size={14} className="shrink-0" />
+          </button>
         </div>
 
         {/* Items list */}

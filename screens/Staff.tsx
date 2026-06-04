@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useUser } from '../contexts/UserContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import { Employee } from '../types';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -11,6 +12,7 @@ import {
 import {
   SrCard, SrButton, SrChip, SrInput, SrLabel, SrKicker, SrMono,
   SrModal, SrModalHeader, SrEmptyState, SrTabs, SrProgressRing,
+  SrTierUpgradeModal,
 } from '../components/ui/servirest';
 
 type RoleFilter = 'All' | 'Kitchen' | 'Service' | 'Bar' | 'Management';
@@ -31,6 +33,8 @@ export const StaffScreen: React.FC = () => {
     employees, addEmployee, updateEmployee, triggerSync,
     authProfile, isAuthenticating, activeEmployee, isSuperAdmin,
   } = useUser();
+  const { tier, isWithinLimit } = useSubscription();
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   const [selectedArea, setSelectedArea] = useState<RoleFilter>('All');
   const [viewMode, setViewMode] = useState<'grid' | 'schedule'>('grid');
@@ -87,6 +91,12 @@ export const StaffScreen: React.FC = () => {
   const handleAddEmployee = (e: React.FormEvent) => {
     e.preventDefault();
     if (!authProfile) return;
+    // Tier limit gate — block if adding this employee crosses the plan cap.
+    if (!isWithinLimit('maxEmployees', employees.length + 1)) {
+      setActiveModal('none');
+      setShowLimitModal(true);
+      return;
+    }
     const formData = new FormData(e.target as HTMLFormElement);
     addEmployee({
       name: formData.get('name') as string,
@@ -668,6 +678,13 @@ export const StaffScreen: React.FC = () => {
           </SrModal>
         )}
       </AnimatePresence>
+
+      <SrTierUpgradeModal
+        open={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        limit="maxEmployees"
+        currentTier={tier}
+      />
     </div>
   );
 };
