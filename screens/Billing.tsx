@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSubscription, BusinessTier, TIER_PRICING, TIER_LIMITS } from '../contexts/SubscriptionContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { getSupabase } from '../services/auth';
 import { SubscriptionStatus, PaymentRecord } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -182,6 +183,40 @@ export const BillingScreen: React.FC = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
+  // Stripe price_ids loaded dynamically from Supabase app_config so the user can
+  // change prices in the Stripe dashboard without touching code.
+  const [priceIds, setPriceIds] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    const keys = [
+      'stripe_price_esencial_monthly',
+      'stripe_price_esencial_yearly',
+      'stripe_price_profesional_monthly',
+      'stripe_price_profesional_yearly',
+      'stripe_price_prestige_monthly',
+      'stripe_price_prestige_yearly',
+    ];
+    supabase
+      .from('app_config')
+      .select('key, value')
+      .in('key', keys)
+      .then(({ data, error }) => {
+        if (error || !data) return;
+        const map: Record<string, string> = {};
+        for (const row of data as Array<{ key: string; value: string }>) {
+          if (row.value) map[row.key] = row.value;
+        }
+        setPriceIds(map);
+      });
+  }, []);
+
+  const priceIdFor = (id: BusinessTier): string | undefined => {
+    const cycle = billingCycle === 'yearly' ? 'yearly' : 'monthly';
+    return priceIds[`stripe_price_${id}_${cycle}`];
+  };
+
   const statusInfo = STATUS_LABEL[status] || { label: 'Sin estado', tone: 'warning' as const };
 
   /* ── TIER DEFINITIONS (kept here so it's the single source of truth for UX) */
@@ -190,7 +225,6 @@ export const BillingScreen: React.FC = () => {
     description: string;
     bullets: string[];
     tone: 'midnight' | 'terracota' | 'mostaza';
-    priceId?: string;
   }> = [
     {
       id: 'esencial',
@@ -204,7 +238,6 @@ export const BillingScreen: React.FC = () => {
         'Soporte por email + WhatsApp (lun-sáb)',
       ],
       tone: 'midnight',
-      priceId: 'price_1TWMW07vbDuHdmHoPmOOuBCx',
     },
     {
       id: 'profesional',
@@ -221,7 +254,6 @@ export const BillingScreen: React.FC = () => {
         'Soporte WhatsApp prioritario',
       ],
       tone: 'terracota',
-      priceId: 'price_1TWMWX7vbDuHdmHofLolyZcZ',
     },
     {
       id: 'prestige',
@@ -405,7 +437,7 @@ export const BillingScreen: React.FC = () => {
               bullets={t.bullets}
               highlightTone={t.tone}
               busy={isPaying}
-              onSelect={() => handleSubscribe(t.id, t.priceId)}
+              onSelect={() => handleSubscribe(t.id, priceIdFor(t.id))}
             />
           ))}
         </div>
