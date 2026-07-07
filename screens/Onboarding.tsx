@@ -190,17 +190,38 @@ export default function OnboardingScreen() {
         }
       }
 
-      // 2.1 Always ensure the current user (owner/admin) has an employee profile
-      const hasAdmin = staff.some((s) => s.role.toLowerCase() === 'admin');
-      if (!hasAdmin && authProfile) {
-        console.log('[Onboarding] Auto-creating admin profile for owner:', authProfile.fullName);
-        addEmployee({
-          name: authProfile.fullName || 'Admin',
-          role: 'admin',
-          area: 'Management',
-          image: `https://ui-avatars.com/api/?name=${encodeURIComponent(authProfile.fullName || 'Admin')}&background=C4633F&color=fff&size=128`,
-          pin: '0000',
-        });
+      // 2.1 Ensure the current user (owner/admin) has an employee profile, but
+      // only if one doesn't exist yet. Antes se llamaba addEmployee sin checar
+      // y eso duplicaba al admin cada vez que se corría el onboarding.
+      const hasAdminInStep = staff.some((s) => s.role.toLowerCase() === 'admin');
+      if (!hasAdminInStep && authProfile) {
+        try {
+          const supabase = (await import('../services/auth')).getSupabase();
+          let alreadyExists = false;
+          if (supabase && authProfile.businessId) {
+            const { data: existing } = await supabase
+              .from('employees')
+              .select('id')
+              .eq('business_id', authProfile.businessId)
+              .eq('role', 'admin')
+              .limit(1);
+            alreadyExists = !!(existing && existing.length > 0);
+          }
+          if (!alreadyExists) {
+            console.log('[Onboarding] Auto-creating admin profile for owner:', authProfile.fullName);
+            await addEmployee({
+              name: authProfile.fullName || 'Admin',
+              role: 'admin',
+              area: 'Management',
+              image: `https://ui-avatars.com/api/?name=${encodeURIComponent(authProfile.fullName || 'Admin')}&background=C4633F&color=fff&size=128`,
+              pin: '0000',
+            });
+          } else {
+            console.log('[Onboarding] Admin employee already exists, skipping auto-create.');
+          }
+        } catch (err) {
+          console.warn('[Onboarding] Could not check existing admin employee:', err);
+        }
       }
 
       // 3. Save Tables (Basic logic)
@@ -208,12 +229,16 @@ export default function OnboardingScreen() {
         console.log(`[Onboarding] Saving ${tables.length} tables...`);
         const { put: idbPut } = await import('../services/db');
         const { trackChange: tc } = await import('../services/SyncService');
-        for (const table of tables) {
+        for (let i = 0; i < tables.length; i++) {
+          const table = tables[i];
+          // Snap-to-grid initial layout so el x/y sea entero (Supabase espera int)
+          // y las mesas se vean acomodadas al abrir Hostess por primera vez.
           const idbRecord = {
             ...table,
             businessId: authProfile?.businessId,
-            x: Math.random() * 500,
-            y: Math.random() * 500,
+            code: `M-${String(i + 1).padStart(5, '0')}`,
+            x: Math.round(10 + (i % 6) * 15),
+            y: Math.round(15 + Math.floor(i / 6) * 20),
             synced: false,
             updated_at: new Date().toISOString(),
           };
@@ -378,7 +403,7 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-servirest-hueso text-servirest-carbon flex flex-col antialiased">
+    <div className="h-screen overflow-y-auto bg-servirest-hueso text-servirest-carbon flex flex-col antialiased">
       {/* ─── HEADER (sticky) ───────────────────────────────────────── */}
       <header className="sticky top-0 z-20 bg-servirest-surface/95 backdrop-blur-md border-b border-[rgba(42,40,38,0.10)]">
         <div className="max-w-[1280px] mx-auto px-8 py-5 flex justify-between items-center gap-6 flex-wrap">
@@ -1061,7 +1086,9 @@ const TablesStep: React.FC<{
               transition={{ duration: 0.3, delay: idx * 0.02 }}
             >
               <SrCard className="p-3 text-center">
-                <SrMono className="block text-[10px] text-servirest-terracota tracking-widest mb-1">{table.id}</SrMono>
+                <SrMono className="block text-[11px] text-servirest-terracota tracking-widest mb-1">
+                  M-{String(idx + 1).padStart(5, '0')}
+                </SrMono>
                 <div className="font-serif italic font-medium text-[14px] text-servirest-midnight tracking-tight leading-tight">
                   {table.name}
                 </div>
