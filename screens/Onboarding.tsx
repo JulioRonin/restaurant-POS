@@ -45,8 +45,8 @@ type OnboardingStep = 'PLAN' | 'INFO' | 'MENU' | 'TABLES' | 'STAFF' | 'HARDWARE'
 const STEP_META: Record<OnboardingStep, { kicker: string; title: string; subtitle: string; icon: any }> = {
   PLAN: {
     kicker: 'Tu plan',
-    title: 'Elige cómo arrancamos',
-    subtitle: 'Pago mensual y, si lo necesitas, el equipo de hardware. Lo que escojas hoy lo puedes cambiar después.',
+    title: 'Cómo quieres empezar',
+    subtitle: 'Arranca con 20 días gratis sin tarjeta. Si prefieres un plan de pago desde el día uno, también puedes.',
     icon: CreditCard,
   },
   INFO: {
@@ -87,10 +87,10 @@ const STEP_META: Record<OnboardingStep, { kicker: string; title: string; subtitl
   },
 };
 
-const STEPS: OnboardingStep[] = ['PLAN', 'INFO', 'MENU', 'TABLES', 'STAFF', 'HARDWARE', 'COMPLETE'];
+const STEPS: OnboardingStep[] = ['INFO', 'MENU', 'TABLES', 'STAFF', 'HARDWARE', 'PLAN', 'COMPLETE'];
 
 export default function OnboardingScreen() {
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>('PLAN');
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>('INFO');
   const [loading, setLoading] = useState(false);
   const { authProfile, completeOnboarding, addEmployee, updateBusiness } = useUser();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -110,7 +110,7 @@ export default function OnboardingScreen() {
     ticketFooter: '¡Gracias por su visita!',
   });
 
-  const [selectedPlan, setSelectedPlan] = useState<'basic' | 'pro'>('basic');
+  const [selectedPlan, setSelectedPlan] = useState<'demo' | 'basic' | 'pro'>('demo');
   const [selectedEquipment, setSelectedEquipment] = useState<'buy' | 'rent' | 'none'>('rent');
 
   const [menuItems, setMenuItems] = useState<any[]>([]);
@@ -615,29 +615,41 @@ export default function OnboardingScreen() {
 /* ────────────────────────────────────────────────────────────────────── */
 
 const PlanStep: React.FC<{
-  selectedPlan: 'basic' | 'pro';
-  setSelectedPlan: (p: 'basic' | 'pro') => void;
+  selectedPlan: 'demo' | 'basic' | 'pro';
+  setSelectedPlan: (p: 'demo' | 'basic' | 'pro') => void;
   selectedEquipment: 'buy' | 'rent' | 'none';
   setSelectedEquipment: (p: 'buy' | 'rent' | 'none') => void;
 }> = ({ selectedPlan, setSelectedPlan, selectedEquipment, setSelectedEquipment }) => {
   const plans = [
     {
+      id: 'demo' as const,
+      name: 'Demo',
+      price: 'Gratis',
+      suffix: '20 días',
+      desc: 'Prueba ServiRest completo sin tarjeta. Cuando quieras, subes a un plan de pago.',
+      bullets: ['20 días de acceso completo', 'Sin tarjeta de crédito', 'Cambias a plan pagado cuando quieras'],
+      icon: Sparkles,
+      tone: 'mostaza' as const,
+    },
+    {
       id: 'basic' as const,
       name: 'Esencial',
-      price: '$850',
-      desc: 'Para cafeterías chicas, foodtrucks y barras pequeñas.',
-      bullets: ['Hasta 2 estaciones', 'Inventario básico', 'Soporte por chat'],
+      price: '$549',
+      suffix: '/mes',
+      desc: 'Para fondas, cafés, taquerías y locales chicos.',
+      bullets: ['Hasta 8 mesas + 5 empleados', 'Inventario básico', 'Soporte email + WhatsApp'],
       icon: Package,
       tone: 'terracota' as const,
     },
     {
       id: 'pro' as const,
       name: 'Profesional',
-      price: '$1,450',
-      desc: 'Para restaurantes con cocina, mesas y delivery propio.',
-      bullets: ['Estaciones ilimitadas', 'Orden remota + inventario avanzado', 'Soporte prioritario'],
+      price: '$899',
+      suffix: '/mes',
+      desc: 'Para restaurantes pyme con cocina y meseros.',
+      bullets: ['Hasta 50 mesas + 20 empleados', 'Cocina, Bar y Orden remota', 'CFDI 4.0 + soporte prioritario'],
       icon: Zap,
-      tone: 'mostaza' as const,
+      tone: 'terracota' as const,
     },
   ];
 
@@ -649,9 +661,10 @@ const PlanStep: React.FC<{
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {plans.map((p, idx) => {
           const active = selectedPlan === p.id;
+          const isDemo = p.id === 'demo';
           return (
             <motion.button
               key={p.id}
@@ -660,28 +673,41 @@ const PlanStep: React.FC<{
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: idx * 0.05 }}
               onClick={() => setSelectedPlan(p.id)}
-              className={`text-left p-7 rounded-sr-2xl border transition-all ${
+              className={`relative text-left p-7 rounded-sr-2xl border transition-all ${
                 active
-                  ? 'border-servirest-terracota bg-[rgba(196,99,63,0.06)] shadow-sr-glow'
+                  ? isDemo
+                    ? 'border-servirest-mostaza bg-[rgba(201,162,74,0.06)] shadow-[0_0_18px_rgba(201,162,74,0.20)]'
+                    : 'border-servirest-terracota bg-[rgba(196,99,63,0.06)] shadow-sr-glow'
                   : 'border-[rgba(42,40,38,0.12)] bg-servirest-surface hover:border-[rgba(42,40,38,0.2)] shadow-sr-card'
               }`}
             >
+              {isDemo && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <SrChip tone="mostaza" size="xs">Recomendado para empezar</SrChip>
+                </div>
+              )}
               <div className="flex items-start justify-between mb-5">
-                <div className="p-3 rounded-sr-md bg-[rgba(196,99,63,0.10)] text-servirest-terracota border border-servirest-terracota/30">
+                <div className={`p-3 rounded-sr-md border ${
+                  isDemo
+                    ? 'bg-[rgba(201,162,74,0.10)] text-servirest-mostaza border-servirest-mostaza/30'
+                    : 'bg-[rgba(196,99,63,0.10)] text-servirest-terracota border-servirest-terracota/30'
+                }`}>
                   <p.icon size={22} />
                 </div>
-                {active && <SrChip tone="terracota">Elegido</SrChip>}
+                {active && <SrChip tone={isDemo ? 'mostaza' : 'terracota'}>Elegido</SrChip>}
               </div>
-              <SrKicker className="block mb-1.5">Plan {p.name}</SrKicker>
+              <SrKicker className="block mb-1.5">{isDemo ? 'Prueba gratuita' : `Plan ${p.name}`}</SrKicker>
               <h3 className="font-serif italic font-medium text-[26px] text-servirest-midnight tracking-[-0.02em] m-0 leading-tight mb-2">
                 {p.name}
               </h3>
               <p className="text-[13px] text-[rgba(42,40,38,0.6)] m-0 mb-5 leading-relaxed">{p.desc}</p>
               <div className="flex items-baseline gap-1 mb-5">
-                <SrMono className="text-[28px] font-extrabold text-servirest-terracota tracking-tight">
+                <SrMono className={`text-[28px] font-extrabold tracking-tight ${
+                  isDemo ? 'text-servirest-mostaza' : 'text-servirest-terracota'
+                }`}>
                   {p.price}
                 </SrMono>
-                <span className="text-[12px] font-medium text-[rgba(42,40,38,0.5)]">/mes</span>
+                <span className="text-[12px] font-medium text-[rgba(42,40,38,0.5)]">{p.suffix}</span>
               </div>
               <ul className="space-y-2 list-none p-0 m-0">
                 {p.bullets.map((b) => (
@@ -744,9 +770,15 @@ const PlanStep: React.FC<{
         </div>
       </SrCard>
 
-      <SrAlert tone="warning" title="Activamos tu cuenta al cerrar">
-        Al continuar, tomamos el cobro vía Stripe para habilitarte el sistema en minutos. Sin sorpresas — el monto lo ves antes de pagar.
-      </SrAlert>
+      {selectedPlan === 'demo' ? (
+        <SrAlert tone="info" title="Sin tarjeta ahora">
+          Empiezas con 20 días gratis sin dejar tarjeta. Al día 21 te avisamos para elegir plan de pago. Puedes cambiar antes desde Membresía cuando quieras.
+        </SrAlert>
+      ) : (
+        <SrAlert tone="warning" title="Activamos tu cuenta al cerrar">
+          Al continuar, tomamos el cobro vía Stripe para habilitarte el sistema en minutos. Sin sorpresas — el monto lo ves antes de pagar.
+        </SrAlert>
+      )}
     </div>
   );
 };
@@ -1358,7 +1390,7 @@ const HardwareStep: React.FC<{
 
 const CompleteStep: React.FC<{
   fullName: string;
-  selectedPlan: 'basic' | 'pro';
+  selectedPlan: 'demo' | 'basic' | 'pro';
   tablesCount: number;
   staffCount: number;
 }> = ({ fullName, selectedPlan, tablesCount, staffCount }) => (
@@ -1394,7 +1426,7 @@ const CompleteStep: React.FC<{
       className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl mx-auto"
     >
       {[
-        { label: 'Plan', value: selectedPlan === 'basic' ? 'Esencial' : 'Profesional' },
+        { label: 'Plan', value: selectedPlan === 'demo' ? 'Demo 20 días' : selectedPlan === 'basic' ? 'Esencial' : 'Profesional' },
         { label: 'Mesas', value: `${tablesCount}` },
         { label: 'Equipo', value: `${staffCount + 1}` },
         { label: 'Hardware', value: 'Vinculado' },
