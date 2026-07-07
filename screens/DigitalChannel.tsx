@@ -334,18 +334,31 @@ export const DigitalChannelScreen: React.FC = () => {
                 </div>
 
                 {settings.digitalMode === 'delivery' && (
-                  <div className="mt-5">
-                    <SrLabel>
-                      <MapPin size={12} className="inline mr-1" /> Zonas cubiertas
-                    </SrLabel>
-                    <textarea
-                      value={settings.digitalDeliveryZones || ''}
-                      onChange={(e) => updateSettings({ digitalDeliveryZones: e.target.value })}
-                      placeholder="Ej. Roma Norte, Condesa, Juárez, Cuauhtémoc — separadas por coma"
-                      rows={3}
-                      className="w-full mt-2 px-4 py-3 rounded-sr-md bg-servirest-surface border border-[rgba(42,40,38,0.1)] text-[13px] font-medium focus:outline-none focus:border-servirest-terracota resize-none"
-                    />
-                  </div>
+                  <>
+                    <div className="mt-5">
+                      <SrLabel>
+                        <MapPin size={12} className="inline mr-1" /> Zonas cubiertas (texto de referencia)
+                      </SrLabel>
+                      <textarea
+                        value={settings.digitalDeliveryZones || ''}
+                        onChange={(e) => updateSettings({ digitalDeliveryZones: e.target.value })}
+                        placeholder="Ej. Roma Norte, Condesa, Juárez, Cuauhtémoc — separadas por coma"
+                        rows={2}
+                        className="w-full mt-2 px-4 py-3 rounded-sr-md bg-servirest-surface border border-[rgba(42,40,38,0.1)] text-[13px] font-medium focus:outline-none focus:border-servirest-terracota resize-none"
+                      />
+                    </div>
+
+                    {/* Radio de entrega por GPS */}
+                    <div className="mt-5 p-4 rounded-sr-md bg-servirest-hueso-sunken/40 border border-[rgba(42,40,38,0.08)]">
+                      <SrLabel className="block mb-1">
+                        <MapPin size={12} className="inline mr-1" /> Radio de entrega por ubicación
+                      </SrLabel>
+                      <p className="text-[11px] text-[rgba(42,40,38,0.55)] mb-3 leading-relaxed">
+                        El cliente valida su ubicación con GPS; si está dentro del radio de tu local, puede pedir delivery.
+                      </p>
+                      <DeliveryRadiusConfig settings={settings} updateSettings={updateSettings} />
+                    </div>
+                  </>
                 )}
               </SrPanel>
 
@@ -614,5 +627,80 @@ const PayToggle: React.FC<{
     </div>
   </button>
 );
+
+/* -------------------------------------------------------------------------- */
+/* DeliveryRadiusConfig — captura la ubicación del local + radio en km        */
+/* -------------------------------------------------------------------------- */
+const DeliveryRadiusConfig: React.FC<{ settings: any; updateSettings: (s: any) => void }> = ({ settings, updateSettings }) => {
+  const [capturing, setCapturing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const captureLocation = () => {
+    setError(null);
+    if (!navigator.geolocation) {
+      setError('Tu navegador no soporta geolocalización.');
+      return;
+    }
+    setCapturing(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        updateSettings({
+          businessLat: Number(pos.coords.latitude.toFixed(6)),
+          businessLng: Number(pos.coords.longitude.toFixed(6)),
+        });
+        setCapturing(false);
+      },
+      (err) => {
+        setError('No pudimos leer tu ubicación. Da permiso de ubicación e intenta de nuevo.');
+        setCapturing(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const hasLocation = settings.businessLat && settings.businessLng;
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <SrLabel>Radio (km)</SrLabel>
+          <SrInput
+            type="number"
+            min={0.5}
+            step="0.5"
+            value={settings.digitalDeliveryRadiusKm ?? 2}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateSettings({ digitalDeliveryRadiusKm: Number(e.target.value) || 2 })}
+          />
+        </div>
+        <div>
+          <SrLabel>Punto del local</SrLabel>
+          <div className={`h-11 mt-0.5 rounded-sr-md flex items-center justify-center text-[11px] font-bold ${
+            hasLocation ? 'bg-green-500/10 text-green-700 border border-green-500/30' : 'bg-mostaza-500/10 text-servirest-midnight border border-servirest-mostaza/40'
+          }`}>
+            {hasLocation ? 'Ubicación guardada' : 'Sin capturar'}
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={captureLocation}
+        disabled={capturing}
+        className="w-full h-11 rounded-sr-md bg-servirest-midnight text-servirest-hueso text-[11px] font-black uppercase tracking-[0.15em] flex items-center justify-center gap-2 disabled:opacity-50"
+      >
+        <MapPin size={14} />
+        {capturing ? 'Leyendo GPS…' : hasLocation ? 'Actualizar ubicación del local' : 'Capturar ubicación del local (estar en el local)'}
+      </button>
+
+      {hasLocation && (
+        <p className="text-[10px] text-[rgba(42,40,38,0.5)] font-mono text-center">
+          {settings.businessLat}, {settings.businessLng} · radio {settings.digitalDeliveryRadiusKm ?? 2} km
+        </p>
+      )}
+      {error && <p className="text-[11px] text-servirest-danger">{error}</p>}
+    </div>
+  );
+};
 
 export default DigitalChannelScreen;

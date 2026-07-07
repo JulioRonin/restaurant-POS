@@ -22,6 +22,7 @@ import {
   ShoppingCart, Plus, Minus, Trash2, X, ChefHat, CheckCircle2,
   Search, Utensils, Truck, Store, PackageCheck, RefreshCw, Check,
   MapPin, Mail, Lock, LogIn, User as UserIcon, ArrowLeft, Phone, AlertCircle,
+  Banknote, CreditCard,
 } from 'lucide-react';
 import { getSupabase } from '../services/auth';
 import { MenuItem, MenuItemVariant, OrderStatus, OrderSource, PaymentStatus, PaymentMethod } from '../types';
@@ -38,11 +39,21 @@ type CartLine = {
   notes: string;
 };
 
-type PayMethod = 'stripe_qr' | 'cash';
+type PayMethod = 'stripe_qr' | 'cash' | 'terminal';
 type Mode = 'delivery' | 'pickup';
 type View = 'menu' | 'checkout' | 'auth' | 'success';
 
 const lineTotal = (l: CartLine) => (l.basePrice + l.variants.reduce((s, v) => s + (v.price || 0), 0)) * l.quantity;
+
+// Distancia entre dos coordenadas (haversine) en km.
+const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
 
 // ─────────────────────────────────────────────────────────────────────────
 // Entry — lee businessId del hash y renderiza el Storefront o error
@@ -89,6 +100,9 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   const [customerPhone, setCustomerPhone] = useState('');
   const [payMethod, setPayMethod] = useState<PayMethod>('cash');
   const [orderNotes, setOrderNotes] = useState('');
+  // Geo-validación de la ubicación del cliente vs el radio del local.
+  const [geoState, setGeoState] = useState<'idle' | 'checking' | 'inside' | 'outside' | 'error'>('idle');
+  const [geoDistance, setGeoDistance] = useState<number | null>(null);
   const [processing, setProcessing] = useState(false);
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
   const [confirmedOrderNum, setConfirmedOrderNum] = useState<string>('----');
@@ -135,6 +149,16 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
           digitalConfig = sData.value;
         }
 
+        // location_id de la primera sucursal del negocio (orders.location_id
+        // es NOT NULL en el esquema, así que lo necesitamos para el insert).
+        let locationId: string | null = null;
+        const { data: locData } = await supabase
+          .from('locations')
+          .select('id')
+          .eq('business_id', businessId)
+          .limit(1);
+        if (locData && locData.length > 0) locationId = locData[0].id;
+
         const { data: mData, error: mErr } = await supabase
           .from('menu_items')
           .select('*')
@@ -146,7 +170,7 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
         if (!alive) return;
         // Merge: businesses.settings (logo legacy) + business_settings.value
         // (config del canal digital). digitalConfig gana.
-        setBusiness({ ...bData, settings: { ...(bData?.settings || {}), ...digitalConfig } });
+        setBusiness({ ...bData, locationId, settings: { ...(bData?.settings || {}), ...digitalConfig } });
         setItems((mData || []).map((row: any) => ({
           id: row.id,
           name: row.name,
@@ -210,14 +234,13 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   const meetsMinimum = subtotal >= (settings.digitalMinOrder ?? 0);
 
   // ── Cart handlers ────────────────────────────────────────────────
+  // Todos los productos abren el modal de detalle (foto grande +
+  // descripción), igual que el kiosko. Las variantes se muestran solo si
+  // el platillo las tiene.
   const openProduct = (item: MenuItem) => {
-    if (item.variants && item.variants.length > 0) {
-      setVariantModal(item);
-      setSelVariants([]);
-      setSelNotes('');
-    } else {
-      addLine(item, [], '');
-    }
+    setVariantModal(item);
+    setSelVariants([]);
+    setSelNotes('');
   };
 
   const addLine = (item: MenuItem, variants: MenuItemVariant[], notes: string) => {
@@ -270,11 +293,29 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
     }
   };
 
-  // ── Zone check ───────────────────────────────────────────────────
+  // ── Zone check (texto, fallback) ─────────────────────────────────
   const isAddressInZone = (addr: string): boolean => {
-    if (!zonesList.length) return true; // Sin zonas configuradas, acepta todo
+    if (!zonesList.length) return true;
     const a = addr.toLowerCase();
     return zonesList.some((z: string) => a.includes(z));
+  };
+
+  // ── Geo check por radio (GPS del cliente vs local) ───────────────
+  const hasGeoRadius = !!(settings.businessLat && settings.businessLng);
+  const radiusKm = settings.digitalDeliveryRadiusKm ?? 2;
+
+  const validateGeoLocation = () => {
+    setGeoState('checking');
+    if (!navigator.geolocation) { setGeoState('error'); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const d = haversineKm(pos.coords.latitude, pos.coords.longitude, settings.businessLat, settings.businessLng);
+        setGeoDistance(d);
+        setGeoState(d <= radiusKm ? 'inside' : 'outside');
+      },
+      () => setGeoState('error'),
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   // ── Checkout submit ──────────────────────────────────────────────
@@ -303,6 +344,7 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
       const paymentMap: Record<PayMethod, PaymentMethod> = {
         stripe_qr: PaymentMethod.CARD,
         cash: PaymentMethod.CASH,
+        terminal: PaymentMethod.CARD,
       };
 
       // Número consecutivo diario (para "Orden #NNNN" y para que Cocina lo
@@ -321,13 +363,14 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
       const orderRecord: any = {
         id: orderId,
         business_id: businessId,
+        location_id: business?.locationId || null, // orders.location_id es NOT NULL
         table_id: null, // pedido remoto, sin mesa física
         status: 'PENDING',
         total,
         daily_number: dailyNumber,
         waiter_name: 'Canal digital',
         payment_method: paymentMap[payMethod],
-        payment_status: payMethod === 'cash' ? 'PENDING' : 'PAID',
+        payment_status: payMethod === 'stripe_qr' ? 'PAID' : 'PENDING', // efectivo/terminal se cobra al entregar
         source: mode === 'delivery' ? 'TO_GO' : 'PICKUP',
         is_kitchen_ready: false,
         is_bar_ready: false,
@@ -357,6 +400,7 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
           price_at_time: l.basePrice + l.variants.reduce((s, v) => s + (v.price || 0), 0),
           notes: combinedNotes,
           business_id: businessId,
+          location_id: business?.locationId || null,
           updated_at: new Date().toISOString(),
         };
       });
@@ -470,6 +514,11 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
     processing={processing}
     zonesList={zonesList}
     isAddressInZone={isAddressInZone}
+    hasGeoRadius={hasGeoRadius}
+    radiusKm={radiusKm}
+    geoState={geoState}
+    geoDistance={geoDistance}
+    onValidateGeo={validateGeoLocation}
     onBack={() => setView('menu')}
     onConfirm={handleConfirmOrder}
     onLoginRequired={() => setView('auth')}
@@ -771,17 +820,30 @@ const CheckoutView: React.FC<any> = ({
   business, settings, session, mode, cart, subtotal, iva, deliveryFee, total,
   payMethod, setPayMethod, customerName, setCustomerName, customerPhone, setCustomerPhone,
   deliveryAddress, setDeliveryAddress, orderNotes, setOrderNotes, processing,
-  zonesList, isAddressInZone, onBack, onConfirm, onLoginRequired,
+  zonesList, isAddressInZone, hasGeoRadius, radiusKm, geoState, geoDistance, onValidateGeo,
+  onBack, onConfirm, onLoginRequired,
 }) => {
-  // Validación de zona EN VIVO (antes de que pague). Verde si dentro,
-  // rojo si fuera. El botón de confirmar se bloquea si está fuera.
+  // ── Validación de entrega ────────────────────────────────────────
+  // Si el negocio configuró radio por GPS, usamos eso (más confiable).
+  // Si no, caemos al match de texto de zonas.
+  const geoValidated = geoState === 'inside';
+  const geoRejected = geoState === 'outside';
+
   const addrTyped = deliveryAddress.trim().length > 3;
-  const inZone = mode !== 'delivery' || !zonesList.length || (addrTyped && isAddressInZone(deliveryAddress));
-  const zoneChecked = mode === 'delivery' && zonesList.length > 0 && addrTyped;
+  const inZoneText = !zonesList.length || (addrTyped && isAddressInZone(deliveryAddress));
+  const zoneTextChecked = !hasGeoRadius && zonesList.length > 0 && addrTyped;
+
+  // La dirección se desbloquea solo tras validar GPS (si hay radio config).
+  const addressUnlocked = !hasGeoRadius || geoValidated;
+
+  const deliveryOk = mode !== 'delivery' || (
+    hasGeoRadius
+      ? (geoValidated && deliveryAddress.trim())
+      : (deliveryAddress.trim() && inZoneText)
+  );
 
   const contactOk = customerName.trim() && customerPhone.trim();
-  const addressOk = mode !== 'delivery' || (deliveryAddress.trim() && inZone);
-  const canConfirm = contactOk && addressOk && cart.length > 0 && !processing;
+  const canConfirm = contactOk && deliveryOk && cart.length > 0 && !processing;
 
   return (
     <div className="h-screen w-screen bg-servirest-hueso overflow-y-auto antialiased">
@@ -806,21 +868,35 @@ const CheckoutView: React.FC<any> = ({
           Últimos detalles
         </h1>
 
-        {/* Cuenta: invitado por default, login opcional */}
+        {/* Cuenta: invitado por default, login opcional con beneficios */}
         {session ? (
           <div className="p-4 rounded-sr-md bg-servirest-success/10 border border-servirest-success/30 mb-6 flex items-center gap-3">
             <UserIcon size={18} className="text-servirest-success" />
             <div className="text-[13px] text-servirest-midnight">Ordenando como <span className="font-bold">{session.user.email}</span></div>
           </div>
         ) : (
-          <div className="p-4 rounded-sr-md bg-servirest-hueso-sunken/50 border border-[rgba(42,40,38,0.08)] mb-6 flex items-center gap-3 flex-wrap">
-            <UserIcon size={16} className="text-[rgba(42,40,38,0.5)]" />
-            <div className="flex-1 min-w-0 text-[12px] text-[rgba(42,40,38,0.6)]">
-              Ordenando como <span className="font-bold text-servirest-midnight">invitado</span>. ¿Quieres guardar tu historial?
+          <div className="mb-6 rounded-sr-md border-2 border-servirest-mostaza/40 bg-mostaza-500/10 overflow-hidden">
+            <div className="p-4 flex items-center gap-3 flex-wrap">
+              <span className="px-3 h-7 rounded-full bg-servirest-mostaza text-servirest-midnight text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-1.5">
+                <UserIcon size={11} /> Invitado
+              </span>
+              <div className="flex-1 min-w-0 text-[13px] font-serif italic text-servirest-midnight">
+                Estás ordenando sin cuenta.
+              </div>
+              <button onClick={onLoginRequired} className="px-5 h-10 rounded-full bg-servirest-terracota text-servirest-hueso text-[10px] font-black uppercase tracking-[0.15em] hover:scale-[1.02] transition-transform">
+                <LogIn size={12} className="inline mr-1.5" /> Crear cuenta gratis
+              </button>
             </div>
-            <button onClick={onLoginRequired} className="px-4 h-9 rounded-full border border-servirest-terracota/40 text-servirest-terracota text-[10px] font-black uppercase tracking-[0.15em] hover:bg-servirest-terracota/5">
-              <LogIn size={12} className="inline mr-1.5" /> Crear cuenta
-            </button>
+            <div className="px-4 pb-4">
+              <div className="text-[11px] text-[rgba(42,40,38,0.7)] leading-relaxed">
+                <span className="font-bold text-servirest-midnight">Al registrarte obtienes:</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
+                  <span className="flex items-center gap-1.5"><Check size={12} className="text-servirest-terracota" /> Precios de apertura</span>
+                  <span className="flex items-center gap-1.5"><Check size={12} className="text-servirest-terracota" /> Promos por recomendar</span>
+                  <span className="flex items-center gap-1.5"><Check size={12} className="text-servirest-terracota" /> Historial y repetir pedido</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -836,35 +912,69 @@ const CheckoutView: React.FC<any> = ({
           </div>
         </div>
 
-        {/* Dirección — SOLO en delivery, con validación de zona en vivo */}
+        {/* Dirección — SOLO en delivery, con validación por GPS (radio) */}
         {mode === 'delivery' && (
           <div className="mb-6">
-            <SrLabel className="block mb-2"><MapPin size={12} className="inline mr-1" /> Dirección de entrega *</SrLabel>
+            {/* Si el negocio configuró radio, primero valida ubicación */}
+            {hasGeoRadius && (
+              <div className={`p-4 rounded-sr-md border-2 mb-4 ${
+                geoValidated ? 'border-servirest-success/40 bg-servirest-success/5'
+                : geoRejected ? 'border-servirest-danger/40 bg-servirest-danger/5'
+                : 'border-servirest-mostaza/40 bg-mostaza-500/10'
+              }`}>
+                <div className="flex items-start gap-3">
+                  <MapPin size={20} className={geoValidated ? 'text-servirest-success' : geoRejected ? 'text-servirest-danger' : 'text-servirest-mostaza'} />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-serif italic text-servirest-midnight text-[15px]">
+                      {geoValidated ? '¡Sí llegamos a tu ubicación!'
+                        : geoRejected ? 'Estás fuera de nuestro radio de entrega'
+                        : 'Valida que llegamos a tu domicilio'}
+                    </div>
+                    <p className="text-[11px] text-[rgba(42,40,38,0.6)] mt-1 leading-relaxed">
+                      {geoValidated ? `Estás a ${geoDistance?.toFixed(1)} km del local (cubrimos ${radiusKm} km).`
+                        : geoRejected ? `Estás a ${geoDistance?.toFixed(1)} km — cubrimos hasta ${radiusKm} km. Prueba "Recoger en local".`
+                        : `Entregamos en ${radiusKm} km a la redonda. Te pediremos permiso de ubicación.`}
+                    </p>
+                    {!geoValidated && (
+                      <button
+                        onClick={onValidateGeo}
+                        disabled={geoState === 'checking'}
+                        className="mt-3 px-5 h-10 rounded-full bg-servirest-midnight text-servirest-hueso text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-2 disabled:opacity-50"
+                      >
+                        {geoState === 'checking' ? <RefreshCw size={13} className="animate-spin" /> : <MapPin size={13} />}
+                        {geoState === 'checking' ? 'Ubicándote…' : 'Validar mi ubicación'}
+                      </button>
+                    )}
+                    {geoState === 'error' && (
+                      <p className="text-[11px] text-servirest-danger mt-2">No pudimos leer tu ubicación. Da permiso e intenta de nuevo.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <SrLabel className="block mb-2">
+              {!addressUnlocked && <Lock size={12} className="inline mr-1 text-[rgba(42,40,38,0.4)]" />}
+              <MapPin size={12} className="inline mr-1" /> Dirección de entrega *
+            </SrLabel>
             <textarea
               value={deliveryAddress}
               onChange={(e) => setDeliveryAddress(e.target.value)}
-              placeholder="Calle, número, colonia, referencias…"
+              disabled={!addressUnlocked}
+              placeholder={addressUnlocked ? 'Calle, número, colonia, referencias…' : 'Valida tu ubicación arriba para escribir tu dirección'}
               rows={3}
-              className={`w-full px-4 py-3 rounded-sr-md bg-servirest-surface border-2 text-[13px] resize-none focus:outline-none transition-colors ${
-                zoneChecked ? (inZone ? 'border-servirest-success/50' : 'border-servirest-danger/50') : 'border-[rgba(42,40,38,0.1)] focus:border-servirest-terracota'
+              className={`w-full px-4 py-3 rounded-sr-md border-2 text-[13px] resize-none focus:outline-none transition-colors ${
+                !addressUnlocked ? 'bg-servirest-hueso-sunken/40 border-[rgba(42,40,38,0.08)] cursor-not-allowed text-[rgba(42,40,38,0.4)]'
+                : 'bg-servirest-surface border-[rgba(42,40,38,0.1)] focus:border-servirest-terracota'
               }`}
             />
-            {/* Feedback de zona en vivo */}
-            {zoneChecked && (
-              inZone ? (
-                <div className="flex items-center gap-2 mt-2 text-[12px] text-servirest-success font-medium">
-                  <CheckCircle2 size={14} /> ¡Sí llegamos a tu zona!
-                </div>
+            {/* Fallback: validación por texto si NO hay radio GPS */}
+            {zoneTextChecked && (
+              inZoneText ? (
+                <div className="flex items-center gap-2 mt-2 text-[12px] text-servirest-success font-medium"><CheckCircle2 size={14} /> ¡Sí llegamos a tu zona!</div>
               ) : (
-                <div className="flex items-center gap-2 mt-2 text-[12px] text-servirest-danger font-medium">
-                  <AlertCircle size={14} /> Esa dirección está fuera de nuestras zonas de entrega.
-                </div>
+                <div className="flex items-center gap-2 mt-2 text-[12px] text-servirest-danger font-medium"><AlertCircle size={14} /> Fuera de nuestras zonas de entrega.</div>
               )
-            )}
-            {settings.digitalDeliveryZones && (
-              <p className="text-[11px] text-[rgba(42,40,38,0.5)] mt-2">
-                Zonas cubiertas: <span className="italic">{settings.digitalDeliveryZones}</span>
-              </p>
             )}
           </div>
         )}
@@ -878,7 +988,8 @@ const CheckoutView: React.FC<any> = ({
         <div className="mb-6">
           <SrLabel className="block mb-3">Cómo pagas</SrLabel>
           <div className="space-y-2">
-            <PayOption method="cash" active={payMethod === 'cash'} onClick={() => setPayMethod('cash')} label={mode === 'delivery' ? 'Efectivo al recibir' : 'Efectivo al recoger'} desc="Pagas cuando te llegue o cuando recojas." icon={ChefHat} />
+            <PayOption method="cash" active={payMethod === 'cash'} onClick={() => setPayMethod('cash')} label={mode === 'delivery' ? 'Efectivo al recibir' : 'Efectivo al recoger'} desc="Pagas cuando te llegue o cuando recojas." icon={Banknote} />
+            <PayOption method="terminal" active={payMethod === 'terminal'} onClick={() => setPayMethod('terminal')} label={mode === 'delivery' ? 'Terminal al recibir' : 'Terminal al recoger'} desc="El repartidor/cajero lleva terminal para tu tarjeta." icon={CreditCard} />
             <PayOption method="stripe_qr" active={payMethod === 'stripe_qr'} onClick={() => setPayMethod('stripe_qr')} label="Pagar ahora con Stripe" desc="Tarjeta, Apple Pay o Link. Cobramos ya." icon={Lock} />
           </div>
         </div>
@@ -900,7 +1011,10 @@ const CheckoutView: React.FC<any> = ({
           className="w-full h-16 rounded-full bg-servirest-terracota text-servirest-hueso font-black italic uppercase tracking-[0.2em] text-[13px] shadow-sr-glow hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed transition-transform flex items-center justify-center gap-2"
         >
           {processing ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={18} />}
-          {processing ? 'Procesando…' : !inZone && mode === 'delivery' ? 'Fuera de zona de entrega' : payMethod === 'stripe_qr' ? `Pagar $${total.toFixed(2)} con Stripe` : `Confirmar pedido — $${total.toFixed(2)}`}
+          {processing ? 'Procesando…'
+            : (mode === 'delivery' && !deliveryOk) ? (hasGeoRadius ? 'Valida tu ubicación primero' : 'Fuera de zona de entrega')
+            : payMethod === 'stripe_qr' ? `Pagar $${total.toFixed(2)} con Stripe`
+            : `Confirmar pedido — $${total.toFixed(2)}`}
         </button>
       </div>
     </div>

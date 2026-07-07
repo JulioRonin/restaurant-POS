@@ -65,6 +65,12 @@ export interface BusinessSettings {
   digitalMinOrder?: number;
   digitalDeliveryFee?: number;
   digitalDeliveryZones?: string;
+  // Geolocalización para validar envíos por radio real:
+  // businessLat/businessLng → punto de referencia (el local).
+  // digitalDeliveryRadiusKm → radio de cobertura en km (default 2).
+  businessLat?: number;
+  businessLng?: number;
+  digitalDeliveryRadiusKm?: number;
   kioskPin?: string;
   kioskPayMethods?: {
     bluetooth?: boolean;
@@ -116,6 +122,7 @@ const DEFAULT_SETTINGS: BusinessSettings = {
   digitalMinOrder: 0,
   digitalDeliveryFee: 0,
   digitalDeliveryZones: '',
+  digitalDeliveryRadiusKm: 2,
   kioskPin: '0000',
   kioskPayMethods: { bluetooth: true, stripe_qr: false, cash: true, oxxo: false },
 };
