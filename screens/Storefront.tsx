@@ -306,9 +306,10 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
         payment_method: paymentMap[payMethod],
         payment_status: payMethod === 'cash' ? 'PENDING' : 'PAID',
         source: mode === 'delivery' ? 'TO_GO' : 'PICKUP',
-        // Metadata del cliente (customer_email, customer_name, etc.):
-        // se guardan en columna 'settings' JSONB de orders (ver migración).
-        settings: {
+        // Metadata del cliente en columna JSONB customer_metadata de orders
+        // (ver MIGRATION_DIGITAL_CHANNEL.sql). NO usamos 'settings' porque
+        // esa columna no existe en la tabla orders.
+        customer_metadata: {
           customerId: session.user.id,
           customerName,
           customerPhone,
@@ -648,9 +649,22 @@ const VariantModal: React.FC<any> = ({ item, selVariants, setSelVariants, selNot
           <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-servirest-midnight/80 text-servirest-hueso flex items-center justify-center"><X size={18} /></button>
         </div>
         <div className="p-6">
-          <SrKicker>{item.category}</SrKicker>
-          <h2 className="font-serif italic text-servirest-midnight text-3xl mt-2 mb-1 leading-tight">{item.name}</h2>
-          {item.description && <p className="text-[13px] text-[rgba(42,40,38,0.6)] mt-2 leading-relaxed">{item.description}</p>}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <SrKicker>{item.category}</SrKicker>
+              <h2 className="font-serif italic text-servirest-midnight text-3xl mt-2 mb-1 leading-tight">{item.name}</h2>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <SrMono className="text-[22px] font-extrabold text-servirest-terracota">${priceBase.toFixed(2)}</SrMono>
+              {item.gramaje && <div className="text-[10px] text-[rgba(42,40,38,0.5)] mt-0.5">{item.gramaje}</div>}
+            </div>
+          </div>
+          {item.description ? (
+            <p className="text-[14px] text-[rgba(42,40,38,0.65)] mt-3 leading-relaxed">{item.description}</p>
+          ) : (
+            <p className="text-[13px] text-[rgba(42,40,38,0.4)] mt-3 italic">Sin descripción todavía.</p>
+          )}
+          {item.variants && item.variants.length > 0 && (
           <div className="mt-6">
             <SrLabel className="block mb-1">{isSingle ? 'Elige UNA opción' : 'Elige tus variantes'}</SrLabel>
             <p className="text-[11px] text-[rgba(42,40,38,0.5)] mb-3">{isSingle ? 'Solo una variante por platillo.' : 'Puedes combinar varias.'}</p>
@@ -682,6 +696,7 @@ const VariantModal: React.FC<any> = ({ item, selVariants, setSelVariants, selNot
               })}
             </div>
           </div>
+          )}
           <div className="mt-5">
             <SrLabel className="block mb-2">Notas especiales (opcional)</SrLabel>
             <textarea value={selNotes} onChange={(e) => setSelNotes(e.target.value.slice(0, 120))} placeholder="Ej. sin cebolla…" rows={2} className="w-full px-4 py-3 rounded-sr-md bg-servirest-surface border border-[rgba(42,40,38,0.1)] text-[13px] resize-none focus:outline-none focus:border-servirest-terracota" />

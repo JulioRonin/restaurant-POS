@@ -104,14 +104,13 @@ export const KioskScreen: React.FC = () => {
   const meetsMinimum = subtotal >= (settings.digitalMinOrder ?? 0);
 
   // ── Handlers ──────────────────────────────────────────────────────
+  // Ahora TODOS los productos abren el modal de detalle (foto grande +
+  // descripción). Los que tienen variantes muestran las opciones; los que
+  // no, muestran solo la descripción + notas + botón agregar.
   const openProduct = (item: MenuItem) => {
-    if (item.variants && item.variants.length > 0) {
-      setVariantModal(item);
-      setSelVariants([]);
-      setSelNotes('');
-    } else {
-      addLine(item, [], '');
-    }
+    setVariantModal(item);
+    setSelVariants([]);
+    setSelNotes('');
   };
 
   const addLine = (item: MenuItem, variants: MenuItemVariant[], notes: string) => {
@@ -560,68 +559,84 @@ export const KioskScreen: React.FC = () => {
                 </button>
               </div>
               <div className="p-6">
-                <SrKicker>{variantModal.category}</SrKicker>
-                <h2 className="font-serif italic text-servirest-midnight text-3xl mt-2 mb-1 leading-tight">{variantModal.name}</h2>
-                {variantModal.description && (
-                  <p className="text-[13px] text-[rgba(42,40,38,0.6)] mt-2 leading-relaxed">{variantModal.description}</p>
-                )}
-
-                <div className="mt-6">
-                  <SrLabel className="block mb-1">
-                    {(variantModal.variantMode ?? 'single') === 'single' ? 'Elige UNA opción' : 'Elige tus variantes'}
-                  </SrLabel>
-                  <p className="text-[11px] text-[rgba(42,40,38,0.5)] mb-3">
-                    {(variantModal.variantMode ?? 'single') === 'single'
-                      ? 'Solo puedes seleccionar una variante para este platillo.'
-                      : 'Puedes combinar varias variantes.'}
-                  </p>
-                  <div className="space-y-2">
-                    {variantModal.variants?.map((v, i) => {
-                      const isSingle = (variantModal.variantMode ?? 'single') === 'single';
-                      const on = selVariants.some((sv) => sv.name === v.name);
-                      return (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => {
-                            if (isSingle) {
-                              // Radio: reemplaza la selección por esta variante.
-                              setSelVariants(on ? [] : [v]);
-                            } else {
-                              // Checkbox: toggle en la lista.
-                              setSelVariants((p) => (on ? p.filter((x) => x.name !== v.name) : [...p, v]));
-                            }
-                          }}
-                          className={`w-full flex justify-between items-center p-4 rounded-sr-md border-2 transition-colors ${
-                            on ? 'border-servirest-terracota bg-servirest-terracota/5' : 'border-[rgba(42,40,38,0.1)] bg-servirest-surface hover:border-servirest-terracota/40'
-                          }`}
-                        >
-                          <span className="flex items-center gap-3">
-                            {isSingle ? (
-                              // Radio circular
-                              <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                                on ? 'border-servirest-terracota' : 'border-[rgba(42,40,38,0.2)]'
-                              }`}>
-                                {on && <span className="w-3 h-3 rounded-full bg-servirest-terracota" />}
-                              </span>
-                            ) : (
-                              // Checkbox
-                              <span className={`w-6 h-6 rounded-md border-2 flex items-center justify-center ${
-                                on ? 'border-servirest-terracota bg-servirest-terracota' : 'border-[rgba(42,40,38,0.2)]'
-                              }`}>
-                                {on && <Check size={13} className="text-servirest-hueso" />}
-                              </span>
-                            )}
-                            <span className="font-serif italic text-[16px] text-servirest-midnight">{v.name}</span>
-                          </span>
-                          <SrMono className={`text-[13px] font-extrabold ${on ? 'text-servirest-terracota' : 'text-[rgba(42,40,38,0.5)]'}`}>
-                            {v.price ? `+$${v.price.toFixed(2)}` : 'Incluido'}
-                          </SrMono>
-                        </button>
-                      );
-                    })}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <SrKicker>{variantModal.category}</SrKicker>
+                    <h2 className="font-serif italic text-servirest-midnight text-3xl mt-2 mb-1 leading-tight">{variantModal.name}</h2>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <SrMono className="text-[22px] font-extrabold text-servirest-terracota">
+                      ${(variantModal.onlinePrice ?? variantModal.price).toFixed(2)}
+                    </SrMono>
+                    {variantModal.gramaje && (
+                      <div className="text-[10px] text-[rgba(42,40,38,0.5)] mt-0.5">{variantModal.gramaje}</div>
+                    )}
                   </div>
                 </div>
+
+                {variantModal.description ? (
+                  <p className="text-[14px] text-[rgba(42,40,38,0.65)] mt-3 leading-relaxed">{variantModal.description}</p>
+                ) : (
+                  <p className="text-[13px] text-[rgba(42,40,38,0.4)] mt-3 italic">
+                    Sin descripción todavía — el negocio puede agregarla desde Menú.
+                  </p>
+                )}
+
+                {/* Variantes: solo si el platillo las tiene */}
+                {variantModal.variants && variantModal.variants.length > 0 && (
+                  <div className="mt-6">
+                    <SrLabel className="block mb-1">
+                      {(variantModal.variantMode ?? 'single') === 'single' ? 'Elige UNA opción' : 'Elige tus variantes'}
+                    </SrLabel>
+                    <p className="text-[11px] text-[rgba(42,40,38,0.5)] mb-3">
+                      {(variantModal.variantMode ?? 'single') === 'single'
+                        ? 'Solo puedes seleccionar una variante para este platillo.'
+                        : 'Puedes combinar varias variantes.'}
+                    </p>
+                    <div className="space-y-2">
+                      {variantModal.variants.map((v, i) => {
+                        const isSingle = (variantModal.variantMode ?? 'single') === 'single';
+                        const on = selVariants.some((sv) => sv.name === v.name);
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => {
+                              if (isSingle) {
+                                setSelVariants(on ? [] : [v]);
+                              } else {
+                                setSelVariants((p) => (on ? p.filter((x) => x.name !== v.name) : [...p, v]));
+                              }
+                            }}
+                            className={`w-full flex justify-between items-center p-4 rounded-sr-md border-2 transition-colors ${
+                              on ? 'border-servirest-terracota bg-servirest-terracota/5' : 'border-[rgba(42,40,38,0.1)] bg-servirest-surface hover:border-servirest-terracota/40'
+                            }`}
+                          >
+                            <span className="flex items-center gap-3">
+                              {isSingle ? (
+                                <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                  on ? 'border-servirest-terracota' : 'border-[rgba(42,40,38,0.2)]'
+                                }`}>
+                                  {on && <span className="w-3 h-3 rounded-full bg-servirest-terracota" />}
+                                </span>
+                              ) : (
+                                <span className={`w-6 h-6 rounded-md border-2 flex items-center justify-center ${
+                                  on ? 'border-servirest-terracota bg-servirest-terracota' : 'border-[rgba(42,40,38,0.2)]'
+                                }`}>
+                                  {on && <Check size={13} className="text-servirest-hueso" />}
+                                </span>
+                              )}
+                              <span className="font-serif italic text-[16px] text-servirest-midnight">{v.name}</span>
+                            </span>
+                            <SrMono className={`text-[13px] font-extrabold ${on ? 'text-servirest-terracota' : 'text-[rgba(42,40,38,0.5)]'}`}>
+                              {v.price ? `+$${v.price.toFixed(2)}` : 'Incluido'}
+                            </SrMono>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-5">
                   <SrLabel className="block mb-2">Notas especiales (opcional)</SrLabel>

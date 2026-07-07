@@ -117,10 +117,19 @@ CREATE POLICY "menu_items_public_read"
   TO anon, authenticated
   USING (publish_online = true AND status = 'ACTIVE');
 
+-- La tabla `orders` no tenía una columna para guardar los metadatos del
+-- cliente del storefront (nombre, teléfono, dirección, customerId). La
+-- creamos como JSONB. Si ya existe, no pasa nada.
+ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS customer_metadata JSONB DEFAULT '{}'::jsonb;
+
+-- Índice para poder buscar rápido las órdenes de un cliente (historial).
+CREATE INDEX IF NOT EXISTS idx_orders_customer_id
+  ON orders(((customer_metadata->>'customerId')));
+
 -- INSERT de orders desde un cliente autenticado (customer role o cualquier user)
 -- La lógica de authorización cae en el frontend + auth check + validar que
--- business_id existe y publica online. El cliente NO puede modificar ni ver
--- órdenes de otros — otra policy debería restringir SELECT/UPDATE al dueño.
+-- business_id existe y publica online.
 DROP POLICY IF EXISTS "orders_public_insert" ON orders;
 CREATE POLICY "orders_public_insert"
   ON orders
@@ -129,7 +138,7 @@ CREATE POLICY "orders_public_insert"
   WITH CHECK (true);
 
 -- SELECT de sus propias órdenes (para historial del cliente en Sprint B).
--- El JSONB settings guarda customerId = auth.uid() cuando se creó.
+-- customer_metadata->>'customerId' = auth.uid() del cliente que la creó.
 DROP POLICY IF EXISTS "orders_customer_read_own" ON orders;
 CREATE POLICY "orders_customer_read_own"
   ON orders
@@ -139,6 +148,6 @@ CREATE POLICY "orders_customer_read_own"
     -- Miembros del negocio ven todas las órdenes de ese negocio
     business_id IN (SELECT business_id FROM profiles WHERE id = auth.uid())
     OR
-    -- El cliente ve sus propias órdenes por customerId en settings JSONB
-    (settings->>'customerId')::uuid = auth.uid()
+    -- El cliente ve sus propias órdenes por customerId en customer_metadata
+    (customer_metadata->>'customerId')::uuid = auth.uid()
   );
