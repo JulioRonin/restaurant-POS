@@ -109,22 +109,36 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
   const { settings } = useSettings();
 
   /**
-   * Module visibility — combines RBAC (employee role can access path),
-   * feature flag (super_admin enabled the feature for this business),
-   * AND business tier (the plan includes this module).
+   * Module visibility — 3 capas combinadas:
    *
-   * Esencial sees: Dashboard / POS / Mis mesas / Caja / Menú / Inventario
-   * (simple) / Personal / Ajustes / Membresía.
+   *   1. RBAC (canAccess): el rol del empleado puede entrar a la ruta.
+   *   2. Feature flag (SuperAdmin): apagado = oculto SIEMPRE (control global
+   *      del equipo comercial ServiRest).
+   *   3. Business tier: el plan comercial cubre este módulo por default.
    *
-   * Profesional adds: Cocina (KDS) / Bar / Hostess / Orden remota /
-   * Facturación CFDI / Inventario profesional.
+   * ── Override de tier ──────────────────────────────────────────────────
+   * Cuando el SuperAdmin activa un feature explícitamente para un cliente,
+   * ESE feature aparece aunque el plan del cliente no lo cubra por default.
+   * Esto permite vender módulos "Prestige" (Canal digital, Reservas online,
+   * etc.) como add-on a clientes Esencial/Profesional sin obligar al salto
+   * de tier completo.
    *
-   * Prestige adds: Reservaciones / Carta digital pública / Wine list.
+   * Reglas efectivas:
+   *   • Feature con toggle OFF → oculto.
+   *   • Feature con toggle ON  → visible, no importa el tier.
+   *   • Sin feature flag       → visible si el tier alcanza el mínimo.
    */
   const showModule = (path: string, feature: string | null, minTier: 'esencial' | 'profesional' | 'prestige' = 'esencial') => {
     if (!canAccess(activeEmployee, path)) return false;
-    if (!meetsTier(minTier)) return false;
+
+    // El feature flag es control fuerte del SuperAdmin. OFF = oculto siempre.
     if (feature && !isFeatureEnabled(feature)) return false;
+
+    // Si el feature está ON (o no aplica), el gate de tier solo se usa
+    // cuando NO hay feature flag — el toggle explícito del SuperAdmin
+    // sobreescribe el requisito de tier (add-on manual).
+    if (!feature && !meetsTier(minTier)) return false;
+
     return true;
   };
 
