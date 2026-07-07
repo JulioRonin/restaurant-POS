@@ -36,6 +36,7 @@ import { BarScreen } from './screens/Bar';
 import { MyTablesScreen } from './screens/MyTables';
 import { DigitalChannelScreen } from './screens/DigitalChannel';
 import { KioskScreen } from './screens/Kiosk';
+import { StorefrontRoute } from './screens/Storefront';
 import { canAccess, getDefaultRoute } from './services/rbac';
 import { Activity } from 'lucide-react';
 
@@ -126,7 +127,18 @@ const AppContent: React.FC = () => {
   }, [settings.themeId]);
 
   if (isAuthenticating || showSplash) {
+    // Ruta pública del storefront — no requiere splash ni auth del negocio.
+    // El cliente entra a #/o/{businessId} sin haberse loggeado nunca.
+    if (window.location.hash.startsWith('#/o/')) {
+      return <StorefrontRoute />;
+    }
     return <SplashScreen />;
+  }
+
+  // Bypass total del auth: si estamos en /o/{id}, servir directo el
+  // storefront público, sin requerir sesión de operador.
+  if (window.location.hash.startsWith('#/o/')) {
+    return <StorefrontRoute />;
   }
 
   // 1. Not logged into the system (SaaS account)

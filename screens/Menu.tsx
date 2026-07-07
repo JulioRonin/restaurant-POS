@@ -38,6 +38,7 @@ export const MenuScreen: React.FC = () => {
 
   // Variants state
   const [variants, setVariants] = useState<{ name: string; price: string }[]>([]);
+  const [variantMode, setVariantMode] = useState<'single' | 'multi'>('single');
 
   const addVariant = () => {
     if (variants.length < 10) setVariants((prev) => [...prev, { name: '', price: '' }]);
@@ -92,6 +93,7 @@ export const MenuScreen: React.FC = () => {
     setIsAddingNewCategory(false);
     setNewCategoryName('');
     setVariants([]);
+    setVariantMode('single');
     setIsAddModalOpen(true);
   };
 
@@ -103,6 +105,7 @@ export const MenuScreen: React.FC = () => {
     setIsAddingNewCategory(false);
     setNewCategoryName('');
     setVariants(item.variants?.map((v) => ({ name: v.name, price: v.price?.toString() || '' })) || []);
+    setVariantMode(item.variantMode || 'single');
     setIsAddModalOpen(true);
   };
 
@@ -139,6 +142,7 @@ export const MenuScreen: React.FC = () => {
         name: v.name.trim(),
         price: v.price ? parseFloat(v.price) : undefined,
       })),
+      variantMode,
     };
 
     if (editingItem) {
@@ -521,6 +525,39 @@ export const MenuScreen: React.FC = () => {
                       </SrButton>
                     )}
                   </div>
+
+                  {/* Modo de selección */}
+                  {variants.length > 0 && (
+                    <div className="mb-4 p-3 rounded-sr-sm bg-servirest-hueso-sunken/40 border border-[rgba(42,40,38,0.08)]">
+                      <SrLabel className="block mb-2 text-[10px]">Cómo elige el cliente</SrLabel>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setVariantMode('single')}
+                          className={`p-3 rounded-sr-sm text-left transition-all ${
+                            variantMode === 'single'
+                              ? 'bg-servirest-terracota text-servirest-hueso shadow-sr-glow'
+                              : 'bg-servirest-surface text-[rgba(42,40,38,0.6)] border border-[rgba(42,40,38,0.12)]'
+                          }`}
+                        >
+                          <div className="text-[11px] font-black uppercase tracking-[0.12em]">Elige UNA</div>
+                          <div className="text-[10px] mt-1 opacity-80">Ej. tamaños, sabores</div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setVariantMode('multi')}
+                          className={`p-3 rounded-sr-sm text-left transition-all ${
+                            variantMode === 'multi'
+                              ? 'bg-servirest-terracota text-servirest-hueso shadow-sr-glow'
+                              : 'bg-servirest-surface text-[rgba(42,40,38,0.6)] border border-[rgba(42,40,38,0.12)]'
+                          }`}
+                        >
+                          <div className="text-[11px] font-black uppercase tracking-[0.12em]">Puede combinar</div>
+                          <div className="text-[10px] mt-1 opacity-80">Ej. toppings extra</div>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {variants.length === 0 ? (
                     <p className="text-[11px] text-[rgba(42,40,38,0.4)] font-medium italic text-center py-3">
                       Sin variantes — añade hasta 10 (ej. tamaños, ingredientes opcionales).
