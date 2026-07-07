@@ -121,6 +121,20 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
           .single();
         if (bErr) throw bErr;
 
+        // La config del canal digital (digitalMode, welcome, zonas, logoUrl,
+        // kioskPayMethods, etc.) vive en la tabla business_settings, NO en
+        // businesses.settings. La leemos aparte y la fusionamos.
+        let digitalConfig: any = {};
+        const { data: sData } = await supabase
+          .from('business_settings')
+          .select('value')
+          .eq('business_id', businessId)
+          .eq('key', 'config')
+          .maybeSingle();
+        if (sData?.value && typeof sData.value === 'object') {
+          digitalConfig = sData.value;
+        }
+
         const { data: mData, error: mErr } = await supabase
           .from('menu_items')
           .select('*')
@@ -130,7 +144,9 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
         if (mErr) throw mErr;
 
         if (!alive) return;
-        setBusiness(bData);
+        // Merge: businesses.settings (logo legacy) + business_settings.value
+        // (config del canal digital). digitalConfig gana.
+        setBusiness({ ...bData, settings: { ...(bData?.settings || {}), ...digitalConfig } });
         setItems((mData || []).map((row: any) => ({
           id: row.id,
           name: row.name,
@@ -263,7 +279,8 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
 
   // ── Checkout submit ──────────────────────────────────────────────
   const handleConfirmOrder = async () => {
-    if (!session) { setView('auth'); return; }
+    // Guest permitido: no exigimos session. Si el cliente quiere cuenta,
+    // usa el botón de login; si no, ordena como invitado.
     if (mode === 'delivery' && !deliveryAddress.trim()) {
       alert('Necesitamos tu dirección para el envío.');
       return;
@@ -288,46 +305,71 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
         cash: PaymentMethod.CASH,
       };
 
-      const orderRecord = {
+      // Número consecutivo diario (para "Orden #NNNN" y para que Cocina lo
+      // ordene por llegada). Contamos las órdenes de hoy de este negocio.
+      const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+      const { count: todayCount } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('business_id', businessId)
+        .gte('created_at', startOfDay.toISOString());
+      const dailyNumber = (todayCount || 0);
+
+      // ── ORDEN (sin columna items — los items van a order_items) ──────
+      // Este shape replica lo que SyncService empuja desde el POS/kiosko,
+      // así el módulo de Cocina del restaurante lo lee igual al hacer pull.
+      const orderRecord: any = {
         id: orderId,
         business_id: businessId,
-        // table_id es UUID en Supabase; los pedidos del storefront no tienen
-        // mesa física, así que va null. El origen se guarda en source +
-        // customer_metadata.mode.
-        table_id: null,
-        items: cart.map((l) => ({
-          id: l.itemId,
-          name: l.name,
-          price: l.basePrice,
-          quantity: l.quantity,
-          notes: l.notes,
-          selectedVariants: l.variants,
-        })),
+        table_id: null, // pedido remoto, sin mesa física
         status: 'PENDING',
         total,
-        waiter_name: 'Storefront público',
+        daily_number: dailyNumber,
+        waiter_name: 'Canal digital',
         payment_method: paymentMap[payMethod],
         payment_status: payMethod === 'cash' ? 'PENDING' : 'PAID',
         source: mode === 'delivery' ? 'TO_GO' : 'PICKUP',
-        // Metadata del cliente en columna JSONB customer_metadata de orders
-        // (ver MIGRATION_DIGITAL_CHANNEL.sql). NO usamos 'settings' porque
-        // esa columna no existe en la tabla orders.
+        is_kitchen_ready: false,
+        is_bar_ready: false,
         customer_metadata: {
-          customerId: session.user.id,
+          customerId: session?.user?.id || null,
+          isGuest: !session,
           customerName,
           customerPhone,
-          customerEmail: session.user.email,
+          customerEmail: session?.user?.email || null,
           deliveryAddress: mode === 'delivery' ? deliveryAddress : null,
           orderNotes,
           mode,
         },
-        timestamp: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
+      // ── ORDER_ITEMS (una fila por línea del carrito) ─────────────────
+      const itemRows = cart.map((l) => {
+        const variantNames = l.variants.map((v) => v.name).join(', ');
+        const combinedNotes = [l.notes, variantNames && `Variantes: ${variantNames}`]
+          .filter(Boolean).join(' | ');
+        return {
+          id: crypto.randomUUID(),
+          order_id: orderId,
+          menu_item_id: l.itemId,
+          quantity: l.quantity,
+          price_at_time: l.basePrice + l.variants.reduce((s, v) => s + (v.price || 0), 0),
+          notes: combinedNotes,
+          business_id: businessId,
+          updated_at: new Date().toISOString(),
+        };
+      });
+
+      // Insertar orden + items. Si order_items falla (schema distinto),
+      // la orden ya existe y Cocina la ve; los items se re-piden si es
+      // necesario. No bloqueamos el flujo del cliente por eso.
+      const { error: oErr } = await supabase.from('orders').insert(orderRecord);
+      if (oErr) throw oErr;
+      const { error: iErr } = await supabase.from('order_items').insert(itemRows);
+      if (iErr) console.warn('[Storefront] order_items insert warn:', iErr.message);
+
       if (payMethod === 'stripe_qr') {
-        // Registra la orden PENDING primero, redirige a Stripe. El success
-        // regresa a #/o/{id}?paid=<orderId> — el useEffect al inicio detecta.
-        await supabase.from('orders').insert(orderRecord);
         const res = await fetch('/api/create-checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -347,10 +389,9 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
         return;
       }
 
-      // Efectivo: la orden entra directo a Cocina como PENDING de cobro
-      await supabase.from('orders').insert(orderRecord);
+      // Efectivo: la orden ya está en Cocina como PENDING de cobro
       setConfirmedOrderId(orderId);
-      setConfirmedOrderNum(orderId.slice(0, 4).toUpperCase());
+      setConfirmedOrderNum(String(dailyNumber + 1).padStart(4, '0'));
       setView('success');
       setCart([]);
     } catch (err: any) {
@@ -427,6 +468,8 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
     orderNotes={orderNotes}
     setOrderNotes={setOrderNotes}
     processing={processing}
+    zonesList={zonesList}
+    isAddressInZone={isAddressInZone}
     onBack={() => setView('menu')}
     onConfirm={handleConfirmOrder}
     onLoginRequired={() => setView('auth')}
@@ -437,7 +480,14 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
     <div className="h-screen w-screen bg-servirest-hueso overflow-hidden flex flex-col antialiased">
       <header className="flex-shrink-0 px-6 md:px-12 pt-8 pb-6 border-b border-[rgba(42,40,38,0.08)] bg-servirest-surface">
         <div className="max-w-6xl mx-auto">
-          <SrKicker>Ordena en línea · {business.name}</SrKicker>
+          <div className="flex items-center gap-4 mb-4">
+            {settings.logoUrl ? (
+              <img src={settings.logoUrl} alt={business.name} className="w-16 h-16 rounded-sr-md object-contain bg-servirest-hueso border border-[rgba(42,40,38,0.08)] p-1.5" />
+            ) : (
+              <div className="w-16 h-16 rounded-sr-md bg-servirest-midnight text-servirest-mostaza flex items-center justify-center font-serif italic text-3xl">{business.name?.[0] || 'R'}</div>
+            )}
+            <SrKicker>Ordena en línea · {business.name}</SrKicker>
+          </div>
           <h1 className="font-serif italic text-servirest-midnight text-4xl md:text-6xl leading-none mt-3 tracking-[-0.02em]">
             {settings.digitalWelcome || `Bienvenido a ${business.name}`}
           </h1>
@@ -721,9 +771,18 @@ const CheckoutView: React.FC<any> = ({
   business, settings, session, mode, cart, subtotal, iva, deliveryFee, total,
   payMethod, setPayMethod, customerName, setCustomerName, customerPhone, setCustomerPhone,
   deliveryAddress, setDeliveryAddress, orderNotes, setOrderNotes, processing,
-  onBack, onConfirm, onLoginRequired,
+  zonesList, isAddressInZone, onBack, onConfirm, onLoginRequired,
 }) => {
-  const availableMethods: PayMethod[] = ['cash', 'stripe_qr']; // Terminal en local es solo kiosko
+  // Validación de zona EN VIVO (antes de que pague). Verde si dentro,
+  // rojo si fuera. El botón de confirmar se bloquea si está fuera.
+  const addrTyped = deliveryAddress.trim().length > 3;
+  const inZone = mode !== 'delivery' || !zonesList.length || (addrTyped && isAddressInZone(deliveryAddress));
+  const zoneChecked = mode === 'delivery' && zonesList.length > 0 && addrTyped;
+
+  const contactOk = customerName.trim() && customerPhone.trim();
+  const addressOk = mode !== 'delivery' || (deliveryAddress.trim() && inZone);
+  const canConfirm = contactOk && addressOk && cart.length > 0 && !processing;
+
   return (
     <div className="h-screen w-screen bg-servirest-hueso overflow-y-auto antialiased">
       <div className="max-w-2xl mx-auto px-6 py-10">
@@ -731,54 +790,77 @@ const CheckoutView: React.FC<any> = ({
           <ArrowLeft size={14} /> Seguir viendo el menú
         </button>
 
-        <SrKicker>Confirmar pedido · {business.name}</SrKicker>
+        {/* Branding del restaurante */}
+        <div className="flex items-center gap-3 mb-4">
+          {settings.logoUrl ? (
+            <img src={settings.logoUrl} alt={business.name} className="w-12 h-12 rounded-sr-md object-contain bg-servirest-surface border border-[rgba(42,40,38,0.08)] p-1" />
+          ) : (
+            <div className="w-12 h-12 rounded-sr-md bg-servirest-midnight text-servirest-mostaza flex items-center justify-center font-serif italic text-xl">{business.name?.[0] || 'R'}</div>
+          )}
+          <div>
+            <SrKicker>{business.name}</SrKicker>
+            <div className="text-[10px] text-[rgba(42,40,38,0.4)]">{mode === 'delivery' ? 'Envío a domicilio' : 'Recoger en local'}</div>
+          </div>
+        </div>
         <h1 className="font-serif italic text-servirest-midnight text-4xl md:text-5xl leading-none mt-3 mb-8">
           Últimos detalles
         </h1>
 
-        {/* Auth chip */}
-        {!session ? (
-          <div className="p-5 rounded-sr-md bg-mostaza-500/10 border border-servirest-mostaza/40 mb-6 flex items-center gap-4 flex-wrap">
-            <AlertCircle size={22} className="text-servirest-mostaza flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <div className="font-serif italic text-servirest-midnight text-[16px]">Inicia sesión para confirmar</div>
-              <p className="text-[12px] text-[rgba(42,40,38,0.6)] mt-1">
-                Necesitamos guardar tu pedido asociado a tu cuenta.
-              </p>
-            </div>
-            <button onClick={onLoginRequired} className="px-5 h-10 rounded-full bg-servirest-terracota text-servirest-hueso text-[11px] font-black uppercase tracking-[0.15em]">
-              <LogIn size={13} className="inline mr-2" /> Iniciar sesión
-            </button>
-          </div>
-        ) : (
+        {/* Cuenta: invitado por default, login opcional */}
+        {session ? (
           <div className="p-4 rounded-sr-md bg-servirest-success/10 border border-servirest-success/30 mb-6 flex items-center gap-3">
             <UserIcon size={18} className="text-servirest-success" />
             <div className="text-[13px] text-servirest-midnight">Ordenando como <span className="font-bold">{session.user.email}</span></div>
+          </div>
+        ) : (
+          <div className="p-4 rounded-sr-md bg-servirest-hueso-sunken/50 border border-[rgba(42,40,38,0.08)] mb-6 flex items-center gap-3 flex-wrap">
+            <UserIcon size={16} className="text-[rgba(42,40,38,0.5)]" />
+            <div className="flex-1 min-w-0 text-[12px] text-[rgba(42,40,38,0.6)]">
+              Ordenando como <span className="font-bold text-servirest-midnight">invitado</span>. ¿Quieres guardar tu historial?
+            </div>
+            <button onClick={onLoginRequired} className="px-4 h-9 rounded-full border border-servirest-terracota/40 text-servirest-terracota text-[10px] font-black uppercase tracking-[0.15em] hover:bg-servirest-terracota/5">
+              <LogIn size={12} className="inline mr-1.5" /> Crear cuenta
+            </button>
           </div>
         )}
 
         {/* Datos del cliente */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
-            <SrLabel className="block mb-2">Nombre</SrLabel>
+            <SrLabel className="block mb-2">Nombre *</SrLabel>
             <SrInput value={customerName} onChange={(e: any) => setCustomerName(e.target.value)} placeholder="Cómo te llamas" />
           </div>
           <div>
-            <SrLabel className="block mb-2">Teléfono</SrLabel>
+            <SrLabel className="block mb-2">Teléfono *</SrLabel>
             <SrInput value={customerPhone} onChange={(e: any) => setCustomerPhone(e.target.value)} placeholder="10 dígitos" />
           </div>
         </div>
 
+        {/* Dirección — SOLO en delivery, con validación de zona en vivo */}
         {mode === 'delivery' && (
           <div className="mb-6">
-            <SrLabel className="block mb-2"><MapPin size={12} className="inline mr-1" /> Dirección de entrega</SrLabel>
+            <SrLabel className="block mb-2"><MapPin size={12} className="inline mr-1" /> Dirección de entrega *</SrLabel>
             <textarea
               value={deliveryAddress}
               onChange={(e) => setDeliveryAddress(e.target.value)}
               placeholder="Calle, número, colonia, referencias…"
               rows={3}
-              className="w-full px-4 py-3 rounded-sr-md bg-servirest-surface border border-[rgba(42,40,38,0.1)] text-[13px] resize-none focus:outline-none focus:border-servirest-terracota"
+              className={`w-full px-4 py-3 rounded-sr-md bg-servirest-surface border-2 text-[13px] resize-none focus:outline-none transition-colors ${
+                zoneChecked ? (inZone ? 'border-servirest-success/50' : 'border-servirest-danger/50') : 'border-[rgba(42,40,38,0.1)] focus:border-servirest-terracota'
+              }`}
             />
+            {/* Feedback de zona en vivo */}
+            {zoneChecked && (
+              inZone ? (
+                <div className="flex items-center gap-2 mt-2 text-[12px] text-servirest-success font-medium">
+                  <CheckCircle2 size={14} /> ¡Sí llegamos a tu zona!
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 mt-2 text-[12px] text-servirest-danger font-medium">
+                  <AlertCircle size={14} /> Esa dirección está fuera de nuestras zonas de entrega.
+                </div>
+              )
+            )}
             {settings.digitalDeliveryZones && (
               <p className="text-[11px] text-[rgba(42,40,38,0.5)] mt-2">
                 Zonas cubiertas: <span className="italic">{settings.digitalDeliveryZones}</span>
@@ -796,7 +878,7 @@ const CheckoutView: React.FC<any> = ({
         <div className="mb-6">
           <SrLabel className="block mb-3">Cómo pagas</SrLabel>
           <div className="space-y-2">
-            <PayOption method="cash" active={payMethod === 'cash'} onClick={() => setPayMethod('cash')} label="Efectivo al recibir/recoger" desc="Pagas cuando te llegue o cuando recojas." icon={ChefHat} />
+            <PayOption method="cash" active={payMethod === 'cash'} onClick={() => setPayMethod('cash')} label={mode === 'delivery' ? 'Efectivo al recibir' : 'Efectivo al recoger'} desc="Pagas cuando te llegue o cuando recojas." icon={ChefHat} />
             <PayOption method="stripe_qr" active={payMethod === 'stripe_qr'} onClick={() => setPayMethod('stripe_qr')} label="Pagar ahora con Stripe" desc="Tarjeta, Apple Pay o Link. Cobramos ya." icon={Lock} />
           </div>
         </div>
@@ -813,12 +895,12 @@ const CheckoutView: React.FC<any> = ({
         </div>
 
         <button
-          disabled={!session || processing || cart.length === 0}
+          disabled={!canConfirm}
           onClick={onConfirm}
           className="w-full h-16 rounded-full bg-servirest-terracota text-servirest-hueso font-black italic uppercase tracking-[0.2em] text-[13px] shadow-sr-glow hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed transition-transform flex items-center justify-center gap-2"
         >
           {processing ? <RefreshCw size={16} className="animate-spin" /> : <CheckCircle2 size={18} />}
-          {processing ? 'Procesando…' : payMethod === 'stripe_qr' ? `Pagar $${total.toFixed(2)} con Stripe` : `Confirmar pedido — $${total.toFixed(2)}`}
+          {processing ? 'Procesando…' : !inZone && mode === 'delivery' ? 'Fuera de zona de entrega' : payMethod === 'stripe_qr' ? `Pagar $${total.toFixed(2)} con Stripe` : `Confirmar pedido — $${total.toFixed(2)}`}
         </button>
       </div>
     </div>
@@ -880,30 +962,94 @@ const AuthView: React.FC<any> = ({ mode, setMode, email, setEmail, password, set
 );
 
 // ─────────────────────────────────────────────────────────────────────────
-// SuccessView
+// SuccessView — pantalla de progreso con polling en vivo del estatus
 // ─────────────────────────────────────────────────────────────────────────
-const SuccessView: React.FC<any> = ({ orderNum, mode, onOrderMore, onNewOrder }) => (
-  <div className="h-screen w-screen bg-servirest-midnight overflow-hidden flex flex-col items-center justify-center antialiased relative">
-    <div className="max-w-2xl w-full px-8 text-center">
-      <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 18 }} className="w-28 h-28 rounded-full bg-servirest-terracota text-servirest-hueso mx-auto flex items-center justify-center shadow-sr-glow mb-6">
-        <CheckCircle2 size={56} strokeWidth={2.5} />
-      </motion.div>
-      <SrKicker className="!text-servirest-mostaza">Pedido recibido</SrKicker>
-      <h1 className="font-serif italic text-servirest-hueso text-6xl leading-none mt-3 mb-2">Orden #{orderNum}</h1>
-      <p className="text-[15px] text-servirest-hueso/60 mb-10">
-        Nuestro equipo ya la vio. Te contactaremos en minutos para {mode === 'delivery' ? 'confirmar la entrega' : 'avisarte que puedes venir a recoger'}.
-      </p>
-      <div className="flex gap-3 flex-wrap justify-center">
-        <button onClick={onOrderMore} className="px-8 h-14 rounded-full bg-servirest-hueso text-servirest-midnight font-black italic uppercase tracking-[0.2em] text-[12px] hover:scale-105 transition-transform">
-          Ordenar algo más
-        </button>
-        <button onClick={onNewOrder} className="px-8 h-14 rounded-full border-2 border-servirest-hueso/30 text-servirest-hueso font-black italic uppercase tracking-[0.2em] text-[12px] hover:border-servirest-mostaza/60">
-          Nueva orden
-        </button>
+const STOREFRONT_STEPS: { keys: string[]; label: string; icon: React.ElementType }[] = [
+  { keys: ['PENDING'],                 label: 'Recibida',       icon: PackageCheck },
+  { keys: ['COOKING'],                 label: 'En preparación', icon: ChefHat },
+  { keys: ['READY'],                   label: 'Lista',          icon: CheckCircle2 },
+  { keys: ['SERVED', 'COMPLETED'],     label: mode => mode === 'delivery' ? 'En camino' : 'Entregada', icon: Truck },
+];
+
+const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, onOrderMore, onNewOrder }) => {
+  const [status, setStatus] = useState<string>('PENDING');
+  const [pollError, setPollError] = useState(false);
+
+  // Polling del estatus cada 12s (dentro de la ventana de cache).
+  useEffect(() => {
+    if (!orderId) return;
+    let alive = true;
+    const poll = async () => {
+      const supabase = getSupabase();
+      if (!supabase) return;
+      // RPC seguro: devuelve solo el status del pedido por id (ver migración).
+      const { data, error } = await supabase.rpc('get_order_status', { p_order_id: orderId });
+      if (!alive) return;
+      if (error) { setPollError(true); return; }
+      if (data) setStatus(String(data));
+    };
+    poll();
+    const iv = setInterval(poll, 12000);
+    return () => { alive = false; clearInterval(iv); };
+  }, [orderId]);
+
+  const activeIdx = STOREFRONT_STEPS.findIndex((s) => s.keys.includes(status));
+  const currentIdx = activeIdx === -1 ? 0 : activeIdx;
+  const isDone = status === 'SERVED' || status === 'COMPLETED';
+
+  return (
+    <div className="h-screen w-screen bg-servirest-midnight overflow-y-auto flex flex-col items-center justify-center antialiased relative py-10">
+      <div className="max-w-2xl w-full px-8 text-center">
+        <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 18 }} className="w-28 h-28 rounded-full bg-servirest-terracota text-servirest-hueso mx-auto flex items-center justify-center shadow-sr-glow mb-6">
+          {isDone ? <Truck size={52} strokeWidth={2.2} /> : <CheckCircle2 size={56} strokeWidth={2.5} />}
+        </motion.div>
+        <SrKicker className="!text-servirest-mostaza">{isDone ? '¡Pedido en camino!' : 'Pedido recibido'}</SrKicker>
+        <h1 className="font-serif italic text-servirest-hueso text-6xl leading-none mt-3 mb-2">Orden #{orderNum}</h1>
+        <p className="text-[15px] text-servirest-hueso/60 mb-10">
+          {isDone
+            ? (mode === 'delivery' ? 'Tu pedido ya salió. Llega en unos minutos.' : 'Tu pedido está listo para recoger.')
+            : 'Sigue el estatus aquí — se actualiza solo mientras lo preparamos.'}
+        </p>
+
+        {/* Progress ladder en vivo */}
+        <div className="grid grid-cols-4 gap-2 mb-10">
+          {STOREFRONT_STEPS.map((step, i) => {
+            const done = i <= currentIdx;
+            const current = i === currentIdx && !isDone;
+            const label = typeof step.label === 'function' ? step.label(mode) : step.label;
+            return (
+              <div key={i} className="flex flex-col items-center">
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
+                  done ? 'bg-servirest-terracota text-servirest-hueso shadow-sr-glow' : 'bg-servirest-hueso/5 text-servirest-hueso/30 border border-servirest-hueso/10'
+                } ${current ? 'animate-pulse' : ''}`}>
+                  <step.icon size={22} strokeWidth={2.2} />
+                </div>
+                <span className={`mt-3 text-[10px] font-black uppercase tracking-[0.12em] ${done ? 'text-servirest-mostaza' : 'text-servirest-hueso/40'}`}>
+                  {label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {pollError && (
+          <p className="text-[11px] text-servirest-hueso/40 mb-6 italic">
+            No pudimos leer el estatus en vivo, pero tu pedido sí llegó al negocio.
+          </p>
+        )}
+
+        <div className="flex gap-3 flex-wrap justify-center">
+          <button onClick={onOrderMore} className="px-8 h-14 rounded-full bg-servirest-hueso text-servirest-midnight font-black italic uppercase tracking-[0.2em] text-[12px] hover:scale-105 transition-transform">
+            Ordenar algo más
+          </button>
+          <button onClick={onNewOrder} className="px-8 h-14 rounded-full border-2 border-servirest-hueso/30 text-servirest-hueso font-black italic uppercase tracking-[0.2em] text-[12px] hover:border-servirest-mostaza/60">
+            Nueva orden
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ─────────────────────────────────────────────────────────────────────────
 // BadUrlScreen

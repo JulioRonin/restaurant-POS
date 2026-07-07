@@ -117,6 +117,16 @@ CREATE POLICY "menu_items_public_read"
   TO anon, authenticated
   USING (publish_online = true AND status = 'ACTIVE');
 
+-- SELECT público de business_settings (config del canal digital: horario,
+-- modo, zonas, mensaje de bienvenida, logo). Solo lectura.
+ALTER TABLE business_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "business_settings_public_read" ON business_settings;
+CREATE POLICY "business_settings_public_read"
+  ON business_settings
+  FOR SELECT
+  TO anon, authenticated
+  USING (true);
+
 -- La tabla `orders` no tenía una columna para guardar los metadatos del
 -- cliente del storefront (nombre, teléfono, dirección, customerId). La
 -- creamos como JSONB. Si ya existe, no pasa nada.
@@ -127,14 +137,17 @@ ALTER TABLE orders
 CREATE INDEX IF NOT EXISTS idx_orders_customer_id
   ON orders(((customer_metadata->>'customerId')));
 
--- INSERT de orders desde un cliente autenticado (customer role o cualquier user)
--- La lógica de authorización cae en el frontend + auth check + validar que
--- business_id existe y publica online.
+-- INSERT de orders desde el storefront público. Permitimos anon +
+-- authenticated para soportar checkout de INVITADO (cliente sin cuenta).
+-- El pedido queda ligado al negocio por business_id; el frontend valida
+-- zona/datos antes de insertar. (Como cualquier formulario de pedido web,
+-- un actor malicioso podría spamear órdenes — mitigable con rate-limit /
+-- captcha en Fase 2B si hace falta.)
 DROP POLICY IF EXISTS "orders_public_insert" ON orders;
 CREATE POLICY "orders_public_insert"
   ON orders
   FOR INSERT
-  TO authenticated
+  TO anon, authenticated
   WITH CHECK (true);
 
 -- SELECT de sus propias órdenes (para historial del cliente en Sprint B).
@@ -151,3 +164,27 @@ CREATE POLICY "orders_customer_read_own"
     -- El cliente ve sus propias órdenes por customerId en customer_metadata
     (customer_metadata->>'customerId')::uuid = auth.uid()
   );
+
+-- INSERT de order_items desde el storefront público (invitado o cliente).
+DROP POLICY IF EXISTS "order_items_public_insert" ON order_items;
+CREATE POLICY "order_items_public_insert"
+  ON order_items
+  FOR INSERT
+  TO anon, authenticated
+  WITH CHECK (true);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- RPC seguro para que el cliente (incluso invitado / anon) consulte SOLO el
+-- estatus de SU pedido por id, sin exponer datos de otros pedidos (PII).
+-- El UUID del pedido actúa como token — quien lo tiene puede ver su estatus.
+-- ─────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.get_order_status(p_order_id uuid)
+RETURNS text
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT status FROM orders WHERE id = p_order_id;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_order_status(uuid) TO anon, authenticated;
