@@ -31,7 +31,8 @@ import {
   Zap,
   ShieldCheck,
   RefreshCw,
-  Globe2
+  Globe2,
+  Tv
 } from 'lucide-react';
 
 const PrinterStatus = () => {
@@ -214,6 +215,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
         {showModule('/remote-order', 'remote_order', 'profesional') && <NavItem to="/remote-order" icon={Smartphone}   label="Orden remota"  isExpanded={isExpanded} />}
         {showModule('/invoice',      'cfdi',         'profesional') && <NavItem to="/invoice"      icon={FileText}     label="Facturación"   isExpanded={isExpanded} />}
         {showModule('/digital-channel', 'online_ordering', 'prestige') && <NavItem to="/digital-channel" icon={Globe2}  label="Canal digital" isExpanded={isExpanded} />}
+        {showModule('/kiosk',           'kiosk_mode',       'prestige') && <NavItem to="/kiosk"           icon={Tv}      label="Vista Kiosko"  isExpanded={isExpanded} />}
 
         {/* ─── Administración (todos los tiers) ──────────────────────── */}
         <div className={`h-px my-4 ${isExpanded ? 'w-full' : 'w-8 mx-auto'}`} style={{ background: 'rgba(250,248,244,0.10)' }} />
