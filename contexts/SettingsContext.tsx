@@ -57,6 +57,10 @@ export interface BusinessSettings {
   digitalMode?: 'delivery' | 'pickup' | 'dine-in' | 'reservation';
   digitalHoursOpen?: string;
   digitalHoursClose?: string;
+  digitalServiceDays?: {
+    mon?: boolean; tue?: boolean; wed?: boolean; thu?: boolean;
+    fri?: boolean; sat?: boolean; sun?: boolean;
+  };
   digitalWelcome?: string;
   digitalMinOrder?: number;
   digitalDeliveryFee?: number;
@@ -107,6 +111,7 @@ const DEFAULT_SETTINGS: BusinessSettings = {
   digitalMode: 'delivery',
   digitalHoursOpen: '10:00',
   digitalHoursClose: '22:00',
+  digitalServiceDays: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true },
   digitalWelcome: 'Bienvenido. Toca para ordenar.',
   digitalMinOrder: 0,
   digitalDeliveryFee: 0,

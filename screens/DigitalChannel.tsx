@@ -300,6 +300,39 @@ export const DigitalChannelScreen: React.FC = () => {
                   </div>
                 </div>
 
+                {/* ── Días de servicio ─────────────────────────────────── */}
+                <div className="mt-5">
+                  <SrLabel>Días que das servicio</SrLabel>
+                  <div className="grid grid-cols-7 gap-2 mt-2">
+                    {([
+                      { k: 'mon', l: 'Lun' }, { k: 'tue', l: 'Mar' }, { k: 'wed', l: 'Mié' },
+                      { k: 'thu', l: 'Jue' }, { k: 'fri', l: 'Vie' }, { k: 'sat', l: 'Sáb' },
+                      { k: 'sun', l: 'Dom' },
+                    ] as const).map((d) => {
+                      const on = settings.digitalServiceDays?.[d.k] ?? true;
+                      return (
+                        <button
+                          key={d.k}
+                          type="button"
+                          onClick={() => updateSettings({
+                            digitalServiceDays: { ...(settings.digitalServiceDays || {}), [d.k]: !on },
+                          })}
+                          className={`h-14 rounded-sr-md text-[11px] font-black uppercase tracking-[0.15em] transition-all ${
+                            on
+                              ? 'bg-servirest-terracota text-servirest-hueso shadow-sr-glow'
+                              : 'bg-servirest-surface text-[rgba(42,40,38,0.5)] border border-[rgba(42,40,38,0.12)]'
+                          }`}
+                        >
+                          {d.l}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[11px] text-[rgba(42,40,38,0.4)] mt-2">
+                    Los días apagados muestran "Cerrado hoy" al cliente y no aceptan órdenes.
+                  </p>
+                </div>
+
                 {settings.digitalMode === 'delivery' && (
                   <div className="mt-5">
                     <SrLabel>

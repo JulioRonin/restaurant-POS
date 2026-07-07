@@ -30,3 +30,64 @@ COMMENT ON COLUMN menu_items.online_price IS
   'Precio opcional específico para el canal digital. Si es NULL, se usa price.';
 COMMENT ON COLUMN menu_items.online_available IS
   'Disponibilidad instantánea online. FALSE = "Agotado" en el kiosko sin borrar del catálogo.';
+
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- FIX: RLS de la tabla `tables` (Hostess)
+-- ─────────────────────────────────────────────────────────────────────────
+-- Bug reportado: "Error guardando tables: new row violates row-level
+-- security policy for table 'tables'". Sucede cuando el admin crea una
+-- mesa desde Hostess. Falta un policy que permita a los miembros del
+-- negocio insertar/actualizar sus propias mesas.
+-- ─────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE tables ENABLE ROW LEVEL SECURITY;
+
+-- SELECT: cualquier miembro del negocio ve sus mesas
+DROP POLICY IF EXISTS "tables_select_own_business" ON tables;
+CREATE POLICY "tables_select_own_business"
+  ON tables
+  FOR SELECT
+  TO authenticated
+  USING (
+    business_id IN (
+      SELECT business_id FROM profiles WHERE id = auth.uid()
+    )
+  );
+
+-- INSERT: cualquier miembro puede crear mesas para su negocio
+DROP POLICY IF EXISTS "tables_insert_own_business" ON tables;
+CREATE POLICY "tables_insert_own_business"
+  ON tables
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    business_id IN (
+      SELECT business_id FROM profiles WHERE id = auth.uid()
+    )
+  );
+
+-- UPDATE: mismo criterio
+DROP POLICY IF EXISTS "tables_update_own_business" ON tables;
+CREATE POLICY "tables_update_own_business"
+  ON tables
+  FOR UPDATE
+  TO authenticated
+  USING (
+    business_id IN (
+      SELECT business_id FROM profiles WHERE id = auth.uid()
+    )
+  );
+
+-- DELETE: solo admins/managers borran mesas
+DROP POLICY IF EXISTS "tables_delete_admin" ON tables;
+CREATE POLICY "tables_delete_admin"
+  ON tables
+  FOR DELETE
+  TO authenticated
+  USING (
+    business_id IN (
+      SELECT business_id FROM profiles
+      WHERE id = auth.uid() AND role IN ('admin', 'manager', 'super_admin')
+    )
+  );
