@@ -36,57 +36,83 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // 1. Resolve the amount: custom price > global config > default.
-    const { data: business } = await supabase
-      .from('businesses')
-      .select('custom_price')
-      .eq('id', businessId)
-      .single();
+    // ── Ramas por tipo ────────────────────────────────────────────
+    // DIGITAL_ORDER  → pedido del cliente en kiosko o storefront público.
+    //                  Usa req.body.amount tal cual, sin tocar la
+    //                  configuración global de suscripción.
+    // SUBSCRIPTION   → renovación mensual del SaaS. Prioriza custom_price
+    //                  del negocio o membership_monthly_price global.
+    // EQUIPMENT      → pago del kit físico (impresora, cajón, terminal).
+    //                  Usa req.body.amount.
+    const isDigitalOrder = type === 'DIGITAL_ORDER';
 
-    let finalAmount = req.body.amount || 899; // Profesional default per tier strategy
-
-    if (business && business.custom_price) {
-      finalAmount = business.custom_price;
+    let finalAmount: number;
+    if (isDigitalOrder || type === 'EQUIPMENT') {
+      // Confía en el monto que envía el cliente (el kiosko ya sumó
+      // subtotal + envío + IVA).
+      finalAmount = Number(req.body.amount);
+      if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
+        return res.status(400).json({ error: 'Invalid amount for digital order' });
+      }
     } else {
-      const { data: globalConfig } = await supabase
-        .from('app_config')
-        .select('value')
-        .eq('key', 'membership_monthly_price')
+      // SUBSCRIPTION: resolver precio desde el negocio / config global.
+      const { data: business } = await supabase
+        .from('businesses')
+        .select('custom_price')
+        .eq('id', businessId)
         .single();
-      if (globalConfig) finalAmount = Number(globalConfig.value);
+
+      finalAmount = req.body.amount || 899;
+      if (business && business.custom_price) {
+        finalAmount = business.custom_price;
+      } else {
+        const { data: globalConfig } = await supabase
+          .from('app_config')
+          .select('value')
+          .eq('key', 'membership_monthly_price')
+          .single();
+        if (globalConfig) finalAmount = Number(globalConfig.value);
+      }
     }
+
+    // ── URLs de retorno ───────────────────────────────────────────
+    // Para pedidos digitales, el cliente puede pedir un successUrl /
+    // cancelUrl específicos (el kiosko regresa al /kiosk con ?paid=id).
+    const successUrl = req.body.successUrl || `${req.headers.origin}/#/billing?success=true`;
+    const cancelUrl = req.body.cancelUrl || `${req.headers.origin}/#/billing?canceled=true`;
+
+    // ── Descripción legible en el checkout de Stripe ──────────────
+    const productDescription = isDigitalOrder
+      ? `Pedido del canal digital · ${businessName || 'ServiRest'}`
+      : type === 'SUBSCRIPTION'
+      ? 'Renovación de licencia ServiRest (30 días)'
+      : 'Pago de equipo / hardware ServiRest';
 
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
-      success_url: `${req.headers.origin}/#/billing?success=true`,
-      cancel_url: `${req.headers.origin}/#/billing?canceled=true`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       client_reference_id: businessId,
-      // Stripe uses these for receipts + customer portal. Pass the business
-      // name so the receipt header reads "ServiRest" + restaurant.
       metadata: {
         businessId,
         businessName: businessName || 'Unknown',
         paymentType: type,
         planName,
+        ...(req.body.orderId ? { orderId: req.body.orderId } : {}),
       },
     };
 
-    if (priceId) {
+    if (priceId && !isDigitalOrder) {
+      // Solo suscripciones/equipment usan priceId de Stripe (ver Billing).
       sessionConfig.line_items = [{ price: priceId, quantity: 1 }];
       sessionConfig.mode = mode || 'subscription';
     } else {
-      // Inline price for one-off charges (equipment, manual top-ups).
+      // Line item inline (digital orders, equipment, top-ups manuales).
       sessionConfig.line_items = [
         {
           price_data: {
             currency: 'mxn',
-            product_data: {
-              name: planName,
-              description:
-                type === 'SUBSCRIPTION'
-                  ? 'Renovación de licencia ServiRest (30 días)'
-                  : 'Pago de equipo / hardware ServiRest',
-            },
+            product_data: { name: planName, description: productDescription },
             unit_amount: Math.round(finalAmount * 100),
           },
           quantity: 1,

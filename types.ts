@@ -32,6 +32,9 @@ export interface MenuItem {
   gramaje?: string;
   businessId: string;
   variants?: MenuItemVariant[];
+  // 'single' = el cliente elige UNA variante (radio). Ej: tamaños, sabores.
+  // 'multi'  = el cliente puede combinar (checkbox). Ej: toppings extra.
+  variantMode?: 'single' | 'multi';
   // ── Canal digital (pedidos online / kiosko) ─────────────────────────
   publishOnline?: boolean;      // Si aparece en el kiosko o storefront público
   onlinePrice?: number;         // Precio opcional online (default: price)

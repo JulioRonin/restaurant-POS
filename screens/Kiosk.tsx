@@ -567,25 +567,51 @@ export const KioskScreen: React.FC = () => {
                 )}
 
                 <div className="mt-6">
-                  <SrLabel className="block mb-3">Elige tus variantes</SrLabel>
+                  <SrLabel className="block mb-1">
+                    {(variantModal.variantMode ?? 'single') === 'single' ? 'Elige UNA opción' : 'Elige tus variantes'}
+                  </SrLabel>
+                  <p className="text-[11px] text-[rgba(42,40,38,0.5)] mb-3">
+                    {(variantModal.variantMode ?? 'single') === 'single'
+                      ? 'Solo puedes seleccionar una variante para este platillo.'
+                      : 'Puedes combinar varias variantes.'}
+                  </p>
                   <div className="space-y-2">
                     {variantModal.variants?.map((v, i) => {
+                      const isSingle = (variantModal.variantMode ?? 'single') === 'single';
                       const on = selVariants.some((sv) => sv.name === v.name);
                       return (
                         <button
                           key={i}
                           type="button"
-                          onClick={() => setSelVariants((p) => (on ? p.filter((x) => x.name !== v.name) : [...p, v]))}
+                          onClick={() => {
+                            if (isSingle) {
+                              // Radio: reemplaza la selección por esta variante.
+                              setSelVariants(on ? [] : [v]);
+                            } else {
+                              // Checkbox: toggle en la lista.
+                              setSelVariants((p) => (on ? p.filter((x) => x.name !== v.name) : [...p, v]));
+                            }
+                          }}
                           className={`w-full flex justify-between items-center p-4 rounded-sr-md border-2 transition-colors ${
                             on ? 'border-servirest-terracota bg-servirest-terracota/5' : 'border-[rgba(42,40,38,0.1)] bg-servirest-surface hover:border-servirest-terracota/40'
                           }`}
                         >
                           <span className="flex items-center gap-3">
-                            <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                              on ? 'border-servirest-terracota bg-servirest-terracota' : 'border-[rgba(42,40,38,0.2)]'
-                            }`}>
-                              {on && <Check size={13} className="text-servirest-hueso" />}
-                            </span>
+                            {isSingle ? (
+                              // Radio circular
+                              <span className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                on ? 'border-servirest-terracota' : 'border-[rgba(42,40,38,0.2)]'
+                              }`}>
+                                {on && <span className="w-3 h-3 rounded-full bg-servirest-terracota" />}
+                              </span>
+                            ) : (
+                              // Checkbox
+                              <span className={`w-6 h-6 rounded-md border-2 flex items-center justify-center ${
+                                on ? 'border-servirest-terracota bg-servirest-terracota' : 'border-[rgba(42,40,38,0.2)]'
+                              }`}>
+                                {on && <Check size={13} className="text-servirest-hueso" />}
+                              </span>
+                            )}
                             <span className="font-serif italic text-[16px] text-servirest-midnight">{v.name}</span>
                           </span>
                           <SrMono className={`text-[13px] font-extrabold ${on ? 'text-servirest-terracota' : 'text-[rgba(42,40,38,0.5)]'}`}>

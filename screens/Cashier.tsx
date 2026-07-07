@@ -242,7 +242,11 @@ export const CashierScreen: React.FC = () => {
                              );
                         })}
 
-                        {activeTab === 'delivery' && orders.filter(o => o.source && o.source !== OrderSource.DINE_IN && o.status !== 'COMPLETED').map(order => (
+                        {activeTab === 'delivery' && orders
+                            // Excluye órdenes ya pagadas online (canal digital / Stripe / etc.)
+                            // Esas caen directo en historial + dashboard sin necesidad de cobro.
+                            .filter(o => o.source && o.source !== OrderSource.DINE_IN && o.status !== 'COMPLETED' && o.paymentStatus !== PaymentStatus.PAID)
+                            .map(order => (
                              <div key={order.id} onClick={() => setSelectedTableId(order.id)} className={`p-5 rounded-2xl border cursor-pointer transition-all ${selectedTableId === order.id ? 'border-servirest-terracota bg-servirest-terracota/10' : 'border-[rgba(42,40,38,0.12)] bg-servirest-surface hover:border-[rgba(42,40,38,0.20)]'}`}>
                                  <div className="flex justify-between items-start">
                                      <div>
