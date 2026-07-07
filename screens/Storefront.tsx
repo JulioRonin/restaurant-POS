@@ -291,7 +291,10 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
       const orderRecord = {
         id: orderId,
         business_id: businessId,
-        table_id: 'STOREFRONT',
+        // table_id es UUID en Supabase; los pedidos del storefront no tienen
+        // mesa física, así que va null. El origen se guarda en source +
+        // customer_metadata.mode.
+        table_id: null,
         items: cart.map((l) => ({
           id: l.itemId,
           name: l.name,

@@ -521,23 +521,23 @@ async function pullServerChanges(businessId?: string): Promise<number> {
            
            let finalRecord = transformFromSupabase(serverRecord, localStore);
 
-           // CRITICAL PROTECTION: Do not let cloud settings wipe out local hardware preferences
+           // CRITICAL PROTECTION: el server NO debe borrar config local que el
+           // operador acaba de guardar. Hacemos MERGE: la base es lo del
+           // server, pero cualquier campo que exista local GANA. Esto cubre
+           // hardware, canal digital, kiosko, banco, apariencia, etc. sin
+           // tener que enumerar cada key nueva a mano.
            if (localRecord && localRecord.data) {
-              const hardwareKeys = ['connectedDeviceName', 'connectedTerminalName', 'isDirectPrintingEnabled'];
-              hardwareKeys.forEach(k => {
-                 if (localRecord.data[k] !== undefined) {
-                    finalRecord.data[k] = localRecord.data[k];
-                 }
-              });
+              finalRecord.data = { ...(finalRecord.data || {}), ...localRecord.data };
            }
 
-           // Check if we actually need to update
+           // Solo escribe si el server es estrictamente más nuevo, y aún así
+           // ya mergeamos local encima para no perder ediciones recientes.
            const localTimestamp = localRecord?.updated_at;
            if (!localRecord || serverTimestamp > localTimestamp) {
               await import('./db').then(db => db.getDB().then(inst => inst.put('settings', finalRecord)));
               globalModifiedCount++;
            }
-           continue; 
+           continue;
         }
 
         // NORMAL CASE: Relational entries use UUIDs
@@ -614,9 +614,12 @@ function transformForSupabase(payload: any): any {
        continue;
     }    
     const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-    
-    // CRITICAL: Supabase table_id is UUID. 'COUNTER' is invalid. Convert to null.
-    if (snakeKey === 'table_id' && value === 'COUNTER') {
+
+    // CRITICAL: Supabase table_id es UUID. Cualquier sentinel no-UUID
+    // ('COUNTER', 'KIOSK', 'STOREFRONT', etc.) rompe el INSERT. Los
+    // convertimos a null — la orden vive igual, solo sin mesa asignada.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (snakeKey === 'table_id' && typeof value === 'string' && !UUID_RE.test(value)) {
       transformed[snakeKey] = null;
     } else {
       transformed[snakeKey] = value;

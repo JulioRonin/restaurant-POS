@@ -289,13 +289,24 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   }, [settings, authProfile?.businessId]);
 
   const updateSettings = async (newSettings: Partial<BusinessSettings>) => {
-    const updated = { ...settings, ...newSettings };
-    setSettings(updated);
+    // Usa updater funcional para no perder cambios rápidos sucesivos
+    // (ej. togglear varios métodos de pago del kiosko en fila). Antes
+    // `settings` venía del closure y podía estar viejo → lost updates.
+    let merged: BusinessSettings | null = null;
+    setSettings((prev) => {
+      merged = { ...prev, ...newSettings };
+      return merged;
+    });
 
-    // Track change for global sync if businessId is present
-    if (authProfile?.businessId) {
-        const idbKey = `settings_${authProfile.businessId}`;
-        await trackChange('settings', 'UPDATE', idbKey, updated);
+    // Persiste + encola sync con el objeto ya mergeado y fresco.
+    if (authProfile?.businessId && merged) {
+      const idbKey = `settings_${authProfile.businessId}`;
+      const bizKey = `solaris_settings_${authProfile.businessId}`;
+      // Escritura inmediata (además del useEffect) para que un reload
+      // rápido tras el cambio nunca pierda la config.
+      localStorage.setItem(bizKey, JSON.stringify(merged));
+      await putSetting(idbKey, merged);
+      await trackChange('settings', 'UPDATE', idbKey, merged);
     }
   };
 
