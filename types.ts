@@ -32,6 +32,10 @@ export interface MenuItem {
   gramaje?: string;
   businessId: string;
   variants?: MenuItemVariant[];
+  // ── Canal digital (pedidos online / kiosko) ─────────────────────────
+  publishOnline?: boolean;      // Si aparece en el kiosko o storefront público
+  onlinePrice?: number;         // Precio opcional online (default: price)
+  onlineAvailable?: boolean;    // Disponibilidad instantánea online (true = compra ahora)
 }
 
 export interface OrderItem extends MenuItem {

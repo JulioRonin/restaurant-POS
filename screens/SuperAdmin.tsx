@@ -48,7 +48,11 @@ const DEFAULT_FEATURES = [
   { key: 'cfdi',               name: 'Facturación CFDI 4.0',       description: 'Timbrado fiscal con Facturama (Profesional+)' },
   { key: 'reservations',       name: 'Reservaciones',              description: 'Confirmación WhatsApp + email (Prestige+)' },
   { key: 'digital_menu',       name: 'Carta digital pública',      description: 'URL propia + QR (Prestige+)' },
-  { key: 'wine_list',          name: 'Wine list y coctelería',     description: 'Maridajes y costeo (Prestige+)' },
+  { key: 'wine_list',          name: 'Wine list y coctelera',     description: 'Maridajes y costeo (Prestige+)' },
+  { key: 'online_ordering',    name: 'Pedidos online + Kiosko',    description: 'Canal digital de auto-servicio, pago con terminal o Stripe (Prestige+)' },
+  { key: 'online_reservations',name: 'Reservas online',            description: 'Cliente reserva desde el web sin llamar (Prestige+)' },
+  { key: 'kiosk_mode',         name: 'Modo Kiosko',                description: 'Tablet o pantalla física en el local para auto-orden (Prestige+)' },
+  { key: 'online_payments',    name: 'Cobro digital',              description: 'Terminal BT + Stripe QR + OXXO desde el canal digital (Prestige+)' },
 ];
 
 export default function SuperAdminScreen() {
@@ -282,7 +286,7 @@ export default function SuperAdminScreen() {
   return (
     <div className="h-full w-full overflow-y-auto custom-scrollbar bg-servirest-hueso text-servirest-carbon antialiased">
       <div className="px-[38px] py-10 max-w-[1480px] mx-auto pb-32 lg:pb-12">
-        {/* ─── HEADER ────────────────────────────────────────────────── */}
+        {/* HEADER */}
         <div className="flex justify-between items-start flex-wrap gap-6 mb-10">
           <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
             <SrKicker className="block mb-2">Plataforma ServiRest</SrKicker>
@@ -310,15 +314,12 @@ export default function SuperAdminScreen() {
           </div>
         </div>
 
-        {/* ─── GLOBAL CONFIG + PAYMENTS DASHBOARD ──────────────────── */}
         <GlobalConfigPanel />
         <div className="mt-5">
           <PaymentsDashboard businesses={businesses} payments={payments} />
         </div>
 
-        {/* ─── BUSINESS LIST + DETAIL ──────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-10">
-          {/* List */}
           <div className="lg:col-span-4">
             <SrCard variant="solaris" className="p-7 sticky top-6">
               <div className="flex items-center justify-between mb-5">
@@ -414,7 +415,6 @@ export default function SuperAdminScreen() {
             </SrCard>
           </div>
 
-          {/* Detail */}
           <div className="lg:col-span-8">
             {selectedBusiness ? (
               <motion.div
@@ -424,7 +424,6 @@ export default function SuperAdminScreen() {
                 transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 className="space-y-5"
               >
-                {/* Detail header */}
                 <SrCard variant="solaris" className="p-7">
                   <div className="flex items-start justify-between flex-wrap gap-5">
                     <div className="flex items-start gap-4">
@@ -512,7 +511,6 @@ export default function SuperAdminScreen() {
                   </div>
                 </SrCard>
 
-                {/* Plan + Custom price */}
                 <SrCard variant="solaris" className="p-7">
                   <div className="flex items-center justify-between mb-5">
                     <div>
@@ -647,7 +645,6 @@ export default function SuperAdminScreen() {
                   </div>
                 </SrCard>
 
-                {/* Features */}
                 <SrCard variant="solaris" className="p-7">
                   <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
                     <div>
@@ -720,7 +717,6 @@ export default function SuperAdminScreen() {
                   )}
                 </SrCard>
 
-                {/* Linked accounts */}
                 {selectedBusiness.profiles && selectedBusiness.profiles.length > 0 && (
                   <SrCard variant="solaris" className="p-7">
                     <div className="mb-5">
@@ -754,7 +750,6 @@ export default function SuperAdminScreen() {
                   </SrCard>
                 )}
 
-                {/* Danger zone */}
                 <SrCard variant="solaris" className="p-7 border-2 border-[rgba(225,85,75,0.20)] bg-[rgba(225,85,75,0.02)]">
                   <div className="flex items-start gap-4">
                     <div className="w-11 h-11 rounded-sr-md bg-[rgba(225,85,75,0.10)] text-servirest-danger flex items-center justify-center shrink-0">
@@ -804,7 +799,6 @@ export default function SuperAdminScreen() {
         </div>
       </div>
 
-      {/* ─── PAYMENT MODAL ────────────────────────────────────────── */}
       <AnimatePresence>
         {showPaymentModal && selectedBusiness && (
           <SrModal open onClose={() => !saving && setShowPaymentModal(false)} maxWidth={460}>
@@ -846,7 +840,6 @@ export default function SuperAdminScreen() {
         )}
       </AnimatePresence>
 
-      {/* ─── DELETE CONFIRM MODAL ───────────────────────────────── */}
       <AnimatePresence>
         {showDeleteModal && selectedBusiness && (
           <SrModal open onClose={() => !saving && setShowDeleteModal(false)} maxWidth={480}>
@@ -876,9 +869,6 @@ export default function SuperAdminScreen() {
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/* GlobalConfigPanel — global membership price                                 */
-/* -------------------------------------------------------------------------- */
 const GlobalConfigPanel: React.FC = () => {
   const { membershipPrice, updateMembershipPrice } = useSubscription();
   const [price, setPrice] = useState(membershipPrice);
@@ -933,9 +923,6 @@ const GlobalConfigPanel: React.FC = () => {
   );
 };
 
-/* -------------------------------------------------------------------------- */
-/* PaymentsDashboard — 5 KPIs + month picker                                   */
-/* -------------------------------------------------------------------------- */
 const PaymentsDashboard: React.FC<{ businesses: Business[]; payments?: any[] }> = ({ businesses, payments = [] }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());

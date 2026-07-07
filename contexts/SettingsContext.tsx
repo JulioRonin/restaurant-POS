@@ -31,15 +31,43 @@ export interface BusinessSettings {
   rappiPayoutNotes?: string;
   tables: { id: string; name: string; seats: number; status: 'AVAILABLE' | 'OCCUPIED' | 'RESERVED'; x: number; y: number }[];
 
-  /* ─── Terminal mode (tablet / kiosko / mobile) ──────────────────────────
+  /* ─── Terminal mode (tablet / kiosko / mobile) ───────────────────────────
    * 'standard'    → desktop/laptop, sidebar + mobile nav as usual
    * 'tablet-pos'  → 10" tablet on a stand at the cashier, locked to POS
    * 'tablet-host' → tablet at the door, locked to Hostess / floor plan
    * 'mobile-pwa'  → waiter phone, bottom nav only, no sidebar
    * The body gets data-terminal-mode="X" so CSS can scale touch targets.
    * Exit from a locked mode requires the manager PIN. */
-  terminalMode?: 'standard' | 'tablet-pos' | 'tablet-host' | 'mobile-pwa';
+  terminalMode?: 'standard' | 'tablet-pos' | 'tablet-host' | 'mobile-pwa' | 'kiosk';
   terminalLockPin?: string; // 4-digit, defaults to '0000'
+
+  /* ─── Canal digital (pedidos online / kiosko / storefront público) ─────
+   * publicSlug        → identificador URL público (servirest.com/o/{slug})
+   * digitalMode       → giro del canal: delivery / pickup / dine-in / reservation
+   * digitalHoursOpen  → apertura del canal en HH:MM (24h)
+   * digitalHoursClose → cierre del canal en HH:MM (24h)
+   * digitalWelcome    → mensaje editorial de bienvenida en kiosko/storefront
+   * digitalMinOrder   → monto mínimo de orden online (0 = sin mínimo)
+   * digitalDeliveryFee→ costo fijo de envío
+   * digitalDeliveryZones → zonas cubiertas (colonias, texto libre)
+   * kioskPin          → PIN para salir del modo kiosko (default 0000)
+   * kioskPayMethods   → métodos habilitados en kiosko: bluetooth / stripe_qr / cash / oxxo
+   */
+  publicSlug?: string;
+  digitalMode?: 'delivery' | 'pickup' | 'dine-in' | 'reservation';
+  digitalHoursOpen?: string;
+  digitalHoursClose?: string;
+  digitalWelcome?: string;
+  digitalMinOrder?: number;
+  digitalDeliveryFee?: number;
+  digitalDeliveryZones?: string;
+  kioskPin?: string;
+  kioskPayMethods?: {
+    bluetooth?: boolean;
+    stripe_qr?: boolean;
+    cash?: boolean;
+    oxxo?: boolean;
+  };
 }
 
 interface SettingsContextType {
@@ -75,6 +103,16 @@ const DEFAULT_SETTINGS: BusinessSettings = {
   tables: [], // Start with no tables
   terminalMode: 'standard',
   terminalLockPin: '0000',
+  publicSlug: '',
+  digitalMode: 'delivery',
+  digitalHoursOpen: '10:00',
+  digitalHoursClose: '22:00',
+  digitalWelcome: 'Bienvenido. Toca para ordenar.',
+  digitalMinOrder: 0,
+  digitalDeliveryFee: 0,
+  digitalDeliveryZones: '',
+  kioskPin: '0000',
+  kioskPayMethods: { bluetooth: true, stripe_qr: false, cash: true, oxxo: false },
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
