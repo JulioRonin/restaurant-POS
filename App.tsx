@@ -34,6 +34,7 @@ import SuperAdminScreen from './screens/SuperAdmin';
 import OnboardingScreen from './screens/Onboarding';
 import { BarScreen } from './screens/Bar';
 import { MyTablesScreen } from './screens/MyTables';
+import { DigitalChannelScreen } from './screens/DigitalChannel';
 import { canAccess, getDefaultRoute } from './services/rbac';
 import { Activity } from 'lucide-react';
 
@@ -162,6 +163,7 @@ const AppContent: React.FC = () => {
             <Route path="/remote-order" element={<RemoteOrderScreen />} />
             <Route path="/bar" element={<BarScreen />} />
             <Route path="/my-tables" element={<MyTablesScreen />} />
+            <Route path="/digital-channel" element={<DigitalChannelScreen />} />
             <Route path="/onboarding" element={<OnboardingScreen />} />
             <Route path="*" element={<Navigate to="/super-admin" replace />} />
           </Routes>
@@ -200,6 +202,7 @@ const AppContent: React.FC = () => {
               <Route path="/remote-order" element={<RoleGuard path="/remote-order"><RemoteOrderScreen /></RoleGuard>} />
               <Route path="/bar" element={<RoleGuard path="/bar"><BarScreen /></RoleGuard>} />
               <Route path="/my-tables" element={<RoleGuard path="/my-tables"><MyTablesScreen /></RoleGuard>} />
+              <Route path="/digital-channel" element={<RoleGuard path="/digital-channel"><DigitalChannelScreen /></RoleGuard>} />
               
               <Route path="/onboarding" element={<OnboardingScreen />} />
               <Route path="*" element={<div className="flex flex-col items-center justify-center h-full text-solaris-orange uppercase font-black tracking-[0.5em] italic text-[10px] gap-6"><Activity size={48} className="animate-pulse" /> 404 - M�dulo No Encontrado</div>} />

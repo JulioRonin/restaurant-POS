@@ -30,7 +30,8 @@ import {
   MonitorCheck,
   Zap,
   ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  Globe2
 } from 'lucide-react';
 
 const PrinterStatus = () => {
@@ -185,21 +186,22 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
       </div>
 
       <nav className="flex-1 flex flex-col w-full px-3 overflow-y-auto no-scrollbar gap-0.5">
-        {/* ─── Operación diaria (todos los tiers) ─────────────────── */}
+        {/* ─── Operación diaria (todos los tiers) ─────────────────────── */}
         {showModule('/dashboard', 'dashboard')        && <NavItem to="/dashboard"    icon={LayoutDashboard} label="Dashboard"     isExpanded={isExpanded} />}
         {showModule('/pos',       'pos')              && <NavItem to="/pos"          icon={Zap}             label="POS"           isExpanded={isExpanded} />}
         {showModule('/my-tables', 'tables')           && <NavItem to="/my-tables"    icon={Table2}          label="Mis mesas"     isExpanded={isExpanded} />}
         {showModule('/cashier',   'cashier')          && <NavItem to="/cashier"      icon={Receipt}         label="Caja"          isExpanded={isExpanded} />}
         {showModule('/menu',      'menu_admin')       && <NavItem to="/menu"         icon={MenuSquare}      label="Menú"          isExpanded={isExpanded} />}
 
-        {/* ─── Profesional+ ───────────────────────────────────────── */}
+        {/* ─── Profesional+ ─────────────────────────────────────── */}
         {showModule('/hostess',      'hostess',      'profesional') && <NavItem to="/hostess"      icon={MonitorCheck} label="Hostess"       isExpanded={isExpanded} />}
         {showModule('/kitchen',      'kitchen',      'profesional') && <NavItem to="/kitchen"      icon={ChefHat}      label="Cocina (KDS)"  isExpanded={isExpanded} />}
         {showModule('/bar',          'bar',          'profesional') && <NavItem to="/bar"          icon={Wine}         label="Bar"           isExpanded={isExpanded} />}
         {showModule('/remote-order', 'remote_order', 'profesional') && <NavItem to="/remote-order" icon={Smartphone}   label="Orden remota"  isExpanded={isExpanded} />}
         {showModule('/invoice',      'cfdi',         'profesional') && <NavItem to="/invoice"      icon={FileText}     label="Facturación"   isExpanded={isExpanded} />}
+        {showModule('/digital-channel', 'online_ordering', 'prestige') && <NavItem to="/digital-channel" icon={Globe2}  label="Canal digital" isExpanded={isExpanded} />}
 
-        {/* ─── Administración (todos los tiers) ───────────────────── */}
+        {/* ─── Administración (todos los tiers) ──────────────────────── */}
         <div className={`h-px my-4 ${isExpanded ? 'w-full' : 'w-8 mx-auto'}`} style={{ background: 'rgba(250,248,244,0.10)' }} />
 
         {showModule('/staff',     'staff')     && <NavItem to="/staff"     icon={Users} label="Personal"   isExpanded={isExpanded} />}
