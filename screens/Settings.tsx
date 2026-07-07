@@ -29,6 +29,8 @@ import {
   Pencil,
   Wifi,
   CircleDot,
+  Upload,
+  Trash2,
 } from 'lucide-react';
 import { getAll } from '../services/db';
 import { getSupabase } from '../services/auth';
@@ -868,6 +870,140 @@ const GeneralTab: React.FC<{
   </>
 );
 
+/* -------------------------------------------------------------------------- */
+/* LogoUploader — sube archivo local (drag-drop / picker) o pega URL          */
+/* -------------------------------------------------------------------------- */
+const LogoUploader: React.FC<{
+  value: string;
+  onChange: (url: string) => void;
+}> = ({ value, onChange }) => {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = React.useState(false);
+  const [tab, setTab] = React.useState<'upload' | 'url'>('upload');
+  const [error, setError] = React.useState<string | null>(null);
+
+  const handleFile = (file: File | null | undefined) => {
+    setError(null);
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('El archivo debe ser una imagen (PNG, JPG, SVG, WEBP).');
+      return;
+    }
+    // ~2 MB máx para que el data-URL no infle localStorage/Supabase.
+    if (file.size > 2 * 1024 * 1024) {
+      setError('La imagen es muy grande. Máximo 2 MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') onChange(reader.result);
+    };
+    reader.onerror = () => setError('No pudimos leer el archivo. Intenta con otro.');
+    reader.readAsDataURL(file);
+  };
+
+  const clearLogo = () => onChange('');
+
+  return (
+    <div className="flex items-start gap-6 flex-wrap">
+      {/* Preview */}
+      <div className="relative w-32 h-32 rounded-sr-xl bg-servirest-hueso-sunken/60 border border-[rgba(42,40,38,0.12)] flex items-center justify-center overflow-hidden shrink-0">
+        {value ? (
+          <>
+            <img src={value} className="w-full h-full object-contain p-2" alt="Logo" />
+            <button
+              type="button"
+              onClick={clearLogo}
+              className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-servirest-midnight/90 text-servirest-hueso flex items-center justify-center hover:bg-servirest-danger transition-colors"
+              title="Quitar logo"
+            >
+              <Trash2 size={12} />
+            </button>
+          </>
+        ) : (
+          <Building2 size={44} className="text-[rgba(42,40,38,0.3)]" />
+        )}
+      </div>
+
+      {/* Controls */}
+      <div className="flex-1 min-w-[280px]">
+        {/* Tabs */}
+        <div className="inline-flex bg-servirest-hueso-sunken/40 rounded-full p-1 mb-4">
+          <button
+            type="button"
+            onClick={() => setTab('upload')}
+            className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.18em] transition-colors ${
+              tab === 'upload' ? 'bg-servirest-surface text-servirest-terracota shadow-sm' : 'text-[rgba(42,40,38,0.5)]'
+            }`}
+          >
+            Subir archivo
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab('url')}
+            className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.18em] transition-colors ${
+              tab === 'url' ? 'bg-servirest-surface text-servirest-terracota shadow-sm' : 'text-[rgba(42,40,38,0.5)]'
+            }`}
+          >
+            Pegar URL
+          </button>
+        </div>
+
+        {tab === 'upload' ? (
+          <>
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragging(false);
+                handleFile(e.dataTransfer.files?.[0]);
+              }}
+              onClick={() => inputRef.current?.click()}
+              className={`rounded-sr-md border-2 border-dashed p-6 text-center cursor-pointer transition-colors ${
+                dragging
+                  ? 'border-servirest-terracota bg-servirest-terracota/5'
+                  : 'border-[rgba(42,40,38,0.18)] hover:border-servirest-terracota/50 bg-servirest-surface'
+              }`}
+            >
+              <div className="w-11 h-11 rounded-full bg-servirest-terracota/10 text-servirest-terracota flex items-center justify-center mx-auto mb-3">
+                <Upload size={20} />
+              </div>
+              <p className="text-[13px] font-bold text-servirest-midnight">Arrastra tu logo aquí</p>
+              <p className="text-[11px] text-[rgba(42,40,38,0.5)] mt-1">
+                O click para elegir un archivo · PNG, JPG, SVG o WEBP · máx 2 MB
+              </p>
+            </div>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/svg+xml,image/webp"
+              className="hidden"
+              onChange={(e) => handleFile(e.target.files?.[0])}
+            />
+          </>
+        ) : (
+          <>
+            <SrLabel className="block mb-2">URL del logo</SrLabel>
+            <SrInput
+              value={value.startsWith('data:') ? '' : value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="https://miweb.com/logo.png"
+            />
+          </>
+        )}
+
+        {error && (
+          <p className="text-[11px] text-servirest-danger font-medium mt-2">{error}</p>
+        )}
+        <p className="text-[11px] text-[rgba(42,40,38,0.5)] mt-3">
+          Tip: usa PNG con fondo transparente. Lo verás en tickets, dashboard y orden remota.
+        </p>
+      </div>
+    </div>
+  );
+};
+
 const AppearanceTab: React.FC<{
   localSettings: BusinessSettings;
   setLocalSettings: React.Dispatch<React.SetStateAction<BusinessSettings>>;
@@ -875,26 +1011,10 @@ const AppearanceTab: React.FC<{
   <>
     <SrCard variant="solaris" className="p-8">
       <SectionHeading kicker="Identidad visual" title="Tu logo" />
-      <div className="flex items-center gap-6 flex-wrap">
-        <div className="w-28 h-28 rounded-sr-xl bg-servirest-hueso-sunken/60 border border-[rgba(42,40,38,0.12)] flex items-center justify-center overflow-hidden shrink-0">
-          {localSettings.logoUrl ? (
-            <img src={localSettings.logoUrl} className="w-full h-full object-cover" alt="Logo" />
-          ) : (
-            <Building2 size={40} className="text-[rgba(42,40,38,0.3)]" />
-          )}
-        </div>
-        <div className="flex-1 min-w-[260px]">
-          <SrLabel className="block mb-2">URL del logo</SrLabel>
-          <SrInput
-            value={localSettings.logoUrl || ''}
-            onChange={(e) => setLocalSettings((prev) => ({ ...prev, logoUrl: e.target.value }))}
-            placeholder="https://miweb.com/logo.png"
-          />
-          <p className="text-[12px] text-[rgba(42,40,38,0.5)] mt-2">
-            Tip: usa PNG con fondo transparente. Lo verás en tickets, dashboard y orden remota.
-          </p>
-        </div>
-      </div>
+      <LogoUploader
+        value={localSettings.logoUrl || ''}
+        onChange={(url) => setLocalSettings((prev) => ({ ...prev, logoUrl: url }))}
+      />
     </SrCard>
 
     <SrCard variant="solaris" className="p-8">

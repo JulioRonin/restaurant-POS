@@ -46,7 +46,7 @@ export const DigitalChannelScreen: React.FC = () => {
 
   if (gated) {
     return (
-      <div className="min-h-screen bg-servirest-canvas px-6 md:px-12 py-16">
+      <div className="h-full overflow-y-auto bg-servirest-canvas px-6 md:px-12 py-16">
         <div className="max-w-3xl mx-auto">
           <SrKicker>Canal digital · Bloqueado en tu plan</SrKicker>
           <h1 className="font-serif italic text-servirest-midnight text-4xl md:text-[56px] leading-none mt-3 mb-4 tracking-[-0.02em]">
@@ -130,7 +130,7 @@ export const DigitalChannelScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-servirest-canvas">
+    <div className="h-full overflow-y-auto bg-servirest-canvas">
       <div className="px-6 md:px-12 pt-10 pb-6 border-b border-[rgba(42,40,38,0.08)]">
         <div className="flex items-start justify-between flex-wrap gap-6">
           <div>
@@ -143,12 +143,18 @@ export const DigitalChannelScreen: React.FC = () => {
               deja que el cliente pague antes de entrar por la puerta.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <SrTierBadge tier={tier} size="md" />
             <SrChip tone="mostaza" size="sm">
               <Sparkles size={10} className="mr-1.5" />
               {publishedCount}/{totalActive} publicados
             </SrChip>
+            <a
+              href="#/kiosk"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-servirest-midnight text-servirest-hueso font-black italic uppercase tracking-[0.15em] text-[11px] hover:scale-[1.02] transition-transform"
+            >
+              <MonitorSmartphone size={14} /> Ver como cliente
+            </a>
           </div>
         </div>
 

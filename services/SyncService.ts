@@ -361,8 +361,22 @@ async function pushLocalChanges(): Promise<void> {
 
       if (result?.error) {
         console.error(`[SyncService] PUSH ERROR for ${op.table}:`, result.error);
-        if (!['expenses', 'business_settings', 'supplier_orders'].includes(op.table)) {
-            alert(`Error guardando ${op.table}: ${result.error.message}`);
+        // "Schema cache" / "column does not exist" = falta correr una migración
+        // Supabase pendiente. Guarda local pero no muestra alert (el equipo
+        // ServiRest te avisa por consola qué SQL correr).
+        const errMsg = String(result.error.message || '');
+        const isSchemaMissing =
+          errMsg.includes('schema cache') ||
+          errMsg.includes('column') && errMsg.includes('does not exist') ||
+          (result.error as any).code === '42703';
+
+        if (isSchemaMissing) {
+          console.warn(
+            `[SyncService] Schema pendiente en ${op.table}. Los datos están guardados localmente. ` +
+            `Corre docs/business-plan/koso-pos/MIGRATION_DIGITAL_CHANNEL.sql en Supabase.`
+          );
+        } else if (!['expenses', 'business_settings', 'supplier_orders'].includes(op.table)) {
+          alert(`Error guardando ${op.table}: ${result.error.message}`);
         }
         throw result.error;
       } else {

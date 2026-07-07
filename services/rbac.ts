@@ -31,7 +31,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, string[]> = {
     '/onboarding',
     '/super-admin',
     '/my-tables',
-    '/digital-channel'
+    '/digital-channel',
+    '/kiosk'
   ],
   [ROLES.MANAGER]: [
     '/pos',
@@ -43,7 +44,8 @@ export const ROLE_PERMISSIONS: Record<AppRole, string[]> = {
     '/inventory',
     '/invoice',
     '/billing',
-    '/digital-channel'
+    '/digital-channel',
+    '/kiosk'
   ],
   [ROLES.CASHIER]: [
     '/cashier',
