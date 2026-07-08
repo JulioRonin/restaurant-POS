@@ -608,77 +608,89 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   // MENU view
   return (
     <div className="h-[100dvh] w-full max-w-full overflow-x-hidden bg-servirest-hueso flex flex-col antialiased">
-      <header className="flex-shrink-0 px-4 sm:px-6 md:px-12 pt-[max(1.5rem,env(safe-area-inset-top))] pb-5 border-b border-[rgba(42,40,38,0.08)] bg-servirest-surface">
+      <header className="flex-shrink-0 px-4 sm:px-6 md:px-12 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 border-b border-[rgba(42,40,38,0.08)] bg-servirest-surface">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
-            {settings.logoUrl ? (
-              <img src={settings.logoUrl} alt={business.name} className="w-12 h-12 sm:w-16 sm:h-16 rounded-sr-md object-contain bg-servirest-hueso border border-[rgba(42,40,38,0.08)] p-1.5 flex-shrink-0" />
-            ) : (
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-sr-md bg-servirest-midnight text-servirest-mostaza flex items-center justify-center font-serif italic text-2xl sm:text-3xl flex-shrink-0">{business.name?.[0] || 'R'}</div>
-            )}
-            <SrKicker className="!text-[9px] sm:!text-[11px]">Ordena en línea · {business.name}</SrKicker>
-          </div>
-          <h1 className="font-serif italic text-servirest-midnight text-3xl sm:text-4xl md:text-6xl leading-[1.05] mt-2 sm:mt-3 tracking-[-0.02em]">
-            {settings.digitalWelcome || `Bienvenido a ${business.name}`}
-          </h1>
-          <div className="flex items-center gap-3 mt-5 flex-wrap">
-            <button
-              onClick={() => deliveryEnabled && setMode('delivery')}
-              disabled={!deliveryEnabled}
-              title={deliveryEnabled ? undefined : 'El negocio aún no configura su zona de entrega'}
-              className={`px-5 h-11 rounded-full text-[12px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all ${
-                !deliveryEnabled ? 'bg-servirest-hueso text-[rgba(42,40,38,0.3)] border border-[rgba(42,40,38,0.08)] cursor-not-allowed line-through'
-                : mode === 'delivery' ? 'bg-servirest-terracota text-servirest-hueso shadow-sr-glow' : 'bg-servirest-hueso text-[rgba(42,40,38,0.6)] border border-[rgba(42,40,38,0.12)]'
-              }`}
-            >
-              <Truck size={13} /> Enviar a domicilio
-            </button>
-            <button
-              onClick={() => setMode('pickup')}
-              className={`px-5 h-11 rounded-full text-[12px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all ${
-                mode === 'pickup' ? 'bg-servirest-terracota text-servirest-hueso shadow-sr-glow' : 'bg-servirest-hueso text-[rgba(42,40,38,0.6)] border border-[rgba(42,40,38,0.12)]'
-              }`}
-            >
-              <Store size={13} /> Recoger en local
-            </button>
-            {mode === 'delivery' && deliveryFee > 0 && (
-              <SrChip tone="mostaza" size="sm">Envío ${deliveryFee}</SrChip>
-            )}
-            {(settings.digitalMinOrder ?? 0) > 0 && (
-              <SrChip tone="neutral" size="sm">Mínimo ${settings.digitalMinOrder}</SrChip>
-            )}
-          </div>
-        </div>
+          {/* Fila compacta: logo + nombre + toggle delivery/pickup segmentado */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {settings.logoUrl ? (
+                <img src={settings.logoUrl} alt={business.name} className="w-9 h-9 sm:w-10 sm:h-10 rounded-sr-sm object-contain bg-servirest-hueso border border-[rgba(42,40,38,0.08)] p-1 flex-shrink-0" />
+              ) : (
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-sr-sm bg-servirest-midnight text-servirest-mostaza flex items-center justify-center font-serif italic text-lg flex-shrink-0">{business.name?.[0] || 'R'}</div>
+              )}
+              <div className="min-w-0">
+                <div className="font-serif italic text-servirest-midnight text-[17px] sm:text-[19px] leading-none truncate">{business.name}</div>
+                <div className="text-[8px] font-black uppercase tracking-[0.2em] text-servirest-terracota mt-0.5">Ordena en línea</div>
+              </div>
+            </div>
 
-        <div className="max-w-6xl mx-auto mt-5 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <div className="relative flex-1 sm:max-w-md">
-            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-[rgba(42,40,38,0.4)]" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar platillo…"
-              className="w-full h-12 sm:h-14 pl-14 pr-5 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.1)] text-[15px] font-medium focus:outline-none focus:border-servirest-terracota"
-            />
-          </div>
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-4 px-4 sm:mx-0 sm:px-0">
-            {categories.map((cat) => (
+            {/* Toggle segmentado esbelto */}
+            <div className="flex items-center bg-servirest-hueso rounded-full p-0.5 border border-[rgba(42,40,38,0.1)] flex-shrink-0">
               <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                className={`flex-shrink-0 px-4 sm:px-5 h-12 sm:h-14 rounded-full text-[12px] sm:text-[13px] font-black uppercase tracking-[0.15em] transition-all ${
-                  category === cat
-                    ? 'bg-servirest-midnight text-servirest-hueso shadow-md'
-                    : 'bg-servirest-hueso text-[rgba(42,40,38,0.6)] border border-[rgba(42,40,38,0.1)] hover:border-servirest-midnight/40'
+                onClick={() => deliveryEnabled && setMode('delivery')}
+                disabled={!deliveryEnabled}
+                title={deliveryEnabled ? undefined : 'El negocio aún no configura su zona de entrega'}
+                className={`px-3 h-8 rounded-full text-[10px] font-black uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all ${
+                  !deliveryEnabled ? 'text-[rgba(42,40,38,0.25)] cursor-not-allowed line-through'
+                  : mode === 'delivery' ? 'bg-servirest-terracota text-servirest-hueso shadow-sm' : 'text-[rgba(42,40,38,0.55)]'
                 }`}
               >
-                {cat === '__all__' ? 'Todo' : cat}
+                <Truck size={12} /> <span>Domicilio</span>
               </button>
-            ))}
+              <button
+                onClick={() => setMode('pickup')}
+                className={`px-3 h-8 rounded-full text-[10px] font-black uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all ${
+                  mode === 'pickup' ? 'bg-servirest-terracota text-servirest-hueso shadow-sm' : 'text-[rgba(42,40,38,0.55)]'
+                }`}
+              >
+                <Store size={12} /> <span>Recoger</span>
+              </button>
+            </div>
           </div>
+
+          {/* Search + categorías en una sola fila compacta */}
+          <div className="mt-3 flex items-center gap-2">
+            <div className="relative flex-shrink-0 w-10 sm:w-auto sm:flex-1 sm:max-w-xs">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[rgba(42,40,38,0.4)]" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar…"
+                className="w-full h-10 pl-10 pr-3 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.1)] text-[14px] font-medium focus:outline-none focus:border-servirest-terracota"
+              />
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 flex-1">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setCategory(cat)}
+                  className={`flex-shrink-0 px-3.5 h-10 rounded-full text-[11px] font-black uppercase tracking-[0.1em] transition-all ${
+                    category === cat
+                      ? 'bg-servirest-midnight text-servirest-hueso shadow-sm'
+                      : 'bg-servirest-hueso text-[rgba(42,40,38,0.6)] border border-[rgba(42,40,38,0.1)]'
+                  }`}
+                >
+                  {cat === '__all__' ? 'Todo' : cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Chips de info (solo si aplican) */}
+          {((mode === 'delivery' && deliveryFee > 0) || (settings.digitalMinOrder ?? 0) > 0) && (
+            <div className="flex items-center gap-2 mt-2">
+              {mode === 'delivery' && deliveryFee > 0 && (
+                <SrChip tone="mostaza" size="xs">Envío ${deliveryFee}</SrChip>
+              )}
+              {(settings.digitalMinOrder ?? 0) > 0 && (
+                <SrChip tone="neutral" size="xs">Mínimo ${settings.digitalMinOrder}</SrChip>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-12 py-6 sm:py-8">
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-12 pt-4 pb-6">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="w-24 h-24 rounded-full bg-servirest-hueso-sunken flex items-center justify-center mb-6">
