@@ -123,6 +123,43 @@ export const MenuScreen: React.FC = () => {
 
   const [savingItem, setSavingItem] = useState(false);
 
+  // Migra TODAS las fotos base64 existentes a Supabase Storage de un tiro.
+  // Resuelve el caso donde las fotos viejas quedaron como base64 (que se
+  // truncaba al sincronizar y no se veía en el storefront).
+  const [migratingPhotos, setMigratingPhotos] = useState(false);
+  const handleMigratePhotos = async () => {
+    if (migratingPhotos) return;
+    const businessId = authProfile?.businessId
+      || (menuItems[0] as any)?.businessId || (menuItems[0] as any)?.business_id || '';
+    if (!businessId) { alert('No hay sesión de negocio activa.'); return; }
+
+    const pending = menuItems.filter((m) => (m.image || '').startsWith('data:'));
+    if (pending.length === 0) {
+      alert('Todas tus fotos ya están en la nube. Nada que migrar.');
+      return;
+    }
+    if (!window.confirm(`Vamos a subir ${pending.length} foto(s) a la nube. ¿Continuar?`)) return;
+
+    setMigratingPhotos(true);
+    let ok = 0, fail = 0;
+    for (const item of pending) {
+      try {
+        const url = await uploadMenuPhoto(businessId, item.id, item.image);
+        if (url) { await updateItem(item.id, { image: url }); ok++; }
+        else fail++;
+      } catch { fail++; }
+    }
+    setMigratingPhotos(false);
+    if (fail === 0) {
+      alert(`¡Listo! ${ok} foto(s) subidas a la nube. Recarga el storefront para verlas.`);
+    } else {
+      alert(
+        `${ok} subidas, ${fail} fallaron. Si fallaron todas, verifica que corriste ` +
+        `MIGRATION_MENU_PHOTOS.sql en Supabase (el bucket menu-photos debe existir).`
+      );
+    }
+  };
+
   const handleSaveItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (savingItem) return;
@@ -291,6 +328,15 @@ export const MenuScreen: React.FC = () => {
               onClick={() => setIsImportModalOpen(true)}
             >
               Importar CSV
+            </SrButton>
+            <SrButton
+              variant="outline"
+              size="md"
+              icon={<ImageIcon size={14} />}
+              onClick={handleMigratePhotos}
+              disabled={migratingPhotos}
+            >
+              {migratingPhotos ? 'Subiendo…' : 'Subir fotos a la nube'}
             </SrButton>
             <SrButton
               variant="primary"
