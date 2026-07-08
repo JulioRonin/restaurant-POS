@@ -3,6 +3,36 @@ import { useUser } from './UserContext';
 import { MenuItem } from '../types';
 import { getAll, put, deleteRecord } from '../services/db';
 import { trackChange, triggerSync, onSyncComplete } from '../services/SyncService';
+import { getSupabase } from '../services/auth';
+
+// Escribe un platillo DIRECTO a la tabla menu_items en Supabase (upsert).
+// La cola de sync a veces no completa el INSERT/UPDATE, y entonces el
+// platillo no llega a la nube → no aparece en el storefront. Esto lo
+// garantiza. Best-effort: si falla, el sync en cola sigue como respaldo.
+async function directWriteMenuItem(item: MenuItem) {
+  try {
+    const supabase = getSupabase();
+    if (!supabase || !item.businessId) return;
+    await supabase.from('menu_items').upsert({
+      id: item.id,
+      business_id: item.businessId,
+      name: item.name,
+      price: item.price,
+      category: item.category,
+      image: item.image,
+      description: item.description ?? null,
+      gramaje: item.gramaje ?? null,
+      status: item.status || 'ACTIVE',
+      variants: item.variants ?? [],
+      variant_mode: item.variantMode || 'single',
+      publish_online: !!item.publishOnline,
+      online_available: item.onlineAvailable ?? true,
+      online_price: item.onlinePrice ?? null,
+    }, { onConflict: 'id' });
+  } catch (e) {
+    console.warn('[MenuContext] direct write failed:', e);
+  }
+}
 
 interface MenuContextType {
     menuItems: MenuItem[];
@@ -70,25 +100,29 @@ export const MenuProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         await put('products', newItem as any);
         setMenuItems(prev => [...prev, newItem]);
-        
+
         await trackChange('products', 'INSERT', id, newItem);
+        // Garantiza que el platillo nuevo llegue a la nube de inmediato.
+        directWriteMenuItem(newItem);
     };
 
     const updateItem = async (id: string, updates: Partial<MenuItem>) => {
         const existing = menuItems.find(i => i.id === id);
         if (!existing) return;
 
-        const updated = { 
-            ...existing, 
-            ...updates, 
-            synced: false, 
-            updated_at: new Date().toISOString() 
+        const updated = {
+            ...existing,
+            ...updates,
+            synced: false,
+            updated_at: new Date().toISOString()
         };
 
         await put('products', updated as any);
         setMenuItems(prev => prev.map(i => i.id === id ? updated : i));
-        
+
         await trackChange('products', 'UPDATE', id, updated);
+        // Escritura directa de respaldo — la cola de sync a veces no completa.
+        directWriteMenuItem(updated as MenuItem);
     };
 
     const deleteItem = async (id: string) => {
