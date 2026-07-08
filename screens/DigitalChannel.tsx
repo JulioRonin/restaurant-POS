@@ -12,6 +12,7 @@ import {
   SrSectionHeading, SrPanel,
 } from '../components/ui/servirest';
 import { useMenu } from '../contexts/MenuContext';
+import { getSupabase } from '../services/auth';
 import { useSettings } from '../contexts/SettingsContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { MenuItem } from '../types';
@@ -113,20 +114,65 @@ export const DigitalChannelScreen: React.FC = () => {
     } catch { /* clipboard denied */ }
   };
 
-  const togglePublish = (m: MenuItem) => {
-    updateItem(m.id, {
-      publishOnline: !m.publishOnline,
-      onlineAvailable: m.onlineAvailable ?? true,
-    });
+  // Escritura DIRECTA a Supabase además del updateItem local. La cola de
+  // sync a veces no completa, así que el storefront (que lee de la tabla)
+  // no veía el platillo publicado. Con esto la publicación llega seguro.
+  const directWrite = async (id: string, fields: Record<string, any>) => {
+    try {
+      const supabase = getSupabase();
+      // Convierte camelCase → snake_case para las columnas de la tabla.
+      const snake: Record<string, any> = {};
+      for (const [k, v] of Object.entries(fields)) {
+        const sk = k.replace(/[A-Z]/g, (l) => `_${l.toLowerCase()}`);
+        snake[sk] = v;
+      }
+      await supabase?.from('menu_items').update(snake).eq('id', id);
+    } catch (e) { console.warn('[DigitalChannel] direct write failed:', e); }
   };
 
-  const setOnlinePrice = (m: MenuItem, value: string) => {
+  const togglePublish = async (m: MenuItem) => {
+    const fields = { publishOnline: !m.publishOnline, onlineAvailable: m.onlineAvailable ?? true };
+    await updateItem(m.id, fields);
+    await directWrite(m.id, fields);
+  };
+
+  const setOnlinePrice = async (m: MenuItem, value: string) => {
     const n = Number(value);
-    updateItem(m.id, { onlinePrice: Number.isFinite(n) && n > 0 ? n : undefined });
+    const onlinePrice = Number.isFinite(n) && n > 0 ? n : null;
+    await updateItem(m.id, { onlinePrice: onlinePrice ?? undefined });
+    await directWrite(m.id, { onlinePrice });
   };
 
-  const toggleOnlineAvailable = (m: MenuItem) => {
-    updateItem(m.id, { onlineAvailable: !(m.onlineAvailable ?? true) });
+  const toggleOnlineAvailable = async (m: MenuItem) => {
+    const onlineAvailable = !(m.onlineAvailable ?? true);
+    await updateItem(m.id, { onlineAvailable });
+    await directWrite(m.id, { onlineAvailable });
+  };
+
+  // Empuja el estado de publicación de TODOS los platillos a la tabla en la
+  // nube. Repara los que quedaron atorados (publicados local pero la BD no
+  // los tenía como online → no aparecían en el storefront).
+  const [syncingPublish, setSyncingPublish] = useState(false);
+  const syncPublishToCloud = async () => {
+    if (syncingPublish) return;
+    const supabase = getSupabase();
+    if (!supabase) { alert('Supabase no configurado.'); return; }
+    setSyncingPublish(true);
+    let ok = 0, fail = 0;
+    for (const m of menuItems) {
+      try {
+        const { error } = await supabase.from('menu_items').update({
+          publish_online: !!m.publishOnline,
+          online_available: m.onlineAvailable ?? true,
+          online_price: m.onlinePrice ?? null,
+        }).eq('id', m.id);
+        if (error) fail++; else ok++;
+      } catch { fail++; }
+    }
+    setSyncingPublish(false);
+    alert(fail === 0
+      ? `¡Listo! ${ok} platillo(s) sincronizados. Recarga el storefront para verlos.`
+      : `${ok} sincronizados, ${fail} fallaron. Verifica que menu_items permite UPDATE.`);
   };
 
   return (
@@ -193,14 +239,19 @@ export const DigitalChannelScreen: React.FC = () => {
                 kicker="Curaduría"
                 title="Qué de tu menú va al mundo"
                 right={
-                  <div className="relative w-72">
-                    <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[rgba(42,40,38,0.4)]" />
-                    <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Buscar platillo…"
-                      className="w-full h-11 pl-11 pr-4 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.1)] text-[13px] font-medium focus:outline-none focus:border-servirest-terracota"
-                    />
+                  <div className="flex items-center gap-3">
+                    <SrButton variant="outline" size="sm" onClick={syncPublishToCloud} disabled={syncingPublish}>
+                      {syncingPublish ? 'Sincronizando…' : 'Sincronizar a la tienda'}
+                    </SrButton>
+                    <div className="relative w-56">
+                      <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[rgba(42,40,38,0.4)]" />
+                      <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Buscar platillo…"
+                        className="w-full h-11 pl-11 pr-4 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.1)] text-[13px] font-medium focus:outline-none focus:border-servirest-terracota"
+                      />
+                    </div>
                   </div>
                 }
               />
