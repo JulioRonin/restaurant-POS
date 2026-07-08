@@ -903,7 +903,7 @@ const VariantModal: React.FC<any> = ({ item, selVariants, setSelVariants, selNot
 // CheckoutView
 // ─────────────────────────────────────────────────────────────────────────
 const CheckoutView: React.FC<any> = ({
-  business, settings, session, mode, cart, subtotal, iva, deliveryFee, total,
+  business, settings, session, mode, setMode, cart, subtotal, iva, deliveryFee, total,
   payMethod, setPayMethod, customerName, setCustomerName, customerPhone, setCustomerPhone,
   deliveryAddress, addrStreet, setAddrStreet, addrColonia, setAddrColonia,
   addrCP, setAddrCP, addrRefs, setAddrRefs, orderNotes, setOrderNotes, processing,
@@ -1023,7 +1023,7 @@ const CheckoutView: React.FC<any> = ({
                         : geoRejected ? `Estás a ${geoDistance?.toFixed(1)} km — cubrimos hasta ${radiusKm} km. Prueba "Recoger en local".`
                         : `Entregamos en ${radiusKm} km a la redonda. Te pediremos permiso de ubicación.`}
                     </p>
-                    {!geoValidated && (
+                    {!geoValidated && !geoRejected && (
                       <button
                         onClick={onValidateGeo}
                         disabled={geoState === 'checking'}
@@ -1032,6 +1032,24 @@ const CheckoutView: React.FC<any> = ({
                         {geoState === 'checking' ? <RefreshCw size={13} className="animate-spin" /> : <MapPin size={13} />}
                         {geoState === 'checking' ? 'Ubicándote…' : 'Validar mi ubicación'}
                       </button>
+                    )}
+                    {/* Fuera de rango → ofrecer cambiar a recoger en local */}
+                    {geoRejected && (
+                      <div className="flex items-center gap-2 mt-3 flex-wrap">
+                        <button
+                          onClick={() => setMode('pickup')}
+                          className="px-5 h-10 rounded-full bg-servirest-terracota text-servirest-hueso text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-2 hover:scale-[1.02] transition-transform"
+                        >
+                          <Store size={13} /> Mejor recojo en el local
+                        </button>
+                        <button
+                          onClick={onValidateGeo}
+                          disabled={geoState === 'checking'}
+                          className="px-4 h-10 rounded-full border border-[rgba(42,40,38,0.2)] text-[rgba(42,40,38,0.6)] text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-2 disabled:opacity-50"
+                        >
+                          <RefreshCw size={12} className={geoState === 'checking' ? 'animate-spin' : ''} /> Reintentar
+                        </button>
+                      </div>
                     )}
                     {geoState === 'error' && (
                       <p className="text-[11px] text-servirest-danger mt-2">No pudimos leer tu ubicación. Da permiso e intenta de nuevo.</p>
