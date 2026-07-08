@@ -316,6 +316,16 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   const hasGeoRadius = !!(settings.businessLat && settings.businessLng);
   const radiusKm = settings.digitalDeliveryRadiusKm ?? 2;
 
+  // ── REGLA DURA: sin zona configurada NO hay delivery ─────────────
+  // Si el negocio no capturó su ubicación GPS ni definió zonas de texto,
+  // el modo delivery se DESHABILITA por completo — nadie (invitado o
+  // registrado) puede ordenar un envío sin candado de ubicación.
+  const deliveryEnabled = hasGeoRadius || zonesList.length > 0;
+
+  useEffect(() => {
+    if (!deliveryEnabled && mode === 'delivery') setMode('pickup');
+  }, [deliveryEnabled, mode]);
+
   const validateGeoLocation = () => {
     setGeoState('checking');
     if (!navigator.geolocation) { setGeoState('error'); return; }
@@ -356,6 +366,12 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   const handleConfirmOrder = async () => {
     // Guest permitido: no exigimos session. Si el cliente quiere cuenta,
     // usa el botón de login; si no, ordena como invitado.
+    // Guard absoluto: delivery sin zona configurada NO existe.
+    if (mode === 'delivery' && !deliveryEnabled) {
+      alert('Este negocio aún no habilita envíos a domicilio. Elige "Recoger en local".');
+      setMode('pickup');
+      return;
+    }
     if (mode === 'delivery' && (!addrStreet.trim() || !addrCP.trim())) {
       alert('Necesitamos tu calle con número y tu código postal para el envío.');
       return;
@@ -606,9 +622,12 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
           </h1>
           <div className="flex items-center gap-3 mt-5 flex-wrap">
             <button
-              onClick={() => setMode('delivery')}
+              onClick={() => deliveryEnabled && setMode('delivery')}
+              disabled={!deliveryEnabled}
+              title={deliveryEnabled ? undefined : 'El negocio aún no configura su zona de entrega'}
               className={`px-5 h-11 rounded-full text-[12px] font-black uppercase tracking-[0.15em] flex items-center gap-2 transition-all ${
-                mode === 'delivery' ? 'bg-servirest-terracota text-servirest-hueso shadow-sr-glow' : 'bg-servirest-hueso text-[rgba(42,40,38,0.6)] border border-[rgba(42,40,38,0.12)]'
+                !deliveryEnabled ? 'bg-servirest-hueso text-[rgba(42,40,38,0.3)] border border-[rgba(42,40,38,0.08)] cursor-not-allowed line-through'
+                : mode === 'delivery' ? 'bg-servirest-terracota text-servirest-hueso shadow-sr-glow' : 'bg-servirest-hueso text-[rgba(42,40,38,0.6)] border border-[rgba(42,40,38,0.12)]'
               }`}
             >
               <Truck size={13} /> Enviar a domicilio
