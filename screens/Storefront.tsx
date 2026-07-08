@@ -22,9 +22,10 @@ import {
   ShoppingCart, Plus, Minus, Trash2, X, ChefHat, CheckCircle2,
   Search, Utensils, Truck, Store, PackageCheck, RefreshCw, Check,
   MapPin, Mail, Lock, LogIn, User as UserIcon, ArrowLeft, Phone, AlertCircle,
-  Banknote, CreditCard,
+  Banknote, CreditCard, Bell,
 } from 'lucide-react';
 import { getSupabase } from '../services/auth';
+import { notify, canNotify, requestNotifyPermission, statusNotifyCopy } from '../services/notify';
 import { MenuItem, MenuItemVariant, OrderStatus, OrderSource, PaymentStatus, PaymentMethod } from '../types';
 import { SrKicker, SrMono, SrChip, SrLabel, SrInput } from '../components/ui/servirest';
 
@@ -1239,24 +1240,39 @@ const STOREFRONT_STEPS: { keys: string[]; label: string; icon: React.ElementType
 const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, onOrderMore, onNewOrder }) => {
   const [status, setStatus] = useState<string>('PENDING');
   const [pollError, setPollError] = useState(false);
+  const [notifyOn, setNotifyOn] = useState(canNotify());
+  const prevStatusRef = React.useRef<string>('PENDING');
 
-  // Polling del estatus cada 12s (dentro de la ventana de cache).
+  // Al entrar a la pantalla de estatus, ofrecemos activar avisos.
+  useEffect(() => {
+    if (!canNotify() && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      requestNotifyPermission().then(setNotifyOn);
+    }
+  }, []);
+
+  // Polling del estatus cada 12s. Al detectar un CAMBIO, dispara la
+  // notificación local (aviso + vibración + beep).
   useEffect(() => {
     if (!orderId) return;
     let alive = true;
     const poll = async () => {
       const supabase = getSupabase();
       if (!supabase) return;
-      // RPC seguro: devuelve solo el status del pedido por id (ver migración).
       const { data, error } = await supabase.rpc('get_order_status', { p_order_id: orderId });
       if (!alive) return;
       if (error) { setPollError(true); return; }
-      if (data) setStatus(String(data));
+      const next = String(data || 'PENDING');
+      if (next !== prevStatusRef.current) {
+        const copy = statusNotifyCopy(next, mode, orderNum);
+        if (copy) notify(copy.title, copy.body);
+        prevStatusRef.current = next;
+      }
+      setStatus(next);
     };
     poll();
     const iv = setInterval(poll, 12000);
     return () => { alive = false; clearInterval(iv); };
-  }, [orderId]);
+  }, [orderId, mode, orderNum]);
 
   const activeIdx = STOREFRONT_STEPS.findIndex((s) => s.keys.includes(status));
   const currentIdx = activeIdx === -1 ? 0 : activeIdx;
@@ -1270,11 +1286,27 @@ const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, onOrderMore, onNe
         </motion.div>
         <SrKicker className="!text-servirest-mostaza">{isDone ? '¡Pedido en camino!' : 'Pedido recibido'}</SrKicker>
         <h1 className="font-serif italic text-servirest-hueso text-4xl sm:text-6xl leading-tight mt-3 mb-2">Orden #{orderNum}</h1>
-        <p className="text-[15px] text-servirest-hueso/60 mb-10">
+        <p className="text-[15px] text-servirest-hueso/60 mb-6">
           {isDone
             ? (mode === 'delivery' ? 'Tu pedido ya salió. Llega en unos minutos.' : 'Tu pedido está listo para recoger.')
             : 'Sigue el estatus aquí — se actualiza solo mientras lo preparamos.'}
         </p>
+
+        {/* Toggle de avisos push locales */}
+        {!isDone && (
+          notifyOn ? (
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-servirest-success/10 border border-servirest-success/30 text-[11px] font-bold text-servirest-mostaza mb-8">
+              <Bell size={13} /> Avisos activados — te notificamos cada cambio
+            </div>
+          ) : (
+            <button
+              onClick={() => requestNotifyPermission().then(setNotifyOn)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-servirest-hueso/10 border border-servirest-hueso/20 text-[11px] font-black uppercase tracking-[0.15em] text-servirest-hueso hover:bg-servirest-hueso/20 mb-8 transition-colors"
+            >
+              <Bell size={13} /> Avísame cuando cambie
+            </button>
+          )
+        )}
 
         {/* Progress ladder en vivo */}
         <div className="grid grid-cols-4 gap-2 mb-10">
