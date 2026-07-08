@@ -12,6 +12,7 @@ import {
   SrSectionHeading, SrPanel,
 } from '../components/ui/servirest';
 import { useMenu } from '../contexts/MenuContext';
+import { useUser } from '../contexts/UserContext';
 import { getSupabase } from '../services/auth';
 import { useSettings } from '../contexts/SettingsContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
@@ -33,6 +34,7 @@ const MODE_OPTIONS: Array<{
 
 export const DigitalChannelScreen: React.FC = () => {
   const { menuItems, updateItem } = useMenu();
+  const { authProfile } = useUser();
   const { settings, updateSettings } = useSettings();
   const { tier, meetsTier, isFeatureEnabled } = useSubscription();
 
@@ -149,30 +151,46 @@ export const DigitalChannelScreen: React.FC = () => {
     await directWrite(m.id, { onlineAvailable });
   };
 
-  // Empuja el estado de publicación de TODOS los platillos a la tabla en la
-  // nube. Repara los que quedaron atorados (publicados local pero la BD no
-  // los tenía como online → no aparecían en el storefront).
+  // Empuja el registro COMPLETO de TODOS los platillos a la tabla en la
+  // nube (upsert). Repara items que no aparecían en el storefront porque
+  // su status/publish_online no había llegado a la BD (sync incompleto).
   const [syncingPublish, setSyncingPublish] = useState(false);
   const syncPublishToCloud = async () => {
     if (syncingPublish) return;
     const supabase = getSupabase();
     if (!supabase) { alert('Supabase no configurado.'); return; }
+    const businessId = authProfile?.businessId || (menuItems[0] as any)?.businessId || (menuItems[0] as any)?.business_id;
     setSyncingPublish(true);
     let ok = 0, fail = 0;
     for (const m of menuItems) {
       try {
-        const { error } = await supabase.from('menu_items').update({
+        // Upsert del registro completo — garantiza que status='ACTIVE',
+        // publish_online, imagen, precio, etc. queden bien en la nube.
+        const record: Record<string, any> = {
+          id: m.id,
+          business_id: (m as any).businessId || (m as any).business_id || businessId,
+          name: m.name,
+          price: m.price,
+          category: m.category,
+          image: m.image,
+          description: m.description ?? null,
+          gramaje: m.gramaje ?? null,
+          status: m.status || 'ACTIVE',
+          variants: m.variants ?? [],
+          variant_mode: m.variantMode || 'single',
           publish_online: !!m.publishOnline,
           online_available: m.onlineAvailable ?? true,
           online_price: m.onlinePrice ?? null,
-        }).eq('id', m.id);
-        if (error) fail++; else ok++;
-      } catch { fail++; }
+        };
+        const { error } = await supabase.from('menu_items').upsert(record, { onConflict: 'id' });
+        if (error) { console.warn('[sync] upsert error:', error.message); fail++; }
+        else ok++;
+      } catch (e) { console.warn('[sync] item failed:', e); fail++; }
     }
     setSyncingPublish(false);
     alert(fail === 0
-      ? `¡Listo! ${ok} platillo(s) sincronizados. Recarga el storefront para verlos.`
-      : `${ok} sincronizados, ${fail} fallaron. Verifica que menu_items permite UPDATE.`);
+      ? `¡Listo! ${ok} platillo(s) sincronizados. Recarga el storefront (Ctrl+Shift+R) para verlos.`
+      : `${ok} sincronizados, ${fail} fallaron. Revisa la consola para el detalle.`);
   };
 
   return (
