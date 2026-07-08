@@ -64,7 +64,7 @@ const OrderTimer: React.FC<{ timestamp: Date }> = ({ timestamp }) => {
 /* -------------------------------------------------------------------------- */
 /* Ticket — single order card. Built for 6ft scanability.                       */
 /* -------------------------------------------------------------------------- */
-const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ order, onComplete }) => {
+const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void; onStart?: (id: string) => void }> = ({ order, onComplete, onStart }) => {
   const isDineIn = !order.source || order.source === OrderSource.DINE_IN;
   const isUUID = /^[0-9a-f]{8}-/i.test(order.tableId);
   const tableLabel = isUUID
@@ -127,8 +127,24 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void }> = ({ 
           ))}
         </div>
 
-        {/* Complete CTA — full width, glow */}
-        <div className="p-3 border-t border-[rgba(42,40,38,0.08)] bg-servirest-hueso-sunken/30">
+        {/* CTAs — comenzar preparación + pedido listo */}
+        <div className="p-3 border-t border-[rgba(42,40,38,0.08)] bg-servirest-hueso-sunken/30 space-y-2">
+          {order.status === OrderStatus.PENDING && onStart && (
+            <SrButton
+              variant="outline"
+              size="md"
+              fullWidth
+              icon={<ChefHat size={16} />}
+              onClick={() => onStart(order.id)}
+            >
+              Comenzar preparación
+            </SrButton>
+          )}
+          {order.status === OrderStatus.COOKING && (
+            <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-servirest-terracota">
+              <ChefHat size={12} /> En preparación
+            </div>
+          )}
           <SrButton
             variant="primary"
             size="lg"
@@ -197,6 +213,14 @@ export const KitchenScreen: React.FC = () => {
     updateOrderStatus(id, isFullyReady ? OrderStatus.READY : order.status, {
       ...order, isKitchenReady: true,
     });
+  };
+
+  // Marca la orden "en preparación" (COOKING). Se refleja en el roadmap del
+  // cliente del canal digital (paso "En preparación").
+  const handleStart = (id: string) => {
+    const order = orders.find((o) => o.id === id);
+    if (!order) return;
+    updateOrderStatus(id, OrderStatus.COOKING, { ...order });
   };
 
   const readyCount = orders.filter((o) => o.status === OrderStatus.READY).length;
@@ -288,7 +312,7 @@ export const KitchenScreen: React.FC = () => {
           <div className="flex gap-5 min-w-max h-full pt-1">
             <AnimatePresence mode="popLayout">
               {visibleOrders.map((order) => (
-                <Ticket key={order.id} order={order} onComplete={handleComplete} />
+                <Ticket key={order.id} order={order} onComplete={handleComplete} onStart={handleStart} />
               ))}
             </AnimatePresence>
           </div>
