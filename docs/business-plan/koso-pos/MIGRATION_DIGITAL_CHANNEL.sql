@@ -109,6 +109,18 @@ CREATE POLICY "businesses_public_read"
   TO anon, authenticated
   USING (true);
 
+-- SELECT público de locations. El storefront (anon/invitado) necesita el
+-- location_id del negocio porque orders.location_id es NOT NULL. Sin este
+-- policy, el fetch de la sucursal regresa vacío y el pedido falla con
+-- "null value in column location_id".
+ALTER TABLE locations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "locations_public_read" ON locations;
+CREATE POLICY "locations_public_read"
+  ON locations
+  FOR SELECT
+  TO anon, authenticated
+  USING (true);
+
 -- SELECT público de menu_items solo si están publicados online
 DROP POLICY IF EXISTS "menu_items_public_read" ON menu_items;
 CREATE POLICY "menu_items_public_read"
@@ -117,15 +129,64 @@ CREATE POLICY "menu_items_public_read"
   TO anon, authenticated
   USING (publish_online = true AND status = 'ACTIVE');
 
--- SELECT público de business_settings (config del canal digital: horario,
--- modo, zonas, mensaje de bienvenida, logo). Solo lectura.
+-- Tabla business_settings: guarda la config completa del negocio (incluida
+-- la del canal digital + geolocalización) como JSONB. Es de donde el
+-- storefront lee digitalMode, businessLat/Lng, radio, welcome, logo, etc.
+-- La creamos si no existe con el shape que espera SyncService (key='config').
+CREATE TABLE IF NOT EXISTS business_settings (
+  id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  business_id uuid NOT NULL,
+  key         text NOT NULL DEFAULT 'config',
+  value       jsonb NOT NULL DEFAULT '{}'::jsonb,
+  updated_at  timestamptz DEFAULT now(),
+  UNIQUE (business_id, key)
+);
+
 ALTER TABLE business_settings ENABLE ROW LEVEL SECURITY;
+
+-- SELECT público (el storefront anónimo lee la config del negocio)
 DROP POLICY IF EXISTS "business_settings_public_read" ON business_settings;
 CREATE POLICY "business_settings_public_read"
   ON business_settings
   FOR SELECT
   TO anon, authenticated
   USING (true);
+
+-- INSERT/UPDATE: miembros del negocio guardan SU config. Sin esto, la config
+-- del operador (geo, canal digital, banco) nunca llega a Supabase y el
+-- storefront no la ve → el candado de ubicación nunca aparece.
+DROP POLICY IF EXISTS "business_settings_member_write" ON business_settings;
+CREATE POLICY "business_settings_member_write"
+  ON business_settings
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    business_id IN (SELECT business_id FROM profiles WHERE id = auth.uid())
+  );
+
+DROP POLICY IF EXISTS "business_settings_member_update" ON business_settings;
+CREATE POLICY "business_settings_member_update"
+  ON business_settings
+  FOR UPDATE
+  TO authenticated
+  USING (
+    business_id IN (SELECT business_id FROM profiles WHERE id = auth.uid())
+  );
+
+-- Red de seguridad: hacemos orders.location_id NULLABLE. Los pedidos del
+-- storefront/kiosko no siempre tienen una sucursal específica, y forzar
+-- NOT NULL rompía el insert ("null value in column location_id"). Con esto
+-- el pedido entra aunque no resolvamos la sucursal; si sí la resolvemos,
+-- se guarda igual.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'orders' AND column_name = 'location_id' AND is_nullable = 'NO'
+  ) THEN
+    ALTER TABLE orders ALTER COLUMN location_id DROP NOT NULL;
+  END IF;
+END $$;
 
 -- La tabla `orders` no tenía una columna para guardar los metadatos del
 -- cliente del storefront (nombre, teléfono, dirección, customerId). La
