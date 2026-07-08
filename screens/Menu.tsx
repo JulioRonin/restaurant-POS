@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useMenu } from '../contexts/MenuContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { useUser } from '../contexts/UserContext';
 import { uploadMenuPhoto } from '../services/auth';
 import { MenuItem } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,6 +19,7 @@ const BASE_CATEGORIES = ['Variante', 'Entradas', 'Plato Fuerte', 'Bebidas', 'Pos
 export const MenuScreen: React.FC = () => {
   const { menuItems, addItem, updateItem, deleteItem, toggleStatus, importCSV, clearMenu } = useMenu();
   const { tier, isWithinLimit } = useSubscription();
+  const { authProfile } = useUser();
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -144,13 +146,29 @@ export const MenuScreen: React.FC = () => {
       // ── Subir la foto a Supabase Storage (si es una nueva imagen local) ──
       // Antes se guardaba base64 en la BD → se truncaba al sincronizar y las
       // fotos no se veían. Ahora subimos el archivo y guardamos la URL.
-      const businessId = (menuItems[0] as any)?.businessId || (editingItem as any)?.businessId || '';
+      // BUG FIX: el businessId se leía de menuItems[0].businessId, pero los
+      // items sincronizados desde Supabase traen business_id (snake_case),
+      // así que quedaba vacío y se saltaba la subida silenciosamente. Ahora
+      // viene de la sesión (authProfile), que siempre existe.
+      const businessId = authProfile?.businessId
+        || (menuItems[0] as any)?.businessId
+        || (menuItems[0] as any)?.business_id
+        || '';
       const photoItemId = editingItem?.id || crypto.randomUUID();
       let finalImage = imagePreview || editingItem?.image || `https://picsum.photos/seed/${formData.get('name')}/400/300`;
 
-      if (imagePreview && imagePreview.startsWith('data:') && businessId) {
-        const url = await uploadMenuPhoto(businessId, photoItemId, imagePreview);
-        if (url) finalImage = url; // si falla la subida, cae al base64 (fallback)
+      if (imagePreview && imagePreview.startsWith('data:')) {
+        const url = businessId ? await uploadMenuPhoto(businessId, photoItemId, imagePreview) : null;
+        if (url) {
+          finalImage = url;
+        } else {
+          // Fallback a base64, pero AVISANDO — antes fallaba en silencio y el
+          // usuario no sabía por qué su foto no aparecía en el storefront.
+          alert(
+            'No pudimos subir la foto a la nube (se guardó solo en este dispositivo). ' +
+            'Verifica que corriste MIGRATION_MENU_PHOTOS.sql en Supabase y vuelve a intentar.'
+          );
+        }
       }
 
       const data: Omit<MenuItem, 'id'> = {
