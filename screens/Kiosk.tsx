@@ -325,13 +325,13 @@ export const KioskScreen: React.FC = () => {
 
   // ── PANTALLA PRINCIPAL DEL KIOSKO ───────────────────────────────
   return (
-    <div className="h-screen w-screen bg-servirest-hueso overflow-hidden flex flex-col antialiased">
+    <div className="h-[100dvh] w-full max-w-full overflow-x-hidden bg-servirest-hueso flex flex-col antialiased">
       {/* Header */}
-      <header className="flex-shrink-0 px-8 md:px-12 pt-8 pb-6 border-b border-[rgba(42,40,38,0.08)] bg-servirest-surface">
-        <div className="flex items-start justify-between gap-6 flex-wrap">
+      <header className="flex-shrink-0 px-4 sm:px-8 md:px-12 pt-[max(1.5rem,env(safe-area-inset-top))] pb-5 border-b border-[rgba(42,40,38,0.08)] bg-servirest-surface">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex-1 min-w-0">
-            <SrKicker>Sobremesa Lúcida · {settings.name || 'ServiRest'}</SrKicker>
-            <h1 className="font-serif italic text-servirest-midnight text-4xl md:text-6xl leading-none mt-3 tracking-[-0.02em]">
+            <SrKicker className="!text-[9px] sm:!text-[11px]">{settings.name || 'ServiRest'}</SrKicker>
+            <h1 className="font-serif italic text-servirest-midnight text-3xl sm:text-4xl md:text-6xl leading-[1.05] mt-2 sm:mt-3 tracking-[-0.02em]">
               {settings.digitalWelcome || 'Bienvenido. Toca para ordenar.'}
             </h1>
             <div className="flex items-center gap-3 mt-5 flex-wrap">
@@ -355,22 +355,22 @@ export const KioskScreen: React.FC = () => {
           </button>
         </div>
 
-        <div className="mt-8 flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-[240px] max-w-md">
+        <div className="mt-5 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex-1 sm:max-w-md">
             <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-[rgba(42,40,38,0.4)]" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar platillo…"
-              className="w-full h-14 pl-14 pr-5 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.1)] text-[15px] font-medium focus:outline-none focus:border-servirest-terracota"
+              className="w-full h-12 sm:h-14 pl-14 pr-5 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.1)] text-[15px] font-medium focus:outline-none focus:border-servirest-terracota"
             />
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-4 px-4 sm:mx-0 sm:px-0">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setCategory(cat)}
-                className={`flex-shrink-0 px-5 h-14 rounded-full text-[13px] font-black uppercase tracking-[0.15em] transition-all ${
+                className={`flex-shrink-0 px-4 sm:px-5 h-12 sm:h-14 rounded-full text-[12px] sm:text-[13px] font-black uppercase tracking-[0.15em] transition-all ${
                   category === cat
                     ? 'bg-servirest-midnight text-servirest-hueso shadow-md'
                     : 'bg-servirest-hueso text-[rgba(42,40,38,0.6)] border border-[rgba(42,40,38,0.1)] hover:border-servirest-midnight/40'
@@ -384,7 +384,7 @@ export const KioskScreen: React.FC = () => {
       </header>
 
       {/* Catálogo */}
-      <main className="flex-1 overflow-y-auto px-8 md:px-12 py-8">
+      <main className="flex-1 overflow-y-auto px-4 sm:px-8 md:px-12 py-6 sm:py-8">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="w-24 h-24 rounded-full bg-servirest-hueso-sunken flex items-center justify-center mb-6">
@@ -413,7 +413,8 @@ export const KioskScreen: React.FC = () => {
             exit={{ y: 80, opacity: 0 }}
             transition={{ type: 'spring', damping: 24 }}
             onClick={() => setShowCart(true)}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 px-6 py-4 rounded-full bg-servirest-terracota text-servirest-hueso shadow-2xl shadow-servirest-terracota/40 hover:scale-105 transition-transform"
+            style={{ bottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+            className="fixed left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 sm:gap-4 px-5 sm:px-6 py-4 rounded-full bg-servirest-terracota text-servirest-hueso shadow-2xl shadow-servirest-terracota/40 hover:scale-105 transition-transform max-w-[calc(100vw-2rem)]"
           >
             <div className="relative">
               <ShoppingCart size={22} />
@@ -834,26 +835,27 @@ const OrderStatusScreen: React.FC<{
   const orderNum = order?.dailyNumber !== undefined ? String(order.dailyNumber + 1).padStart(4, '0') : '----';
 
   return (
-    <div className="h-screen w-screen bg-servirest-midnight overflow-hidden flex flex-col items-center justify-center antialiased relative">
+    <div className="min-h-[100dvh] w-full max-w-full overflow-x-hidden overflow-y-auto bg-servirest-midnight flex flex-col items-center justify-center antialiased relative py-16">
       <button
         onClick={onExit}
-        className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 rounded-full border border-servirest-hueso/20 hover:border-servirest-mostaza/60 text-[10px] font-black uppercase tracking-[0.2em] text-servirest-hueso/50 hover:text-servirest-mostaza"
+        className="absolute top-[max(1.5rem,env(safe-area-inset-top))] right-4 sm:right-6 flex items-center gap-2 px-4 py-2 rounded-full border border-servirest-hueso/20 hover:border-servirest-mostaza/60 text-[10px] font-black uppercase tracking-[0.2em] text-servirest-hueso/50 hover:text-servirest-mostaza"
       >
         <Lock size={12} /> Salir del kiosko
       </button>
 
-      <div className="max-w-2xl w-full px-8 text-center">
+      <div className="max-w-2xl w-full px-5 sm:px-8 text-center">
         <motion.div
           initial={{ scale: 0.6, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', damping: 18 }}
-          className="w-28 h-28 rounded-full bg-servirest-terracota text-servirest-hueso mx-auto flex items-center justify-center shadow-sr-glow mb-6"
+          className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-servirest-terracota text-servirest-hueso mx-auto flex items-center justify-center shadow-sr-glow mb-6"
         >
-          <CheckCircle2 size={56} strokeWidth={2.5} />
+          <CheckCircle2 size={48} strokeWidth={2.5} className="sm:hidden" />
+          <CheckCircle2 size={56} strokeWidth={2.5} className="hidden sm:block" />
         </motion.div>
 
         <SrKicker className="!text-servirest-mostaza">Pedido confirmado</SrKicker>
-        <h1 className="font-serif italic text-servirest-hueso text-6xl leading-none mt-3 mb-2">
+        <h1 className="font-serif italic text-servirest-hueso text-4xl sm:text-6xl leading-tight mt-3 mb-2">
           Orden #{orderNum}
         </h1>
         <p className="text-[15px] text-servirest-hueso/60 leading-relaxed mb-10">
@@ -867,14 +869,14 @@ const OrderStatusScreen: React.FC<{
             const current = i === activeIdx;
             return (
               <div key={step.key} className="flex flex-col items-center">
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
+                <div className={`w-11 h-11 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${
                   done
                     ? 'bg-servirest-terracota text-servirest-hueso shadow-sr-glow'
                     : 'bg-servirest-hueso/5 text-servirest-hueso/30 border border-servirest-hueso/10'
                 } ${current ? 'animate-pulse' : ''}`}>
                   <step.icon size={22} strokeWidth={2.2} />
                 </div>
-                <span className={`mt-3 text-[10px] font-black uppercase tracking-[0.15em] ${
+                <span className={`mt-2 sm:mt-3 text-[8px] sm:text-[10px] font-black uppercase tracking-[0.08em] sm:tracking-[0.15em] text-center leading-tight ${
                   done ? 'text-servirest-mostaza' : 'text-servirest-hueso/40'
                 }`}>
                   {step.label}
@@ -929,19 +931,19 @@ const OrderStatusScreen: React.FC<{
 /* ClosedTodayScreen                                                          */
 /* -------------------------------------------------------------------------- */
 const ClosedTodayScreen: React.FC<any> = ({ settings, onExit, showExitPin, setShowExitPin, exitPinValue, setExitPinValue, exitPinError, onExitConfirm }) => (
-  <div className="h-screen w-screen bg-servirest-hueso flex items-center justify-center antialiased relative">
+  <div className="min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-servirest-hueso flex items-center justify-center antialiased relative">
     <button
       onClick={onExit}
-      className="absolute top-6 right-6 flex items-center gap-2 px-4 py-2 rounded-full border border-[rgba(42,40,38,0.15)] text-[10px] font-black uppercase tracking-[0.2em] text-[rgba(42,40,38,0.5)]"
+      className="absolute top-[max(1.5rem,env(safe-area-inset-top))] right-4 sm:right-6 flex items-center gap-2 px-4 py-2 rounded-full border border-[rgba(42,40,38,0.15)] text-[10px] font-black uppercase tracking-[0.2em] text-[rgba(42,40,38,0.5)]"
     >
       <Lock size={12} /> Salir
     </button>
-    <div className="max-w-lg text-center px-8">
+    <div className="max-w-lg text-center px-5 sm:px-8">
       <div className="w-24 h-24 rounded-full bg-servirest-mostaza/20 text-servirest-mostaza mx-auto flex items-center justify-center mb-6">
         <ClockIcon size={40} />
       </div>
       <SrKicker>Canal digital · {settings.name}</SrKicker>
-      <h1 className="font-serif italic text-servirest-midnight text-5xl leading-none mt-3 mb-4">
+      <h1 className="font-serif italic text-servirest-midnight text-4xl sm:text-5xl leading-tight mt-3 mb-4">
         Cerrado hoy
       </h1>
       <p className="text-[15px] text-[rgba(42,40,38,0.6)] leading-relaxed">

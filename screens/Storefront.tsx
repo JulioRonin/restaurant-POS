@@ -538,7 +538,7 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   // ── Loading / error ──────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="h-screen w-screen bg-servirest-hueso flex items-center justify-center">
+      <div className="h-[100dvh] w-full bg-servirest-hueso flex items-center justify-center">
         <div className="text-center">
           <RefreshCw size={40} className="mx-auto text-servirest-terracota animate-spin" />
           <p className="text-[13px] mt-4 text-[rgba(42,40,38,0.6)]">Cargando el menú…</p>
@@ -606,18 +606,18 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
 
   // MENU view
   return (
-    <div className="h-screen w-screen bg-servirest-hueso overflow-hidden flex flex-col antialiased">
-      <header className="flex-shrink-0 px-6 md:px-12 pt-8 pb-6 border-b border-[rgba(42,40,38,0.08)] bg-servirest-surface">
+    <div className="h-[100dvh] w-full max-w-full overflow-x-hidden bg-servirest-hueso flex flex-col antialiased">
+      <header className="flex-shrink-0 px-4 sm:px-6 md:px-12 pt-[max(1.5rem,env(safe-area-inset-top))] pb-5 border-b border-[rgba(42,40,38,0.08)] bg-servirest-surface">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-3 sm:gap-4 mb-3 sm:mb-4">
             {settings.logoUrl ? (
-              <img src={settings.logoUrl} alt={business.name} className="w-16 h-16 rounded-sr-md object-contain bg-servirest-hueso border border-[rgba(42,40,38,0.08)] p-1.5" />
+              <img src={settings.logoUrl} alt={business.name} className="w-12 h-12 sm:w-16 sm:h-16 rounded-sr-md object-contain bg-servirest-hueso border border-[rgba(42,40,38,0.08)] p-1.5 flex-shrink-0" />
             ) : (
-              <div className="w-16 h-16 rounded-sr-md bg-servirest-midnight text-servirest-mostaza flex items-center justify-center font-serif italic text-3xl">{business.name?.[0] || 'R'}</div>
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-sr-md bg-servirest-midnight text-servirest-mostaza flex items-center justify-center font-serif italic text-2xl sm:text-3xl flex-shrink-0">{business.name?.[0] || 'R'}</div>
             )}
-            <SrKicker>Ordena en línea · {business.name}</SrKicker>
+            <SrKicker className="!text-[9px] sm:!text-[11px]">Ordena en línea · {business.name}</SrKicker>
           </div>
-          <h1 className="font-serif italic text-servirest-midnight text-4xl md:text-6xl leading-none mt-3 tracking-[-0.02em]">
+          <h1 className="font-serif italic text-servirest-midnight text-3xl sm:text-4xl md:text-6xl leading-[1.05] mt-2 sm:mt-3 tracking-[-0.02em]">
             {settings.digitalWelcome || `Bienvenido a ${business.name}`}
           </h1>
           <div className="flex items-center gap-3 mt-5 flex-wrap">
@@ -649,22 +649,22 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto mt-8 flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-[240px] max-w-md">
+        <div className="max-w-6xl mx-auto mt-5 sm:mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex-1 sm:max-w-md">
             <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-[rgba(42,40,38,0.4)]" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar platillo…"
-              className="w-full h-14 pl-14 pr-5 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.1)] text-[15px] font-medium focus:outline-none focus:border-servirest-terracota"
+              className="w-full h-12 sm:h-14 pl-14 pr-5 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.1)] text-[15px] font-medium focus:outline-none focus:border-servirest-terracota"
             />
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-4 px-4 sm:mx-0 sm:px-0">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setCategory(cat)}
-                className={`flex-shrink-0 px-5 h-14 rounded-full text-[13px] font-black uppercase tracking-[0.15em] transition-all ${
+                className={`flex-shrink-0 px-4 sm:px-5 h-12 sm:h-14 rounded-full text-[12px] sm:text-[13px] font-black uppercase tracking-[0.15em] transition-all ${
                   category === cat
                     ? 'bg-servirest-midnight text-servirest-hueso shadow-md'
                     : 'bg-servirest-hueso text-[rgba(42,40,38,0.6)] border border-[rgba(42,40,38,0.1)] hover:border-servirest-midnight/40'
@@ -677,7 +677,7 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto px-6 md:px-12 py-8">
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-12 py-6 sm:py-8">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="w-24 h-24 rounded-full bg-servirest-hueso-sunken flex items-center justify-center mb-6">
@@ -687,7 +687,7 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
             <p className="text-[14px] text-[rgba(42,40,38,0.6)] max-w-md">Este negocio aún no publica platillos.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto pb-32">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 max-w-6xl mx-auto pb-32">
             {filtered.map((item, idx) => (
               <ProductCard key={item.id} item={item} idx={idx} onOpen={() => openProduct(item)} />
             ))}
@@ -701,14 +701,15 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
             initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
             transition={{ type: 'spring', damping: 24 }}
             onClick={() => setShowCart(true)}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-4 px-6 py-4 rounded-full bg-servirest-terracota text-servirest-hueso shadow-2xl shadow-servirest-terracota/40 hover:scale-105 transition-transform"
+            style={{ bottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+            className="fixed left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 sm:gap-4 px-5 sm:px-6 py-4 rounded-full bg-servirest-terracota text-servirest-hueso shadow-2xl shadow-servirest-terracota/40 hover:scale-105 transition-transform max-w-[calc(100vw-2rem)]"
           >
-            <div className="relative">
+            <div className="relative flex-shrink-0">
               <ShoppingCart size={22} />
               <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-servirest-mostaza text-servirest-midnight text-[10px] font-black flex items-center justify-center">{cartCount}</span>
             </div>
-            <span className="font-black italic uppercase tracking-[0.15em] text-[13px]">Ver mi orden</span>
-            <SrMono className="text-[14px] font-extrabold">${total.toFixed(2)}</SrMono>
+            <span className="font-black italic uppercase tracking-[0.15em] text-[12px] sm:text-[13px] whitespace-nowrap">Ver mi orden</span>
+            <SrMono className="text-[14px] font-extrabold flex-shrink-0">${total.toFixed(2)}</SrMono>
           </motion.button>
         )}
       </AnimatePresence>
@@ -934,8 +935,8 @@ const CheckoutView: React.FC<any> = ({
   const canConfirm = contactOk && deliveryOk && cart.length > 0 && !processing;
 
   return (
-    <div className="h-screen w-screen bg-servirest-hueso overflow-y-auto antialiased">
-      <div className="max-w-2xl mx-auto px-6 py-10">
+    <div className="h-[100dvh] w-full max-w-full overflow-x-hidden overflow-y-auto bg-servirest-hueso antialiased">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         <button onClick={onBack} className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-[rgba(42,40,38,0.5)] mb-6">
           <ArrowLeft size={14} /> Seguir viendo el menú
         </button>
@@ -952,7 +953,7 @@ const CheckoutView: React.FC<any> = ({
             <div className="text-[10px] text-[rgba(42,40,38,0.4)]">{mode === 'delivery' ? 'Envío a domicilio' : 'Recoger en local'}</div>
           </div>
         </div>
-        <h1 className="font-serif italic text-servirest-midnight text-4xl md:text-5xl leading-none mt-3 mb-8">
+        <h1 className="font-serif italic text-servirest-midnight text-3xl sm:text-4xl md:text-5xl leading-tight mt-3 mb-6 sm:mb-8">
           Últimos detalles
         </h1>
 
@@ -1186,13 +1187,13 @@ const PayOption: React.FC<any> = ({ active, onClick, label, desc, icon: Icon }) 
 // AuthView (login / signup)
 // ─────────────────────────────────────────────────────────────────────────
 const AuthView: React.FC<any> = ({ mode, setMode, email, setEmail, password, setPassword, error, loading, onSubmit, onBack }) => (
-  <div className="h-screen w-screen bg-servirest-midnight flex items-center justify-center px-6 antialiased">
+  <div className="min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-servirest-midnight flex items-center justify-center px-4 sm:px-6 py-10 antialiased">
     <div className="max-w-md w-full">
       <button onClick={onBack} className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-servirest-hueso/50 mb-6">
         <ArrowLeft size={14} /> Volver
       </button>
       <SrKicker className="!text-servirest-mostaza">Cliente</SrKicker>
-      <h1 className="font-serif italic text-servirest-hueso text-5xl leading-none mt-3 mb-8">
+      <h1 className="font-serif italic text-servirest-hueso text-4xl sm:text-5xl leading-tight mt-3 mb-8">
         {mode === 'login' ? 'Bienvenido de vuelta' : 'Crea tu cuenta'}
       </h1>
 
@@ -1262,13 +1263,13 @@ const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, onOrderMore, onNe
   const isDone = status === 'SERVED' || status === 'COMPLETED';
 
   return (
-    <div className="h-screen w-screen bg-servirest-midnight overflow-y-auto flex flex-col items-center justify-center antialiased relative py-10">
-      <div className="max-w-2xl w-full px-8 text-center">
+    <div className="min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-servirest-midnight overflow-y-auto flex flex-col items-center justify-center antialiased relative py-10">
+      <div className="max-w-2xl w-full px-5 sm:px-8 text-center">
         <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 18 }} className="w-28 h-28 rounded-full bg-servirest-terracota text-servirest-hueso mx-auto flex items-center justify-center shadow-sr-glow mb-6">
           {isDone ? <Truck size={52} strokeWidth={2.2} /> : <CheckCircle2 size={56} strokeWidth={2.5} />}
         </motion.div>
         <SrKicker className="!text-servirest-mostaza">{isDone ? '¡Pedido en camino!' : 'Pedido recibido'}</SrKicker>
-        <h1 className="font-serif italic text-servirest-hueso text-6xl leading-none mt-3 mb-2">Orden #{orderNum}</h1>
+        <h1 className="font-serif italic text-servirest-hueso text-4xl sm:text-6xl leading-tight mt-3 mb-2">Orden #{orderNum}</h1>
         <p className="text-[15px] text-servirest-hueso/60 mb-10">
           {isDone
             ? (mode === 'delivery' ? 'Tu pedido ya salió. Llega en unos minutos.' : 'Tu pedido está listo para recoger.')
@@ -1283,12 +1284,13 @@ const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, onOrderMore, onNe
             const label = typeof step.label === 'function' ? step.label(mode) : step.label;
             return (
               <div key={i} className="flex flex-col items-center">
-                <div className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${
+                <div className={`w-11 h-11 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${
                   done ? 'bg-servirest-terracota text-servirest-hueso shadow-sr-glow' : 'bg-servirest-hueso/5 text-servirest-hueso/30 border border-servirest-hueso/10'
                 } ${current ? 'animate-pulse' : ''}`}>
-                  <step.icon size={22} strokeWidth={2.2} />
+                  <step.icon size={18} strokeWidth={2.2} className="sm:hidden" />
+                  <step.icon size={22} strokeWidth={2.2} className="hidden sm:block" />
                 </div>
-                <span className={`mt-3 text-[10px] font-black uppercase tracking-[0.12em] ${done ? 'text-servirest-mostaza' : 'text-servirest-hueso/40'}`}>
+                <span className={`mt-2 sm:mt-3 text-[8px] sm:text-[10px] font-black uppercase tracking-[0.08em] sm:tracking-[0.12em] text-center leading-tight ${done ? 'text-servirest-mostaza' : 'text-servirest-hueso/40'}`}>
                   {label}
                 </span>
               </div>
@@ -1319,7 +1321,7 @@ const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, onOrderMore, onNe
 // BadUrlScreen
 // ─────────────────────────────────────────────────────────────────────────
 const BadUrlScreen: React.FC<{ error?: string | null }> = ({ error }) => (
-  <div className="h-screen w-screen bg-servirest-hueso flex items-center justify-center px-6 antialiased">
+  <div className="h-[100dvh] w-full bg-servirest-hueso flex items-center justify-center px-6 antialiased">
     <div className="max-w-md text-center">
       <div className="w-24 h-24 rounded-full bg-servirest-danger/10 text-servirest-danger mx-auto flex items-center justify-center mb-6">
         <AlertCircle size={40} />
