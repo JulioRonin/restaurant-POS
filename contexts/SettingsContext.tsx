@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import { useUser } from './UserContext';
 import { getSetting, putSetting } from '../services/db';
 import { printerService } from '../services/PrinterService';
@@ -133,12 +133,20 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   const { authProfile } = useUser();
   const [settings, setSettings] = useState<BusinessSettings>(DEFAULT_SETTINGS);
 
+  // Flag de hidratación: evita que el useEffect de persistencia escriba el
+  // DEFAULT_SETTINGS inicial ENCIMA de la config guardada antes de que
+  // loadFromStore termine de leer de IndexedDB (race condition que borraba
+  // la config del Canal Digital al recargar).
+  const hydratedRef = useRef(false);
+
   // Load from IndexedDB/LocalStorage on mount
   useEffect(() => {
     if (!authProfile?.businessId) {
       setSettings(DEFAULT_SETTINGS);
       return;
     }
+
+    hydratedRef.current = false; // reset al cambiar de negocio
 
     const bizKey = `solaris_settings_${authProfile.businessId}`;
     const idbKey = `settings_${authProfile.businessId}`;
@@ -189,6 +197,9 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
       } catch (err) {
         console.error('[SettingsContext] Error loading settings:', err);
+      } finally {
+        // Hidratación completa: a partir de aquí sí se puede persistir.
+        hydratedRef.current = true;
       }
     };
 
@@ -287,6 +298,9 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   // Persist to both localStorage and IndexedDB
   useEffect(() => {
     if (!authProfile?.businessId) return;
+    // NO persistir hasta que loadFromStore haya hidratado, para no pisar la
+    // config guardada con el DEFAULT_SETTINGS inicial.
+    if (!hydratedRef.current) return;
 
     const bizKey = `solaris_settings_${authProfile.businessId}`;
     const idbKey = `settings_${authProfile.businessId}`;
