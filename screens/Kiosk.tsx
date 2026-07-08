@@ -11,6 +11,7 @@ import { useOrders } from '../contexts/OrderContext';
 import { useUser } from '../contexts/UserContext';
 import { MenuItem, MenuItemVariant, OrderStatus, OrderSource, PaymentStatus, PaymentMethod, Order } from '../types';
 import { SrKicker, SrMono, SrChip, SrLabel } from '../components/ui/servirest';
+import { notify, requestNotifyPermission, statusNotifyCopy } from '../services/notify';
 
 type CartLine = {
   lineId: string;
@@ -833,6 +834,24 @@ const OrderStatusScreen: React.FC<{
 }> = ({ order, mode, onOrderMore, onNewOrder, onExit }) => {
   const activeIdx = order ? STATUS_STEPS.findIndex((s) => s.key === order.status) : 0;
   const orderNum = order?.dailyNumber !== undefined ? String(order.dailyNumber + 1).padStart(4, '0') : '----';
+  const prevStatusRef = React.useRef<string | undefined>(order?.status);
+
+  // Pide permiso de avisos al entrar a la pantalla de estatus.
+  useEffect(() => {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      requestNotifyPermission();
+    }
+  }, []);
+
+  // Notifica cuando cambia el estatus de la orden (viene del contexto/sync).
+  useEffect(() => {
+    if (!order?.status) return;
+    if (order.status !== prevStatusRef.current) {
+      const copy = statusNotifyCopy(order.status, mode === 'delivery' ? 'delivery' : 'pickup', orderNum);
+      if (copy) notify(copy.title, copy.body);
+      prevStatusRef.current = order.status;
+    }
+  }, [order?.status, mode, orderNum]);
 
   return (
     <div className="min-h-[100dvh] w-full max-w-full overflow-x-hidden overflow-y-auto bg-servirest-midnight flex flex-col items-center justify-center antialiased relative py-16">
