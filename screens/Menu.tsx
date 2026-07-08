@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { useMenu } from '../contexts/MenuContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useUser } from '../contexts/UserContext';
-import { uploadMenuPhoto } from '../services/auth';
+import { uploadMenuPhoto, getSupabase } from '../services/auth';
 import { MenuItem } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -123,39 +123,48 @@ export const MenuScreen: React.FC = () => {
 
   const [savingItem, setSavingItem] = useState(false);
 
-  // Migra TODAS las fotos base64 existentes a Supabase Storage de un tiro.
-  // Resuelve el caso donde las fotos viejas quedaron como base64 (que se
-  // truncaba al sincronizar y no se veía en el storefront).
+  // Sincroniza las fotos a Supabase FORZANDO la escritura directa. Cubre
+  // dos casos que dejaban el storefront con el logo viejo:
+  //   1. Fotos base64 → se suben a Storage y se guarda la URL.
+  //   2. Fotos que YA son URL local pero NO llegaron a la tabla en la nube
+  //      (el sync no completó) → se re-escriben directo a menu_items.
   const [migratingPhotos, setMigratingPhotos] = useState(false);
   const handleMigratePhotos = async () => {
     if (migratingPhotos) return;
     const businessId = authProfile?.businessId
       || (menuItems[0] as any)?.businessId || (menuItems[0] as any)?.business_id || '';
     if (!businessId) { alert('No hay sesión de negocio activa.'); return; }
+    const supabase = getSupabase();
+    if (!supabase) { alert('Supabase no está configurado.'); return; }
 
-    const pending = menuItems.filter((m) => (m.image || '').startsWith('data:'));
-    if (pending.length === 0) {
-      alert('Todas tus fotos ya están en la nube. Nada que migrar.');
-      return;
-    }
-    if (!window.confirm(`Vamos a subir ${pending.length} foto(s) a la nube. ¿Continuar?`)) return;
+    if (menuItems.length === 0) { alert('No hay platillos.'); return; }
+    if (!window.confirm(`Vamos a sincronizar las fotos de ${menuItems.length} platillo(s) a la nube. ¿Continuar?`)) return;
 
     setMigratingPhotos(true);
     let ok = 0, fail = 0;
-    for (const item of pending) {
+    for (const item of menuItems) {
       try {
-        const url = await uploadMenuPhoto(businessId, item.id, item.image);
-        if (url) { await updateItem(item.id, { image: url }); ok++; }
-        else fail++;
-      } catch { fail++; }
+        let url = item.image;
+        // Si sigue en base64, súbela a Storage primero.
+        if ((item.image || '').startsWith('data:')) {
+          const uploaded = await uploadMenuPhoto(businessId, item.id, item.image);
+          if (!uploaded) { fail++; continue; }
+          url = uploaded;
+          await updateItem(item.id, { image: url }); // actualiza local + cola de sync
+        }
+        // Escritura DIRECTA a la tabla (no dependemos del sync en cola).
+        const { error } = await supabase.from('menu_items').update({ image: url }).eq('id', item.id);
+        if (error) { console.warn('[migrate] update error:', error.message); fail++; }
+        else ok++;
+      } catch (e) { console.warn('[migrate] item failed:', e); fail++; }
     }
     setMigratingPhotos(false);
     if (fail === 0) {
-      alert(`¡Listo! ${ok} foto(s) subidas a la nube. Recarga el storefront para verlas.`);
+      alert(`¡Listo! ${ok} foto(s) sincronizadas a la nube. Recarga el storefront (Ctrl+Shift+R) para verlas.`);
     } else {
       alert(
-        `${ok} subidas, ${fail} fallaron. Si fallaron todas, verifica que corriste ` +
-        `MIGRATION_MENU_PHOTOS.sql en Supabase (el bucket menu-photos debe existir).`
+        `${ok} sincronizadas, ${fail} fallaron. Si fallaron todas, verifica que corriste ` +
+        `MIGRATION_MENU_PHOTOS.sql en Supabase (bucket menu-photos) y que menu_items permite UPDATE.`
       );
     }
   };
@@ -226,6 +235,15 @@ export const MenuScreen: React.FC = () => {
 
       if (editingItem) {
         await updateItem(editingItem.id, data as Partial<MenuItem>);
+        // Escritura DIRECTA del image a Supabase — garantiza que la foto
+        // llegue a la nube aunque la cola de sync se atore. El storefront
+        // lee de la tabla, así que sin esto la foto no aparece online.
+        if (finalImage && !finalImage.startsWith('data:')) {
+          try {
+            const supabase = getSupabase();
+            await supabase?.from('menu_items').update({ image: finalImage }).eq('id', editingItem.id);
+          } catch (e) { console.warn('[Menu] direct image sync failed:', e); }
+        }
       } else {
         await addItem(data);
       }

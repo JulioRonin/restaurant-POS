@@ -33,7 +33,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { getAll } from '../services/db';
-import { getSupabase } from '../services/auth';
+import { getSupabase, uploadMenuPhoto } from '../services/auth';
 import { useSubscription, TIER_PRICING } from '../contexts/SubscriptionContext';
 import {
   SrCard,
@@ -877,10 +877,12 @@ const LogoUploader: React.FC<{
   value: string;
   onChange: (url: string) => void;
 }> = ({ value, onChange }) => {
+  const { authProfile } = useUser();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = React.useState(false);
   const [tab, setTab] = React.useState<'upload' | 'url'>('upload');
   const [error, setError] = React.useState<string | null>(null);
+  const [uploading, setUploading] = React.useState(false);
 
   const handleFile = (file: File | null | undefined) => {
     setError(null);
@@ -889,16 +891,28 @@ const LogoUploader: React.FC<{
       setError('El archivo debe ser una imagen (PNG, JPG, SVG, WEBP).');
       return;
     }
-    // ~2 MB máx para que el data-URL no infle localStorage/Supabase.
     if (file.size > 2 * 1024 * 1024) {
       setError('La imagen es muy grande. Máximo 2 MB.');
       return;
     }
+    // Sube el logo a Supabase Storage y guarda la URL (no base64). Antes se
+    // guardaba base64 en settings, que se truncaba al sincronizar → el logo
+    // "se perdía" y había que re-subirlo. Con URL, persiste y se ve en el
+    // storefront/tickets.
+    setUploading(true);
     const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') onChange(reader.result);
+    reader.onload = async () => {
+      const dataUrl = reader.result as string;
+      onChange(dataUrl); // preview inmediato
+      const businessId = authProfile?.businessId;
+      if (businessId) {
+        const url = await uploadMenuPhoto(businessId, 'logo', file);
+        if (url) onChange(url); // reemplaza el base64 por la URL de Storage
+        else setError('No pudimos subir el logo a la nube (se guardó local). Verifica MIGRATION_MENU_PHOTOS.sql.');
+      }
+      setUploading(false);
     };
-    reader.onerror = () => setError('No pudimos leer el archivo. Intenta con otro.');
+    reader.onerror = () => { setError('No pudimos leer el archivo. Intenta con otro.'); setUploading(false); };
     reader.readAsDataURL(file);
   };
 
@@ -969,7 +983,7 @@ const LogoUploader: React.FC<{
               <div className="w-11 h-11 rounded-full bg-servirest-terracota/10 text-servirest-terracota flex items-center justify-center mx-auto mb-3">
                 <Upload size={20} />
               </div>
-              <p className="text-[13px] font-bold text-servirest-midnight">Arrastra tu logo aquí</p>
+              <p className="text-[13px] font-bold text-servirest-midnight">{uploading ? 'Subiendo a la nube…' : 'Arrastra tu logo aquí'}</p>
               <p className="text-[11px] text-[rgba(42,40,38,0.5)] mt-1">
                 O click para elegir un archivo · PNG, JPG, SVG o WEBP · máx 2 MB
               </p>
