@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { useMenu } from '../contexts/MenuContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { uploadMenuPhoto } from '../services/auth';
 import { MenuItem } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -118,8 +119,11 @@ export const MenuScreen: React.FC = () => {
     }
   };
 
-  const handleSaveItem = (e: React.FormEvent<HTMLFormElement>) => {
+  const [savingItem, setSavingItem] = useState(false);
+
+  const handleSaveItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (savingItem) return;
     const formData = new FormData(e.currentTarget);
     const finalCategory = isAddingNewCategory && newCategoryName.trim()
       ? newCategoryName.trim()
@@ -129,35 +133,54 @@ export const MenuScreen: React.FC = () => {
       setCustomCategories((prev) => [...prev, newCategoryName.trim()]);
     }
 
-    const data: Omit<MenuItem, 'id'> = {
-      name: formData.get('name') as string,
-      category: finalCategory,
-      price: parseFloat(formData.get('price') as string),
-      description: formData.get('description') as string,
-      gramaje: formData.get('gramaje') as string,
-      status: formStatus,
-      image: imagePreview || editingItem?.image || `https://picsum.photos/seed/${formData.get('name')}/400/300`,
-      inventoryLevel: 4,
-      variants: variants.filter((v) => v.name.trim()).map((v) => ({
-        name: v.name.trim(),
-        price: v.price ? parseFloat(v.price) : undefined,
-      })),
-      variantMode,
-    };
-
-    if (editingItem) {
-      updateItem(editingItem.id, data as Partial<MenuItem>);
-    } else {
-      // Tier limit — bail if creating this would cross the maxProducts cap.
-      if (!isWithinLimit('maxProducts', menuItems.length + 1)) {
-        setShowLimitModal(true);
-        return;
-      }
-      addItem(data);
+    // Tier limit para nuevos — chequear antes de subir la foto.
+    if (!editingItem && !isWithinLimit('maxProducts', menuItems.length + 1)) {
+      setShowLimitModal(true);
+      return;
     }
-    setIsAddModalOpen(false);
-    setEditingItem(null);
-    setVariants(item.variants?.map((v) => ({ name: v.name, price: v.price?.toString() || '' })) || []);
+
+    setSavingItem(true);
+    try {
+      // ── Subir la foto a Supabase Storage (si es una nueva imagen local) ──
+      // Antes se guardaba base64 en la BD → se truncaba al sincronizar y las
+      // fotos no se veían. Ahora subimos el archivo y guardamos la URL.
+      const businessId = (menuItems[0] as any)?.businessId || (editingItem as any)?.businessId || '';
+      const photoItemId = editingItem?.id || crypto.randomUUID();
+      let finalImage = imagePreview || editingItem?.image || `https://picsum.photos/seed/${formData.get('name')}/400/300`;
+
+      if (imagePreview && imagePreview.startsWith('data:') && businessId) {
+        const url = await uploadMenuPhoto(businessId, photoItemId, imagePreview);
+        if (url) finalImage = url; // si falla la subida, cae al base64 (fallback)
+      }
+
+      const data: Omit<MenuItem, 'id'> = {
+        name: formData.get('name') as string,
+        category: finalCategory,
+        price: parseFloat(formData.get('price') as string),
+        description: formData.get('description') as string,
+        gramaje: formData.get('gramaje') as string,
+        status: formStatus,
+        image: finalImage,
+        inventoryLevel: 4,
+        variants: variants.filter((v) => v.name.trim()).map((v) => ({
+          name: v.name.trim(),
+          price: v.price ? parseFloat(v.price) : undefined,
+        })),
+        variantMode,
+      };
+
+      if (editingItem) {
+        await updateItem(editingItem.id, data as Partial<MenuItem>);
+      } else {
+        await addItem(data);
+      }
+      setIsAddModalOpen(false);
+      setEditingItem(null);
+      setVariants([]);
+      setImagePreview(null);
+    } finally {
+      setSavingItem(false);
+    }
   };
 
   const handleImport = async () => {
@@ -601,9 +624,10 @@ export const MenuScreen: React.FC = () => {
                   variant="primary"
                   size="lg"
                   fullWidth
+                  disabled={savingItem}
                   icon={<CheckCircle2 size={16} />}
                 >
-                  {editingItem ? 'Guardar cambios' : 'Agregar al menú'}
+                  {savingItem ? 'Guardando foto…' : editingItem ? 'Guardar cambios' : 'Agregar al menú'}
                 </SrButton>
               </div>
             </form>
