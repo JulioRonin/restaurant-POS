@@ -314,8 +314,11 @@ export const HostessScreen: React.FC = () => {
   ] as const;
 
   // ── Render ───────────────────────────────────────────────────────────────
+  // El root es fila en desktop (contenido + aside 420px a la derecha) y
+  // columna en móvil. Antes era flex-col siempre → el aside se apilaba
+  // DEBAJO robándole 300px de alto al plano de mesas, que quedaba aplastado.
   return (
-    <div className="flex flex-col h-full w-full bg-servirest-hueso text-servirest-carbon antialiased overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-full w-full bg-servirest-hueso text-servirest-carbon antialiased overflow-hidden">
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {/* ─── HEADER ─────────────────────────────────────────────────── */}
         <div className="px-[38px] pt-10 pb-6 shrink-0">
@@ -685,9 +688,11 @@ export const HostessScreen: React.FC = () => {
       </div>
 
       {/* ─── SIDE PANEL ─────────────────────────────────────────────── */}
+      {/* En desktop es columna fija a la derecha con alto completo; el
+          max-height solo aplica en móvil (donde se apila abajo). */}
       <aside
-        className="w-full lg:w-[420px] bg-servirest-hueso-sunken/40 border-t lg:border-t-0 lg:border-l border-[rgba(42,40,38,0.12)] flex flex-col shrink-0"
-        style={{ overflowY: 'auto', WebkitOverflowScrolling: 'touch', maxHeight: selectedTableId ? '60vh' : '300px' } as React.CSSProperties}
+        className={`w-full lg:w-[420px] lg:h-full bg-servirest-hueso-sunken/40 border-t lg:border-t-0 lg:border-l border-[rgba(42,40,38,0.12)] flex flex-col shrink-0 overflow-y-auto lg:max-h-none ${selectedTableId ? 'max-h-[60vh]' : 'max-h-[300px]'}`}
+        style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
       >
         <div className="p-7 flex flex-col gap-5">
           {/* WALK-IN CONSOLE */}

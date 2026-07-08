@@ -94,8 +94,11 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   const [selVariants, setSelVariants] = useState<MenuItemVariant[]>([]);
   const [selNotes, setSelNotes] = useState('');
 
-  // Checkout form
-  const [deliveryAddress, setDeliveryAddress] = useState('');
+  // Checkout form — dirección estructurada para entregas precisas.
+  const [addrStreet, setAddrStreet] = useState('');   // calle y número
+  const [addrColonia, setAddrColonia] = useState('');
+  const [addrCP, setAddrCP] = useState('');           // código postal (5 dígitos)
+  const [addrRefs, setAddrRefs] = useState('');       // referencias para el repartidor
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [payMethod, setPayMethod] = useState<PayMethod>('cash');
@@ -104,6 +107,14 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   const [geoState, setGeoState] = useState<'idle' | 'checking' | 'inside' | 'outside' | 'error'>('idle');
   const [geoDistance, setGeoDistance] = useState<number | null>(null);
   const [clientCoords, setClientCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  // Dirección compuesta a partir de los campos estructurados — se usa para
+  // el match de zonas por texto y para la metadata de la orden.
+  const deliveryAddress = [
+    addrStreet.trim(),
+    addrColonia.trim(),
+    addrCP.trim() ? `CP ${addrCP.trim()}` : '',
+  ].filter(Boolean).join(', ') + (addrRefs.trim() ? ` (Ref: ${addrRefs.trim()})` : '');
   const [processing, setProcessing] = useState(false);
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
   const [confirmedOrderNum, setConfirmedOrderNum] = useState<string>('----');
@@ -309,11 +320,32 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
     setGeoState('checking');
     if (!navigator.geolocation) { setGeoState('error'); return; }
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const d = haversineKm(pos.coords.latitude, pos.coords.longitude, settings.businessLat, settings.businessLng);
         setGeoDistance(d);
         setClientCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setGeoState(d <= radiusKm ? 'inside' : 'outside');
+
+        // Reverse-geocoding con Nominatim (OpenStreetMap, gratis, sin API
+        // key): pre-llena calle, colonia y CP desde el GPS validado. El
+        // cliente solo corrige el número y agrega referencias. Best-effort:
+        // si falla, los campos quedan manuales.
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&accept-language=es`,
+            { headers: { Accept: 'application/json' } }
+          );
+          if (res.ok) {
+            const geo = await res.json();
+            const a = geo.address || {};
+            const street = [a.road, a.house_number].filter(Boolean).join(' ');
+            const colonia = a.neighbourhood || a.suburb || a.quarter || a.village || '';
+            const cp = a.postcode || '';
+            setAddrStreet((prev) => prev || street);
+            setAddrColonia((prev) => prev || colonia);
+            setAddrCP((prev) => prev || cp);
+          }
+        } catch { /* geocoding best-effort */ }
       },
       () => setGeoState('error'),
       { enableHighAccuracy: true, timeout: 10000 }
@@ -324,8 +356,12 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   const handleConfirmOrder = async () => {
     // Guest permitido: no exigimos session. Si el cliente quiere cuenta,
     // usa el botón de login; si no, ordena como invitado.
-    if (mode === 'delivery' && !deliveryAddress.trim()) {
-      alert('Necesitamos tu dirección para el envío.');
+    if (mode === 'delivery' && (!addrStreet.trim() || !addrCP.trim())) {
+      alert('Necesitamos tu calle con número y tu código postal para el envío.');
+      return;
+    }
+    if (mode === 'delivery' && addrCP.trim() && !/^\d{5}$/.test(addrCP.trim())) {
+      alert('El código postal debe ser de 5 dígitos.');
       return;
     }
     // ── ENFORCEMENT DURO del radio de entrega ─────────────────────
@@ -396,6 +432,11 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
           customerPhone,
           customerEmail: session?.user?.email || null,
           deliveryAddress: mode === 'delivery' ? deliveryAddress : null,
+          // Dirección estructurada — más precisa para el repartidor.
+          addrStreet: mode === 'delivery' ? addrStreet.trim() : null,
+          addrColonia: mode === 'delivery' ? addrColonia.trim() : null,
+          addrCP: mode === 'delivery' ? addrCP.trim() : null,
+          addrRefs: mode === 'delivery' ? addrRefs.trim() : null,
           // Coordenadas GPS validadas del cliente + distancia al local.
           // El repartidor puede abrirlas directo en Maps.
           clientLat: mode === 'delivery' ? clientCoords?.lat ?? null : null,
@@ -528,7 +569,10 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
     customerPhone={customerPhone}
     setCustomerPhone={setCustomerPhone}
     deliveryAddress={deliveryAddress}
-    setDeliveryAddress={setDeliveryAddress}
+    addrStreet={addrStreet} setAddrStreet={setAddrStreet}
+    addrColonia={addrColonia} setAddrColonia={setAddrColonia}
+    addrCP={addrCP} setAddrCP={setAddrCP}
+    addrRefs={addrRefs} setAddrRefs={setAddrRefs}
     orderNotes={orderNotes}
     setOrderNotes={setOrderNotes}
     processing={processing}
@@ -842,7 +886,8 @@ const VariantModal: React.FC<any> = ({ item, selVariants, setSelVariants, selNot
 const CheckoutView: React.FC<any> = ({
   business, settings, session, mode, cart, subtotal, iva, deliveryFee, total,
   payMethod, setPayMethod, customerName, setCustomerName, customerPhone, setCustomerPhone,
-  deliveryAddress, setDeliveryAddress, orderNotes, setOrderNotes, processing,
+  deliveryAddress, addrStreet, setAddrStreet, addrColonia, setAddrColonia,
+  addrCP, setAddrCP, addrRefs, setAddrRefs, orderNotes, setOrderNotes, processing,
   zonesList, isAddressInZone, hasGeoRadius, radiusKm, geoState, geoDistance, onValidateGeo,
   onBack, onConfirm, onLoginRequired,
 }) => {
@@ -852,17 +897,18 @@ const CheckoutView: React.FC<any> = ({
   const geoValidated = geoState === 'inside';
   const geoRejected = geoState === 'outside';
 
-  const addrTyped = deliveryAddress.trim().length > 3;
-  const inZoneText = !zonesList.length || (addrTyped && isAddressInZone(deliveryAddress));
-  const zoneTextChecked = !hasGeoRadius && zonesList.length > 0 && addrTyped;
+  // Dirección completa: calle+número y CP de 5 dígitos obligatorios.
+  const addrComplete = addrStreet.trim().length > 3 && /^\d{5}$/.test(addrCP.trim());
+  const inZoneText = !zonesList.length || (addrComplete && isAddressInZone(deliveryAddress));
+  const zoneTextChecked = !hasGeoRadius && zonesList.length > 0 && addrComplete;
 
   // La dirección se desbloquea solo tras validar GPS (si hay radio config).
   const addressUnlocked = !hasGeoRadius || geoValidated;
 
   const deliveryOk = mode !== 'delivery' || (
     hasGeoRadius
-      ? (geoValidated && deliveryAddress.trim())
-      : (deliveryAddress.trim() && inZoneText)
+      ? (geoValidated && addrComplete)
+      : (addrComplete && inZoneText)
   );
 
   const contactOk = customerName.trim() && customerPhone.trim();
@@ -980,17 +1026,61 @@ const CheckoutView: React.FC<any> = ({
               {!addressUnlocked && <Lock size={12} className="inline mr-1 text-[rgba(42,40,38,0.4)]" />}
               <MapPin size={12} className="inline mr-1" /> Dirección de entrega *
             </SrLabel>
-            <textarea
-              value={deliveryAddress}
-              onChange={(e) => setDeliveryAddress(e.target.value)}
-              disabled={!addressUnlocked}
-              placeholder={addressUnlocked ? 'Calle, número, colonia, referencias…' : 'Valida tu ubicación arriba para escribir tu dirección'}
-              rows={3}
-              className={`w-full px-4 py-3 rounded-sr-md border-2 text-[13px] resize-none focus:outline-none transition-colors ${
-                !addressUnlocked ? 'bg-servirest-hueso-sunken/40 border-[rgba(42,40,38,0.08)] cursor-not-allowed text-[rgba(42,40,38,0.4)]'
-                : 'bg-servirest-surface border-[rgba(42,40,38,0.1)] focus:border-servirest-terracota'
-              }`}
-            />
+
+            {!addressUnlocked && (
+              <p className="text-[11px] text-[rgba(42,40,38,0.5)] mb-3 italic">
+                Valida tu ubicación arriba — al validarla llenamos tu calle, colonia y CP automáticamente.
+              </p>
+            )}
+
+            {/* Campos estructurados: al validar el GPS se pre-llenan con
+                reverse-geocoding; el cliente solo corrige número y refs. */}
+            <div className={`space-y-3 ${!addressUnlocked ? 'opacity-50 pointer-events-none select-none' : ''}`}>
+              <div>
+                <SrLabel className="block mb-1.5 !text-[10px]">Calle y número *</SrLabel>
+                <SrInput
+                  value={addrStreet}
+                  onChange={(e: any) => setAddrStreet(e.target.value)}
+                  disabled={!addressUnlocked}
+                  placeholder="Av. Tecnológico 1234"
+                />
+              </div>
+              <div className="grid grid-cols-[1fr_130px] gap-3">
+                <div>
+                  <SrLabel className="block mb-1.5 !text-[10px]">Colonia</SrLabel>
+                  <SrInput
+                    value={addrColonia}
+                    onChange={(e: any) => setAddrColonia(e.target.value)}
+                    disabled={!addressUnlocked}
+                    placeholder="Cantares Residencial"
+                  />
+                </div>
+                <div>
+                  <SrLabel className="block mb-1.5 !text-[10px]">C.P. *</SrLabel>
+                  <SrInput
+                    value={addrCP}
+                    onChange={(e: any) => setAddrCP(e.target.value.replace(/\D/g, '').slice(0, 5))}
+                    disabled={!addressUnlocked}
+                    placeholder="32000"
+                    inputMode="numeric"
+                  />
+                </div>
+              </div>
+              <div>
+                <SrLabel className="block mb-1.5 !text-[10px]">Referencias para el repartidor</SrLabel>
+                <SrInput
+                  value={addrRefs}
+                  onChange={(e: any) => setAddrRefs(e.target.value)}
+                  disabled={!addressUnlocked}
+                  placeholder="Casa blanca, portón negro, frente al parque…"
+                />
+              </div>
+            </div>
+
+            {addressUnlocked && addrCP.trim() && !/^\d{5}$/.test(addrCP.trim()) && (
+              <p className="text-[11px] text-servirest-danger mt-2">El código postal debe tener 5 dígitos.</p>
+            )}
+
             {/* Fallback: validación por texto si NO hay radio GPS */}
             {zoneTextChecked && (
               inZoneText ? (
