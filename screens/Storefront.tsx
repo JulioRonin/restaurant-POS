@@ -103,6 +103,7 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   // Geo-validación de la ubicación del cliente vs el radio del local.
   const [geoState, setGeoState] = useState<'idle' | 'checking' | 'inside' | 'outside' | 'error'>('idle');
   const [geoDistance, setGeoDistance] = useState<number | null>(null);
+  const [clientCoords, setClientCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [processing, setProcessing] = useState(false);
   const [confirmedOrderId, setConfirmedOrderId] = useState<string | null>(null);
   const [confirmedOrderNum, setConfirmedOrderNum] = useState<string>('----');
@@ -311,6 +312,7 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
       (pos) => {
         const d = haversineKm(pos.coords.latitude, pos.coords.longitude, settings.businessLat, settings.businessLng);
         setGeoDistance(d);
+        setClientCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setGeoState(d <= radiusKm ? 'inside' : 'outside');
       },
       () => setGeoState('error'),
@@ -326,7 +328,20 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
       alert('Necesitamos tu dirección para el envío.');
       return;
     }
-    if (mode === 'delivery' && !isAddressInZone(deliveryAddress)) {
+    // ── ENFORCEMENT DURO del radio de entrega ─────────────────────
+    // El botón de la UI ya bloquea, pero este es el guard real: si el
+    // negocio tiene radio configurado, NADIE confirma un envío sin haber
+    // validado su GPS dentro del radio. Sin excepciones.
+    if (mode === 'delivery' && hasGeoRadius && geoState !== 'inside') {
+      alert(
+        geoState === 'outside'
+          ? `Estás fuera de nuestra zona de entrega (cubrimos ${radiusKm} km del local). Prueba "Recoger en local".`
+          : 'Valida tu ubicación con el botón "Validar mi ubicación" antes de confirmar el envío.'
+      );
+      return;
+    }
+    // Fallback por texto de zonas (solo cuando NO hay radio GPS configurado)
+    if (mode === 'delivery' && !hasGeoRadius && !isAddressInZone(deliveryAddress)) {
       alert(`Esa dirección no está en las zonas cubiertas. Cubrimos: ${settings.digitalDeliveryZones}`);
       return;
     }
@@ -381,6 +396,11 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
           customerPhone,
           customerEmail: session?.user?.email || null,
           deliveryAddress: mode === 'delivery' ? deliveryAddress : null,
+          // Coordenadas GPS validadas del cliente + distancia al local.
+          // El repartidor puede abrirlas directo en Maps.
+          clientLat: mode === 'delivery' ? clientCoords?.lat ?? null : null,
+          clientLng: mode === 'delivery' ? clientCoords?.lng ?? null : null,
+          distanceKm: mode === 'delivery' ? (geoDistance !== null ? Number(geoDistance.toFixed(2)) : null) : null,
           orderNotes,
           mode,
         },
