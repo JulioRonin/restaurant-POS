@@ -243,20 +243,38 @@ export const CashierScreen: React.FC = () => {
                         })}
 
                         {activeTab === 'delivery' && orders
-                            // Excluye órdenes ya pagadas online (canal digital / Stripe / etc.)
-                            // Esas caen directo en historial + dashboard sin necesidad de cobro.
-                            .filter(o => o.source && o.source !== OrderSource.DINE_IN && o.status !== 'COMPLETED' && o.paymentStatus !== PaymentStatus.PAID)
-                            .map(order => (
-                             <div key={order.id} onClick={() => setSelectedTableId(order.id)} className={`p-5 rounded-2xl border cursor-pointer transition-all ${selectedTableId === order.id ? 'border-servirest-terracota bg-servirest-terracota/10' : 'border-[rgba(42,40,38,0.12)] bg-servirest-surface hover:border-[rgba(42,40,38,0.20)]'}`}>
+                            // Muestra todas las órdenes de delivery/pickup no cerradas.
+                            // - Pagadas online (paymentStatus PAID): solo falta ENTREGAR → botón "Marcar entregado".
+                            // - Pendientes de pago (efectivo/terminal): click para cobrar y cerrar.
+                            .filter(o => o.source && o.source !== OrderSource.DINE_IN && o.status !== 'COMPLETED')
+                            .map(order => {
+                             const isPaidOnline = order.paymentStatus === PaymentStatus.PAID;
+                             const custName = (order as any).customer_metadata?.customerName || (order as any).customerMetadata?.customerName;
+                             return (
+                             <div key={order.id} onClick={() => !isPaidOnline && setSelectedTableId(order.id)} className={`p-5 rounded-2xl border transition-all ${isPaidOnline ? 'border-servirest-success/30 bg-servirest-success/5' : selectedTableId === order.id ? 'border-servirest-terracota bg-servirest-terracota/10 cursor-pointer' : 'border-[rgba(42,40,38,0.12)] bg-servirest-surface hover:border-[rgba(42,40,38,0.20)] cursor-pointer'}`}>
                                  <div className="flex justify-between items-start">
-                                     <div>
-                                         <p className="text-[10px] font-black uppercase text-servirest-terracota tracking-widest mb-1 italic">{order.source}</p>
-                                         <p className="text-lg font-black italic uppercase tracking-tighter text-[#1a1c14] leading-none">{TABLES.find(t=>t.id===order.tableId)?.name || order.tableId}</p>
+                                     <div className="min-w-0">
+                                         <p className="text-[10px] font-black uppercase text-servirest-terracota tracking-widest mb-1 italic">{order.source} {isPaidOnline && '· Pagado online'}</p>
+                                         <p className="text-lg font-black italic uppercase tracking-tighter text-[#1a1c14] leading-none truncate">{custName || TABLES.find(t=>t.id===order.tableId)?.name || `#${(order.id||'').slice(0,6).toUpperCase()}`}</p>
+                                         {(order.status === 'PENDING' || order.status === 'COOKING' || order.status === 'READY') && (
+                                            <p className="text-[9px] font-bold uppercase tracking-wider mt-1 text-[rgba(42,40,38,0.5)]">
+                                              {order.status === 'READY' ? '✓ Lista para entregar' : order.status === 'COOKING' ? 'En preparación' : 'Recibida'}
+                                            </p>
+                                         )}
                                      </div>
                                      <p className="text-xl font-black italic text-[#1a1c14] tracking-tighter">${order.total.toFixed(0)}</p>
                                  </div>
+                                 {isPaidOnline && (
+                                   <button
+                                     onClick={(e) => { e.stopPropagation(); updateOrderStatus(order.id, OrderStatus.COMPLETED, { ...order, status: OrderStatus.COMPLETED }); }}
+                                     className="mt-3 w-full h-10 rounded-full bg-servirest-success text-white text-[10px] font-black uppercase tracking-[0.15em] flex items-center justify-center gap-2"
+                                   >
+                                     Marcar entregado y cerrar
+                                   </button>
+                                 )}
                              </div>
-                        ))}
+                             );
+                        })}
 
                         {activeTab === 'expenses' && (
                             <div className="space-y-4">

@@ -732,6 +732,9 @@ const ProductCard: React.FC<{ item: MenuItem; idx: number; onOpen: () => void }>
       <div className="p-4">
         <div className="font-serif italic text-servirest-midnight text-[17px] leading-tight line-clamp-1">{item.name}</div>
         <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[rgba(42,40,38,0.5)] mt-1.5">{item.category}</div>
+        {item.description && (
+          <p className="text-[12px] text-[rgba(42,40,38,0.6)] mt-2 line-clamp-2 leading-relaxed">{item.description}</p>
+        )}
       </div>
     </motion.button>
   );
