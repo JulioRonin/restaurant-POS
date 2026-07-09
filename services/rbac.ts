@@ -33,6 +33,7 @@ export const ROLE_PERMISSIONS: Record<AppRole, string[]> = {
     '/my-tables',
     '/digital-channel',
     '/driver',
+    '/vision',
     '/kiosk'
   ],
   [ROLES.MANAGER]: [

@@ -53,6 +53,7 @@ const DEFAULT_FEATURES = [
   { key: 'online_reservations',name: 'Reservas online',            description: 'Cliente reserva desde el web sin llamar (Prestige+)' },
   { key: 'kiosk_mode',         name: 'Modo Kiosko',                description: 'Tablet o pantalla física en el local para auto-orden (Prestige+)' },
   { key: 'online_payments',    name: 'Cobro digital',              description: 'Terminal BT + Stripe QR + OXXO desde el canal digital (Prestige+)' },
+  { key: 'vision_ai',          name: 'Visión IA (experimental)',   description: 'Control de zonas y tiempos por cámara con detección de personas (add-on)' },
 ];
 
 export default function SuperAdminScreen() {

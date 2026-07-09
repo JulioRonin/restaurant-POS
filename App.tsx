@@ -36,6 +36,7 @@ import { BarScreen } from './screens/Bar';
 import { MyTablesScreen } from './screens/MyTables';
 import { DigitalChannelScreen } from './screens/DigitalChannel';
 import { DriverScreen } from './screens/Driver';
+import { VisionScreen } from './screens/Vision';
 import { KioskScreen } from './screens/Kiosk';
 import { StorefrontRoute } from './screens/Storefront';
 import { canAccess, getDefaultRoute } from './services/rbac';
@@ -179,6 +180,7 @@ const AppContent: React.FC = () => {
             <Route path="/my-tables" element={<MyTablesScreen />} />
             <Route path="/digital-channel" element={<DigitalChannelScreen />} />
             <Route path="/driver" element={<DriverScreen />} />
+            <Route path="/vision" element={<VisionScreen />} />
             <Route path="/kiosk" element={<KioskScreen />} />
             <Route path="/onboarding" element={<OnboardingScreen />} />
             <Route path="*" element={<Navigate to="/super-admin" replace />} />
@@ -220,6 +222,7 @@ const AppContent: React.FC = () => {
               <Route path="/my-tables" element={<RoleGuard path="/my-tables"><MyTablesScreen /></RoleGuard>} />
               <Route path="/digital-channel" element={<RoleGuard path="/digital-channel"><DigitalChannelScreen /></RoleGuard>} />
               <Route path="/driver" element={<RoleGuard path="/driver"><DriverScreen /></RoleGuard>} />
+              <Route path="/vision" element={<RoleGuard path="/vision"><VisionScreen /></RoleGuard>} />
               <Route path="/kiosk" element={<KioskScreen />} />
               
               <Route path="/onboarding" element={<OnboardingScreen />} />
