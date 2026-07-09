@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { useUser } from '../contexts/UserContext';
+import { OrderMessagesPanel } from '../components/OrderMessagesPanel';
 import { printerService } from '../services/PrinterService';
 import { Order, OrderStatus, OrderSource } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -180,6 +182,7 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void; onStart
 export const KitchenScreen: React.FC = () => {
   const { orders, updateOrderStatus } = useOrders();
   const { settings } = useSettings();
+  const { authProfile } = useUser();
   const [prevCount, setPrevCount] = useState(0);
   const [alert, setAlert] = useState(false);
   const [view, setView] = useState<KitchenView>('todos');
@@ -360,6 +363,19 @@ export const KitchenScreen: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Mensajes de clientes (burbuja flotante + hilo para responder) */}
+      {authProfile?.businessId && (
+        <OrderMessagesPanel
+          businessId={authProfile.businessId}
+          businessName={settings.name}
+          senderRole="store"
+          orderLabel={(orderId) => {
+            const o = orders.find((x) => x.id === orderId);
+            return o?.dailyNumber !== undefined ? `#${String(o.dailyNumber + 1).padStart(4, '0')}` : null;
+          }}
+        />
+      )}
     </div>
   );
 };

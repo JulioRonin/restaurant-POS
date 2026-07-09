@@ -332,6 +332,48 @@ export async function sendOrderMessage(
   return true;
 }
 
+/** Todos los mensajes de un negocio (para Cocina / Repartidor). */
+export async function getBusinessMessages(businessId: string): Promise<(OrderMessage & { businessId?: string })[]> {
+  const sb = getSupabase();
+  if (!sb || !businessId) return [];
+  const { data, error } = await sb
+    .from('order_messages')
+    .select('*')
+    .eq('business_id', businessId)
+    .order('created_at', { ascending: true })
+    .limit(300);
+  if (error) { console.warn('[customer] getBusinessMessages:', error.message); return []; }
+  return (data || []).map((m: any) => ({
+    id: m.id,
+    orderId: m.order_id,
+    sender: m.sender,
+    senderName: m.sender_name ?? null,
+    message: m.message,
+    createdAt: m.created_at,
+  }));
+}
+
+/** Envía un mensaje del NEGOCIO (tienda o repartidor) ligado a una orden. */
+export async function sendStoreMessage(
+  orderId: string,
+  businessId: string | null,
+  message: string,
+  sender: 'store' | 'driver' = 'store',
+  senderName?: string | null
+): Promise<boolean> {
+  const sb = getSupabase();
+  if (!sb || !message.trim()) return false;
+  const { error } = await sb.from('order_messages').insert({
+    order_id: orderId,
+    business_id: businessId,
+    sender,
+    sender_name: senderName || (sender === 'driver' ? 'Repartidor' : 'Tienda'),
+    message: message.trim(),
+  });
+  if (error) { console.warn('[customer] sendStoreMessage:', error.message); return false; }
+  return true;
+}
+
 /** URL para compartir el código de referido (abre el storefront con ?ref=). */
 export function referralShareUrl(businessId: string, code: string): string {
   return `${window.location.origin}${window.location.pathname}#/o/${businessId}?ref=${encodeURIComponent(code)}`;

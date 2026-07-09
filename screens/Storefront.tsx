@@ -55,6 +55,23 @@ type View = 'menu' | 'checkout' | 'auth' | 'success' | 'account';
 
 const lineTotal = (l: CartLine) => (l.basePrice + l.variants.reduce((s, v) => s + (v.price || 0), 0)) * l.quantity;
 
+// ── Órdenes activas locales (para la burbuja flotante de estatus) ───────────
+// Persisten en localStorage por negocio para que la burbuja sobreviva al
+// recargar; sirven a invitados y a clientes con cuenta por igual.
+type ActiveOrder = { id: string; num: string; mode: Mode };
+const ACTIVE_ORDERS_KEY = (bid: string) => `servirest_active_orders_${bid}`;
+const readActiveOrders = (bid: string): ActiveOrder[] => {
+  try { return JSON.parse(localStorage.getItem(ACTIVE_ORDERS_KEY(bid)) || '[]'); } catch { return []; }
+};
+const addActiveOrder = (bid: string, o: ActiveOrder) => {
+  const list = readActiveOrders(bid).filter((x) => x.id !== o.id);
+  list.unshift(o);
+  localStorage.setItem(ACTIVE_ORDERS_KEY(bid), JSON.stringify(list.slice(0, 8)));
+};
+const removeActiveOrder = (bid: string, id: string) => {
+  localStorage.setItem(ACTIVE_ORDERS_KEY(bid), JSON.stringify(readActiveOrders(bid).filter((x) => x.id !== id)));
+};
+
 // Distancia entre dos coordenadas (haversine) en km.
 const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
   const R = 6371;
@@ -116,6 +133,7 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   // Geo-validación de la ubicación del cliente vs el radio del local.
   const [geoState, setGeoState] = useState<'idle' | 'checking' | 'inside' | 'outside' | 'error'>('idle');
   const [geoDistance, setGeoDistance] = useState<number | null>(null);
+  const [geoErrorMsg, setGeoErrorMsg] = useState<string | null>(null);
   const [clientCoords, setClientCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   // Dirección compuesta a partir de los campos estructurados — se usa para
@@ -411,38 +429,68 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   }, [deliveryEnabled, mode]);
 
   const validateGeoLocation = () => {
+    setGeoErrorMsg(null);
+    if (!navigator.geolocation) {
+      setGeoState('error');
+      setGeoErrorMsg('Tu navegador no soporta ubicación. Escribe tu dirección manualmente abajo.');
+      return;
+    }
     setGeoState('checking');
-    if (!navigator.geolocation) { setGeoState('error'); return; }
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const d = haversineKm(pos.coords.latitude, pos.coords.longitude, settings.businessLat, settings.businessLng);
-        setGeoDistance(d);
-        setClientCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setGeoState(d <= radiusKm ? 'inside' : 'outside');
 
-        // Reverse-geocoding con Nominatim (OpenStreetMap, gratis, sin API
-        // key): pre-llena calle, colonia y CP desde el GPS validado. El
-        // cliente solo corrige el número y agrega referencias. Best-effort:
-        // si falla, los campos quedan manuales.
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&accept-language=es`,
-            { headers: { Accept: 'application/json' } }
-          );
-          if (res.ok) {
-            const geo = await res.json();
-            const a = geo.address || {};
-            const street = [a.road, a.house_number].filter(Boolean).join(' ');
-            const colonia = a.neighbourhood || a.suburb || a.quarter || a.village || '';
-            const cp = a.postcode || '';
-            setAddrStreet((prev) => prev || street);
-            setAddrColonia((prev) => prev || colonia);
-            setAddrCP((prev) => prev || cp);
-          }
-        } catch { /* geocoding best-effort */ }
-      },
-      () => setGeoState('error'),
-      { enableHighAccuracy: true, timeout: 10000 }
+    const onSuccess = async (pos: GeolocationPosition) => {
+      const d = haversineKm(pos.coords.latitude, pos.coords.longitude, settings.businessLat, settings.businessLng);
+      setGeoDistance(d);
+      setClientCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      setGeoState(d <= radiusKm ? 'inside' : 'outside');
+
+      // Reverse-geocoding con Nominatim (OpenStreetMap, gratis, sin API
+      // key): pre-llena calle, colonia y CP desde el GPS validado. El
+      // cliente solo corrige el número y agrega referencias. Best-effort:
+      // si falla, los campos quedan manuales.
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&accept-language=es`,
+          { headers: { Accept: 'application/json' } }
+        );
+        if (res.ok) {
+          const geo = await res.json();
+          const a = geo.address || {};
+          const street = [a.road, a.house_number].filter(Boolean).join(' ');
+          const colonia = a.neighbourhood || a.suburb || a.quarter || a.village || '';
+          const cp = a.postcode || '';
+          setAddrStreet((prev) => prev || street);
+          setAddrColonia((prev) => prev || colonia);
+          setAddrCP((prev) => prev || cp);
+        }
+      } catch { /* geocoding best-effort */ }
+    };
+
+    // Manejo por código de error. En iPhone el GPS de alta precisión a veces
+    // agota el tiempo; si eso pasa (code 3) reintentamos UNA vez con baja
+    // precisión y más tiempo antes de rendirnos.
+    const onError = (err: GeolocationPositionError, canRetry: boolean) => {
+      if (err.code === 3 /* TIMEOUT */ && canRetry) {
+        navigator.geolocation.getCurrentPosition(
+          onSuccess,
+          (e2) => onError(e2, false),
+          { enableHighAccuracy: false, timeout: 20000, maximumAge: 120000 }
+        );
+        return;
+      }
+      setGeoState('error');
+      if (err.code === 1 /* PERMISSION_DENIED */) {
+        setGeoErrorMsg('Bloqueaste el permiso de ubicación. En iPhone: toca "aA" a la izquierda de la barra de Safari → Ajustes del sitio web → Ubicación → Permitir. O ve a Ajustes → Privacidad → Localización → Safari. Luego reintenta.');
+      } else if (err.code === 2 /* POSITION_UNAVAILABLE */) {
+        setGeoErrorMsg('No pudimos obtener tu señal GPS. Revisa que la Localización esté activada y que tengas buena señal, y reintenta.');
+      } else {
+        setGeoErrorMsg('Se agotó el tiempo buscando tu ubicación. Reintenta o escribe tu dirección manualmente abajo.');
+      }
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      onSuccess,
+      (err) => onError(err, true),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
     );
   };
 
@@ -604,10 +652,12 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
       const { error: iErr } = await supabase.from('order_items').insert(itemRows);
       if (iErr) console.warn('[Storefront] order_items insert warn:', iErr.message);
 
+      const orderNumStr = String(dailyNumber + 1).padStart(4, '0');
       setConfirmedOrderId(orderId);
-      setConfirmedOrderNum(String(dailyNumber + 1).padStart(4, '0'));
+      setConfirmedOrderNum(orderNumStr);
       setView('success');
       setCart([]);
+      addActiveOrder(businessId, { id: orderId, num: orderNumStr, mode });
 
       // Lealtad: si hay cliente logueado, registra el consumo (contadores,
       // recompensas y acreditación al referidor). Best-effort.
@@ -653,7 +703,13 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
       }
       try {
         const { orderRecord, itemRows, dailyNumber } = JSON.parse(raw);
-        setConfirmedOrderNum(String((dailyNumber ?? 0) + 1).padStart(4, '0'));
+        const paidNum = String((dailyNumber ?? 0) + 1).padStart(4, '0');
+        setConfirmedOrderNum(paidNum);
+        addActiveOrder(orderRecord.business_id, {
+          id: paid,
+          num: paidNum,
+          mode: orderRecord?.source === 'TO_GO' ? 'delivery' : 'pickup',
+        });
         // Idempotencia: si ya existe (doble retorno), no re-insertamos.
         const { data: existing } = await supabase.from('orders').select('id').eq('id', paid).maybeSingle();
         if (!existing) {
@@ -765,6 +821,7 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
     geoState={geoState}
     geoDistance={geoDistance}
     onValidateGeo={validateGeoLocation}
+    geoErrorMsg={geoErrorMsg}
     onBack={() => setView('menu')}
     onConfirm={handleConfirmOrder}
     onLoginRequired={() => { setAuthReturnTo('checkout'); setView('auth'); }}
@@ -886,6 +943,12 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
           </div>
         )}
       </main>
+
+      {/* Burbuja flotante: estatus en vivo de la orden activa */}
+      <FloatingOrderBubble
+        businessId={businessId}
+        onOpen={(o: ActiveOrder) => { setConfirmedOrderId(o.id); setConfirmedOrderNum(o.num); setMode(o.mode); setView('success'); }}
+      />
 
       <AnimatePresence>
         {cartCount > 0 && !showCart && (
@@ -1100,7 +1163,7 @@ const CheckoutView: React.FC<any> = ({
   payMethod, setPayMethod, customerName, setCustomerName, customerPhone, setCustomerPhone,
   deliveryAddress, addrStreet, setAddrStreet, addrColonia, setAddrColonia,
   addrCP, setAddrCP, addrRefs, setAddrRefs, orderNotes, setOrderNotes, processing,
-  zonesList, isAddressInZone, hasGeoRadius, radiusKm, geoState, geoDistance, onValidateGeo,
+  zonesList, isAddressInZone, hasGeoRadius, radiusKm, geoState, geoDistance, onValidateGeo, geoErrorMsg,
   onBack, onConfirm, onLoginRequired,
 }) => {
   // ── Validación de entrega ────────────────────────────────────────
@@ -1245,7 +1308,15 @@ const CheckoutView: React.FC<any> = ({
                       </div>
                     )}
                     {geoState === 'error' && (
-                      <p className="text-[11px] text-servirest-danger mt-2">No pudimos leer tu ubicación. Da permiso e intenta de nuevo.</p>
+                      <div className="mt-2">
+                        <p className="text-[11px] text-servirest-danger leading-relaxed">{geoErrorMsg || 'No pudimos leer tu ubicación. Da permiso e intenta de nuevo.'}</p>
+                        <button
+                          onClick={onValidateGeo}
+                          className="mt-2 px-4 h-9 rounded-full bg-servirest-midnight text-servirest-hueso text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-2"
+                        >
+                          <RefreshCw size={12} /> Reintentar
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1417,6 +1488,72 @@ const AuthView: React.FC<any> = ({ mode, setMode, email, setEmail, password, set
     </div>
   </div>
 );
+
+// ─────────────────────────────────────────────────────────────────────────
+// FloatingOrderBubble — pastilla flotante con el estatus en vivo de la orden
+// activa más reciente. Sobrevive recargas (localStorage) y sirve a invitados
+// y a clientes con cuenta. Al tocarla abre la pantalla de estatus.
+// ─────────────────────────────────────────────────────────────────────────
+const FloatingOrderBubble: React.FC<{ businessId: string; onOpen: (o: ActiveOrder) => void }> = ({ businessId, onOpen }) => {
+  const [active, setActive] = useState<ActiveOrder[]>(() => readActiveOrders(businessId));
+  const [status, setStatus] = useState<string>('PENDING');
+
+  // Re-lee la lista cuando cambia el negocio o al volver a la pestaña.
+  useEffect(() => {
+    const refresh = () => setActive(readActiveOrders(businessId));
+    refresh();
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, [businessId]);
+
+  const current = active[0]; // la más reciente
+
+  // Polling del estatus. Cuando la orden se completa/cancela, la sacamos de
+  // la lista y mostramos la siguiente activa (si hay).
+  useEffect(() => {
+    if (!current) return;
+    let alive = true;
+    const poll = async () => {
+      const sb = getSupabase();
+      if (!sb) return;
+      const { data } = await sb.rpc('get_order_status', { p_order_id: current.id });
+      if (!alive) return;
+      const s = String(data || 'PENDING');
+      setStatus(s);
+      if (s === 'COMPLETED' || s === 'CANCELLED') {
+        removeActiveOrder(businessId, current.id);
+        setActive(readActiveOrders(businessId));
+      }
+    };
+    poll();
+    const iv = setInterval(poll, 15000);
+    return () => { alive = false; clearInterval(iv); };
+  }, [current?.id, businessId]);
+
+  if (!current) return null;
+
+  const isDelivery = current.mode === 'delivery';
+  const st = orderStatusLabel(status, isDelivery);
+  const Icon = isDelivery ? Truck : Store;
+
+  return (
+    <motion.button
+      initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+      onClick={() => onOpen(current)}
+      style={{ bottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+      className="fixed left-4 z-40 flex items-center gap-2.5 pl-2.5 pr-4 py-2 rounded-full bg-servirest-midnight text-servirest-hueso shadow-2xl shadow-black/30 hover:scale-105 transition-transform max-w-[calc(100vw-2rem)]"
+    >
+      <span className="relative flex-shrink-0 w-8 h-8 rounded-full bg-servirest-terracota flex items-center justify-center">
+        <Icon size={15} />
+        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-servirest-mostaza border-2 border-servirest-midnight animate-pulse" />
+      </span>
+      <span className="min-w-0 text-left">
+        <span className="block text-[8px] font-black uppercase tracking-[0.18em] text-servirest-mostaza leading-none">Orden #{current.num} · en vivo</span>
+        <span className="block text-[12px] font-bold leading-tight truncate">{st.label}</span>
+      </span>
+    </motion.button>
+  );
+};
 
 // ─────────────────────────────────────────────────────────────────────────
 // SuccessView — pantalla de progreso con polling en vivo del estatus
@@ -1793,8 +1930,8 @@ const AccountView: React.FC<any> = ({ business, businessId, session, profile, re
                 </div>
               </div>
 
-              {/* Gráfica de consumo por pedido */}
-              <ConsumptionChart orders={orders} />
+              {/* Gráfica de preferencias (lo que más pide) */}
+              <PreferencesChart orders={orders} />
 
               {/* Recompensas disponibles */}
               {availableRewards.length > 0 && (
@@ -2082,49 +2219,77 @@ const RedeemModal: React.FC<any> = ({ reward, onClose, onConfirm }) => {
   );
 };
 
-// ── Gráfica de consumo (últimos pedidos) ────────────────────────────────────
-const ConsumptionChart: React.FC<{ orders: any[] }> = ({ orders }) => {
-  // Toma los últimos pedidos (más recientes al final) para ver la tendencia.
-  const data = (orders || [])
-    .filter((o: any) => o.status !== 'CANCELLED')
-    .slice(0, 8)
-    .map((o: any) => ({ total: Number(o.total) || 0, date: o.created_at }))
-    .reverse();
+// ── Gráfica de preferencias (lo que más pide el cliente) ─────────────────────
+// Agrega los productos de sus pedidos recientes y muestra sus favoritos como
+// barras horizontales. Lee el detalle de cada orden vía RPC (get_order_detail).
+const PreferencesChart: React.FC<{ orders: any[] }> = ({ orders }) => {
+  const [prefs, setPrefs] = useState<{ name: string; qty: number }[] | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (data.length < 2) return null; // sin suficientes datos aún
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const recent = (orders || []).filter((o: any) => o.status !== 'CANCELLED').slice(0, 6);
+      if (recent.length === 0) { if (alive) { setPrefs([]); setLoading(false); } return; }
+      const details = await Promise.all(recent.map((o: any) => getOrderDetail(o.id)));
+      if (!alive) return;
+      const counts: Record<string, number> = {};
+      details.forEach((d: any) => (d?.items || []).forEach((it: any) => {
+        const n = (it.name || 'Producto').trim();
+        counts[n] = (counts[n] || 0) + (Number(it.quantity) || 0);
+      }));
+      const arr = Object.entries(counts)
+        .map(([name, qty]) => ({ name, qty }))
+        .sort((a, b) => b.qty - a.qty)
+        .slice(0, 5);
+      setPrefs(arr);
+      setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [orders]);
 
-  const max = Math.max(...data.map((d) => d.total), 1);
-  const avg = data.reduce((s, d) => s + d.total, 0) / data.length;
+  if (loading) {
+    return (
+      <div className="rounded-3xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] p-5">
+        <div className="flex items-center gap-2 mb-4"><Sparkles size={16} className="text-servirest-mostaza" /><div className="font-serif italic text-servirest-midnight text-[17px]">Tus favoritos</div></div>
+        <div className="py-6 text-center"><RefreshCw size={20} className="mx-auto text-servirest-terracota animate-spin" /></div>
+      </div>
+    );
+  }
+  if (!prefs || prefs.length === 0) return null;
+
+  const max = Math.max(...prefs.map((p) => p.qty), 1);
+  const total = prefs.reduce((s, p) => s + p.qty, 0);
 
   return (
     <div className="rounded-3xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <TrendingUp size={16} className="text-servirest-terracota" />
-          <div className="font-serif italic text-servirest-midnight text-[17px]">Tu consumo</div>
+          <Sparkles size={16} className="text-servirest-mostaza" />
+          <div className="font-serif italic text-servirest-midnight text-[17px]">Tus favoritos</div>
         </div>
-        <div className="text-right">
-          <div className="text-[9px] uppercase tracking-[0.12em] text-[rgba(42,40,38,0.45)]">Promedio</div>
-          <div className="font-mono font-bold text-servirest-midnight text-[13px] leading-none mt-0.5">{mxn(avg)}</div>
-        </div>
+        <div className="text-[10px] uppercase tracking-[0.12em] text-[rgba(42,40,38,0.45)]">Lo que más pides</div>
       </div>
-      <div className="flex items-end justify-between gap-1.5 h-28" role="img" aria-label={`Consumo de tus últimos ${data.length} pedidos`}>
-        {data.map((d, i) => {
-          const h = Math.max(6, (d.total / max) * 100);
-          const isMax = d.total === max;
+      <div className="space-y-3" role="img" aria-label="Tus productos más pedidos">
+        {prefs.map((p, i) => {
+          const pct = (p.qty / max) * 100;
+          const isTop = i === 0;
           return (
-            <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1.5 group">
-              <span className="text-[9px] font-mono text-[rgba(42,40,38,0.55)] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">{mxn(d.total)}</span>
-              <div
-                className={`w-full rounded-t-md transition-all ${isMax ? 'bg-servirest-terracota' : 'bg-servirest-mostaza/60'}`}
-                style={{ height: `${h}%` }}
-                title={mxn(d.total)}
-              />
+            <div key={p.name}>
+              <div className="flex items-center justify-between text-[12px] mb-1">
+                <span className="font-bold text-servirest-midnight truncate pr-2 flex items-center gap-1.5">
+                  {isTop && <Award size={12} className="text-servirest-mostaza flex-shrink-0" />}{p.name}
+                </span>
+                <span className="text-[rgba(42,40,38,0.5)] font-mono flex-shrink-0">{p.qty}×</span>
+              </div>
+              <div className="h-2.5 rounded-full bg-servirest-hueso overflow-hidden">
+                <div className={`h-full rounded-full transition-all ${isTop ? 'bg-servirest-terracota' : 'bg-servirest-mostaza/60'}`} style={{ width: `${Math.max(8, pct)}%` }} />
+              </div>
             </div>
           );
         })}
       </div>
-      <div className="text-[10px] text-[rgba(42,40,38,0.4)] mt-2 text-center">Tus últimos {data.length} pedidos · el más alto en terracota</div>
+      <div className="text-[10px] text-[rgba(42,40,38,0.4)] mt-3 text-center">Basado en tus últimos pedidos · {total} productos</div>
     </div>
   );
 };
