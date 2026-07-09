@@ -121,13 +121,61 @@ CREATE POLICY "locations_public_read"
   TO anon, authenticated
   USING (true);
 
--- SELECT público de menu_items solo si están publicados online
+-- ─────────────────────────────────────────────────────────────────────────
+-- menu_items — lectura pública + ESCRITURA para miembros del negocio
+-- ─────────────────────────────────────────────────────────────────────────
+-- CAUSA RAÍZ de "el platillo no llega a Supabase": había policy de SELECT
+-- (public read) pero NINGUNA de INSERT/UPDATE. Con RLS activo, el operador
+-- no podía escribir menu_items desde el cliente → los platillos nuevos
+-- (TEST) nunca llegaban a la tabla.
+-- ─────────────────────────────────────────────────────────────────────────
+
+ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
+
+-- SELECT: público solo ve los publicados online; los miembros del negocio
+-- ven TODO su catálogo (incluidos los no publicados).
 DROP POLICY IF EXISTS "menu_items_public_read" ON menu_items;
 CREATE POLICY "menu_items_public_read"
   ON menu_items
   FOR SELECT
   TO anon, authenticated
-  USING (publish_online = true AND status = 'ACTIVE');
+  USING (
+    (publish_online = true AND status = 'ACTIVE')
+    OR business_id IN (SELECT business_id FROM profiles WHERE id = auth.uid())
+  );
+
+-- INSERT: los miembros del negocio crean platillos de SU negocio.
+DROP POLICY IF EXISTS "menu_items_member_insert" ON menu_items;
+CREATE POLICY "menu_items_member_insert"
+  ON menu_items
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    business_id IN (SELECT business_id FROM profiles WHERE id = auth.uid())
+  );
+
+-- UPDATE: los miembros editan/publican platillos de SU negocio.
+DROP POLICY IF EXISTS "menu_items_member_update" ON menu_items;
+CREATE POLICY "menu_items_member_update"
+  ON menu_items
+  FOR UPDATE
+  TO authenticated
+  USING (
+    business_id IN (SELECT business_id FROM profiles WHERE id = auth.uid())
+  );
+
+-- DELETE: solo admin/manager borran platillos.
+DROP POLICY IF EXISTS "menu_items_member_delete" ON menu_items;
+CREATE POLICY "menu_items_member_delete"
+  ON menu_items
+  FOR DELETE
+  TO authenticated
+  USING (
+    business_id IN (
+      SELECT business_id FROM profiles
+      WHERE id = auth.uid() AND role IN ('admin', 'manager', 'super_admin')
+    )
+  );
 
 -- Tabla business_settings: guarda la config completa del negocio (incluida
 -- la del canal digital + geolocalización) como JSONB. Es de donde el
