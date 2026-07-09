@@ -328,6 +328,26 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
       localStorage.setItem(bizKey, JSON.stringify(merged));
       await putSetting(idbKey, merged);
       await trackChange('settings', 'UPDATE', idbKey, merged);
+
+      // ── ESCRITURA DIRECTA a Supabase (bypass de la cola de sync) ──────────
+      // La cola de sync es poco confiable y por eso el logo/config "no se
+      // retienen" al recargar o en el storefront (que lee business_settings
+      // key='config'). Hacemos un upsert directo para garantizar persistencia
+      // en la nube. Best-effort: si falla, ya quedó en IDB/localStorage.
+      try {
+        const client = (await import('../services/auth')).getSupabase();
+        if (client) {
+          const { error } = await client
+            .from('business_settings')
+            .upsert(
+              { business_id: authProfile.businessId, key: 'config', value: merged, updated_at: new Date().toISOString() },
+              { onConflict: 'business_id,key' }
+            );
+          if (error) console.warn('[SettingsContext] upsert directo business_settings:', error.message);
+        }
+      } catch (e) {
+        console.warn('[SettingsContext] fallo escritura directa de config:', e);
+      }
     }
   };
 

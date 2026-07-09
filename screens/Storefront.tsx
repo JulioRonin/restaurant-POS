@@ -22,10 +22,19 @@ import {
   ShoppingCart, Plus, Minus, Trash2, X, ChefHat, CheckCircle2,
   Search, Utensils, Truck, Store, PackageCheck, RefreshCw, Check,
   MapPin, Mail, Lock, LogIn, User as UserIcon, ArrowLeft, Phone, AlertCircle,
-  Banknote, CreditCard, Bell,
+  Banknote, CreditCard, Bell, Gift, Award, MessageCircle, Send, Copy,
+  Share2, ClipboardList, ChevronRight, LogOut, Sparkles, Receipt,
+  TrendingUp, KeyRound, Eye, Ticket,
 } from 'lucide-react';
 import { getSupabase } from '../services/auth';
 import { notify, canNotify, requestNotifyPermission, statusNotifyCopy } from '../services/notify';
+import {
+  capturePendingReferral, ensureProfile, getProfile, getMyOrders, getRewards,
+  redeemReward, recordOrderConsumption, sendOrderMessage, getOrderMessages,
+  referralShareUrl, getOrderDetail, applyReferralCode,
+  REWARD_ORDERS_THRESHOLD, REWARD_REFERRALS_THRESHOLD,
+  type CustomerProfile, type CustomerReward,
+} from '../services/customer';
 import { MenuItem, MenuItemVariant, OrderStatus, OrderSource, PaymentStatus, PaymentMethod } from '../types';
 import { SrKicker, SrMono, SrChip, SrLabel, SrInput } from '../components/ui/servirest';
 
@@ -42,9 +51,26 @@ type CartLine = {
 
 type PayMethod = 'stripe_qr' | 'cash' | 'terminal';
 type Mode = 'delivery' | 'pickup';
-type View = 'menu' | 'checkout' | 'auth' | 'success';
+type View = 'menu' | 'checkout' | 'auth' | 'success' | 'account';
 
 const lineTotal = (l: CartLine) => (l.basePrice + l.variants.reduce((s, v) => s + (v.price || 0), 0)) * l.quantity;
+
+// ── Órdenes activas locales (para la burbuja flotante de estatus) ───────────
+// Persisten en localStorage por negocio para que la burbuja sobreviva al
+// recargar; sirven a invitados y a clientes con cuenta por igual.
+type ActiveOrder = { id: string; num: string; mode: Mode };
+const ACTIVE_ORDERS_KEY = (bid: string) => `servirest_active_orders_${bid}`;
+const readActiveOrders = (bid: string): ActiveOrder[] => {
+  try { return JSON.parse(localStorage.getItem(ACTIVE_ORDERS_KEY(bid)) || '[]'); } catch { return []; }
+};
+const addActiveOrder = (bid: string, o: ActiveOrder) => {
+  const list = readActiveOrders(bid).filter((x) => x.id !== o.id);
+  list.unshift(o);
+  localStorage.setItem(ACTIVE_ORDERS_KEY(bid), JSON.stringify(list.slice(0, 8)));
+};
+const removeActiveOrder = (bid: string, id: string) => {
+  localStorage.setItem(ACTIVE_ORDERS_KEY(bid), JSON.stringify(readActiveOrders(bid).filter((x) => x.id !== id)));
+};
 
 // Distancia entre dos coordenadas (haversine) en km.
 const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -107,6 +133,7 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   // Geo-validación de la ubicación del cliente vs el radio del local.
   const [geoState, setGeoState] = useState<'idle' | 'checking' | 'inside' | 'outside' | 'error'>('idle');
   const [geoDistance, setGeoDistance] = useState<number | null>(null);
+  const [geoErrorMsg, setGeoErrorMsg] = useState<string | null>(null);
   const [clientCoords, setClientCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   // Dirección compuesta a partir de los campos estructurados — se usa para
@@ -127,6 +154,18 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
+  const [authReturnTo, setAuthReturnTo] = useState<View>('checkout');
+
+  // Cuenta de cliente / lealtad / referidos
+  const [profile, setProfile] = useState<CustomerProfile | null>(null);
+  const [rewards, setRewards] = useState<CustomerReward[]>([]);
+  const [myOrders, setMyOrders] = useState<any[]>([]);
+  const [accountLoading, setAccountLoading] = useState(false);
+  // Tras confirmar checkout, a dónde volver: si venías de "auth" para ver
+  // cuenta, etc. Guardamos la vista previa del checkout para no perderla.
+
+  // Captura ?ref= al abrir el storefront (para ligar referidos).
+  useEffect(() => { capturePendingReferral(); }, []);
 
   // ── Fetch business + menu ────────────────────────────────────────
   useEffect(() => {
@@ -221,6 +260,66 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  // Al aparecer una sesión, garantiza el perfil de cliente (crea código de
+  // referido, liga referred_by) y precarga sus datos de lealtad.
+  useEffect(() => {
+    if (!session?.user?.id) { setProfile(null); return; }
+    let alive = true;
+    (async () => {
+      const p = await ensureProfile(session);
+      if (!alive) return;
+      setProfile(p);
+      // Prellena nombre/teléfono del checkout si el perfil los tiene.
+      if (p?.fullName && !customerName) setCustomerName(p.fullName);
+      if (p?.phone && !customerPhone) setCustomerPhone(p.phone);
+    })();
+    return () => { alive = false; };
+  }, [session?.user?.id]);
+
+  // Carga (o recarga) los datos de la vista "Mi cuenta".
+  const loadAccount = async () => {
+    if (!session?.user?.id) return;
+    setAccountLoading(true);
+    try {
+      const [p, r, o] = await Promise.all([
+        getProfile(session.user.id),
+        getRewards(session.user.id),
+        getMyOrders(session.user.id),
+      ]);
+      setProfile(p);
+      setRewards(r);
+      setMyOrders(o);
+    } finally {
+      setAccountLoading(false);
+    }
+  };
+
+  const openAccount = () => {
+    if (!session) { setAuthMode('login'); setAuthReturnTo('account'); setView('auth'); return; }
+    setView('account');
+    loadAccount();
+  };
+
+  const handleSignOut = async () => {
+    const supabase = getSupabase();
+    await supabase?.auth.signOut();
+    setProfile(null); setRewards([]); setMyOrders([]);
+    setView('menu');
+  };
+
+  const handleRedeem = async (rewardId: string) => {
+    const ok = await redeemReward(rewardId);
+    if (ok) setRewards((prev) => prev.map((r) => r.id === rewardId ? { ...r, status: 'redeemed' } : r));
+  };
+
+  // Reabre la pantalla de estatus de una orden previa desde "Mis pedidos".
+  const reopenOrderStatus = (order: any) => {
+    setConfirmedOrderId(order.id);
+    setConfirmedOrderNum(String((order.daily_number ?? 0) + 1).padStart(4, '0'));
+    setMode(order.source === 'TO_GO' ? 'delivery' : 'pickup');
+    setView('success');
+  };
+
   const settings = business?.settings || {};
   const availableItems = items.filter((m) => m.onlineAvailable !== false);
   const zonesList = (settings.digitalDeliveryZones || '').split(',').map((z: string) => z.trim().toLowerCase()).filter(Boolean);
@@ -297,8 +396,10 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
         const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
         if (error) throw error;
       }
-      // Después de auth OK, regresa al checkout (session llega por el listener)
-      setView('checkout');
+      // Después de auth OK, vuelve a donde el usuario venía (checkout o su
+      // cuenta). La session llega por el listener onAuthStateChange.
+      setView(authReturnTo);
+      if (authReturnTo === 'account') loadAccount();
     } catch (err: any) {
       setAuthError(err.message || 'No pudimos autenticarte.');
     } finally {
@@ -328,38 +429,68 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   }, [deliveryEnabled, mode]);
 
   const validateGeoLocation = () => {
+    setGeoErrorMsg(null);
+    if (!navigator.geolocation) {
+      setGeoState('error');
+      setGeoErrorMsg('Tu navegador no soporta ubicación. Escribe tu dirección manualmente abajo.');
+      return;
+    }
     setGeoState('checking');
-    if (!navigator.geolocation) { setGeoState('error'); return; }
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const d = haversineKm(pos.coords.latitude, pos.coords.longitude, settings.businessLat, settings.businessLng);
-        setGeoDistance(d);
-        setClientCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setGeoState(d <= radiusKm ? 'inside' : 'outside');
 
-        // Reverse-geocoding con Nominatim (OpenStreetMap, gratis, sin API
-        // key): pre-llena calle, colonia y CP desde el GPS validado. El
-        // cliente solo corrige el número y agrega referencias. Best-effort:
-        // si falla, los campos quedan manuales.
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&accept-language=es`,
-            { headers: { Accept: 'application/json' } }
-          );
-          if (res.ok) {
-            const geo = await res.json();
-            const a = geo.address || {};
-            const street = [a.road, a.house_number].filter(Boolean).join(' ');
-            const colonia = a.neighbourhood || a.suburb || a.quarter || a.village || '';
-            const cp = a.postcode || '';
-            setAddrStreet((prev) => prev || street);
-            setAddrColonia((prev) => prev || colonia);
-            setAddrCP((prev) => prev || cp);
-          }
-        } catch { /* geocoding best-effort */ }
-      },
-      () => setGeoState('error'),
-      { enableHighAccuracy: true, timeout: 10000 }
+    const onSuccess = async (pos: GeolocationPosition) => {
+      const d = haversineKm(pos.coords.latitude, pos.coords.longitude, settings.businessLat, settings.businessLng);
+      setGeoDistance(d);
+      setClientCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      setGeoState(d <= radiusKm ? 'inside' : 'outside');
+
+      // Reverse-geocoding con Nominatim (OpenStreetMap, gratis, sin API
+      // key): pre-llena calle, colonia y CP desde el GPS validado. El
+      // cliente solo corrige el número y agrega referencias. Best-effort:
+      // si falla, los campos quedan manuales.
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&accept-language=es`,
+          { headers: { Accept: 'application/json' } }
+        );
+        if (res.ok) {
+          const geo = await res.json();
+          const a = geo.address || {};
+          const street = [a.road, a.house_number].filter(Boolean).join(' ');
+          const colonia = a.neighbourhood || a.suburb || a.quarter || a.village || '';
+          const cp = a.postcode || '';
+          setAddrStreet((prev) => prev || street);
+          setAddrColonia((prev) => prev || colonia);
+          setAddrCP((prev) => prev || cp);
+        }
+      } catch { /* geocoding best-effort */ }
+    };
+
+    // Manejo por código de error. En iPhone el GPS de alta precisión a veces
+    // agota el tiempo; si eso pasa (code 3) reintentamos UNA vez con baja
+    // precisión y más tiempo antes de rendirnos.
+    const onError = (err: GeolocationPositionError, canRetry: boolean) => {
+      if (err.code === 3 /* TIMEOUT */ && canRetry) {
+        navigator.geolocation.getCurrentPosition(
+          onSuccess,
+          (e2) => onError(e2, false),
+          { enableHighAccuracy: false, timeout: 20000, maximumAge: 120000 }
+        );
+        return;
+      }
+      setGeoState('error');
+      if (err.code === 1 /* PERMISSION_DENIED */) {
+        setGeoErrorMsg('Bloqueaste el permiso de ubicación. En iPhone: toca "aA" a la izquierda de la barra de Safari → Ajustes del sitio web → Ubicación → Permitir. O ve a Ajustes → Privacidad → Localización → Safari. Luego reintenta.');
+      } else if (err.code === 2 /* POSITION_UNAVAILABLE */) {
+        setGeoErrorMsg('No pudimos obtener tu señal GPS. Revisa que la Localización esté activada y que tengas buena señal, y reintenta.');
+      } else {
+        setGeoErrorMsg('Se agotó el tiempo buscando tu ubicación. Reintenta o escribe tu dirección manualmente abajo.');
+      }
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      onSuccess,
+      (err) => onError(err, true),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
     );
   };
 
@@ -521,10 +652,18 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
       const { error: iErr } = await supabase.from('order_items').insert(itemRows);
       if (iErr) console.warn('[Storefront] order_items insert warn:', iErr.message);
 
+      const orderNumStr = String(dailyNumber + 1).padStart(4, '0');
       setConfirmedOrderId(orderId);
-      setConfirmedOrderNum(String(dailyNumber + 1).padStart(4, '0'));
+      setConfirmedOrderNum(orderNumStr);
       setView('success');
       setCart([]);
+      addActiveOrder(businessId, { id: orderId, num: orderNumStr, mode });
+
+      // Lealtad: si hay cliente logueado, registra el consumo (contadores,
+      // recompensas y acreditación al referidor). Best-effort.
+      if (session?.user?.id) {
+        recordOrderConsumption(session.user.id, businessId, total);
+      }
     } catch (err: any) {
       console.error('[Storefront] order error:', err);
       alert('No pudimos procesar tu pedido. ' + (err.message || ''));
@@ -564,13 +703,25 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
       }
       try {
         const { orderRecord, itemRows, dailyNumber } = JSON.parse(raw);
-        setConfirmedOrderNum(String((dailyNumber ?? 0) + 1).padStart(4, '0'));
+        const paidNum = String((dailyNumber ?? 0) + 1).padStart(4, '0');
+        setConfirmedOrderNum(paidNum);
+        addActiveOrder(orderRecord.business_id, {
+          id: paid,
+          num: paidNum,
+          mode: orderRecord?.source === 'TO_GO' ? 'delivery' : 'pickup',
+        });
         // Idempotencia: si ya existe (doble retorno), no re-insertamos.
         const { data: existing } = await supabase.from('orders').select('id').eq('id', paid).maybeSingle();
         if (!existing) {
           await supabase.from('orders').insert(orderRecord);
           if (Array.isArray(itemRows) && itemRows.length) {
             await supabase.from('order_items').insert(itemRows);
+          }
+          // Lealtad: registra el consumo solo la 1a vez (idempotente por el
+          // guard de `existing`). El customerId viaja en customer_metadata.
+          const custId = orderRecord?.customer_metadata?.customerId;
+          if (custId) {
+            recordOrderConsumption(custId, orderRecord.business_id, Number(orderRecord.total) || 0);
           }
         }
       } catch (e) {
@@ -599,7 +750,31 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   }
 
   // ── VIEWS ────────────────────────────────────────────────────────
-  if (view === 'success') return <SuccessView orderNum={confirmedOrderNum} orderId={confirmedOrderId} mode={mode} onOrderMore={() => { setView('menu'); setConfirmedOrderId(null); }} onNewOrder={() => { setView('menu'); setCart([]); setConfirmedOrderId(null); }} />;
+  if (view === 'success') return <SuccessView
+    orderNum={confirmedOrderNum}
+    orderId={confirmedOrderId}
+    mode={mode}
+    businessId={businessId}
+    customerName={customerName || profile?.fullName}
+    onOrderMore={() => { setView('menu'); setConfirmedOrderId(null); }}
+    onNewOrder={() => { setView('menu'); setCart([]); setConfirmedOrderId(null); }}
+    onAccount={openAccount}
+  />;
+
+  if (view === 'account') return <AccountView
+    business={business}
+    businessId={businessId}
+    session={session}
+    profile={profile}
+    rewards={rewards}
+    orders={myOrders}
+    loading={accountLoading}
+    onBack={() => setView('menu')}
+    onReload={loadAccount}
+    onRedeem={handleRedeem}
+    onReopenOrder={reopenOrderStatus}
+    onSignOut={handleSignOut}
+  />;
 
   if (view === 'auth') return <AuthView
     mode={authMode}
@@ -646,9 +821,10 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
     geoState={geoState}
     geoDistance={geoDistance}
     onValidateGeo={validateGeoLocation}
+    geoErrorMsg={geoErrorMsg}
     onBack={() => setView('menu')}
     onConfirm={handleConfirmOrder}
-    onLoginRequired={() => setView('auth')}
+    onLoginRequired={() => { setAuthReturnTo('checkout'); setView('auth'); }}
   />;
 
   // MENU view
@@ -670,26 +846,40 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
               </div>
             </div>
 
-            {/* Toggle segmentado esbelto */}
-            <div className="flex items-center bg-servirest-hueso rounded-full p-0.5 border border-[rgba(42,40,38,0.1)] flex-shrink-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Toggle segmentado esbelto */}
+              <div className="flex items-center bg-servirest-hueso rounded-full p-0.5 border border-[rgba(42,40,38,0.1)]">
+                <button
+                  onClick={() => deliveryEnabled && setMode('delivery')}
+                  disabled={!deliveryEnabled}
+                  title={deliveryEnabled ? undefined : 'El negocio aún no configura su zona de entrega'}
+                  className={`px-2.5 sm:px-3 h-8 rounded-full text-[10px] font-black uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all ${
+                    !deliveryEnabled ? 'text-[rgba(42,40,38,0.25)] cursor-not-allowed line-through'
+                    : mode === 'delivery' ? 'bg-servirest-terracota text-servirest-hueso shadow-sm' : 'text-[rgba(42,40,38,0.55)]'
+                  }`}
+                >
+                  <Truck size={12} /> <span className="hidden xs:inline sm:inline">Domicilio</span>
+                </button>
+                <button
+                  onClick={() => setMode('pickup')}
+                  className={`px-2.5 sm:px-3 h-8 rounded-full text-[10px] font-black uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all ${
+                    mode === 'pickup' ? 'bg-servirest-terracota text-servirest-hueso shadow-sm' : 'text-[rgba(42,40,38,0.55)]'
+                  }`}
+                >
+                  <Store size={12} /> <span className="hidden xs:inline sm:inline">Recoger</span>
+                </button>
+              </div>
+
+              {/* Mi cuenta — perfil, pedidos, recompensas, referidos */}
               <button
-                onClick={() => deliveryEnabled && setMode('delivery')}
-                disabled={!deliveryEnabled}
-                title={deliveryEnabled ? undefined : 'El negocio aún no configura su zona de entrega'}
-                className={`px-3 h-8 rounded-full text-[10px] font-black uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all ${
-                  !deliveryEnabled ? 'text-[rgba(42,40,38,0.25)] cursor-not-allowed line-through'
-                  : mode === 'delivery' ? 'bg-servirest-terracota text-servirest-hueso shadow-sm' : 'text-[rgba(42,40,38,0.55)]'
-                }`}
+                onClick={openAccount}
+                title={session ? 'Mi cuenta' : 'Iniciar sesión'}
+                className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-servirest-midnight text-servirest-hueso flex items-center justify-center hover:bg-servirest-terracota transition-colors flex-shrink-0"
               >
-                <Truck size={12} /> <span>Domicilio</span>
-              </button>
-              <button
-                onClick={() => setMode('pickup')}
-                className={`px-3 h-8 rounded-full text-[10px] font-black uppercase tracking-[0.1em] flex items-center gap-1.5 transition-all ${
-                  mode === 'pickup' ? 'bg-servirest-terracota text-servirest-hueso shadow-sm' : 'text-[rgba(42,40,38,0.55)]'
-                }`}
-              >
-                <Store size={12} /> <span>Recoger</span>
+                <UserIcon size={16} />
+                {rewards.some((r) => r.status === 'available') && (
+                  <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-servirest-mostaza border-2 border-servirest-surface" />
+                )}
               </button>
             </div>
           </div>
@@ -753,6 +943,12 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
           </div>
         )}
       </main>
+
+      {/* Burbuja flotante: estatus en vivo de la orden activa */}
+      <FloatingOrderBubble
+        businessId={businessId}
+        onOpen={(o: ActiveOrder) => { setConfirmedOrderId(o.id); setConfirmedOrderNum(o.num); setMode(o.mode); setView('success'); }}
+      />
 
       <AnimatePresence>
         {cartCount > 0 && !showCart && (
@@ -967,7 +1163,7 @@ const CheckoutView: React.FC<any> = ({
   payMethod, setPayMethod, customerName, setCustomerName, customerPhone, setCustomerPhone,
   deliveryAddress, addrStreet, setAddrStreet, addrColonia, setAddrColonia,
   addrCP, setAddrCP, addrRefs, setAddrRefs, orderNotes, setOrderNotes, processing,
-  zonesList, isAddressInZone, hasGeoRadius, radiusKm, geoState, geoDistance, onValidateGeo,
+  zonesList, isAddressInZone, hasGeoRadius, radiusKm, geoState, geoDistance, onValidateGeo, geoErrorMsg,
   onBack, onConfirm, onLoginRequired,
 }) => {
   // ── Validación de entrega ────────────────────────────────────────
@@ -1112,7 +1308,15 @@ const CheckoutView: React.FC<any> = ({
                       </div>
                     )}
                     {geoState === 'error' && (
-                      <p className="text-[11px] text-servirest-danger mt-2">No pudimos leer tu ubicación. Da permiso e intenta de nuevo.</p>
+                      <div className="mt-2">
+                        <p className="text-[11px] text-servirest-danger leading-relaxed">{geoErrorMsg || 'No pudimos leer tu ubicación. Da permiso e intenta de nuevo.'}</p>
+                        <button
+                          onClick={onValidateGeo}
+                          className="mt-2 px-4 h-9 rounded-full bg-servirest-midnight text-servirest-hueso text-[10px] font-black uppercase tracking-[0.15em] flex items-center gap-2"
+                        >
+                          <RefreshCw size={12} /> Reintentar
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1286,19 +1490,93 @@ const AuthView: React.FC<any> = ({ mode, setMode, email, setEmail, password, set
 );
 
 // ─────────────────────────────────────────────────────────────────────────
+// FloatingOrderBubble — pastilla flotante con el estatus en vivo de la orden
+// activa más reciente. Sobrevive recargas (localStorage) y sirve a invitados
+// y a clientes con cuenta. Al tocarla abre la pantalla de estatus.
+// ─────────────────────────────────────────────────────────────────────────
+const FloatingOrderBubble: React.FC<{ businessId: string; onOpen: (o: ActiveOrder) => void }> = ({ businessId, onOpen }) => {
+  const [active, setActive] = useState<ActiveOrder[]>(() => readActiveOrders(businessId));
+  const [status, setStatus] = useState<string>('PENDING');
+
+  // Re-lee la lista cuando cambia el negocio o al volver a la pestaña.
+  useEffect(() => {
+    const refresh = () => setActive(readActiveOrders(businessId));
+    refresh();
+    window.addEventListener('focus', refresh);
+    return () => window.removeEventListener('focus', refresh);
+  }, [businessId]);
+
+  const current = active[0]; // la más reciente
+
+  // Polling del estatus. Cuando la orden se completa/cancela, la sacamos de
+  // la lista y mostramos la siguiente activa (si hay).
+  useEffect(() => {
+    if (!current) return;
+    let alive = true;
+    const poll = async () => {
+      const sb = getSupabase();
+      if (!sb) return;
+      const { data } = await sb.rpc('get_order_status', { p_order_id: current.id });
+      if (!alive) return;
+      const s = String(data || 'PENDING');
+      setStatus(s);
+      if (s === 'COMPLETED' || s === 'CANCELLED') {
+        removeActiveOrder(businessId, current.id);
+        setActive(readActiveOrders(businessId));
+      }
+    };
+    poll();
+    const iv = setInterval(poll, 15000);
+    return () => { alive = false; clearInterval(iv); };
+  }, [current?.id, businessId]);
+
+  if (!current) return null;
+
+  const isDelivery = current.mode === 'delivery';
+  const st = orderStatusLabel(status, isDelivery);
+  const Icon = isDelivery ? Truck : Store;
+
+  return (
+    <motion.button
+      initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+      onClick={() => onOpen(current)}
+      style={{ bottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+      className="fixed left-4 z-40 flex items-center gap-2.5 pl-2.5 pr-4 py-2 rounded-full bg-servirest-midnight text-servirest-hueso shadow-2xl shadow-black/30 hover:scale-105 transition-transform max-w-[calc(100vw-2rem)]"
+    >
+      <span className="relative flex-shrink-0 w-8 h-8 rounded-full bg-servirest-terracota flex items-center justify-center">
+        <Icon size={15} />
+        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-servirest-mostaza border-2 border-servirest-midnight animate-pulse" />
+      </span>
+      <span className="min-w-0 text-left">
+        <span className="block text-[8px] font-black uppercase tracking-[0.18em] text-servirest-mostaza leading-none">Orden #{current.num} · en vivo</span>
+        <span className="block text-[12px] font-bold leading-tight truncate">{st.label}</span>
+      </span>
+    </motion.button>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────
 // SuccessView — pantalla de progreso con polling en vivo del estatus
 // ─────────────────────────────────────────────────────────────────────────
-const STOREFRONT_STEPS: { keys: string[]; label: string; icon: React.ElementType }[] = [
-  { keys: ['PENDING'],                 label: 'Recibida',       icon: PackageCheck },
-  { keys: ['COOKING'],                 label: 'En preparación', icon: ChefHat },
-  { keys: ['READY'],                   label: 'Lista',          icon: CheckCircle2 },
-  { keys: ['SERVED', 'COMPLETED'],     label: mode => mode === 'delivery' ? 'En camino' : 'Entregada', icon: Truck },
-];
+// Los pasos y el copy dependen del modo: en delivery el ciclo cierra "en
+// camino / entregado"; en pickup cierra al recoger y cobrar en la tienda.
+const stepsFor = (mode: 'delivery' | 'pickup'): { keys: string[]; label: string; icon: React.ElementType }[] => {
+  const isDelivery = mode === 'delivery';
+  return [
+    { keys: ['PENDING'],             label: 'Recibida',                                    icon: PackageCheck },
+    { keys: ['COOKING'],             label: 'En preparación',                              icon: ChefHat },
+    { keys: ['READY'],               label: isDelivery ? 'Lista' : 'Lista para recoger',   icon: CheckCircle2 },
+    isDelivery
+      ? { keys: ['SERVED', 'COMPLETED'], label: 'En camino',           icon: Truck }
+      : { keys: ['SERVED', 'COMPLETED'], label: 'Recogida y cobrada',  icon: Store },
+  ];
+};
 
-const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, onOrderMore, onNewOrder }) => {
+const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, businessId, customerName, onOrderMore, onNewOrder, onAccount }) => {
   const [status, setStatus] = useState<string>('PENDING');
   const [pollError, setPollError] = useState(false);
   const [notifyOn, setNotifyOn] = useState(canNotify());
+  const [chatOpen, setChatOpen] = useState(false);
   const prevStatusRef = React.useRef<string>('PENDING');
 
   // Al entrar a la pantalla de estatus, ofrecemos activar avisos.
@@ -1332,23 +1610,38 @@ const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, onOrderMore, onNe
     return () => { alive = false; clearInterval(iv); };
   }, [orderId, mode, orderNum]);
 
-  const activeIdx = STOREFRONT_STEPS.findIndex((s) => s.keys.includes(status));
+  const isDelivery = mode === 'delivery';
+  const steps = stepsFor(mode);
+  const activeIdx = steps.findIndex((s) => s.keys.includes(status));
   const currentIdx = activeIdx === -1 ? 0 : activeIdx;
   const isDone = status === 'SERVED' || status === 'COMPLETED';
+  // En pickup, el momento de "ya ve por él" es READY (lista para recoger).
+  const readyForPickup = !isDelivery && status === 'READY';
+
+  const kicker = isDone
+    ? (isDelivery ? '¡Pedido en camino!' : '¡Pedido recogido!')
+    : readyForPickup ? '¡Listo para recoger!'
+    : 'Pedido recibido';
+
+  const HeroIcon = isDone
+    ? (isDelivery ? Truck : Store)
+    : readyForPickup ? Store
+    : CheckCircle2;
+
+  const heroCopy = isDone
+    ? (isDelivery ? 'Tu pedido ya salió. Llega en unos minutos.' : 'Gracias por tu compra. ¡Te esperamos pronto!')
+    : readyForPickup ? 'Pasa a la tienda por tu pedido. El cobro se hace al recogerlo.'
+    : 'Sigue el estatus aquí — se actualiza solo mientras lo preparamos.';
 
   return (
     <div className="min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-servirest-midnight overflow-y-auto flex flex-col items-center justify-center antialiased relative py-10">
       <div className="max-w-2xl w-full px-5 sm:px-8 text-center">
         <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 18 }} className="w-28 h-28 rounded-full bg-servirest-terracota text-servirest-hueso mx-auto flex items-center justify-center shadow-sr-glow mb-6">
-          {isDone ? <Truck size={52} strokeWidth={2.2} /> : <CheckCircle2 size={56} strokeWidth={2.5} />}
+          <HeroIcon size={isDone ? 52 : 56} strokeWidth={2.2} />
         </motion.div>
-        <SrKicker className="!text-servirest-mostaza">{isDone ? '¡Pedido en camino!' : 'Pedido recibido'}</SrKicker>
+        <SrKicker className="!text-servirest-mostaza">{kicker}</SrKicker>
         <h1 className="font-serif italic text-servirest-hueso text-4xl sm:text-6xl leading-tight mt-3 mb-2">Orden #{orderNum}</h1>
-        <p className="text-[15px] text-servirest-hueso/60 mb-6">
-          {isDone
-            ? (mode === 'delivery' ? 'Tu pedido ya salió. Llega en unos minutos.' : 'Tu pedido está listo para recoger.')
-            : 'Sigue el estatus aquí — se actualiza solo mientras lo preparamos.'}
-        </p>
+        <p className="text-[15px] text-servirest-hueso/60 mb-6">{heroCopy}</p>
 
         {/* Toggle de avisos push locales */}
         {!isDone && (
@@ -1368,10 +1661,10 @@ const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, onOrderMore, onNe
 
         {/* Progress ladder en vivo */}
         <div className="grid grid-cols-4 gap-2 mb-10">
-          {STOREFRONT_STEPS.map((step, i) => {
+          {steps.map((step, i) => {
             const done = i <= currentIdx;
             const current = i === currentIdx && !isDone;
-            const label = typeof step.label === 'function' ? step.label(mode) : step.label;
+            const label = step.label;
             return (
               <div key={i} className="flex flex-col items-center">
                 <div className={`w-11 h-11 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${
@@ -1394,6 +1687,16 @@ const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, onOrderMore, onNe
           </p>
         )}
 
+        {/* Botón de mensaje al negocio / repartidor */}
+        {orderId && (
+          <button
+            onClick={() => setChatOpen(true)}
+            className="inline-flex items-center gap-2 px-6 h-12 rounded-full bg-servirest-mostaza text-servirest-midnight font-black uppercase tracking-[0.15em] text-[11px] hover:scale-105 transition-transform mb-6"
+          >
+            <MessageCircle size={15} /> {mode === 'delivery' ? 'Mensaje a la tienda / repartidor' : 'Mensaje a la tienda'}
+          </button>
+        )}
+
         <div className="flex gap-3 flex-wrap justify-center">
           <button onClick={onOrderMore} className="px-8 h-14 rounded-full bg-servirest-hueso text-servirest-midnight font-black italic uppercase tracking-[0.2em] text-[12px] hover:scale-105 transition-transform">
             Ordenar algo más
@@ -1402,8 +1705,620 @@ const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, onOrderMore, onNe
             Nueva orden
           </button>
         </div>
+
+        {onAccount && (
+          <button onClick={onAccount} className="mt-6 inline-flex items-center gap-1.5 text-servirest-hueso/50 hover:text-servirest-mostaza text-[11px] font-bold uppercase tracking-[0.15em] transition-colors">
+            <UserIcon size={13} /> Ver mis pedidos y recompensas
+          </button>
+        )}
+      </div>
+
+      {chatOpen && orderId && (
+        <OrderChat
+          orderId={orderId}
+          businessId={businessId}
+          customerName={customerName}
+          onClose={() => setChatOpen(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// OrderChat — panel de mensajes cliente ↔ negocio/repartidor (por orden)
+// ─────────────────────────────────────────────────────────────────────────
+const OrderChat: React.FC<any> = ({ orderId, businessId, customerName, onClose }) => {
+  const [messages, setMessages] = useState<any[]>([]);
+  const [draft, setDraft] = useState('');
+  const [sending, setSending] = useState(false);
+  const endRef = React.useRef<HTMLDivElement>(null);
+
+  const load = async () => setMessages(await getOrderMessages(orderId));
+
+  // Carga inicial + polling cada 8s para ver respuestas del negocio.
+  useEffect(() => {
+    load();
+    const iv = setInterval(load, 8000);
+    return () => clearInterval(iv);
+  }, [orderId]);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages.length]);
+
+  const send = async () => {
+    const text = draft.trim();
+    if (!text || sending) return;
+    setSending(true);
+    // Optimista: pinta el mensaje de inmediato.
+    const optimistic = { id: `tmp-${Date.now()}`, sender: 'customer', sender_name: customerName || 'Cliente', message: text, created_at: new Date().toISOString() };
+    setMessages((prev) => [...prev, optimistic]);
+    setDraft('');
+    const ok = await sendOrderMessage(orderId, businessId, text, customerName);
+    if (ok) await load();
+    setSending(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="w-full sm:max-w-md h-[75dvh] sm:h-[70vh] bg-servirest-hueso rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-[rgba(42,40,38,0.08)] bg-servirest-surface">
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-full bg-servirest-midnight text-servirest-mostaza flex items-center justify-center"><MessageCircle size={16} /></div>
+            <div>
+              <div className="font-serif italic text-servirest-midnight text-[16px] leading-none">Mensajes</div>
+              <div className="text-[10px] text-[rgba(42,40,38,0.5)] mt-0.5">Con la tienda y tu repartidor</div>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-9 h-9 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.1)] flex items-center justify-center text-[rgba(42,40,38,0.5)] hover:text-servirest-terracota"><X size={16} /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2.5">
+          {messages.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center px-6">
+              <MessageCircle size={32} className="text-[rgba(42,40,38,0.2)] mb-3" />
+              <p className="text-[13px] text-[rgba(42,40,38,0.5)]">Escríbele a la tienda si necesitas cambiar algo de tu pedido o dar indicaciones al repartidor.</p>
+            </div>
+          ) : (
+            messages.map((m) => {
+              const mine = m.sender === 'customer';
+              return (
+                <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-[13px] leading-snug ${
+                    mine ? 'bg-servirest-terracota text-servirest-hueso rounded-br-sm' : 'bg-servirest-surface border border-[rgba(42,40,38,0.08)] text-servirest-midnight rounded-bl-sm'
+                  }`}>
+                    {!mine && <div className="text-[9px] font-black uppercase tracking-[0.1em] text-servirest-terracota mb-0.5">{m.sender === 'driver' ? '🛵 Repartidor' : '🏪 Tienda'}</div>}
+                    {m.message}
+                  </div>
+                </div>
+              );
+            })
+          )}
+          <div ref={endRef} />
+        </div>
+
+        <div className="flex-shrink-0 flex items-center gap-2 p-3 border-t border-[rgba(42,40,38,0.08)] bg-servirest-surface pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') send(); }}
+            placeholder="Escribe un mensaje…"
+            className="flex-1 h-11 px-4 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.12)] text-[14px] focus:outline-none focus:border-servirest-terracota"
+          />
+          <button onClick={send} disabled={sending || !draft.trim()} className="w-11 h-11 rounded-full bg-servirest-terracota text-servirest-hueso flex items-center justify-center disabled:opacity-40 flex-shrink-0">
+            <Send size={17} />
+          </button>
+        </div>
       </div>
     </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// AccountView — "Mi cuenta": perfil, lealtad, referidos y mis pedidos
+// ─────────────────────────────────────────────────────────────────────────
+const mxn = (n: number) => `$${(Number(n) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+// El texto depende del modo (source): TO_GO = domicilio, PICKUP = recoger.
+const orderStatusLabel = (status: string, isDelivery: boolean): { label: string; cls: string } => {
+  const map: Record<string, { label: string; cls: string }> = {
+    PENDING:   { label: 'Recibida',       cls: 'bg-servirest-mostaza/20 text-servirest-mostaza' },
+    COOKING:   { label: 'En preparación', cls: 'bg-servirest-terracota/15 text-servirest-terracota' },
+    READY:     { label: isDelivery ? 'Lista' : 'Lista para recoger', cls: 'bg-blue-500/15 text-blue-600' },
+    SERVED:    { label: isDelivery ? 'En camino' : 'Recogida',        cls: 'bg-servirest-terracota/15 text-servirest-terracota' },
+    COMPLETED: { label: isDelivery ? 'Entregada' : 'Recogida y cobrada', cls: 'bg-green-600/15 text-green-700' },
+    CANCELLED: { label: 'Cancelada',      cls: 'bg-servirest-danger/15 text-servirest-danger' },
+  };
+  return map[status] || { label: status, cls: 'bg-servirest-hueso text-[rgba(42,40,38,0.6)]' };
+};
+const isActiveStatus = (s: string) => ['PENDING', 'COOKING', 'READY', 'SERVED'].includes(s);
+
+const AccountView: React.FC<any> = ({ business, businessId, session, profile, rewards, orders, loading, onBack, onReload, onRedeem, onReopenOrder, onSignOut }) => {
+  const [copied, setCopied] = useState(false);
+  const [summaryOrder, setSummaryOrder] = useState<any | null>(null); // orden para ver resumen
+  const [redeemTarget, setRedeemTarget] = useState<CustomerReward | null>(null); // recompensa a canjear
+  const [refInput, setRefInput] = useState('');
+  const [refMsg, setRefMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [refBusy, setRefBusy] = useState(false);
+
+  const availableRewards = (rewards || []).filter((r: CustomerReward) => r.status === 'available');
+  const ordersProgress = profile ? profile.totalOrders % REWARD_ORDERS_THRESHOLD : 0;
+  const refsProgress = profile ? profile.successfulReferrals % REWARD_REFERRALS_THRESHOLD : 0;
+  const activeOrders = (orders || []).filter((o: any) => isActiveStatus(o.status));
+  const pastOrders = (orders || []).filter((o: any) => !isActiveStatus(o.status));
+  // Puede meter código de invitación solo si aún no tiene referidor ni 1a orden.
+  const canApplyReferral = profile && !profile.referredBy && !profile.firstOrderDone;
+
+  const submitReferral = async () => {
+    if (!profile || refBusy) return;
+    setRefBusy(true);
+    setRefMsg(null);
+    const res = await applyReferralCode(profile.userId, refInput);
+    setRefMsg({ ok: res.ok, text: res.ok ? '¡Código aplicado! Tu amigo recibirá crédito con tu primer pedido.' : (res.error || 'No se pudo aplicar') });
+    if (res.ok) { setRefInput(''); onReload(); }
+    setRefBusy(false);
+  };
+
+  const shareUrl = profile ? referralShareUrl(businessId, profile.referralCode) : '';
+
+  const copyCode = async () => {
+    if (!profile) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard best-effort */ }
+  };
+
+  const share = async () => {
+    if (!profile) return;
+    const text = `¡Pide en ${business?.name || 'este restaurante'} con mi código ${profile.referralCode} y apóyame! 🍕`;
+    try {
+      if ((navigator as any).share) {
+        await (navigator as any).share({ title: business?.name || 'Ordena en línea', text, url: shareUrl });
+      } else {
+        await navigator.clipboard.writeText(`${text} ${shareUrl}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch { /* share best-effort */ }
+  };
+
+  return (
+    <div className="h-[100dvh] w-full max-w-full overflow-x-hidden bg-servirest-hueso flex flex-col antialiased">
+      {/* Header */}
+      <header className="flex-shrink-0 px-4 sm:px-6 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 border-b border-[rgba(42,40,38,0.08)] bg-servirest-surface z-10">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
+          <button onClick={onBack} className="w-9 h-9 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.1)] flex items-center justify-center text-[rgba(42,40,38,0.6)] hover:text-servirest-terracota flex-shrink-0"><ArrowLeft size={17} /></button>
+          <div className="font-serif italic text-servirest-midnight text-[18px] leading-none">Mi cuenta</div>
+          <button onClick={onSignOut} title="Cerrar sesión" className="w-9 h-9 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.1)] flex items-center justify-center text-[rgba(42,40,38,0.5)] hover:text-servirest-danger flex-shrink-0"><LogOut size={16} /></button>
+        </div>
+      </header>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-5 space-y-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          {loading && !profile ? (
+            <div className="py-20 text-center"><RefreshCw size={32} className="mx-auto text-servirest-terracota animate-spin" /></div>
+          ) : (
+            <>
+              {/* Tarjeta de perfil */}
+              <div className="rounded-3xl bg-servirest-midnight text-servirest-hueso p-5 sm:p-6 shadow-lg">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-14 h-14 rounded-full bg-servirest-terracota text-servirest-hueso flex items-center justify-center font-serif italic text-2xl flex-shrink-0">
+                    {(profile?.fullName || session?.user?.email || '?')[0]?.toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-serif italic text-[22px] leading-tight truncate">{profile?.fullName || 'Cliente'}</div>
+                    <div className="text-[12px] text-servirest-hueso/50 truncate">{session?.user?.email}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 mt-5">
+                  <div className="text-center bg-servirest-hueso/5 rounded-2xl py-3">
+                    <div className="font-serif italic text-servirest-mostaza text-2xl leading-none">{profile?.points ?? 0}</div>
+                    <div className="text-[9px] uppercase tracking-[0.12em] text-servirest-hueso/50 mt-1.5">Puntos</div>
+                  </div>
+                  <div className="text-center bg-servirest-hueso/5 rounded-2xl py-3">
+                    <div className="font-serif italic text-servirest-hueso text-2xl leading-none">{profile?.totalOrders ?? 0}</div>
+                    <div className="text-[9px] uppercase tracking-[0.12em] text-servirest-hueso/50 mt-1.5">Pedidos</div>
+                  </div>
+                  <div className="text-center bg-servirest-hueso/5 rounded-2xl py-3">
+                    <div className="font-serif italic text-servirest-hueso text-[17px] leading-none pt-1.5">{mxn(profile?.totalSpent ?? 0)}</div>
+                    <div className="text-[9px] uppercase tracking-[0.12em] text-servirest-hueso/50 mt-1.5">Consumo</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Gráfica de preferencias (lo que más pide) */}
+              <PreferencesChart orders={orders} />
+
+              {/* Recompensas disponibles */}
+              {availableRewards.length > 0 && (
+                <div className="space-y-2.5">
+                  {availableRewards.map((r: CustomerReward) => (
+                    <div key={r.id} className="rounded-2xl bg-gradient-to-r from-servirest-mostaza/20 to-servirest-terracota/10 border border-servirest-mostaza/40 p-4 flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-full bg-servirest-mostaza text-servirest-midnight flex items-center justify-center flex-shrink-0"><Gift size={20} /></div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-servirest-midnight text-[14px] leading-tight">{r.title}</div>
+                        <div className="text-[11px] text-[rgba(42,40,38,0.55)]">Toca "Usar" para ver tu código de canje</div>
+                      </div>
+                      <button onClick={() => setRedeemTarget(r)} className="px-4 h-9 rounded-full bg-servirest-terracota text-servirest-hueso text-[11px] font-black uppercase tracking-[0.1em] flex-shrink-0 hover:scale-105 transition-transform flex items-center gap-1.5"><KeyRound size={13} /> Usar</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Progreso de lealtad */}
+              <div className="rounded-3xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Award size={16} className="text-servirest-terracota" />
+                  <div className="font-serif italic text-servirest-midnight text-[17px]">Tu progreso</div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex items-center justify-between text-[12px] mb-1.5">
+                    <span className="font-bold text-servirest-midnight">Rebanada gratis por compras</span>
+                    <span className="text-[rgba(42,40,38,0.5)] font-mono">{ordersProgress}/{REWARD_ORDERS_THRESHOLD}</span>
+                  </div>
+                  <div className="h-2.5 rounded-full bg-servirest-hueso overflow-hidden">
+                    <div className="h-full bg-servirest-terracota rounded-full transition-all" style={{ width: `${(ordersProgress / REWARD_ORDERS_THRESHOLD) * 100}%` }} />
+                  </div>
+                  <div className="text-[11px] text-[rgba(42,40,38,0.5)] mt-1.5">Te faltan {REWARD_ORDERS_THRESHOLD - ordersProgress} pedido(s) para tu próxima rebanada gratis 🍕</div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between text-[12px] mb-1.5">
+                    <span className="font-bold text-servirest-midnight">Rebanada gratis por referidos</span>
+                    <span className="text-[rgba(42,40,38,0.5)] font-mono">{refsProgress}/{REWARD_REFERRALS_THRESHOLD}</span>
+                  </div>
+                  <div className="h-2.5 rounded-full bg-servirest-hueso overflow-hidden">
+                    <div className="h-full bg-servirest-mostaza rounded-full transition-all" style={{ width: `${(refsProgress / REWARD_REFERRALS_THRESHOLD) * 100}%` }} />
+                  </div>
+                  <div className="text-[11px] text-[rgba(42,40,38,0.5)] mt-1.5">{profile?.successfulReferrals ?? 0} amigos ya pidieron gracias a ti. ¡{REWARD_REFERRALS_THRESHOLD - refsProgress} más y ganas otra!</div>
+                </div>
+              </div>
+
+              {/* Referidos */}
+              <div className="rounded-3xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] p-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles size={16} className="text-servirest-mostaza" />
+                  <div className="font-serif italic text-servirest-midnight text-[17px]">Invita y gana</div>
+                </div>
+                <p className="text-[12px] text-[rgba(42,40,38,0.55)] mb-4">Comparte tu código. Cuando un amigo haga su primer pedido, sumas un referido — y a los 3, otra rebanada gratis.</p>
+
+                <div className="flex items-center gap-2 bg-servirest-hueso rounded-2xl border border-dashed border-servirest-terracota/40 p-3 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[9px] uppercase tracking-[0.15em] text-[rgba(42,40,38,0.45)] mb-0.5">Tu código</div>
+                    <div className="font-mono font-black text-servirest-terracota text-xl tracking-[0.15em] truncate">{profile?.referralCode || '—'}</div>
+                  </div>
+                  <button onClick={copyCode} className="px-3 h-10 rounded-full bg-servirest-midnight text-servirest-hueso text-[11px] font-bold flex items-center gap-1.5 flex-shrink-0">
+                    {copied ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> Copiar link</>}
+                  </button>
+                </div>
+                <button onClick={share} className="w-full h-12 rounded-full bg-servirest-terracota text-servirest-hueso font-black uppercase tracking-[0.15em] text-[12px] flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform">
+                  <Share2 size={16} /> Compartir mi código
+                </button>
+
+                {/* Introducir el código de quien te invitó */}
+                {canApplyReferral ? (
+                  <div className="mt-4 pt-4 border-t border-dashed border-[rgba(42,40,38,0.12)]">
+                    <div className="text-[11px] font-bold text-servirest-midnight mb-2">¿Te invitó alguien? Escribe su código</div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={refInput}
+                        onChange={(e) => { setRefInput(e.target.value.toUpperCase()); setRefMsg(null); }}
+                        placeholder="EJ. JUAN1234"
+                        className="flex-1 h-11 px-4 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.12)] text-[14px] font-mono tracking-[0.1em] uppercase focus:outline-none focus:border-servirest-terracota"
+                      />
+                      <button onClick={submitReferral} disabled={refBusy || !refInput.trim()} className="px-4 h-11 rounded-full bg-servirest-midnight text-servirest-hueso text-[11px] font-black uppercase tracking-[0.1em] disabled:opacity-40 flex-shrink-0">
+                        {refBusy ? '…' : 'Aplicar'}
+                      </button>
+                    </div>
+                    {refMsg && (
+                      <p className={`text-[11px] mt-2 font-medium ${refMsg.ok ? 'text-green-700' : 'text-servirest-danger'}`}>{refMsg.text}</p>
+                    )}
+                  </div>
+                ) : profile?.referredBy ? (
+                  <p className="text-[11px] text-[rgba(42,40,38,0.45)] mt-3 text-center">Ya tienes un código de invitación aplicado ✓</p>
+                ) : null}
+              </div>
+
+              {/* Mis pedidos */}
+              <div>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <div className="flex items-center gap-2">
+                    <ClipboardList size={16} className="text-servirest-terracota" />
+                    <div className="font-serif italic text-servirest-midnight text-[17px]">Mis pedidos</div>
+                  </div>
+                  <button onClick={onReload} className="text-[rgba(42,40,38,0.4)] hover:text-servirest-terracota"><RefreshCw size={15} className={loading ? 'animate-spin' : ''} /></button>
+                </div>
+
+                {activeOrders.length === 0 && pastOrders.length === 0 ? (
+                  <div className="rounded-2xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] p-8 text-center">
+                    <ClipboardList size={28} className="mx-auto text-[rgba(42,40,38,0.2)] mb-2" />
+                    <p className="text-[13px] text-[rgba(42,40,38,0.5)]">Aún no tienes pedidos. ¡Haz el primero!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {activeOrders.length > 0 && (
+                      <div className="text-[10px] font-black uppercase tracking-[0.15em] text-servirest-terracota px-1 pt-1">Activos ahora</div>
+                    )}
+                    {activeOrders.map((o: any) => <OrderRow key={o.id} order={o} onOpen={() => setSummaryOrder(o)} active />)}
+                    {pastOrders.length > 0 && (
+                      <div className="text-[10px] font-black uppercase tracking-[0.15em] text-[rgba(42,40,38,0.35)] px-1 pt-2">Anteriores</div>
+                    )}
+                    {pastOrders.map((o: any) => <OrderRow key={o.id} order={o} onOpen={() => setSummaryOrder(o)} />)}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Modal: resumen de la compra */}
+      {summaryOrder && (
+        <OrderSummaryModal
+          order={summaryOrder}
+          onClose={() => setSummaryOrder(null)}
+          onLiveStatus={() => { const o = summaryOrder; setSummaryOrder(null); onReopenOrder(o); }}
+        />
+      )}
+
+      {/* Modal: código de canje de recompensa */}
+      {redeemTarget && (
+        <RedeemModal
+          reward={redeemTarget}
+          onClose={() => setRedeemTarget(null)}
+          onConfirm={async () => { await onRedeem(redeemTarget.id); setRedeemTarget(null); }}
+        />
+      )}
+    </div>
+  );
+};
+
+// Código corto legible derivado del UUID de la recompensa (para el cajero).
+const rewardCode = (id: string) => id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 6).toUpperCase();
+
+// ── Resumen de compra (no la pantalla de estatus) ──────────────────────────
+const OrderSummaryModal: React.FC<any> = ({ order, onClose, onLiveStatus }) => {
+  const [detail, setDetail] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const isDelivery = order.source === 'TO_GO';
+  const active = isActiveStatus(order.status);
+  const st = orderStatusLabel(order.status, isDelivery);
+  const num = String((order.daily_number ?? 0) + 1).padStart(4, '0');
+
+  useEffect(() => {
+    let alive = true;
+    getOrderDetail(order.id).then((d) => { if (alive) { setDetail(d); setLoading(false); } });
+    return () => { alive = false; };
+  }, [order.id]);
+
+  const meta = detail?.customer_metadata || order.customer_metadata || {};
+  const items = detail?.items || [];
+  const subtotal = items.reduce((s: number, it: any) => s + Number(it.price || 0) * Number(it.quantity || 0), 0);
+  const when = (() => {
+    try { return new Date(order.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }); }
+    catch { return ''; }
+  })();
+  const payLabel = (m: string) => m === 'CARD' ? 'Tarjeta' : m === 'CASH' ? 'Efectivo' : m || '—';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full sm:max-w-md max-h-[88dvh] bg-servirest-hueso rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-[rgba(42,40,38,0.08)] bg-servirest-surface">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-full bg-servirest-midnight text-servirest-mostaza flex items-center justify-center flex-shrink-0"><Receipt size={16} /></div>
+            <div className="min-w-0">
+              <div className="font-serif italic text-servirest-midnight text-[16px] leading-none">Orden #{num}</div>
+              <div className="text-[10px] text-[rgba(42,40,38,0.5)] mt-0.5 truncate">{when}</div>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-9 h-9 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.1)] flex items-center justify-center text-[rgba(42,40,38,0.5)] hover:text-servirest-terracota flex-shrink-0"><X size={16} /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          <div className="flex items-center gap-2 mb-4">
+            <span className={`text-[10px] font-black uppercase tracking-[0.08em] px-2.5 py-1 rounded-full ${st.cls}`}>{st.label}</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[rgba(42,40,38,0.5)] flex items-center gap-1">
+              {isDelivery ? <><Truck size={12} /> Domicilio</> : <><Store size={12} /> Recoger</>}
+            </span>
+          </div>
+
+          {loading ? (
+            <div className="py-10 text-center"><RefreshCw size={24} className="mx-auto text-servirest-terracota animate-spin" /></div>
+          ) : (
+            <>
+              <div className="space-y-2.5 mb-4">
+                {items.length === 0 && <p className="text-[13px] text-[rgba(42,40,38,0.5)] text-center py-4">No pudimos cargar los productos.</p>}
+                {items.map((it: any, i: number) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <span className="w-6 h-6 rounded-full bg-servirest-terracota/10 text-servirest-terracota text-[11px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">{it.quantity}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[14px] font-bold text-servirest-midnight leading-tight">{it.name}</div>
+                      {it.notes && <div className="text-[11px] text-[rgba(42,40,38,0.5)] mt-0.5">{it.notes}</div>}
+                    </div>
+                    <div className="text-[13px] font-mono text-servirest-midnight flex-shrink-0">{mxn(Number(it.price || 0) * Number(it.quantity || 0))}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-[rgba(42,40,38,0.08)] pt-3 space-y-1.5">
+                {subtotal > 0 && (
+                  <div className="flex justify-between text-[12px] text-[rgba(42,40,38,0.6)]"><span>Subtotal</span><span className="font-mono">{mxn(subtotal)}</span></div>
+                )}
+                <div className="flex justify-between items-center pt-1">
+                  <span className="font-serif italic text-servirest-midnight text-[17px]">Total</span>
+                  <span className="font-serif italic text-servirest-terracota text-[20px]">{mxn(order.total)}</span>
+                </div>
+                <div className="flex justify-between text-[11px] text-[rgba(42,40,38,0.5)] pt-1">
+                  <span>Pago</span>
+                  <span>{payLabel(detail?.payment_method)} · {detail?.payment_status === 'PAID' ? 'Pagado' : 'Por cobrar'}</span>
+                </div>
+              </div>
+
+              {isDelivery && meta.deliveryAddress && (
+                <div className="mt-4 flex items-start gap-2 bg-servirest-surface rounded-2xl p-3 border border-[rgba(42,40,38,0.08)]">
+                  <MapPin size={15} className="text-servirest-terracota flex-shrink-0 mt-0.5" />
+                  <div className="text-[12px] text-servirest-midnight leading-snug">{meta.deliveryAddress}</div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {active && (
+          <div className="flex-shrink-0 p-4 border-t border-[rgba(42,40,38,0.08)] bg-servirest-surface pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <button onClick={onLiveStatus} className="w-full h-12 rounded-full bg-servirest-midnight text-servirest-hueso font-black uppercase tracking-[0.15em] text-[12px] flex items-center justify-center gap-2">
+              <Eye size={16} /> Ver estatus en vivo
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Modal de canje de recompensa (código para el cajero) ────────────────────
+const RedeemModal: React.FC<any> = ({ reward, onClose, onConfirm }) => {
+  const [confirming, setConfirming] = useState(false);
+  const code = rewardCode(reward.id);
+  const done = reward.status === 'redeemed';
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-5" onClick={onClose}>
+      <div className="w-full max-w-sm bg-servirest-hueso rounded-3xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-servirest-midnight text-servirest-hueso px-6 pt-7 pb-6 text-center relative">
+          <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-servirest-hueso/10 flex items-center justify-center text-servirest-hueso/70 hover:text-servirest-hueso"><X size={15} /></button>
+          <div className="w-14 h-14 rounded-full bg-servirest-mostaza text-servirest-midnight mx-auto flex items-center justify-center mb-3"><Gift size={26} /></div>
+          <div className="font-serif italic text-[20px] leading-tight">{reward.title}</div>
+        </div>
+        <div className="px-6 py-6 text-center">
+          <p className="text-[12px] text-[rgba(42,40,38,0.6)] mb-3">Muéstrale este código al cajero para aplicar tu recompensa:</p>
+          <div className="rounded-2xl border-2 border-dashed border-servirest-terracota/50 bg-servirest-surface py-4 mb-4">
+            <div className="font-mono font-black text-servirest-terracota text-3xl tracking-[0.3em]">{code}</div>
+          </div>
+          {done ? (
+            <div className="inline-flex items-center gap-2 text-green-700 text-[13px] font-bold"><Check size={16} /> Recompensa canjeada</div>
+          ) : (
+            <>
+              <button
+                onClick={async () => { setConfirming(true); await onConfirm(); }}
+                disabled={confirming}
+                className="w-full h-12 rounded-full bg-servirest-terracota text-servirest-hueso font-black uppercase tracking-[0.15em] text-[12px] disabled:opacity-50"
+              >
+                {confirming ? 'Marcando…' : 'Ya la usé — marcar como canjeada'}
+              </button>
+              <p className="text-[10px] text-[rgba(42,40,38,0.4)] mt-3">Solo márcala cuando el cajero la haya aplicado. No se puede deshacer.</p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Gráfica de preferencias (lo que más pide el cliente) ─────────────────────
+// Agrega los productos de sus pedidos recientes y muestra sus favoritos como
+// barras horizontales. Lee el detalle de cada orden vía RPC (get_order_detail).
+const PreferencesChart: React.FC<{ orders: any[] }> = ({ orders }) => {
+  const [prefs, setPrefs] = useState<{ name: string; qty: number }[] | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const recent = (orders || []).filter((o: any) => o.status !== 'CANCELLED').slice(0, 6);
+      if (recent.length === 0) { if (alive) { setPrefs([]); setLoading(false); } return; }
+      const details = await Promise.all(recent.map((o: any) => getOrderDetail(o.id)));
+      if (!alive) return;
+      const counts: Record<string, number> = {};
+      details.forEach((d: any) => (d?.items || []).forEach((it: any) => {
+        const n = (it.name || 'Producto').trim();
+        counts[n] = (counts[n] || 0) + (Number(it.quantity) || 0);
+      }));
+      const arr = Object.entries(counts)
+        .map(([name, qty]) => ({ name, qty }))
+        .sort((a, b) => b.qty - a.qty)
+        .slice(0, 5);
+      setPrefs(arr);
+      setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [orders]);
+
+  if (loading) {
+    return (
+      <div className="rounded-3xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] p-5">
+        <div className="flex items-center gap-2 mb-4"><Sparkles size={16} className="text-servirest-mostaza" /><div className="font-serif italic text-servirest-midnight text-[17px]">Tus favoritos</div></div>
+        <div className="py-6 text-center"><RefreshCw size={20} className="mx-auto text-servirest-terracota animate-spin" /></div>
+      </div>
+    );
+  }
+  if (!prefs || prefs.length === 0) return null;
+
+  const max = Math.max(...prefs.map((p) => p.qty), 1);
+  const total = prefs.reduce((s, p) => s + p.qty, 0);
+
+  return (
+    <div className="rounded-3xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Sparkles size={16} className="text-servirest-mostaza" />
+          <div className="font-serif italic text-servirest-midnight text-[17px]">Tus favoritos</div>
+        </div>
+        <div className="text-[10px] uppercase tracking-[0.12em] text-[rgba(42,40,38,0.45)]">Lo que más pides</div>
+      </div>
+      <div className="space-y-3" role="img" aria-label="Tus productos más pedidos">
+        {prefs.map((p, i) => {
+          const pct = (p.qty / max) * 100;
+          const isTop = i === 0;
+          return (
+            <div key={p.name}>
+              <div className="flex items-center justify-between text-[12px] mb-1">
+                <span className="font-bold text-servirest-midnight truncate pr-2 flex items-center gap-1.5">
+                  {isTop && <Award size={12} className="text-servirest-mostaza flex-shrink-0" />}{p.name}
+                </span>
+                <span className="text-[rgba(42,40,38,0.5)] font-mono flex-shrink-0">{p.qty}×</span>
+              </div>
+              <div className="h-2.5 rounded-full bg-servirest-hueso overflow-hidden">
+                <div className={`h-full rounded-full transition-all ${isTop ? 'bg-servirest-terracota' : 'bg-servirest-mostaza/60'}`} style={{ width: `${Math.max(8, pct)}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="text-[10px] text-[rgba(42,40,38,0.4)] mt-3 text-center">Basado en tus últimos pedidos · {total} productos</div>
+    </div>
+  );
+};
+
+const OrderRow: React.FC<any> = ({ order, onOpen, active }) => {
+  const isDelivery = order.source === 'TO_GO';
+  const st = orderStatusLabel(order.status, isDelivery);
+  const num = String((order.daily_number ?? 0) + 1).padStart(4, '0');
+  const when = (() => {
+    try { return new Date(order.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+    catch { return ''; }
+  })();
+  return (
+    <button
+      onClick={onOpen}
+      className={`w-full text-left rounded-2xl border p-4 flex items-center gap-3 transition-colors ${active ? 'bg-servirest-surface border-servirest-terracota/40 hover:border-servirest-terracota' : 'bg-servirest-surface border-[rgba(42,40,38,0.08)] hover:border-[rgba(42,40,38,0.2)]'}`}
+    >
+      <div className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${order.source === 'TO_GO' ? 'bg-servirest-terracota/10 text-servirest-terracota' : 'bg-servirest-midnight/5 text-servirest-midnight'}`}>
+        {order.source === 'TO_GO' ? <Truck size={18} /> : <Store size={18} />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-servirest-midnight text-[14px]">Orden #{num}</span>
+          <span className={`text-[9px] font-black uppercase tracking-[0.08em] px-2 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
+        </div>
+        <div className="text-[11px] text-[rgba(42,40,38,0.5)] mt-0.5">{when} · {mxn(order.total)}</div>
+      </div>
+      {active && <ChevronRight size={18} className="text-servirest-terracota flex-shrink-0" />}
+    </button>
   );
 };
 

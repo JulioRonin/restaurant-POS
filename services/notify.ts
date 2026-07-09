@@ -69,21 +69,22 @@ export function notify(title: string, body: string) {
  * Copy amigable por estatus de pedido, para reusar en storefront y kiosko.
  */
 export function statusNotifyCopy(status: string, mode: 'delivery' | 'pickup', orderNum: string): { title: string; body: string } | null {
+  const isDelivery = mode === 'delivery';
   const map: Record<string, { title: string; body: string }> = {
     COOKING: {
       title: `Tu orden #${orderNum} ya está en la cocina 👨‍🍳`,
       body: 'La estamos preparando con cariño.',
     },
     READY: {
-      title: `¡Tu orden #${orderNum} está lista! ✅`,
-      body: mode === 'delivery' ? 'En breve sale para tu domicilio.' : 'Ya puedes pasar a recogerla.',
+      title: isDelivery ? `¡Tu orden #${orderNum} está lista! ✅` : `¡Tu orden #${orderNum} está lista para recoger! 🛍️`,
+      body: isDelivery ? 'En breve sale para tu domicilio.' : 'Pasa a la tienda por ella. El cobro se hace al recogerla.',
     },
     SERVED: {
-      title: mode === 'delivery' ? `Tu orden #${orderNum} va en camino 🛵` : `Tu orden #${orderNum} fue entregada 🎉`,
-      body: mode === 'delivery' ? 'El repartidor ya salió. ¡Buen provecho!' : '¡Gracias por tu compra!',
+      title: isDelivery ? `Tu orden #${orderNum} va en camino 🛵` : `Recogiste tu orden #${orderNum} 🎉`,
+      body: isDelivery ? 'El repartidor ya salió. ¡Buen provecho!' : '¡Gracias por tu compra!',
     },
     COMPLETED: {
-      title: `Tu orden #${orderNum} fue entregada 🎉`,
+      title: isDelivery ? `Tu orden #${orderNum} fue entregada 🎉` : `Tu orden #${orderNum} fue recogida y cobrada 🎉`,
       body: '¡Gracias por tu compra! Te esperamos pronto.',
     },
   };

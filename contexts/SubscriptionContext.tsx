@@ -178,9 +178,24 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
 
         const expiry = bizData.subscription_expiry ? new Date(bizData.subscription_expiry) : null;
         setExpiryDate(expiry);
-        
+
         // Demo Logic
-        const dUntil = bizData.demo_until ? new Date(bizData.demo_until) : null;
+        let dUntil = bizData.demo_until ? new Date(bizData.demo_until) : null;
+        // Backfill: los negocios creados en onboarding con plan 'demo' NO
+        // guardaban demo_until, así que el contador caía sobre
+        // subscription_expiry y mostraba un número inflado (y "subía" al
+        // recalcularse). Si es demo y no hay fecha de prueba, la fijamos UNA
+        // sola vez (20 días) y la persistimos → a partir de ahí cuenta hacia
+        // abajo de forma estable.
+        if (bizData.plan === 'demo' && !dUntil) {
+          const seeded = new Date();
+          seeded.setDate(seeded.getDate() + 20);
+          dUntil = seeded;
+          supabase.from('businesses')
+            .update({ demo_until: seeded.toISOString() })
+            .eq('id', authProfile.businessId)
+            .then(({ error }) => { if (error) console.warn('[SubscriptionContext] backfill demo_until:', error.message); });
+        }
         setDemoUntil(dUntil);
 
         const newPosStatus: PosStatus = {
@@ -191,8 +206,8 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
         };
         setPosStatus(newPosStatus);
 
-        // Cache for offline
-        saveData(expiry || new Date(), history, newPosStatus, demoUntil);
+        // Cache for offline (pasa la fecha de demo ya resuelta, no el state viejo)
+        saveData(expiry || new Date(), history, newPosStatus, dUntil);
       }
     } catch (err) {
       console.error('[SubscriptionContext] Sync Error:', err);
@@ -383,7 +398,18 @@ export const SubscriptionProvider: React.FC<{ children: ReactNode }> = ({ childr
   // how many days into grace we are.
   const rawDiffTime = expiryDate ? expiryDate.getTime() - now.getTime() : 0;
   const rawDaysRemaining = Math.ceil(rawDiffTime / (1000 * 60 * 60 * 24));
-  const daysRemaining = Math.max(0, rawDaysRemaining); // for backwards compat
+
+  // Días mostrados en la UI (sidebar "89D", Billing). En DEMO el contador
+  // debe reflejar los días de la prueba (demo_until), NO subscription_expiry
+  // — de lo contrario mostraba un número inflado que además "subía" cuando
+  // expiry se recalculaba. Fuera de demo, usamos el vencimiento de la
+  // suscripción como siempre.
+  const isDemoPlan = posStatus.plan === 'demo';
+  const demoDiffTime = demoUntil ? demoUntil.getTime() - now.getTime() : 0;
+  const demoDaysRemaining = Math.max(0, Math.ceil(demoDiffTime / (1000 * 60 * 60 * 24)));
+  const daysRemaining = isDemoPlan
+    ? demoDaysRemaining
+    : Math.max(0, rawDaysRemaining); // for backwards compat
 
   // Past expiry, but within grace window → operator can still operate, with
   // banner reminder each render of how many grace days are left.
