@@ -1419,12 +1419,19 @@ const AuthView: React.FC<any> = ({ mode, setMode, email, setEmail, password, set
 // ─────────────────────────────────────────────────────────────────────────
 // SuccessView — pantalla de progreso con polling en vivo del estatus
 // ─────────────────────────────────────────────────────────────────────────
-const STOREFRONT_STEPS: { keys: string[]; label: string; icon: React.ElementType }[] = [
-  { keys: ['PENDING'],                 label: 'Recibida',       icon: PackageCheck },
-  { keys: ['COOKING'],                 label: 'En preparación', icon: ChefHat },
-  { keys: ['READY'],                   label: 'Lista',          icon: CheckCircle2 },
-  { keys: ['SERVED', 'COMPLETED'],     label: mode => mode === 'delivery' ? 'En camino' : 'Entregada', icon: Truck },
-];
+// Los pasos y el copy dependen del modo: en delivery el ciclo cierra "en
+// camino / entregado"; en pickup cierra al recoger y cobrar en la tienda.
+const stepsFor = (mode: 'delivery' | 'pickup'): { keys: string[]; label: string; icon: React.ElementType }[] => {
+  const isDelivery = mode === 'delivery';
+  return [
+    { keys: ['PENDING'],             label: 'Recibida',                                    icon: PackageCheck },
+    { keys: ['COOKING'],             label: 'En preparación',                              icon: ChefHat },
+    { keys: ['READY'],               label: isDelivery ? 'Lista' : 'Lista para recoger',   icon: CheckCircle2 },
+    isDelivery
+      ? { keys: ['SERVED', 'COMPLETED'], label: 'En camino',           icon: Truck }
+      : { keys: ['SERVED', 'COMPLETED'], label: 'Recogida y cobrada',  icon: Store },
+  ];
+};
 
 const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, businessId, customerName, onOrderMore, onNewOrder, onAccount }) => {
   const [status, setStatus] = useState<string>('PENDING');
@@ -1464,23 +1471,38 @@ const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, businessId, custo
     return () => { alive = false; clearInterval(iv); };
   }, [orderId, mode, orderNum]);
 
-  const activeIdx = STOREFRONT_STEPS.findIndex((s) => s.keys.includes(status));
+  const isDelivery = mode === 'delivery';
+  const steps = stepsFor(mode);
+  const activeIdx = steps.findIndex((s) => s.keys.includes(status));
   const currentIdx = activeIdx === -1 ? 0 : activeIdx;
   const isDone = status === 'SERVED' || status === 'COMPLETED';
+  // En pickup, el momento de "ya ve por él" es READY (lista para recoger).
+  const readyForPickup = !isDelivery && status === 'READY';
+
+  const kicker = isDone
+    ? (isDelivery ? '¡Pedido en camino!' : '¡Pedido recogido!')
+    : readyForPickup ? '¡Listo para recoger!'
+    : 'Pedido recibido';
+
+  const HeroIcon = isDone
+    ? (isDelivery ? Truck : Store)
+    : readyForPickup ? Store
+    : CheckCircle2;
+
+  const heroCopy = isDone
+    ? (isDelivery ? 'Tu pedido ya salió. Llega en unos minutos.' : 'Gracias por tu compra. ¡Te esperamos pronto!')
+    : readyForPickup ? 'Pasa a la tienda por tu pedido. El cobro se hace al recogerlo.'
+    : 'Sigue el estatus aquí — se actualiza solo mientras lo preparamos.';
 
   return (
     <div className="min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-servirest-midnight overflow-y-auto flex flex-col items-center justify-center antialiased relative py-10">
       <div className="max-w-2xl w-full px-5 sm:px-8 text-center">
         <motion.div initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', damping: 18 }} className="w-28 h-28 rounded-full bg-servirest-terracota text-servirest-hueso mx-auto flex items-center justify-center shadow-sr-glow mb-6">
-          {isDone ? <Truck size={52} strokeWidth={2.2} /> : <CheckCircle2 size={56} strokeWidth={2.5} />}
+          <HeroIcon size={isDone ? 52 : 56} strokeWidth={2.2} />
         </motion.div>
-        <SrKicker className="!text-servirest-mostaza">{isDone ? '¡Pedido en camino!' : 'Pedido recibido'}</SrKicker>
+        <SrKicker className="!text-servirest-mostaza">{kicker}</SrKicker>
         <h1 className="font-serif italic text-servirest-hueso text-4xl sm:text-6xl leading-tight mt-3 mb-2">Orden #{orderNum}</h1>
-        <p className="text-[15px] text-servirest-hueso/60 mb-6">
-          {isDone
-            ? (mode === 'delivery' ? 'Tu pedido ya salió. Llega en unos minutos.' : 'Tu pedido está listo para recoger.')
-            : 'Sigue el estatus aquí — se actualiza solo mientras lo preparamos.'}
-        </p>
+        <p className="text-[15px] text-servirest-hueso/60 mb-6">{heroCopy}</p>
 
         {/* Toggle de avisos push locales */}
         {!isDone && (
@@ -1500,10 +1522,10 @@ const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, businessId, custo
 
         {/* Progress ladder en vivo */}
         <div className="grid grid-cols-4 gap-2 mb-10">
-          {STOREFRONT_STEPS.map((step, i) => {
+          {steps.map((step, i) => {
             const done = i <= currentIdx;
             const current = i === currentIdx && !isDone;
-            const label = typeof step.label === 'function' ? step.label(mode) : step.label;
+            const label = step.label;
             return (
               <div key={i} className="flex flex-col items-center">
                 <div className={`w-11 h-11 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all ${
@@ -1660,13 +1682,17 @@ const OrderChat: React.FC<any> = ({ orderId, businessId, customerName, onClose }
 // ─────────────────────────────────────────────────────────────────────────
 const mxn = (n: number) => `$${(Number(n) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-const ORDER_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
-  PENDING:   { label: 'Recibida',       cls: 'bg-servirest-mostaza/20 text-servirest-mostaza' },
-  COOKING:   { label: 'En preparación', cls: 'bg-servirest-terracota/15 text-servirest-terracota' },
-  READY:     { label: 'Lista',          cls: 'bg-blue-500/15 text-blue-600' },
-  SERVED:    { label: 'En camino',      cls: 'bg-servirest-terracota/15 text-servirest-terracota' },
-  COMPLETED: { label: 'Entregada',      cls: 'bg-green-600/15 text-green-700' },
-  CANCELLED: { label: 'Cancelada',      cls: 'bg-servirest-danger/15 text-servirest-danger' },
+// El texto depende del modo (source): TO_GO = domicilio, PICKUP = recoger.
+const orderStatusLabel = (status: string, isDelivery: boolean): { label: string; cls: string } => {
+  const map: Record<string, { label: string; cls: string }> = {
+    PENDING:   { label: 'Recibida',       cls: 'bg-servirest-mostaza/20 text-servirest-mostaza' },
+    COOKING:   { label: 'En preparación', cls: 'bg-servirest-terracota/15 text-servirest-terracota' },
+    READY:     { label: isDelivery ? 'Lista' : 'Lista para recoger', cls: 'bg-blue-500/15 text-blue-600' },
+    SERVED:    { label: isDelivery ? 'En camino' : 'Recogida',        cls: 'bg-servirest-terracota/15 text-servirest-terracota' },
+    COMPLETED: { label: isDelivery ? 'Entregada' : 'Recogida y cobrada', cls: 'bg-green-600/15 text-green-700' },
+    CANCELLED: { label: 'Cancelada',      cls: 'bg-servirest-danger/15 text-servirest-danger' },
+  };
+  return map[status] || { label: status, cls: 'bg-servirest-hueso text-[rgba(42,40,38,0.6)]' };
 };
 const isActiveStatus = (s: string) => ['PENDING', 'COOKING', 'READY', 'SERVED'].includes(s);
 
@@ -1853,7 +1879,8 @@ const AccountView: React.FC<any> = ({ business, businessId, session, profile, re
 };
 
 const OrderRow: React.FC<any> = ({ order, onOpen, active }) => {
-  const st = ORDER_STATUS_LABEL[order.status] || { label: order.status, cls: 'bg-servirest-hueso text-[rgba(42,40,38,0.6)]' };
+  const isDelivery = order.source === 'TO_GO';
+  const st = orderStatusLabel(order.status, isDelivery);
   const num = String((order.daily_number ?? 0) + 1).padStart(4, '0');
   const when = (() => {
     try { return new Date(order.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
