@@ -483,15 +483,15 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
         };
       });
 
-      // Insertar orden + items. Si order_items falla (schema distinto),
-      // la orden ya existe y Cocina la ve; los items se re-piden si es
-      // necesario. No bloqueamos el flujo del cliente por eso.
-      const { error: oErr } = await supabase.from('orders').insert(orderRecord);
-      if (oErr) throw oErr;
-      const { error: iErr } = await supabase.from('order_items').insert(itemRows);
-      if (iErr) console.warn('[Storefront] order_items insert warn:', iErr.message);
-
       if (payMethod === 'stripe_qr') {
+        // STRIPE: NO insertamos la orden todavía. Si insertáramos aquí y el
+        // cliente abandona el pago (o reintenta), quedaría una orden huérfana
+        // en Cocina → duplicados. En su lugar guardamos el pedido en
+        // localStorage y lo insertamos SOLO al volver pagado (?paid).
+        localStorage.setItem(
+          `servirest_pending_order_${orderId}`,
+          JSON.stringify({ orderRecord, itemRows, dailyNumber })
+        );
         const res = await fetch('/api/create-checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -506,12 +506,21 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
           }),
         });
         const { url, error } = await res.json();
-        if (error || !url) throw new Error(error || 'No pudimos generar el link de pago');
+        if (error || !url) {
+          localStorage.removeItem(`servirest_pending_order_${orderId}`);
+          throw new Error(error || 'No pudimos generar el link de pago');
+        }
         window.location.href = url;
         return;
       }
 
-      // Efectivo: la orden ya está en Cocina como PENDING de cobro
+      // Efectivo / terminal: se cobra al entregar, así que la orden SÍ entra
+      // a Cocina de una vez (PENDING de cobro).
+      const { error: oErr } = await supabase.from('orders').insert(orderRecord);
+      if (oErr) throw oErr;
+      const { error: iErr } = await supabase.from('order_items').insert(itemRows);
+      if (iErr) console.warn('[Storefront] order_items insert warn:', iErr.message);
+
       setConfirmedOrderId(orderId);
       setConfirmedOrderNum(String(dailyNumber + 1).padStart(4, '0'));
       setView('success');
@@ -524,16 +533,53 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
     }
   };
 
-  // Detecta retorno de Stripe con ?paid=
+  // Detecta retorno de Stripe con ?paid= e inserta la orden UNA sola vez
+  // (usando el payload guardado en localStorage antes del redirect).
   useEffect(() => {
     const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
     const paid = params.get('paid');
-    if (paid) {
+    const cancelled = params.get('cancel');
+
+    // Si el cliente canceló el pago en Stripe, limpiamos el pedido pendiente
+    // (nunca se insertó, así que no hay orden huérfana).
+    if (cancelled) {
+      localStorage.removeItem(`servirest_pending_order_${cancelled}`);
+      return;
+    }
+    if (!paid) return;
+
+    const insertPaidOrder = async () => {
+      const supabase = getSupabase();
+      const key = `servirest_pending_order_${paid}`;
+      const raw = localStorage.getItem(key);
+
+      // Muestra la pantalla de estatus de inmediato.
       setConfirmedOrderId(paid);
-      setConfirmedOrderNum(paid.slice(0, 4).toUpperCase());
       setView('success');
       setCart([]);
-    }
+
+      if (!supabase || !raw) {
+        setConfirmedOrderNum(paid.slice(0, 4).toUpperCase());
+        return;
+      }
+      try {
+        const { orderRecord, itemRows, dailyNumber } = JSON.parse(raw);
+        setConfirmedOrderNum(String((dailyNumber ?? 0) + 1).padStart(4, '0'));
+        // Idempotencia: si ya existe (doble retorno), no re-insertamos.
+        const { data: existing } = await supabase.from('orders').select('id').eq('id', paid).maybeSingle();
+        if (!existing) {
+          await supabase.from('orders').insert(orderRecord);
+          if (Array.isArray(itemRows) && itemRows.length) {
+            await supabase.from('order_items').insert(itemRows);
+          }
+        }
+      } catch (e) {
+        console.warn('[Storefront] insert paid order failed:', e);
+      } finally {
+        localStorage.removeItem(key);
+      }
+    };
+    insertPaidOrder();
   }, []);
 
   // ── Loading / error ──────────────────────────────────────────────
