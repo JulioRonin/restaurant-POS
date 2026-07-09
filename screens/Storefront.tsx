@@ -23,14 +23,16 @@ import {
   Search, Utensils, Truck, Store, PackageCheck, RefreshCw, Check,
   MapPin, Mail, Lock, LogIn, User as UserIcon, ArrowLeft, Phone, AlertCircle,
   Banknote, CreditCard, Bell, Gift, Award, MessageCircle, Send, Copy,
-  Share2, ClipboardList, ChevronRight, LogOut, Sparkles,
+  Share2, ClipboardList, ChevronRight, LogOut, Sparkles, Receipt,
+  TrendingUp, KeyRound, Eye, Ticket,
 } from 'lucide-react';
 import { getSupabase } from '../services/auth';
 import { notify, canNotify, requestNotifyPermission, statusNotifyCopy } from '../services/notify';
 import {
   capturePendingReferral, ensureProfile, getProfile, getMyOrders, getRewards,
   redeemReward, recordOrderConsumption, sendOrderMessage, getOrderMessages,
-  referralShareUrl, REWARD_ORDERS_THRESHOLD, REWARD_REFERRALS_THRESHOLD,
+  referralShareUrl, getOrderDetail, applyReferralCode,
+  REWARD_ORDERS_THRESHOLD, REWARD_REFERRALS_THRESHOLD,
   type CustomerProfile, type CustomerReward,
 } from '../services/customer';
 import { MenuItem, MenuItemVariant, OrderStatus, OrderSource, PaymentStatus, PaymentMethod } from '../types';
@@ -1698,12 +1700,29 @@ const isActiveStatus = (s: string) => ['PENDING', 'COOKING', 'READY', 'SERVED'].
 
 const AccountView: React.FC<any> = ({ business, businessId, session, profile, rewards, orders, loading, onBack, onReload, onRedeem, onReopenOrder, onSignOut }) => {
   const [copied, setCopied] = useState(false);
+  const [summaryOrder, setSummaryOrder] = useState<any | null>(null); // orden para ver resumen
+  const [redeemTarget, setRedeemTarget] = useState<CustomerReward | null>(null); // recompensa a canjear
+  const [refInput, setRefInput] = useState('');
+  const [refMsg, setRefMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [refBusy, setRefBusy] = useState(false);
 
   const availableRewards = (rewards || []).filter((r: CustomerReward) => r.status === 'available');
   const ordersProgress = profile ? profile.totalOrders % REWARD_ORDERS_THRESHOLD : 0;
   const refsProgress = profile ? profile.successfulReferrals % REWARD_REFERRALS_THRESHOLD : 0;
   const activeOrders = (orders || []).filter((o: any) => isActiveStatus(o.status));
   const pastOrders = (orders || []).filter((o: any) => !isActiveStatus(o.status));
+  // Puede meter código de invitación solo si aún no tiene referidor ni 1a orden.
+  const canApplyReferral = profile && !profile.referredBy && !profile.firstOrderDone;
+
+  const submitReferral = async () => {
+    if (!profile || refBusy) return;
+    setRefBusy(true);
+    setRefMsg(null);
+    const res = await applyReferralCode(profile.userId, refInput);
+    setRefMsg({ ok: res.ok, text: res.ok ? '¡Código aplicado! Tu amigo recibirá crédito con tu primer pedido.' : (res.error || 'No se pudo aplicar') });
+    if (res.ok) { setRefInput(''); onReload(); }
+    setRefBusy(false);
+  };
 
   const shareUrl = profile ? referralShareUrl(businessId, profile.referralCode) : '';
 
@@ -1731,9 +1750,9 @@ const AccountView: React.FC<any> = ({ business, businessId, session, profile, re
   };
 
   return (
-    <div className="min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-servirest-hueso flex flex-col antialiased">
+    <div className="h-[100dvh] w-full max-w-full overflow-x-hidden bg-servirest-hueso flex flex-col antialiased">
       {/* Header */}
-      <header className="flex-shrink-0 px-4 sm:px-6 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 border-b border-[rgba(42,40,38,0.08)] bg-servirest-surface sticky top-0 z-10">
+      <header className="flex-shrink-0 px-4 sm:px-6 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 border-b border-[rgba(42,40,38,0.08)] bg-servirest-surface z-10">
         <div className="max-w-2xl mx-auto flex items-center justify-between gap-3">
           <button onClick={onBack} className="w-9 h-9 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.1)] flex items-center justify-center text-[rgba(42,40,38,0.6)] hover:text-servirest-terracota flex-shrink-0"><ArrowLeft size={17} /></button>
           <div className="font-serif italic text-servirest-midnight text-[18px] leading-none">Mi cuenta</div>
@@ -1774,6 +1793,9 @@ const AccountView: React.FC<any> = ({ business, businessId, session, profile, re
                 </div>
               </div>
 
+              {/* Gráfica de consumo por pedido */}
+              <ConsumptionChart orders={orders} />
+
               {/* Recompensas disponibles */}
               {availableRewards.length > 0 && (
                 <div className="space-y-2.5">
@@ -1782,9 +1804,9 @@ const AccountView: React.FC<any> = ({ business, businessId, session, profile, re
                       <div className="w-11 h-11 rounded-full bg-servirest-mostaza text-servirest-midnight flex items-center justify-center flex-shrink-0"><Gift size={20} /></div>
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-servirest-midnight text-[14px] leading-tight">{r.title}</div>
-                        <div className="text-[11px] text-[rgba(42,40,38,0.55)]">Muéstrale esto a la tienda para canjearla</div>
+                        <div className="text-[11px] text-[rgba(42,40,38,0.55)]">Toca "Usar" para ver tu código de canje</div>
                       </div>
-                      <button onClick={() => onRedeem(r.id)} className="px-4 h-9 rounded-full bg-servirest-terracota text-servirest-hueso text-[11px] font-black uppercase tracking-[0.1em] flex-shrink-0 hover:scale-105 transition-transform">Canjear</button>
+                      <button onClick={() => setRedeemTarget(r)} className="px-4 h-9 rounded-full bg-servirest-terracota text-servirest-hueso text-[11px] font-black uppercase tracking-[0.1em] flex-shrink-0 hover:scale-105 transition-transform flex items-center gap-1.5"><KeyRound size={13} /> Usar</button>
                     </div>
                   ))}
                 </div>
@@ -1840,6 +1862,29 @@ const AccountView: React.FC<any> = ({ business, businessId, session, profile, re
                 <button onClick={share} className="w-full h-12 rounded-full bg-servirest-terracota text-servirest-hueso font-black uppercase tracking-[0.15em] text-[12px] flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform">
                   <Share2 size={16} /> Compartir mi código
                 </button>
+
+                {/* Introducir el código de quien te invitó */}
+                {canApplyReferral ? (
+                  <div className="mt-4 pt-4 border-t border-dashed border-[rgba(42,40,38,0.12)]">
+                    <div className="text-[11px] font-bold text-servirest-midnight mb-2">¿Te invitó alguien? Escribe su código</div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={refInput}
+                        onChange={(e) => { setRefInput(e.target.value.toUpperCase()); setRefMsg(null); }}
+                        placeholder="EJ. JUAN1234"
+                        className="flex-1 h-11 px-4 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.12)] text-[14px] font-mono tracking-[0.1em] uppercase focus:outline-none focus:border-servirest-terracota"
+                      />
+                      <button onClick={submitReferral} disabled={refBusy || !refInput.trim()} className="px-4 h-11 rounded-full bg-servirest-midnight text-servirest-hueso text-[11px] font-black uppercase tracking-[0.1em] disabled:opacity-40 flex-shrink-0">
+                        {refBusy ? '…' : 'Aplicar'}
+                      </button>
+                    </div>
+                    {refMsg && (
+                      <p className={`text-[11px] mt-2 font-medium ${refMsg.ok ? 'text-green-700' : 'text-servirest-danger'}`}>{refMsg.text}</p>
+                    )}
+                  </div>
+                ) : profile?.referredBy ? (
+                  <p className="text-[11px] text-[rgba(42,40,38,0.45)] mt-3 text-center">Ya tienes un código de invitación aplicado ✓</p>
+                ) : null}
               </div>
 
               {/* Mis pedidos */}
@@ -1862,11 +1907,11 @@ const AccountView: React.FC<any> = ({ business, businessId, session, profile, re
                     {activeOrders.length > 0 && (
                       <div className="text-[10px] font-black uppercase tracking-[0.15em] text-servirest-terracota px-1 pt-1">Activos ahora</div>
                     )}
-                    {activeOrders.map((o: any) => <OrderRow key={o.id} order={o} onOpen={() => onReopenOrder(o)} active />)}
+                    {activeOrders.map((o: any) => <OrderRow key={o.id} order={o} onOpen={() => setSummaryOrder(o)} active />)}
                     {pastOrders.length > 0 && (
                       <div className="text-[10px] font-black uppercase tracking-[0.15em] text-[rgba(42,40,38,0.35)] px-1 pt-2">Anteriores</div>
                     )}
-                    {pastOrders.map((o: any) => <OrderRow key={o.id} order={o} onOpen={() => onReopenOrder(o)} />)}
+                    {pastOrders.map((o: any) => <OrderRow key={o.id} order={o} onOpen={() => setSummaryOrder(o)} />)}
                   </div>
                 )}
               </div>
@@ -1874,6 +1919,212 @@ const AccountView: React.FC<any> = ({ business, businessId, session, profile, re
           )}
         </div>
       </div>
+
+      {/* Modal: resumen de la compra */}
+      {summaryOrder && (
+        <OrderSummaryModal
+          order={summaryOrder}
+          onClose={() => setSummaryOrder(null)}
+          onLiveStatus={() => { const o = summaryOrder; setSummaryOrder(null); onReopenOrder(o); }}
+        />
+      )}
+
+      {/* Modal: código de canje de recompensa */}
+      {redeemTarget && (
+        <RedeemModal
+          reward={redeemTarget}
+          onClose={() => setRedeemTarget(null)}
+          onConfirm={async () => { await onRedeem(redeemTarget.id); setRedeemTarget(null); }}
+        />
+      )}
+    </div>
+  );
+};
+
+// Código corto legible derivado del UUID de la recompensa (para el cajero).
+const rewardCode = (id: string) => id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 6).toUpperCase();
+
+// ── Resumen de compra (no la pantalla de estatus) ──────────────────────────
+const OrderSummaryModal: React.FC<any> = ({ order, onClose, onLiveStatus }) => {
+  const [detail, setDetail] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const isDelivery = order.source === 'TO_GO';
+  const active = isActiveStatus(order.status);
+  const st = orderStatusLabel(order.status, isDelivery);
+  const num = String((order.daily_number ?? 0) + 1).padStart(4, '0');
+
+  useEffect(() => {
+    let alive = true;
+    getOrderDetail(order.id).then((d) => { if (alive) { setDetail(d); setLoading(false); } });
+    return () => { alive = false; };
+  }, [order.id]);
+
+  const meta = detail?.customer_metadata || order.customer_metadata || {};
+  const items = detail?.items || [];
+  const subtotal = items.reduce((s: number, it: any) => s + Number(it.price || 0) * Number(it.quantity || 0), 0);
+  const when = (() => {
+    try { return new Date(order.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }); }
+    catch { return ''; }
+  })();
+  const payLabel = (m: string) => m === 'CARD' ? 'Tarjeta' : m === 'CASH' ? 'Efectivo' : m || '—';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="w-full sm:max-w-md max-h-[88dvh] bg-servirest-hueso rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-[rgba(42,40,38,0.08)] bg-servirest-surface">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-full bg-servirest-midnight text-servirest-mostaza flex items-center justify-center flex-shrink-0"><Receipt size={16} /></div>
+            <div className="min-w-0">
+              <div className="font-serif italic text-servirest-midnight text-[16px] leading-none">Orden #{num}</div>
+              <div className="text-[10px] text-[rgba(42,40,38,0.5)] mt-0.5 truncate">{when}</div>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-9 h-9 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.1)] flex items-center justify-center text-[rgba(42,40,38,0.5)] hover:text-servirest-terracota flex-shrink-0"><X size={16} /></button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          <div className="flex items-center gap-2 mb-4">
+            <span className={`text-[10px] font-black uppercase tracking-[0.08em] px-2.5 py-1 rounded-full ${st.cls}`}>{st.label}</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-[rgba(42,40,38,0.5)] flex items-center gap-1">
+              {isDelivery ? <><Truck size={12} /> Domicilio</> : <><Store size={12} /> Recoger</>}
+            </span>
+          </div>
+
+          {loading ? (
+            <div className="py-10 text-center"><RefreshCw size={24} className="mx-auto text-servirest-terracota animate-spin" /></div>
+          ) : (
+            <>
+              <div className="space-y-2.5 mb-4">
+                {items.length === 0 && <p className="text-[13px] text-[rgba(42,40,38,0.5)] text-center py-4">No pudimos cargar los productos.</p>}
+                {items.map((it: any, i: number) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <span className="w-6 h-6 rounded-full bg-servirest-terracota/10 text-servirest-terracota text-[11px] font-black flex items-center justify-center flex-shrink-0 mt-0.5">{it.quantity}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[14px] font-bold text-servirest-midnight leading-tight">{it.name}</div>
+                      {it.notes && <div className="text-[11px] text-[rgba(42,40,38,0.5)] mt-0.5">{it.notes}</div>}
+                    </div>
+                    <div className="text-[13px] font-mono text-servirest-midnight flex-shrink-0">{mxn(Number(it.price || 0) * Number(it.quantity || 0))}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-[rgba(42,40,38,0.08)] pt-3 space-y-1.5">
+                {subtotal > 0 && (
+                  <div className="flex justify-between text-[12px] text-[rgba(42,40,38,0.6)]"><span>Subtotal</span><span className="font-mono">{mxn(subtotal)}</span></div>
+                )}
+                <div className="flex justify-between items-center pt-1">
+                  <span className="font-serif italic text-servirest-midnight text-[17px]">Total</span>
+                  <span className="font-serif italic text-servirest-terracota text-[20px]">{mxn(order.total)}</span>
+                </div>
+                <div className="flex justify-between text-[11px] text-[rgba(42,40,38,0.5)] pt-1">
+                  <span>Pago</span>
+                  <span>{payLabel(detail?.payment_method)} · {detail?.payment_status === 'PAID' ? 'Pagado' : 'Por cobrar'}</span>
+                </div>
+              </div>
+
+              {isDelivery && meta.deliveryAddress && (
+                <div className="mt-4 flex items-start gap-2 bg-servirest-surface rounded-2xl p-3 border border-[rgba(42,40,38,0.08)]">
+                  <MapPin size={15} className="text-servirest-terracota flex-shrink-0 mt-0.5" />
+                  <div className="text-[12px] text-servirest-midnight leading-snug">{meta.deliveryAddress}</div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {active && (
+          <div className="flex-shrink-0 p-4 border-t border-[rgba(42,40,38,0.08)] bg-servirest-surface pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <button onClick={onLiveStatus} className="w-full h-12 rounded-full bg-servirest-midnight text-servirest-hueso font-black uppercase tracking-[0.15em] text-[12px] flex items-center justify-center gap-2">
+              <Eye size={16} /> Ver estatus en vivo
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Modal de canje de recompensa (código para el cajero) ────────────────────
+const RedeemModal: React.FC<any> = ({ reward, onClose, onConfirm }) => {
+  const [confirming, setConfirming] = useState(false);
+  const code = rewardCode(reward.id);
+  const done = reward.status === 'redeemed';
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-5" onClick={onClose}>
+      <div className="w-full max-w-sm bg-servirest-hueso rounded-3xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-servirest-midnight text-servirest-hueso px-6 pt-7 pb-6 text-center relative">
+          <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-servirest-hueso/10 flex items-center justify-center text-servirest-hueso/70 hover:text-servirest-hueso"><X size={15} /></button>
+          <div className="w-14 h-14 rounded-full bg-servirest-mostaza text-servirest-midnight mx-auto flex items-center justify-center mb-3"><Gift size={26} /></div>
+          <div className="font-serif italic text-[20px] leading-tight">{reward.title}</div>
+        </div>
+        <div className="px-6 py-6 text-center">
+          <p className="text-[12px] text-[rgba(42,40,38,0.6)] mb-3">Muéstrale este código al cajero para aplicar tu recompensa:</p>
+          <div className="rounded-2xl border-2 border-dashed border-servirest-terracota/50 bg-servirest-surface py-4 mb-4">
+            <div className="font-mono font-black text-servirest-terracota text-3xl tracking-[0.3em]">{code}</div>
+          </div>
+          {done ? (
+            <div className="inline-flex items-center gap-2 text-green-700 text-[13px] font-bold"><Check size={16} /> Recompensa canjeada</div>
+          ) : (
+            <>
+              <button
+                onClick={async () => { setConfirming(true); await onConfirm(); }}
+                disabled={confirming}
+                className="w-full h-12 rounded-full bg-servirest-terracota text-servirest-hueso font-black uppercase tracking-[0.15em] text-[12px] disabled:opacity-50"
+              >
+                {confirming ? 'Marcando…' : 'Ya la usé — marcar como canjeada'}
+              </button>
+              <p className="text-[10px] text-[rgba(42,40,38,0.4)] mt-3">Solo márcala cuando el cajero la haya aplicado. No se puede deshacer.</p>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Gráfica de consumo (últimos pedidos) ────────────────────────────────────
+const ConsumptionChart: React.FC<{ orders: any[] }> = ({ orders }) => {
+  // Toma los últimos pedidos (más recientes al final) para ver la tendencia.
+  const data = (orders || [])
+    .filter((o: any) => o.status !== 'CANCELLED')
+    .slice(0, 8)
+    .map((o: any) => ({ total: Number(o.total) || 0, date: o.created_at }))
+    .reverse();
+
+  if (data.length < 2) return null; // sin suficientes datos aún
+
+  const max = Math.max(...data.map((d) => d.total), 1);
+  const avg = data.reduce((s, d) => s + d.total, 0) / data.length;
+
+  return (
+    <div className="rounded-3xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <TrendingUp size={16} className="text-servirest-terracota" />
+          <div className="font-serif italic text-servirest-midnight text-[17px]">Tu consumo</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[9px] uppercase tracking-[0.12em] text-[rgba(42,40,38,0.45)]">Promedio</div>
+          <div className="font-mono font-bold text-servirest-midnight text-[13px] leading-none mt-0.5">{mxn(avg)}</div>
+        </div>
+      </div>
+      <div className="flex items-end justify-between gap-1.5 h-28" role="img" aria-label={`Consumo de tus últimos ${data.length} pedidos`}>
+        {data.map((d, i) => {
+          const h = Math.max(6, (d.total / max) * 100);
+          const isMax = d.total === max;
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-1.5 group">
+              <span className="text-[9px] font-mono text-[rgba(42,40,38,0.55)] opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">{mxn(d.total)}</span>
+              <div
+                className={`w-full rounded-t-md transition-all ${isMax ? 'bg-servirest-terracota' : 'bg-servirest-mostaza/60'}`}
+                style={{ height: `${h}%` }}
+                title={mxn(d.total)}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div className="text-[10px] text-[rgba(42,40,38,0.4)] mt-2 text-center">Tus últimos {data.length} pedidos · el más alto en terracota</div>
     </div>
   );
 };

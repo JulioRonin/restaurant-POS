@@ -221,6 +221,48 @@ export async function getMyOrders(userId: string): Promise<any[]> {
   return data || [];
 }
 
+/** Detalle/resumen de una orden (renglones + totales) vía RPC seguro. */
+export async function getOrderDetail(orderId: string): Promise<any | null> {
+  const sb = getSupabase();
+  if (!sb) return null;
+  const { data, error } = await sb.rpc('get_order_detail', { p_order_id: orderId });
+  if (error) { console.warn('[customer] getOrderDetail:', error.message); return null; }
+  return data || null;
+}
+
+/**
+ * Liga manualmente un código de referido al perfil del cliente (cuando lo
+ * escribe en "¿Tienes un código?"). Solo se permite si aún no tiene referidor
+ * y no ha hecho su 1a orden (para que el crédito siga siendo válido), y el
+ * código no es el suyo. Devuelve {ok, error}.
+ */
+export async function applyReferralCode(
+  userId: string,
+  code: string
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = getSupabase();
+  if (!sb) return { ok: false, error: 'Sin conexión' };
+  const clean = code.trim().toUpperCase();
+  if (!clean) return { ok: false, error: 'Escribe un código' };
+
+  const me = await getProfile(userId);
+  if (!me) return { ok: false, error: 'Perfil no encontrado' };
+  if (me.referredBy) return { ok: false, error: 'Ya usaste un código de invitación' };
+  if (me.firstOrderDone) return { ok: false, error: 'Los códigos solo aplican antes de tu primer pedido' };
+  if (clean === me.referralCode.toUpperCase()) return { ok: false, error: 'No puedes usar tu propio código' };
+
+  const { data: refId, error: rErr } = await sb.rpc('resolve_referral_code', { p_code: clean });
+  if (rErr) return { ok: false, error: 'No pudimos validar el código' };
+  if (!refId || refId === userId) return { ok: false, error: 'Ese código no existe' };
+
+  const { error: uErr } = await sb
+    .from('customer_profiles')
+    .update({ referred_by: refId, updated_at: new Date().toISOString() })
+    .eq('user_id', userId);
+  if (uErr) return { ok: false, error: uErr.message };
+  return { ok: true };
+}
+
 /** Recompensas del cliente. */
 export async function getRewards(userId: string): Promise<CustomerReward[]> {
   const sb = getSupabase();

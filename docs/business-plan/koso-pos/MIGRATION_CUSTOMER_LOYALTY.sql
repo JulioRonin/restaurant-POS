@@ -210,3 +210,38 @@ BEGIN
 END;
 $$;
 GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO anon, authenticated;
+
+
+-- 8. RPC: detalle de una orden (resumen de compra) por id. Devuelve la orden
+--    con sus renglones (nombre del platillo, cantidad, precio). SECURITY
+--    DEFINER porque order_items no tiene SELECT público; el UUID de la orden
+--    actúa como token (igual que get_order_status).
+CREATE OR REPLACE FUNCTION public.get_order_detail(p_order_id uuid)
+RETURNS jsonb
+LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+  SELECT jsonb_build_object(
+    'id',                o.id,
+    'daily_number',      o.daily_number,
+    'status',            o.status,
+    'total',             o.total,
+    'source',            o.source,
+    'payment_method',    o.payment_method,
+    'payment_status',    o.payment_status,
+    'created_at',        o.created_at,
+    'customer_metadata', o.customer_metadata,
+    'items', COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'name',     COALESCE(mi.name, 'Producto'),
+        'quantity', oi.quantity,
+        'price',    oi.price_at_time,
+        'notes',    oi.notes
+      ))
+      FROM order_items oi
+      LEFT JOIN menu_items mi ON mi.id = oi.menu_item_id
+      WHERE oi.order_id = o.id
+    ), '[]'::jsonb)
+  )
+  FROM orders o
+  WHERE o.id = p_order_id;
+$$;
+GRANT EXECUTE ON FUNCTION public.get_order_detail(uuid) TO anon, authenticated;
