@@ -162,10 +162,9 @@ export const DigitalChannelScreen: React.FC = () => {
     const businessId = authProfile?.businessId || (menuItems[0] as any)?.businessId || (menuItems[0] as any)?.business_id;
     setSyncingPublish(true);
     let ok = 0, fail = 0;
+    const errors: string[] = [];
     for (const m of menuItems) {
       try {
-        // Upsert del registro completo — garantiza que status='ACTIVE',
-        // publish_online, imagen, precio, etc. queden bien en la nube.
         const record: Record<string, any> = {
           id: m.id,
           business_id: (m as any).businessId || (m as any).business_id || businessId,
@@ -183,14 +182,22 @@ export const DigitalChannelScreen: React.FC = () => {
           online_price: m.onlinePrice ?? null,
         };
         const { error } = await supabase.from('menu_items').upsert(record, { onConflict: 'id' });
-        if (error) { console.warn('[sync] upsert error:', error.message); fail++; }
-        else ok++;
-      } catch (e) { console.warn('[sync] item failed:', e); fail++; }
+        if (error) {
+          console.warn('[sync] upsert error:', m.name, error);
+          errors.push(`${m.name}: ${error.message || error.code || 'error'}`);
+          fail++;
+        } else ok++;
+      } catch (e: any) {
+        console.warn('[sync] item failed:', m.name, e);
+        errors.push(`${m.name}: ${e?.message || 'excepción'}`);
+        fail++;
+      }
     }
     setSyncingPublish(false);
     alert(fail === 0
       ? `¡Listo! ${ok} platillo(s) sincronizados. Recarga el storefront (Ctrl+Shift+R) para verlos.`
-      : `${ok} sincronizados, ${fail} fallaron. Revisa la consola para el detalle.`);
+      // Muestra el error REAL de los que fallaron para diagnóstico.
+      : `${ok} sincronizados, ${fail} fallaron:\n\n${errors.slice(0, 5).join('\n')}\n\nSi dice "row-level security" o "policy", corre MIGRATION_DIGITAL_CHANNEL.sql actualizado (agrega permiso de escritura a menu_items).`);
   };
 
   return (
