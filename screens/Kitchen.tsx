@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useOrders } from '../contexts/OrderContext';
+import { useSettings } from '../contexts/SettingsContext';
+import { printerService } from '../services/PrinterService';
 import { Order, OrderStatus, OrderSource } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -15,17 +17,29 @@ type KitchenView = 'todos' | 'comedor' | 'delivery';
 /* -------------------------------------------------------------------------- */
 /* Audio notification when new orders arrive                                   */
 /* -------------------------------------------------------------------------- */
+// Alarma de nueva orden: 3 tonos ascendentes repetidos (campana de cocina),
+// más notoria que un solo beep. Volumen más alto para ambientes ruidosos.
 const playBeep = () => {
   try {
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return;
     const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime);
-    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-    osc.start(); osc.stop(ctx.currentTime + 0.5);
+    // 6 pulsos (2 series de 3 tonos) tipo "ding-ding-ding".
+    const freqs = [880, 1100, 1320, 880, 1100, 1320];
+    freqs.forEach((f, i) => {
+      const t = ctx.currentTime + i * 0.18;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(f, t);
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.exponentialRampToValueAtTime(0.28, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+      osc.start(t); osc.stop(t + 0.17);
+    });
+    // Vibración en tablets/móviles.
+    try { navigator.vibrate?.([150, 80, 150, 80, 150]); } catch { /* no-op */ }
   } catch (e) { console.error('Audio play failed', e); }
 };
 
@@ -165,9 +179,13 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void; onStart
 /* -------------------------------------------------------------------------- */
 export const KitchenScreen: React.FC = () => {
   const { orders, updateOrderStatus } = useOrders();
+  const { settings } = useSettings();
   const [prevCount, setPrevCount] = useState(0);
   const [alert, setAlert] = useState(false);
   const [view, setView] = useState<KitchenView>('todos');
+  // IDs de órdenes ya vistas — para detectar las NUEVAS y auto-imprimir.
+  const seenOrderIdsRef = React.useRef<Set<string>>(new Set());
+  const hydratedRef = React.useRef(false);
 
   const isDrink = (item: any) =>
     item.category?.toLowerCase().includes('bebida') ||
@@ -198,13 +216,37 @@ export const KitchenScreen: React.FC = () => {
     view === 'comedor' ? dineInOrders : view === 'delivery' ? deliveryOrders : sorted;
 
   useEffect(() => {
-    if (pending.length > prevCount && prevCount !== 0) {
-      playBeep();
+    // Primer render: registra las órdenes existentes sin alarmar ni imprimir.
+    if (!hydratedRef.current) {
+      pending.forEach((o) => seenOrderIdsRef.current.add(o.id));
+      hydratedRef.current = true;
+      setPrevCount(pending.length);
+      return;
+    }
+
+    // Detecta órdenes NUEVAS (no vistas antes).
+    const nuevas = pending.filter((o) => !seenOrderIdsRef.current.has(o.id));
+    if (nuevas.length > 0) {
+      playBeep();          // alarma sonora + vibración
       setAlert(true);
       setTimeout(() => setAlert(false), 4000);
+
+      // Auto-imprime la comanda de cada orden NUEVA de DELIVERY/online, para
+      // que la cocina/repartidor tenga el ticket físico sin intervención.
+      nuevas.forEach((o) => {
+        seenOrderIdsRef.current.add(o.id);
+        const isDelivery = o.source && o.source !== OrderSource.DINE_IN;
+        if (isDelivery && printerService.isConnected()) {
+          printerService.printKitchenTicket(o, settings).catch((e) =>
+            console.warn('[Kitchen] auto-print falló:', e)
+          );
+        }
+      });
     }
+    // Marca todas las visibles como vistas (por si alguna no era delivery).
+    pending.forEach((o) => seenOrderIdsRef.current.add(o.id));
     setPrevCount(pending.length);
-  }, [pending.length, prevCount]);
+  }, [pending, settings]);
 
   const handleComplete = (id: string) => {
     const order = orders.find((o) => o.id === id);

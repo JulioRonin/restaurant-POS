@@ -3,6 +3,7 @@ import { useUser } from './UserContext';
 import { Order, OrderStatus, OrderSource } from '../types';
 import { getAll, put, deleteRecord } from '../services/db';
 import { trackChange, triggerSync, onSyncComplete } from '../services/SyncService';
+import { getSupabase } from '../services/auth';
 
 interface OrderContextType {
   orders: Order[];
@@ -201,10 +202,26 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
 
     setOrders((prev) => prev.map(o => o.id === orderId ? finalOrder : o));
-    
+
     // 1. Save and Track Main Order
     await put('orders', finalOrder as any);
     await trackChange('orders', 'UPDATE', orderId, finalOrder);
+
+    // 1.1 Escritura DIRECTA del estatus a Supabase. La cola de sync a veces
+    // no completa, y entonces el cliente del canal digital (que consulta la
+    // BD para el progreso/notificaciones) nunca ve el cambio de estatus.
+    // Con esto el estatus llega de inmediato.
+    try {
+      const supabase = getSupabase();
+      if (supabase) {
+        await supabase.from('orders').update({
+          status,
+          is_kitchen_ready: (finalOrder as any).isKitchenReady ?? false,
+          is_bar_ready: (finalOrder as any).isBarReady ?? false,
+          updated_at: finalOrder.updated_at,
+        }).eq('id', orderId);
+      }
+    } catch (e) { console.warn('[OrderContext] direct status write failed:', e); }
 
     // 2. IMPORTANT: Sync individual items if this was an item modification (e.g. from MyTables)
     if (updatedOrder && updatedOrder.items) {
