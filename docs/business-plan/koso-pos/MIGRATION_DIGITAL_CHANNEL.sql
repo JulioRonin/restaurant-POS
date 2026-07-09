@@ -17,7 +17,13 @@
 ALTER TABLE menu_items
   ADD COLUMN IF NOT EXISTS publish_online   BOOLEAN         DEFAULT FALSE,
   ADD COLUMN IF NOT EXISTS online_price     NUMERIC(10, 2),
-  ADD COLUMN IF NOT EXISTS online_available BOOLEAN         DEFAULT TRUE;
+  ADD COLUMN IF NOT EXISTS online_available BOOLEAN         DEFAULT TRUE,
+  -- variant_mode: 'single' = el cliente elige UNA variante (radio, ej. tamaños)
+  --               'multi'  = puede combinar varias (checkbox, ej. toppings)
+  ADD COLUMN IF NOT EXISTS variant_mode     TEXT            DEFAULT 'single',
+  -- variants: JSONB con las variantes del platillo (nombre + precio delta).
+  -- Se agrega por si la tabla no la tenía (algunos esquemas no la incluían).
+  ADD COLUMN IF NOT EXISTS variants         JSONB           DEFAULT '[]'::jsonb;
 
 -- Índice para acelerar la query del kiosko / storefront público
 CREATE INDEX IF NOT EXISTS idx_menu_items_publish_online
