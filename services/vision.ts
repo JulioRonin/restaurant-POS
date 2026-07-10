@@ -12,7 +12,13 @@
  */
 import { getSupabase } from './auth';
 
-export type VisionEventType = 'zone_vacant' | 'zone_intrusion' | 'zone_recovered';
+export type VisionEventType =
+  | 'zone_vacant'        // zona atendida quedó sin personal > límite
+  | 'zone_intrusion'     // alguien entró a zona restringida
+  | 'zone_recovered'     // zona atendida volvió a cubrirse
+  | 'guest_waiting'      // cliente esperando en recepción sin atención (alerta en vivo)
+  | 'guest_attended'     // cliente atendido (con tiempo de recepción)
+  | 'guest_unattended';  // cliente se fue sin ser atendido (abandono / cliente perdido)
 
 export interface VisionEvent {
   id: string;
