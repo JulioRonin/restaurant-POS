@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS vision_events (
   business_id  uuid NOT NULL,
   camera       text DEFAULT 'PC',            -- nombre de la cámara/punto
   zone         text NOT NULL,                -- nombre de la zona dibujada
-  type         text NOT NULL,                -- 'zone_vacant' | 'zone_intrusion' | 'zone_recovered'
+  type         text NOT NULL,                -- zona: 'zone_vacant' | 'zone_intrusion' | 'zone_recovered'
+                                             -- recepción: 'guest_waiting' | 'guest_attended' | 'guest_unattended'
   message      text,
   duration_sec integer,                      -- cuánto duró (vacancia, etc.)
   snapshot_url text,                         -- captura del momento (Storage)

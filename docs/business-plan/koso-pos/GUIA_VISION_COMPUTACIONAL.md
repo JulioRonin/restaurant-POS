@@ -75,6 +75,90 @@ Usamos CallMeBot para no requerir cuenta empresarial en la prueba:
 
 ---
 
+## Caso estrella: medir la RECEPCIÓN / hostess (clientes que se van) 🚪
+
+**El problema:** llegan clientes a la entrada, no encuentran a nadie que los
+reciba y se van. Es dinero que se pierde sin dejar rastro. ¿Se puede medir
+con visión computacional? **Sí, y es uno de los mejores usos de esta tech.**
+
+### Cómo lo mide el módulo
+
+Con detección de personas defines **dos zonas** en la cámara de la entrada:
+
+1. **Puesto anfitrión** (`host_post`) → el lugar donde DEBE estar tu host.
+2. **Llegada de clientes** (`guest_arrival`) → el umbral de la puerta / foyer.
+
+El sistema correlaciona ambas y calcula, en vivo:
+
+| KPI | Qué te dice |
+|---|---|
+| **Llegadas** | Personas que entraron y se quedaron > N seg (filtra a los que solo pasan) |
+| **Atendidos** | Llegadas donde un host apareció en el puesto |
+| **Se fueron sin atender** | Llegadas que se retiraron sin que nadie los recibiera → **cliente perdido** |
+| **% de atención** | Atendidos ÷ llegadas |
+| **Tiempo de recepción prom.** | Segundos desde que llega el cliente hasta que lo reciben |
+| **% cobertura del puesto** | Qué tanto del turno hubo alguien en el puesto de host |
+
+Y lo más accionable: una **alerta EN VIVO** (sonido + WhatsApp) cuando hay
+alguien esperando en la entrada más de X segundos sin que nadie lo atienda —
+para que corran a recibirlo *antes* de perderlo, no después.
+
+### Cómo configurarlo (2 minutos)
+
+1. Crea una cámara llamada "Recepción" apuntando a la entrada.
+2. Inicia la cámara y dibuja **dos zonas**:
+   - Sobre el atril/puesto del host → regla **Puesto anfitrión**.
+   - Sobre la puerta/tapete de entrada → regla **Llegada de clientes**.
+3. Listo: aparece el tablero **"Recepción"** con los KPIs en vivo. En ⚙️
+   ajustas "segundos para contar una llegada" (default 3s, filtra a los que
+   pasan de largo) y "segundos de espera → alerta" (default 12s).
+
+### Qué SÍ y qué NO puede hacer (honestidad técnica)
+
+✅ **Sí puede:**
+- Contar llegadas y, sobre todo, **cuántas se fueron sin atención** (el número
+  que tu cliente quiere) como un *proxy muy fuerte*.
+- Medir el tiempo de respuesta de tu host y su % de cobertura del puesto.
+- Avisar en tiempo real para rescatar al cliente que espera.
+
+⚠️ **Limitaciones (y cómo se mitigan):**
+- *No sabe la intención:* alguien que solo asoma la cabeza podría contar como
+  llegada → se mitiga con el filtro de permanencia (N segundos) y dibujando la
+  zona de entrada ajustada al umbral real.
+- *No distingue empleado de cliente por su cara* (y a propósito no usamos
+  reconocimiento facial) → por eso el modelo es por ZONAS: "hay alguien en el
+  puesto del host" vs "hay alguien esperando en la puerta".
+- *Depende del ángulo y la luz:* cámara picada a 2.5–3 m, entrada bien
+  iluminada, zona sobre el piso.
+- Para afinar los casos dudosos entra el **agente IA (Fase 3)**: revisa la
+  captura del evento y confirma si de verdad fue un cliente perdido antes de
+  contarlo, subiendo la precisión del número.
+
+> Recomendación de negocio: preséntalo como *"tablero de servicio de
+> recepción"* (mejorar la atención) más que vigilancia — mide zonas, no
+> personas, y ese encuadre te da mejor clima laboral y mejor defensa legal.
+
+---
+
+## Multi-cámara: cada zona en su cámara
+
+El módulo maneja **varias cámaras**, cada una con **sus propias zonas e
+inspecciones**. En la barra superior agregas cámaras ("+ Cámara"), le pones
+nombre y eliges su dispositivo/fuente; al seleccionarla ves y editas solo sus
+zonas. Ejemplos:
+
+- **Recepción** → Puesto anfitrión + Llegada de clientes (modo recepción).
+- **Barra** → zona *atendida* (que nunca quede sola > 3 min).
+- **Almacén** → zona *restringida* (alerta si alguien entra).
+- **Cocina** → zona *atendida* + zona *restringida* (área de cuchillos).
+
+> En la PC analizas **una cámara a la vez** (cambias entre ellas con un clic).
+> Para vigilar **todas simultáneamente 24/7** es la Fase 2 (Frigate en un
+> mini-PC), donde cada cámara corre en paralelo y el bridge manda los mismos
+> eventos a este tablero.
+
+---
+
 ## FASE 1 — Usar las cámaras que el restaurante ya tiene (RTSP)
 
 Casi cualquier DVR/NVR o cámara IP (Hikvision, Dahua, TP-Link, Reolink…)
