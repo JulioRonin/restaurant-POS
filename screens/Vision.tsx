@@ -66,20 +66,32 @@ interface ZoneRuntime {
   episodes: number;
   lastTick: number;
   persons: number;
+  lastSeen: number;           // última vez que se VIO a alguien (anti-flicker)
 }
 
+/**
+ * Episodio de recepción robusto (anti-flicker):
+ *   llegada → (espera) → interacción (atendido) → salida clasificada.
+ * La salida solo se confirma tras `exitGraceSec` sin ver al cliente, y la
+ * atención se acumula por INTERACCIÓN (otra persona cerca del cliente o el
+ * host presente en su puesto) durante `greetMinSec` — no por coincidencia
+ * instantánea de frames.
+ */
 interface ReceptionRuntime {
   arrivals: number;
   attended: number;
   unattended: number;
-  sumGreetSec: number;
+  sumGreetSec: number;        // suma de tiempos de respuesta (llegada→atención)
   maxWaitSec: number;
-  // transitorio
-  guestActive: boolean;
-  guestSince: number;
+  // episodio en curso
+  episodeActive: boolean;
+  episodeStart: number;
+  guestLastSeen: number;      // anti-flicker de salida
   counted: boolean;
   greeted: boolean;
+  interactionMs: number;      // atención acumulada (proximidad u host presente)
   waitAlerted: boolean;
+  lastTick: number;
 }
 
 interface VisionConfig {
@@ -90,12 +102,15 @@ interface VisionConfig {
   minScore: number;
   arrivalMinDwellSec: number; // segundos para contar una llegada real (filtra paso)
   waitAlertSec: number;       // segundos esperando sin atención → alerta en vivo
+  exitGraceSec: number;       // seg. sin ver a la persona para confirmar salida (anti-flicker)
+  greetMinSec: number;        // seg. de interacción para contar "atendido"
 }
 
 const DEFAULT_CONFIG: VisionConfig = {
   whatsPhone: '', whatsKey: '', whatsEnabled: false,
   intervalMs: 700, minScore: 0.5,
   arrivalMinDwellSec: 3, waitAlertSec: 12,
+  exitGraceSec: 5, greetMinSec: 2,
 };
 
 const RULE_META: Record<ZoneRule, { label: string; short: string; color: string; icon: React.ElementType }> = {
@@ -368,12 +383,16 @@ export const VisionScreen: React.FC = () => {
 
       const inCount = (z: Zone) => anchors.filter((a) => a.ax >= z.x && a.ax <= z.x + z.w && a.ay >= z.y && a.ay <= z.y + z.h).length;
 
-      // Reglas por zona (atendida / restringida / cobertura del puesto)
+      // Reglas por zona (atendida / restringida / cobertura del puesto).
+      // ANTI-FLICKER: la zona solo se considera "vacía" tras exitGraceSec
+      // segundos sin ver a nadie — una detección perdida por 1-2 frames ya
+      // no genera vacancias/recuperaciones falsas.
+      const graceMs = cfg.exitGraceSec * 1000;
       camZones.forEach((z) => {
         const inside = inCount(z);
         let rt = runtimeRef.current.get(z.id);
         if (!rt) {
-          rt = { occupied: inside > 0, since: now, alerted: false, lastIntrusionAlert: 0, occupiedMs: 0, vacantMs: 0, episodes: 0, lastTick: now, persons: inside };
+          rt = { occupied: inside > 0, since: now, alerted: false, lastIntrusionAlert: 0, occupiedMs: 0, vacantMs: 0, episodes: 0, lastTick: now, persons: inside, lastSeen: inside > 0 ? now : 0 };
           runtimeRef.current.set(z.id, rt);
           return;
         }
@@ -381,7 +400,9 @@ export const VisionScreen: React.FC = () => {
         if (rt.occupied) rt.occupiedMs += delta; else rt.vacantMs += delta;
         rt.lastTick = now;
         rt.persons = inside;
-        const occupiedNow = inside > 0;
+        if (inside > 0) rt.lastSeen = now;
+        // Ocupada = alguien visible AHORA, o visto hace < grace (suaviza flicker).
+        const occupiedNow = inside > 0 || (rt.occupied && now - rt.lastSeen <= graceMs);
         const vacancyRule = z.rule === 'attended' || z.rule === 'host_post';
 
         if (occupiedNow !== rt.occupied) {
@@ -398,47 +419,108 @@ export const VisionScreen: React.FC = () => {
             fireAlert(z.name, 'zone_vacant', `⚠️ "${z.name}" sin personal desde hace ${fmtDur(vacantFor)} (límite ${z.maxVacantMin} min).`, Math.round(vacantFor / 1000));
           }
         }
-        if (z.rule === 'restricted' && occupiedNow && now - rt.lastIntrusionAlert > 60000) {
+        if (z.rule === 'restricted' && inside > 0 && now - rt.lastIntrusionAlert > 60000) {
           rt.lastIntrusionAlert = now;
           fireAlert(z.name, 'zone_intrusion', `🚨 Persona detectada en zona restringida "${z.name}".`);
         }
       });
 
-      // ── Motor de RECEPCIÓN (correlación anfitrión + llegada) ──────────
+      // ── Motor de RECEPCIÓN: episodios llegada → atención → salida ─────
+      // La atención se mide por INTERACCIÓN, no por coincidencia de frames:
+      //   · otra persona (mesero/host) CERCA del cliente, o
+      //   · el puesto anfitrión ocupado mientras el cliente está presente,
+      // acumulada durante greetMinSec. La salida se confirma tras
+      // exitGraceSec sin ver al cliente (anti-flicker).
       const hz = camZones.find((z) => z.rule === 'host_post');
       const gz = camZones.find((z) => z.rule === 'guest_arrival');
       if (hz && gz) {
-        const hostOcc = inCount(hz) > 0;
-        const guestOcc = inCount(gz) > 0;
+        const inZone = (p: any, z: Zone) => {
+          const ax = p.x + p.w / 2, ay = p.y + p.h;
+          return ax >= z.x && ax <= z.x + z.w && ay >= z.y && ay <= z.y + z.h;
+        };
+        const guests = persons.filter((p: any) => inZone(p, gz));
+        const hostRt = runtimeRef.current.get(hz.id);
+        // Host "presente" con la misma gracia anti-flicker.
+        const hostPresent = (hostRt?.persons ?? 0) > 0 || (!!hostRt?.lastSeen && now - hostRt.lastSeen <= graceMs);
+
+        // Interacción por proximidad: alguien (que no es el cliente) a menos
+        // de ~1.6 anchos de cuerpo de distancia (en espacio corregido por
+        // aspecto — los pies de ambos cerca en el piso).
+        const aspect = vw / vh;
+        const near = (a: any, b: any) => {
+          const dx = ((a.x + a.w / 2) - (b.x + b.w / 2)) * aspect;
+          const dy = (a.y + a.h) - (b.y + b.h);
+          const bodyW = Math.max(a.w, b.w) * aspect;
+          return Math.hypot(dx, dy) < 1.6 * Math.max(0.04, bodyW);
+        };
+        const interactionNow = guests.some((g: any) =>
+          persons.some((o: any) => o !== g && near(o, g))
+        );
+
         let rc = receptionRef.current.get(camKey);
         if (!rc) {
-          rc = { arrivals: 0, attended: 0, unattended: 0, sumGreetSec: 0, maxWaitSec: 0, guestActive: false, guestSince: 0, counted: false, greeted: false, waitAlerted: false };
+          rc = {
+            arrivals: 0, attended: 0, unattended: 0, sumGreetSec: 0, maxWaitSec: 0,
+            episodeActive: false, episodeStart: 0, guestLastSeen: 0,
+            counted: false, greeted: false, interactionMs: 0, waitAlerted: false, lastTick: now,
+          };
           receptionRef.current.set(camKey, rc);
         }
-        if (guestOcc) {
-          if (!rc.guestActive) { rc.guestActive = true; rc.guestSince = now; rc.counted = false; rc.greeted = false; rc.waitAlerted = false; }
-          const dwell = now - rc.guestSince;
-          if (!rc.counted && dwell >= cfg.arrivalMinDwellSec * 1000) { rc.counted = true; rc.arrivals += 1; }
-          if (rc.counted && !rc.greeted && hostOcc) {
-            rc.greeted = true;
-            const greet = (now - rc.guestSince) / 1000;
-            rc.attended += 1; rc.sumGreetSec += greet;
-            fireAlert(gz.name, 'guest_attended', `✅ Cliente atendido en recepción (${Math.round(greet)}s).`, Math.round(greet));
+
+        if (guests.length > 0) rc.guestLastSeen = now;
+
+        // Apertura de episodio: aparece un cliente y no hay episodio activo.
+        if (guests.length > 0 && !rc.episodeActive) {
+          rc.episodeActive = true;
+          rc.episodeStart = now;
+          rc.counted = false; rc.greeted = false;
+          rc.interactionMs = 0; rc.waitAlerted = false;
+          rc.lastTick = now;
+        }
+
+        if (rc.episodeActive) {
+          const tickDelta = now - rc.lastTick;
+          rc.lastTick = now;
+          const dwell = now - rc.episodeStart;
+
+          // Llegada real (filtra a quien solo pasa frente a la puerta).
+          if (!rc.counted && dwell >= cfg.arrivalMinDwellSec * 1000) {
+            rc.counted = true;
+            rc.arrivals += 1;
           }
-          // Alerta EN VIVO: cliente esperando sin atención
-          if (rc.counted && !rc.greeted && !hostOcc && !rc.waitAlerted && dwell >= cfg.waitAlertSec * 1000) {
+
+          // Acumula atención mientras el cliente sigue presente.
+          if (guests.length > 0 && (interactionNow || hostPresent)) {
+            rc.interactionMs += tickDelta;
+          }
+
+          // Atendido: interacción sostenida (no un cruce de 1 frame).
+          if (rc.counted && !rc.greeted && rc.interactionMs >= cfg.greetMinSec * 1000) {
+            rc.greeted = true;
+            const greetSec = Math.round(dwell / 1000);
+            rc.attended += 1;
+            rc.sumGreetSec += greetSec;
+            fireAlert(gz.name, 'guest_attended', `✅ Cliente atendido en recepción (respuesta ${greetSec}s).`, greetSec);
+          }
+
+          // Alerta EN VIVO: espera sin atención y sin nadie interactuando.
+          if (rc.counted && !rc.greeted && !rc.waitAlerted && !hostPresent && !interactionNow && dwell >= cfg.waitAlertSec * 1000) {
             rc.waitAlerted = true;
             rc.maxWaitSec = Math.max(rc.maxWaitSec, Math.round(dwell / 1000));
             fireAlert(gz.name, 'guest_waiting', `🔔 ¡Cliente esperando en recepción sin atención (${fmtDur(dwell)})! Nadie en "${hz.name}".`, Math.round(dwell / 1000), true);
           }
-        } else if (rc.guestActive) {
-          const dwell = now - rc.guestSince;
-          if (rc.counted && !rc.greeted) {
-            rc.unattended += 1;
-            rc.maxWaitSec = Math.max(rc.maxWaitSec, Math.round(dwell / 1000));
-            fireAlert(gz.name, 'guest_unattended', `❌ Cliente se fue SIN ser atendido tras esperar ${fmtDur(dwell)} (posible cliente perdido).`, Math.round(dwell / 1000), true);
+
+          // Cierre de episodio: el cliente lleva > grace sin ser visto.
+          if (guests.length === 0 && now - rc.guestLastSeen > graceMs) {
+            const stayedSec = Math.max(1, Math.round((rc.guestLastSeen - rc.episodeStart) / 1000));
+            if (rc.counted && !rc.greeted) {
+              rc.unattended += 1;
+              rc.maxWaitSec = Math.max(rc.maxWaitSec, stayedSec);
+              fireAlert(gz.name, 'guest_unattended', `❌ Cliente se fue SIN ser atendido tras esperar ${fmtDur(stayedSec * 1000)} (posible cliente perdido).`, stayedSec, true);
+            }
+            // Atendido que se retira = flujo normal, no genera alerta.
+            rc.episodeActive = false;
           }
-          rc.guestActive = false;
         }
       }
     } catch (e) {
@@ -667,7 +749,7 @@ export const VisionScreen: React.FC = () => {
                   <RecKpi icon={Users}     value={reception?.arrivals ?? 0}   label="Llegadas" />
                   <RecKpi icon={UserCheck} value={reception?.attended ?? 0}   label="Atendidos" tone="green" />
                   <RecKpi icon={UserX}     value={reception?.unattended ?? 0} label="Se fueron sin atender" tone="red" />
-                  <RecKpi icon={Timer}     value={reception && reception.attended ? `${Math.round(reception.sumGreetSec / reception.attended)}s` : '—'} label="Recepción prom." />
+                  <RecKpi icon={Timer}     value={reception && reception.attended ? `${Math.round(reception.sumGreetSec / reception.attended)}s` : '—'} label="Respuesta prom." />
                 </div>
                 {reception && reception.arrivals > 0 && (
                   <div className="mt-3 flex items-center gap-2">
@@ -677,8 +759,19 @@ export const VisionScreen: React.FC = () => {
                     <span className="text-[11px] font-mono text-servirest-mostaza">{Math.round((reception.attended / reception.arrivals) * 100)}% atención</span>
                   </div>
                 )}
+                {/* Episodio en curso — telemetría en vivo para calibrar */}
+                {reception?.episodeActive && (
+                  <div className={`mt-3 px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-2 ${
+                    reception.greeted ? 'bg-green-500/15 text-green-400' : 'bg-servirest-mostaza/15 text-servirest-mostaza'
+                  }`}>
+                    {reception.greeted
+                      ? <><CheckCircle2 size={13} /> Cliente en recepción — YA atendido ({fmtDur(now - reception.episodeStart)} en el lugar)</>
+                      : <><Timer size={13} /> Cliente esperando {fmtDur(now - reception.episodeStart)} · interacción {(reception.interactionMs / 1000).toFixed(1)}s / {config.greetMinSec}s</>}
+                  </div>
+                )}
                 <p className="text-[10px] text-servirest-hueso/45 mt-3 leading-relaxed">
-                  Mide clientes que llegan a "{guestZone?.name}" y si hay alguien en "{hostZone?.name}" para atenderlos. Alerta en vivo si esperan más de {config.waitAlertSec}s sin atención.
+                  Mide clientes que llegan a "{guestZone?.name}". "Atendido" = alguien del personal se acercó al cliente (o cubrió "{hostZone?.name}") por {config.greetMinSec}s+.
+                  Alerta en vivo si esperan {config.waitAlertSec}s+ sin atención; la salida se confirma tras {config.exitGraceSec}s sin verlo (anti-parpadeo).
                 </p>
               </div>
             )}
@@ -831,7 +924,7 @@ export const VisionScreen: React.FC = () => {
             </div>
 
             <div className="text-[12px] font-black text-servirest-midnight mb-2 flex items-center gap-1.5"><DoorOpen size={14} className="text-[#9A5FA0]" /> Recepción</div>
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
                 <SrLabel className="block mb-1.5">Seg. para contar llegada</SrLabel>
                 <input type="number" min={1} max={30} value={config.arrivalMinDwellSec} onChange={(e) => setConfig((c) => ({ ...c, arrivalMinDwellSec: Math.max(1, Number(e.target.value) || 3) }))} className="w-full h-11 px-4 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[14px] focus:outline-none focus:border-servirest-terracota" />
@@ -840,7 +933,19 @@ export const VisionScreen: React.FC = () => {
                 <SrLabel className="block mb-1.5">Seg. de espera → alerta</SrLabel>
                 <input type="number" min={3} max={120} value={config.waitAlertSec} onChange={(e) => setConfig((c) => ({ ...c, waitAlertSec: Math.max(3, Number(e.target.value) || 12) }))} className="w-full h-11 px-4 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[14px] focus:outline-none focus:border-servirest-terracota" />
               </div>
+              <div>
+                <SrLabel className="block mb-1.5">Seg. para confirmar salida</SrLabel>
+                <input type="number" min={2} max={30} value={config.exitGraceSec} onChange={(e) => setConfig((c) => ({ ...c, exitGraceSec: Math.max(2, Number(e.target.value) || 5) }))} className="w-full h-11 px-4 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[14px] focus:outline-none focus:border-servirest-terracota" />
+              </div>
+              <div>
+                <SrLabel className="block mb-1.5">Seg. de interacción = atendido</SrLabel>
+                <input type="number" min={1} max={30} value={config.greetMinSec} onChange={(e) => setConfig((c) => ({ ...c, greetMinSec: Math.max(1, Number(e.target.value) || 2) }))} className="w-full h-11 px-4 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[14px] focus:outline-none focus:border-servirest-terracota" />
+              </div>
             </div>
+            <p className="text-[10px] text-[rgba(42,40,38,0.45)] mb-4 leading-relaxed">
+              "Confirmar salida" evita falsos abandonos cuando la detección parpadea (sube a 8–10s si ves salidas fantasma).
+              "Atendido" = alguien del personal estuvo CERCA del cliente (o en el puesto anfitrión) durante esos segundos.
+            </p>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
