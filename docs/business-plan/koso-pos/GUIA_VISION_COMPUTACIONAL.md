@@ -103,15 +103,50 @@ Y lo más accionable: una **alerta EN VIVO** (sonido + WhatsApp) cuando hay
 alguien esperando en la entrada más de X segundos sin que nadie lo atienda —
 para que corran a recibirlo *antes* de perderlo, no después.
 
+### Cómo funciona el seguimiento (tracking con identidad)
+
+La zona de entrada **no es una jaula** — es una **línea de cruce (tripwire)**:
+
+1. Una persona **recién aparecida en escena** que pisa la zona de entrada
+   queda etiquetada **CLIENTE** (morado) — y a partir de ahí **se le sigue
+   por TODO el encuadre** con su cronómetro de espera visible.
+2. Quien pisa el **puesto anfitrión** queda etiquetado **PERSONAL** (azul)
+   de por vida de su track — por eso la hostess que camina a la puerta a
+   saludar NO se confunde con un cliente (su track ya era "viejo" en escena).
+3. La **atención se evalúa donde sea**: personal cerca del cliente en
+   cualquier punto del encuadre (o puesto cubierto) durante 2s+ = atendido.
+4. Cuando el cliente desaparece de escena varios segundos, su episodio se
+   cierra: atendido = flujo normal; no atendido = **cliente perdido**.
+
 ### Cómo configurarlo (2 minutos)
 
 1. Crea una cámara llamada "Recepción" apuntando a la entrada.
-2. Inicia la cámara y dibuja **dos zonas**:
-   - Sobre el atril/puesto del host → regla **Puesto anfitrión**.
-   - Sobre la puerta/tapete de entrada → regla **Llegada de clientes**.
+2. Inicia la cámara y dibuja **dos zonas** (tocando las 4 esquinas de cada
+   una, en perspectiva sobre el piso):
+   - Piso alrededor del atril/puesto del host → regla **Puesto anfitrión**.
+   - **Franja del piso cruzando la puerta** (el umbral) → regla **Llegada
+     de clientes**.
 3. Listo: aparece el tablero **"Recepción"** con los KPIs en vivo. En ⚙️
    ajustas "segundos para contar una llegada" (default 3s, filtra a los que
    pasan de largo) y "segundos de espera → alerta" (default 12s).
+
+### Dónde dibujar cada zona (guía de colocación) 📐
+
+Las zonas se marcan tocando sus **4 esquinas en perspectiva** — píntalas
+"acostadas" sobre el piso (o sobre la barra), no como rectángulo flotante:
+
+| Zona | Dónde dibujarla | Error común |
+|---|---|---|
+| **Llegada de clientes** | Franja de piso de ~1–1.5 m de profundidad cruzando el umbral de la puerta, de pared a pared | Dibujar todo el lobby → etiqueta de cliente a cualquiera; debe ser solo el cruce |
+| **Puesto anfitrión** | El piso alrededor del atril (donde pisa el host al estar en su puesto) | Incluir el pasillo → nunca se marca "vacío" |
+| **Zona atendida** (barra, caja) | El piso del área de trabajo donde pisa el empleado | Marcar la barra física en vez del piso donde se para la persona |
+| **Zona restringida** | El piso del área prohibida completa | — |
+| **Pase de comida** | La SUPERFICIE de la barra donde se apoyan los platillos (única que no va en el piso) | Marcar el piso — los platillos están sobre la barra |
+
+**Regla de oro:** el sistema ubica a las personas por sus **pies** (punto
+inferior del cuerpo) — por eso toda zona de personas se dibuja en el PISO,
+siguiendo la perspectiva del piso real. Cámara ideal: 2.5–3 m de altura,
+ángulo picado, la entrada y el puesto del host visibles en el mismo encuadre.
 
 ### Qué SÍ y qué NO puede hacer (honestidad técnica)
 

@@ -62,16 +62,68 @@ interface DishTrack {
 // Clases de COCO-SSD que tomamos como "platillo/bebida" en el pase.
 const FOOD_CLASSES = new Set(['bowl', 'cup', 'wine glass', 'sandwich', 'pizza', 'cake', 'donut', 'hot dog', 'bottle']);
 
+/**
+ * Track de una PERSONA con identidad frame a frame.
+ *
+ * La zona de entrada funciona como TRIPWIRE: un track recién nacido que la
+ * pisa queda etiquetado CLIENTE y se le sigue por TODO el encuadre (no solo
+ * dentro de la zona) hasta que se va — la interacción con el personal cuenta
+ * donde sea que ocurra. Quien pisa el puesto anfitrión queda etiquetado
+ * PERSONAL. El rol es de por vida del track, así la hostess que cruza la
+ * puerta para saludar no se confunde con un cliente (su track es "viejo").
+ */
+interface PersonTrack {
+  id: number;
+  x: number; y: number; w: number; h: number; // caja EMA (suavizada)
+  firstSeen: number;
+  lastSeen: number;
+  role: 'unknown' | 'guest' | 'staff';
+  taggedAt: number;       // cuándo se volvió cliente
+  counted: boolean;       // llegada ya contada
+  greeted: boolean;       // ya fue atendido
+  interactionMs: number;  // atención acumulada
+  waitAlerted: boolean;
+  lastTick: number;
+}
+
 interface CameraProfile { key: string; name: string; deviceId: string; }
 
+type Pt = { x: number; y: number };
+
+/**
+ * Zona en PERSPECTIVA: cuadrilátero de 4 puntos normalizados (0–1) que el
+ * usuario marca tocando las esquinas SOBRE EL PISO (o sobre la barra en el
+ * pase de comida). Así la zona "se acuesta" en el suelo como en un entorno
+ * 3D, en vez de flotar como rectángulo sobre la pantalla.
+ */
 interface Zone {
   id: string;
   cameraKey: string;          // a qué cámara pertenece
   name: string;
   rule: ZoneRule;
-  maxVacantMin: number;       // 'attended' / 'host_post'
-  x: number; y: number; w: number; h: number; // rect normalizado 0–1
+  maxVacantMin: number;       // 'attended' / 'host_post' / 'food_pass'
+  points: Pt[];               // 4 esquinas en perspectiva
 }
+
+// Punto dentro de polígono (ray casting) — reemplaza al check de rectángulo.
+const pointInPoly = (px: number, py: number, pts: Pt[]): boolean => {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const xi = pts[i].x, yi = pts[i].y, xj = pts[j].x, yj = pts[j].y;
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+};
+
+// Migración: zonas viejas guardadas como rect {x,y,w,h} → 4 puntos.
+const migrateZone = (z: any): Zone => {
+  if (Array.isArray(z.points) && z.points.length >= 3) return z as Zone;
+  const { x = 0.1, y = 0.1, w = 0.2, h = 0.2 } = z;
+  return { ...z, points: [{ x, y }, { x: x + w, y }, { x: x + w, y: y + h }, { x, y: y + h }] };
+};
+
+// Punto superior del polígono (para colocar la etiqueta de la zona).
+const polyTop = (pts: Pt[]): Pt => pts.reduce((a, b) => (b.y < a.y ? b : a));
 
 interface ZoneRuntime {
   occupied: boolean;
@@ -185,6 +237,8 @@ export const VisionScreen: React.FC = () => {
   const runtimeRef = useRef<Map<string, ZoneRuntime>>(new Map());
   const receptionRef = useRef<Map<string, ReceptionRuntime>>(new Map());
   const dishTracksRef = useRef<Map<string, DishTrack[]>>(new Map());
+  const personTracksRef = useRef<PersonTrack[]>([]);
+  const trackSeqRef = useRef(1);
   const dishDetectionsRef = useRef<any[]>([]);
   const heatRef = useRef<Float32Array>(new Float32Array(HEAT_W * HEAT_H));
   const heatCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -212,9 +266,11 @@ export const VisionScreen: React.FC = () => {
   // Alta/edición de cámara
   const [camModal, setCamModal] = useState<CameraProfile | null>(null);
 
-  // Dibujo de zona
-  const drawingRef = useRef<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
-  const [pendingRect, setPendingRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  // Dibujo de zona en perspectiva: el usuario toca las 4 esquinas (sobre el
+  // piso). draftRef acumula los puntos; al 4o se abre el modal de la zona.
+  const draftRef = useRef<Pt[]>([]);
+  const [draftCount, setDraftCount] = useState(0); // para el hint en pantalla
+  const [pendingPoints, setPendingPoints] = useState<Pt[] | null>(null);
   const [zoneName, setZoneName] = useState('');
   const [zoneRule, setZoneRule] = useState<ZoneRule>('attended');
   const [zoneMaxVacant, setZoneMaxVacant] = useState(3);
@@ -239,7 +295,7 @@ export const VisionScreen: React.FC = () => {
       setCameras(parsedCams);
       setActiveKey((prev) => prev || parsedCams[0]?.key || '');
       const z = localStorage.getItem(`vision_zones_${businessId}`);
-      if (z) setZones(JSON.parse(z));
+      if (z) setZones((JSON.parse(z) as any[]).map(migrateZone));
       const c = localStorage.getItem(`vision_config_${businessId}`);
       if (c) setConfig({ ...DEFAULT_CONFIG, ...JSON.parse(c) });
     } catch { /* no-op */ }
@@ -283,6 +339,8 @@ export const VisionScreen: React.FC = () => {
       setStartedAt(Date.now());
       runtimeRef.current = new Map();
       receptionRef.current = new Map();
+      personTracksRef.current = [];
+      dishTracksRef.current = new Map();
       if (!modelRef.current) {
         setModelState('loading');
         try {
@@ -318,6 +376,8 @@ export const VisionScreen: React.FC = () => {
     setActiveKey(key);
     runtimeRef.current = new Map();
     receptionRef.current = new Map();
+    personTracksRef.current = [];
+    dishTracksRef.current = new Map();
     detectionsRef.current = [];
     if (running) {
       const cam = cameras.find((c) => c.key === key);
@@ -342,7 +402,10 @@ export const VisionScreen: React.FC = () => {
     zonesRef.current.filter((z) => z.cameraKey === activeKeyRef.current).forEach((z) => {
       ctx.strokeStyle = RULE_META[z.rule].color;
       ctx.lineWidth = 2;
-      ctx.strokeRect(z.x * W, z.y * H, z.w * W, z.h * H);
+      ctx.beginPath();
+      z.points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x * W, p.y * H) : ctx.lineTo(p.x * W, p.y * H)));
+      ctx.closePath();
+      ctx.stroke();
     });
     return c.toDataURL('image/jpeg', 0.6);
   };
@@ -395,23 +458,154 @@ export const VisionScreen: React.FC = () => {
       const camKey = activeKeyRef.current;
       const camZones = zonesRef.current.filter((z) => z.cameraKey === camKey);
 
-      // Etiqueta cada detección con SU rol según la zona donde están sus
-      // pies: Personal (puesto anfitrión / zona atendida), Cliente (llegada)
-      // o Persona (fuera de zona / restringida). Se dibuja sobre el video.
-      detectionsRef.current = persons.map((p: any, i: number) => {
-        const a = anchors[i];
-        const z = camZones.find((zz) => a.ax >= zz.x && a.ax <= zz.x + zz.w && a.ay >= zz.y && a.ay <= zz.y + zz.h);
-        let role = 'Persona';
-        let color = '#5FA05A';
-        if (z) {
-          if (z.rule === 'guest_arrival') { role = 'Cliente'; color = RULE_META.guest_arrival.color; }
-          else if (z.rule === 'restricted') { role = 'Persona'; color = RULE_META.restricted.color; }
-          else { role = 'Personal'; color = z.rule === 'host_post' ? RULE_META.host_post.color : RULE_META.attended.color; }
+      const graceMs = cfg.exitGraceSec * 1000;
+      const feetInZone = (b: { x: number; y: number; w: number; h: number }, z: Zone) =>
+        pointInPoly(b.x + b.w / 2, b.y + b.h, z.points);
+      const inCount = (z: Zone) => anchors.filter((a) => pointInPoly(a.ax, a.ay, z.points)).length;
+
+      // ── TRACKING de personas con identidad frame a frame ──────────────
+      // La zona de entrada es un TRIPWIRE: un track RECIÉN nacido que la
+      // pisa queda etiquetado CLIENTE y se le sigue por TODO el encuadre.
+      // Quien pisa el puesto anfitrión queda etiquetado PERSONAL de por
+      // vida del track (la hostess que cruza la puerta no se confunde).
+      const gz = camZones.find((z) => z.rule === 'guest_arrival');
+      const hz = camZones.find((z) => z.rule === 'host_post');
+      const tracks = personTracksRef.current;
+
+      // 1) Asocia detecciones a tracks (greedy por cercanía de centros).
+      const matched = new Set<number>();
+      persons.forEach((d: any) => {
+        let best: PersonTrack | null = null;
+        let bestDist = Infinity;
+        tracks.forEach((t) => {
+          if (matched.has(t.id)) return;
+          const dist = Math.hypot((t.x + t.w / 2) - (d.x + d.w / 2), (t.y + t.h / 2) - (d.y + d.h / 2));
+          if (dist < bestDist) { bestDist = dist; best = t; }
+        });
+        const bt = best as PersonTrack | null;
+        const radius = Math.max(0.09, Math.max(bt?.w ?? 0, d.w) * 1.1);
+        if (bt && bestDist < radius) {
+          matched.add(bt.id);
+          bt.x = bt.x * 0.55 + d.x * 0.45;
+          bt.y = bt.y * 0.55 + d.y * 0.45;
+          bt.w = bt.w * 0.55 + d.w * 0.45;
+          bt.h = bt.h * 0.55 + d.h * 0.45;
+          bt.lastSeen = now;
+        } else {
+          tracks.push({
+            id: trackSeqRef.current++, ...d, firstSeen: now, lastSeen: now,
+            role: 'unknown', taggedAt: 0, counted: false, greeted: false,
+            interactionMs: 0, waitAlerted: false, lastTick: now,
+          });
         }
-        return { ...p, role, zoneName: z?.name || null, color };
       });
 
-      const inCount = (z: Zone) => anchors.filter((a) => a.ax >= z.x && a.ax <= z.x + z.w && a.ay >= z.y && a.ay <= z.y + z.h).length;
+      // 2) Asignación de roles (de por vida del track).
+      tracks.forEach((t) => {
+        if (t.role !== 'unknown' || now - t.lastSeen > 1200) return;
+        if (hz && feetInZone(t, hz)) { t.role = 'staff'; return; }
+        // Cliente: track JOVEN (acaba de aparecer en escena = entró por la
+        // puerta) pisando la zona de entrada. El personal que deambula hace
+        // rato no se re-etiqueta.
+        if (gz && now - t.firstSeen < 6000 && feetInZone(t, gz)) {
+          t.role = 'guest';
+          t.taggedAt = now;
+        }
+      });
+
+      // 3) KPIs y lógica por CLIENTE (lo seguimos por todo el encuadre).
+      const rcKey = camKey;
+      let rc = receptionRef.current.get(rcKey);
+      if (!rc) {
+        rc = {
+          arrivals: 0, attended: 0, unattended: 0, sumGreetSec: 0, maxWaitSec: 0,
+          episodeActive: false, episodeStart: 0, guestLastSeen: 0,
+          counted: false, greeted: false, interactionMs: 0, waitAlerted: false, lastTick: now,
+        };
+        receptionRef.current.set(rcKey, rc);
+      }
+      const hostRt = hz ? runtimeRef.current.get(hz.id) : undefined;
+      const hostPresent = hz ? ((hostRt?.persons ?? 0) > 0 || (!!hostRt?.lastSeen && now - hostRt.lastSeen <= graceMs)) : false;
+      const aspect = vw / vh;
+      const near = (a: PersonTrack, b: PersonTrack) => {
+        const dx = ((a.x + a.w / 2) - (b.x + b.w / 2)) * aspect;
+        const dy = (a.y + a.h) - (b.y + b.h);
+        const bodyW = Math.max(a.w, b.w) * aspect;
+        return Math.hypot(dx, dy) < 1.6 * Math.max(0.04, bodyW);
+      };
+
+      if (gz) {
+        tracks.forEach((t) => {
+          if (t.role !== 'guest') return;
+          const tickDelta = now - t.lastTick;
+          t.lastTick = now;
+          const dwell = now - t.taggedAt;
+
+          if (!t.counted && dwell >= cfg.arrivalMinDwellSec * 1000) {
+            t.counted = true;
+            rc!.arrivals += 1;
+          }
+
+          // Atención: PERSONAL (o alguien que no es cliente) cerca del
+          // cliente — en cualquier parte del encuadre — o el puesto cubierto.
+          const visible = now - t.lastSeen <= 1500;
+          const interactingNow = visible && tracks.some((o) =>
+            o.id !== t.id && o.role !== 'guest' && now - o.lastSeen <= graceMs && near(o, t)
+          );
+          if (visible && (interactingNow || hostPresent)) t.interactionMs += tickDelta;
+
+          if (t.counted && !t.greeted && t.interactionMs >= cfg.greetMinSec * 1000) {
+            t.greeted = true;
+            const greetSec = Math.round(dwell / 1000);
+            rc!.attended += 1;
+            rc!.sumGreetSec += greetSec;
+            fireAlert(gz.name, 'guest_attended', `✅ Cliente atendido (respuesta ${greetSec}s).`, greetSec);
+          }
+
+          if (t.counted && !t.greeted && !t.waitAlerted && !hostPresent && !interactingNow && dwell >= cfg.waitAlertSec * 1000) {
+            t.waitAlerted = true;
+            rc!.maxWaitSec = Math.max(rc!.maxWaitSec, Math.round(dwell / 1000));
+            fireAlert(gz.name, 'guest_waiting', `🔔 ¡Cliente esperando ${fmtDur(dwell)} sin atención! Nadie lo ha recibido.`, Math.round(dwell / 1000), true);
+          }
+        });
+      }
+
+      // 4) Expira tracks perdidos; al perder a un CLIENTE se cierra su
+      //    episodio: atendido = flujo normal; no atendido = cliente perdido.
+      personTracksRef.current = tracks.filter((t) => {
+        const grace = t.role === 'guest' ? graceMs * 1.6 : graceMs;
+        if (now - t.lastSeen <= grace) return true;
+        if (t.role === 'guest' && t.counted && !t.greeted && gz) {
+          const stayedSec = Math.max(1, Math.round((t.lastSeen - t.taggedAt) / 1000));
+          rc!.unattended += 1;
+          rc!.maxWaitSec = Math.max(rc!.maxWaitSec, stayedSec);
+          fireAlert(gz.name, 'guest_unattended', `❌ Cliente se fue SIN ser atendido tras esperar ${fmtDur(stayedSec * 1000)} (posible cliente perdido).`, stayedSec, true);
+        }
+        return false;
+      });
+
+      // 5) Etiquetas para el overlay a partir de los TRACKS (con cronómetro
+      //    de espera del cliente).
+      detectionsRef.current = personTracksRef.current
+        .filter((t) => now - t.lastSeen <= 1500)
+        .map((t) => {
+          let role: string;
+          let color: string;
+          let zoneName: string | null = null;
+          if (t.role === 'guest') {
+            role = t.greeted ? `Cliente ✓ atendido` : `Cliente · ${fmtDur(now - t.taggedAt)}`;
+            color = RULE_META.guest_arrival.color;
+          } else if (t.role === 'staff') {
+            role = 'Personal';
+            color = RULE_META.host_post.color;
+          } else {
+            const z = camZones.find((zz) => zz.rule !== 'food_pass' && feetInZone(t, zz));
+            if (z && z.rule === 'restricted') { role = 'Persona'; color = RULE_META.restricted.color; zoneName = z.name; }
+            else if (z && (z.rule === 'attended' || z.rule === 'host_post')) { role = 'Personal'; color = RULE_META.attended.color; zoneName = z.name; }
+            else { role = 'Persona'; color = '#5FA05A'; }
+          }
+          return { x: t.x, y: t.y, w: t.w, h: t.h, role, zoneName, color };
+        });
 
       // Heatmap de actividad: acumula presencia de personas en un grid de
       // baja resolución con decaimiento — muestra dónde se concentra el
@@ -435,7 +629,6 @@ export const VisionScreen: React.FC = () => {
       // ANTI-FLICKER: la zona solo se considera "vacía" tras exitGraceSec
       // segundos sin ver a nadie — una detección perdida por 1-2 frames ya
       // no genera vacancias/recuperaciones falsas.
-      const graceMs = cfg.exitGraceSec * 1000;
       camZones.filter((z) => z.rule !== 'food_pass').forEach((z) => {
         const inside = inCount(z);
         let rt = runtimeRef.current.get(z.id);
@@ -473,105 +666,6 @@ export const VisionScreen: React.FC = () => {
         }
       });
 
-      // ── Motor de RECEPCIÓN: episodios llegada → atención → salida ─────
-      // La atención se mide por INTERACCIÓN, no por coincidencia de frames:
-      //   · otra persona (mesero/host) CERCA del cliente, o
-      //   · el puesto anfitrión ocupado mientras el cliente está presente,
-      // acumulada durante greetMinSec. La salida se confirma tras
-      // exitGraceSec sin ver al cliente (anti-flicker).
-      const hz = camZones.find((z) => z.rule === 'host_post');
-      const gz = camZones.find((z) => z.rule === 'guest_arrival');
-      if (hz && gz) {
-        const inZone = (p: any, z: Zone) => {
-          const ax = p.x + p.w / 2, ay = p.y + p.h;
-          return ax >= z.x && ax <= z.x + z.w && ay >= z.y && ay <= z.y + z.h;
-        };
-        const guests = persons.filter((p: any) => inZone(p, gz));
-        const hostRt = runtimeRef.current.get(hz.id);
-        // Host "presente" con la misma gracia anti-flicker.
-        const hostPresent = (hostRt?.persons ?? 0) > 0 || (!!hostRt?.lastSeen && now - hostRt.lastSeen <= graceMs);
-
-        // Interacción por proximidad: alguien (que no es el cliente) a menos
-        // de ~1.6 anchos de cuerpo de distancia (en espacio corregido por
-        // aspecto — los pies de ambos cerca en el piso).
-        const aspect = vw / vh;
-        const near = (a: any, b: any) => {
-          const dx = ((a.x + a.w / 2) - (b.x + b.w / 2)) * aspect;
-          const dy = (a.y + a.h) - (b.y + b.h);
-          const bodyW = Math.max(a.w, b.w) * aspect;
-          return Math.hypot(dx, dy) < 1.6 * Math.max(0.04, bodyW);
-        };
-        const interactionNow = guests.some((g: any) =>
-          persons.some((o: any) => o !== g && near(o, g))
-        );
-
-        let rc = receptionRef.current.get(camKey);
-        if (!rc) {
-          rc = {
-            arrivals: 0, attended: 0, unattended: 0, sumGreetSec: 0, maxWaitSec: 0,
-            episodeActive: false, episodeStart: 0, guestLastSeen: 0,
-            counted: false, greeted: false, interactionMs: 0, waitAlerted: false, lastTick: now,
-          };
-          receptionRef.current.set(camKey, rc);
-        }
-
-        if (guests.length > 0) rc.guestLastSeen = now;
-
-        // Apertura de episodio: aparece un cliente y no hay episodio activo.
-        if (guests.length > 0 && !rc.episodeActive) {
-          rc.episodeActive = true;
-          rc.episodeStart = now;
-          rc.counted = false; rc.greeted = false;
-          rc.interactionMs = 0; rc.waitAlerted = false;
-          rc.lastTick = now;
-        }
-
-        if (rc.episodeActive) {
-          const tickDelta = now - rc.lastTick;
-          rc.lastTick = now;
-          const dwell = now - rc.episodeStart;
-
-          // Llegada real (filtra a quien solo pasa frente a la puerta).
-          if (!rc.counted && dwell >= cfg.arrivalMinDwellSec * 1000) {
-            rc.counted = true;
-            rc.arrivals += 1;
-          }
-
-          // Acumula atención mientras el cliente sigue presente.
-          if (guests.length > 0 && (interactionNow || hostPresent)) {
-            rc.interactionMs += tickDelta;
-          }
-
-          // Atendido: interacción sostenida (no un cruce de 1 frame).
-          if (rc.counted && !rc.greeted && rc.interactionMs >= cfg.greetMinSec * 1000) {
-            rc.greeted = true;
-            const greetSec = Math.round(dwell / 1000);
-            rc.attended += 1;
-            rc.sumGreetSec += greetSec;
-            fireAlert(gz.name, 'guest_attended', `✅ Cliente atendido en recepción (respuesta ${greetSec}s).`, greetSec);
-          }
-
-          // Alerta EN VIVO: espera sin atención y sin nadie interactuando.
-          if (rc.counted && !rc.greeted && !rc.waitAlerted && !hostPresent && !interactionNow && dwell >= cfg.waitAlertSec * 1000) {
-            rc.waitAlerted = true;
-            rc.maxWaitSec = Math.max(rc.maxWaitSec, Math.round(dwell / 1000));
-            fireAlert(gz.name, 'guest_waiting', `🔔 ¡Cliente esperando en recepción sin atención (${fmtDur(dwell)})! Nadie en "${hz.name}".`, Math.round(dwell / 1000), true);
-          }
-
-          // Cierre de episodio: el cliente lleva > grace sin ser visto.
-          if (guests.length === 0 && now - rc.guestLastSeen > graceMs) {
-            const stayedSec = Math.max(1, Math.round((rc.guestLastSeen - rc.episodeStart) / 1000));
-            if (rc.counted && !rc.greeted) {
-              rc.unattended += 1;
-              rc.maxWaitSec = Math.max(rc.maxWaitSec, stayedSec);
-              fireAlert(gz.name, 'guest_unattended', `❌ Cliente se fue SIN ser atendido tras esperar ${fmtDur(stayedSec * 1000)} (posible cliente perdido).`, stayedSec, true);
-            }
-            // Atendido que se retira = flujo normal, no genera alerta.
-            rc.episodeActive = false;
-          }
-        }
-      }
-
       // ── Motor de PASE DE COMIDA: cronómetro por platillo ───────────────
       // Detecta objetos de comida (bowl/plato/taza…) dentro de la zona y les
       // da seguimiento por posición (no se mueven). Si un platillo supera el
@@ -589,10 +683,9 @@ export const VisionScreen: React.FC = () => {
         const dishGraceMs = Math.max(graceMs, 6000); // oclusión por brazos de meseros
 
         passZones.forEach((z) => {
-          const inZ = dishes.filter((d: any) => {
-            const cx = d.x + d.w / 2, cy = d.y + d.h / 2; // centro del objeto (no pies)
-            return cx >= z.x && cx <= z.x + z.w && cy >= z.y && cy <= z.y + z.h;
-          });
+          const inZ = dishes.filter((d: any) =>
+            pointInPoly(d.x + d.w / 2, d.y + d.h / 2, z.points) // centro del objeto (no pies)
+          );
           let tracks = dishTracksRef.current.get(z.id) || [];
 
           // Asocia cada detección a su track más cercano (o crea uno nuevo).
@@ -708,18 +801,25 @@ export const VisionScreen: React.FC = () => {
             const color = RULE_META[z.rule].color;
             const rt = runtimeRef.current.get(z.id);
             const alertActive = rt && ((z.rule === 'attended' || z.rule === 'host_post') && rt.alerted) || (z.rule === 'restricted' && rt?.occupied);
+            // Polígono en perspectiva (las 4 esquinas que marcó el usuario)
+            ctx.beginPath();
+            z.points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x * W, p.y * H) : ctx.lineTo(p.x * W, p.y * H)));
+            ctx.closePath();
             ctx.fillStyle = color + (alertActive ? '44' : '1A');
             ctx.strokeStyle = alertActive ? '#E53E3E' : color;
             ctx.lineWidth = alertActive ? 3 : 2;
-            ctx.fillRect(z.x * W, z.y * H, z.w * W, z.h * H);
-            ctx.strokeRect(z.x * W, z.y * H, z.w * W, z.h * H);
+            ctx.fill();
+            ctx.stroke();
             ctx.font = 'bold 12px Inter, sans-serif';
+            const top = polyTop(z.points);
             const label = `${z.name} · ${rt?.persons ?? 0}${z.rule === 'food_pass' ? '🍽' : '👤'}`;
             const tw = ctx.measureText(label).width;
+            const lx = Math.min(top.x * W, W - tw - 12);
+            const ly = Math.max(18, top.y * H);
             ctx.fillStyle = alertActive ? '#E53E3E' : color;
-            ctx.fillRect(z.x * W, z.y * H - 18, tw + 12, 18);
+            ctx.fillRect(lx, ly - 18, tw + 12, 18);
             ctx.fillStyle = '#FFF';
-            ctx.fillText(label, z.x * W + 6, z.y * H - 5);
+            ctx.fillText(label, lx + 6, ly - 5);
           });
           detectionsRef.current.forEach((p: any) => {
             const color = p.color || '#5FA05A';
@@ -758,12 +858,25 @@ export const VisionScreen: React.FC = () => {
             ctx.fillStyle = '#FFF';
             ctx.fillText(label, d.x * W + 5, ly - 1);
           });
-          const d = drawingRef.current;
-          if (d) {
+          // Preview de la zona en dibujo: esquinas ya marcadas + líneas
+          const draft = draftRef.current;
+          if (draft.length > 0) {
             ctx.strokeStyle = '#C4633F';
-            ctx.setLineDash([6, 4]); ctx.lineWidth = 2;
-            ctx.strokeRect(Math.min(d.x0, d.x1) * W, Math.min(d.y0, d.y1) * H, Math.abs(d.x1 - d.x0) * W, Math.abs(d.y1 - d.y0) * H);
+            ctx.setLineDash([6, 4]);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            draft.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x * W, p.y * H) : ctx.lineTo(p.x * W, p.y * H)));
+            ctx.stroke();
             ctx.setLineDash([]);
+            draft.forEach((p, i) => {
+              ctx.fillStyle = '#C4633F';
+              ctx.beginPath();
+              ctx.arc(p.x * W, p.y * H, 6, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#FFF';
+              ctx.font = 'bold 9px Inter, sans-serif';
+              ctx.fillText(String(i + 1), p.x * W - 2.5, p.y * H + 3);
+            });
           }
         }
       }
@@ -781,34 +894,29 @@ export const VisionScreen: React.FC = () => {
       y: Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height)),
     };
   };
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (!running || !activeKey) return;
+  // Cada toque marca una esquina EN PERSPECTIVA (sobre el piso). A la 4a
+  // esquina se abre el modal para nombrar la zona.
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (!running || !activeKey || pendingPoints) return;
     const p = norm(e);
-    drawingRef.current = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    draftRef.current = [...draftRef.current, p];
+    setDraftCount(draftRef.current.length);
+    if (draftRef.current.length >= 4) {
+      setPendingPoints(draftRef.current);
+      draftRef.current = [];
+      setDraftCount(0);
+      setZoneName(''); setZoneRule('attended'); setZoneMaxVacant(3);
+    }
   };
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!drawingRef.current) return;
-    const p = norm(e);
-    drawingRef.current.x1 = p.x; drawingRef.current.y1 = p.y;
-  };
-  const onPointerUp = () => {
-    const d = drawingRef.current;
-    drawingRef.current = null;
-    if (!d) return;
-    const w = Math.abs(d.x1 - d.x0), h = Math.abs(d.y1 - d.y0);
-    if (w < 0.03 || h < 0.03) return;
-    setPendingRect({ x: Math.min(d.x0, d.x1), y: Math.min(d.y0, d.y1), w, h });
-    setZoneName(''); setZoneRule('attended'); setZoneMaxVacant(3);
-  };
+  const cancelDraft = () => { draftRef.current = []; setDraftCount(0); };
 
   const savePendingZone = () => {
-    if (!pendingRect || !zoneName.trim() || !activeKey) return;
+    if (!pendingPoints || !zoneName.trim() || !activeKey) return;
     setZones((prev) => [...prev, {
       id: crypto.randomUUID(), cameraKey: activeKey, name: zoneName.trim(),
-      rule: zoneRule, maxVacantMin: Math.max(1, zoneMaxVacant), ...pendingRect,
+      rule: zoneRule, maxVacantMin: Math.max(1, zoneMaxVacant), points: pendingPoints,
     }]);
-    setPendingRect(null);
+    setPendingPoints(null);
   };
   const removeZone = (id: string) => {
     setZones((prev) => prev.filter((z) => z.id !== id));
@@ -888,7 +996,14 @@ export const VisionScreen: React.FC = () => {
           <div>
             <div className="relative rounded-3xl overflow-hidden bg-servirest-midnight aspect-video shadow-lg">
               <video ref={videoRef} className="absolute inset-0 w-full h-full object-contain" muted playsInline />
-              <canvas ref={overlayRef} className="absolute inset-0 w-full h-full touch-none" style={{ cursor: running ? 'crosshair' : 'default' }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} />
+              <canvas ref={overlayRef} className="absolute inset-0 w-full h-full touch-none" style={{ cursor: running ? 'crosshair' : 'default' }} onPointerUp={onPointerUp} />
+              {/* Hint del dibujo en perspectiva */}
+              {running && draftCount > 0 && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-black/70 text-white text-[11px] font-bold">
+                  Esquina {draftCount}/4 marcada — toca la siguiente esquina de la zona
+                  <button onClick={cancelDraft} className="ml-1 px-2 py-0.5 rounded-full bg-white/20 text-[10px] uppercase font-black">Cancelar</button>
+                </div>
+              )}
               {!running && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-servirest-hueso/60 px-6 text-center">
                   <Camera size={44} className="mb-3" />
@@ -920,7 +1035,7 @@ export const VisionScreen: React.FC = () => {
               )}
             </div>
             <p className="text-[11px] text-[rgba(42,40,38,0.45)] mt-2 flex items-center gap-1.5">
-              <Eye size={13} /> Con la cámara activa, <b>arrastra sobre el video</b> para crear una zona. Cada persona detectada se etiqueta con su rol y zona: <b style={{ color: '#4A7BC9' }}>Personal</b>, <b style={{ color: '#9A5FA0' }}>Cliente</b> o Persona (fuera de zona). El punto = pies (dibuja las zonas sobre el piso).
+              <Eye size={13} /> Con la cámara activa, <b>toca las 4 esquinas</b> de la zona SOBRE EL PISO (en perspectiva, como si pintaras el suelo). Quien cruza la entrada queda etiquetado <b style={{ color: '#9A5FA0' }}>Cliente</b> y se le sigue por todo el encuadre con su cronómetro; quien pisa el puesto anfitrión queda como <b style={{ color: '#4A7BC9' }}>Personal</b>.
             </p>
             {startedAt && <div className="mt-2 text-[11px] text-[rgba(42,40,38,0.5)] flex items-center gap-2"><Clock size={13} /> Monitoreando "{activeCamera?.name}" desde hace {fmtDur(now - startedAt)}</div>}
 
@@ -946,19 +1061,24 @@ export const VisionScreen: React.FC = () => {
                     <span className="text-[11px] font-mono text-servirest-mostaza">{Math.round((reception.attended / reception.arrivals) * 100)}% atención</span>
                   </div>
                 )}
-                {/* Episodio en curso — telemetría en vivo para calibrar */}
-                {reception?.episodeActive && (
-                  <div className={`mt-3 px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-2 ${
-                    reception.greeted ? 'bg-green-500/15 text-green-400' : 'bg-servirest-mostaza/15 text-servirest-mostaza'
-                  }`}>
-                    {reception.greeted
-                      ? <><CheckCircle2 size={13} /> Cliente en recepción — YA atendido ({fmtDur(now - reception.episodeStart)} en el lugar)</>
-                      : <><Timer size={13} /> Cliente esperando {fmtDur(now - reception.episodeStart)} · interacción {(reception.interactionMs / 1000).toFixed(1)}s / {config.greetMinSec}s</>}
-                  </div>
-                )}
+                {/* Clientes en seguimiento — telemetría en vivo para calibrar */}
+                {(() => {
+                  const gs = personTracksRef.current.filter((t) => t.role === 'guest');
+                  if (gs.length === 0) return null;
+                  const oldest = gs.reduce((a, b) => (a.taggedAt < b.taggedAt ? a : b));
+                  return (
+                    <div className={`mt-3 px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-2 ${
+                      oldest.greeted ? 'bg-green-500/15 text-green-400' : 'bg-servirest-mostaza/15 text-servirest-mostaza'
+                    }`}>
+                      {oldest.greeted
+                        ? <><CheckCircle2 size={13} /> {gs.length} cliente(s) en seguimiento — atendido ({fmtDur(now - oldest.taggedAt)} en el lugar)</>
+                        : <><Timer size={13} /> {gs.length} cliente(s) · esperando {fmtDur(now - oldest.taggedAt)} · interacción {(oldest.interactionMs / 1000).toFixed(1)}s / {config.greetMinSec}s</>}
+                    </div>
+                  );
+                })()}
                 <p className="text-[10px] text-servirest-hueso/45 mt-3 leading-relaxed">
-                  Mide clientes que llegan a "{guestZone?.name}". "Atendido" = alguien del personal se acercó al cliente (o cubrió "{hostZone?.name}") por {config.greetMinSec}s+.
-                  Alerta en vivo si esperan {config.waitAlertSec}s+ sin atención; la salida se confirma tras {config.exitGraceSec}s sin verlo (anti-parpadeo).
+                  "{guestZone?.name}" es la línea de entrada: quien la cruza queda etiquetado Cliente y se le sigue por TODO el encuadre.
+                  "Atendido" = personal cerca de él (donde sea) o "{hostZone?.name}" cubierto, por {config.greetMinSec}s+. Alerta si espera {config.waitAlertSec}s+; su salida se confirma tras {Math.round(config.exitGraceSec * 1.6)}s sin verlo.
                 </p>
               </div>
             )}
@@ -972,7 +1092,7 @@ export const VisionScreen: React.FC = () => {
               {!activeCamera ? (
                 <p className="text-[12px] text-[rgba(42,40,38,0.5)]">Agrega una cámara arriba para empezar.</p>
               ) : activeZones.length === 0 ? (
-                <p className="text-[12px] text-[rgba(42,40,38,0.5)]">Sin zonas. Inicia la cámara y arrastra sobre el video. Para medir recepción crea un <b>Puesto anfitrión</b> + una <b>Llegada de clientes</b>.</p>
+                <p className="text-[12px] text-[rgba(42,40,38,0.5)]">Sin zonas. Inicia la cámara y toca las 4 esquinas de la zona sobre el video. Para medir recepción crea un <b>Puesto anfitrión</b> + una <b>Llegada de clientes</b> (franja del piso cruzando la puerta).</p>
               ) : (
                 <div className="space-y-2.5">
                   {activeZones.map((z) => {
@@ -1062,8 +1182,8 @@ export const VisionScreen: React.FC = () => {
       )}
 
       {/* Modal: zona nueva */}
-      {pendingRect && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-5" onClick={() => setPendingRect(null)}>
+      {pendingPoints && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-5" onClick={() => setPendingPoints(null)}>
           <div className="w-full max-w-sm bg-servirest-hueso rounded-3xl p-6 shadow-2xl max-h-[88dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="font-serif italic text-servirest-midnight text-xl mb-1">Nueva inspección</div>
             <p className="text-[11px] text-[rgba(42,40,38,0.5)] mb-4">en {activeCamera?.name}</p>
@@ -1093,11 +1213,23 @@ export const VisionScreen: React.FC = () => {
                 <input type="number" min={1} max={120} value={zoneMaxVacant} onChange={(e) => setZoneMaxVacant(Number(e.target.value) || 1)} className="w-full h-11 px-4 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[14px] focus:outline-none focus:border-servirest-terracota" />
               </div>
             )}
+            {/* Mini-guía de dónde dibujar esta zona */}
+            <p className="text-[10px] text-[rgba(42,40,38,0.55)] bg-servirest-surface border border-[rgba(42,40,38,0.08)] rounded-xl px-3 py-2 mb-3 leading-relaxed">
+              📍 {zoneRule === 'guest_arrival'
+                ? 'Dibuja una FRANJA DEL PISO cruzando la puerta (el umbral). Es una línea de entrada: quien la pisa al llegar queda etiquetado Cliente y se le sigue por todo el encuadre — no necesita quedarse dentro.'
+                : zoneRule === 'host_post'
+                ? 'Marca el piso alrededor del atril/puesto del host. Sirve para dos cosas: medir cobertura del puesto y etiquetar como Personal a quien lo pisa.'
+                : zoneRule === 'food_pass'
+                ? 'Marca la SUPERFICIE de la barra donde se dejan los platillos (no el piso). Las 4 esquinas de la tabla, en perspectiva.'
+                : zoneRule === 'restricted'
+                ? 'Marca el piso del área prohibida (almacén, caja fuera de horario). Alerta apenas alguien la pise.'
+                : 'Marca el piso del área de trabajo que no debe quedar sola (barra, caja, estación).'}
+            </p>
             {receptionActive && (zoneRule === 'host_post' || zoneRule === 'guest_arrival') && (
               <p className="text-[10px] text-servirest-terracota mb-3">Ya tienes recepción configurada en esta cámara — esto la reemplazará.</p>
             )}
             <div className="flex gap-2">
-              <button onClick={() => setPendingRect(null)} className="flex-1 h-11 rounded-full border border-[rgba(42,40,38,0.15)] text-[rgba(42,40,38,0.6)] text-[11px] font-black uppercase tracking-[0.1em]">Cancelar</button>
+              <button onClick={() => setPendingPoints(null)} className="flex-1 h-11 rounded-full border border-[rgba(42,40,38,0.15)] text-[rgba(42,40,38,0.6)] text-[11px] font-black uppercase tracking-[0.1em]">Cancelar</button>
               <button onClick={savePendingZone} disabled={!zoneName.trim()} className="flex-1 h-11 rounded-full bg-servirest-terracota text-servirest-hueso text-[11px] font-black uppercase tracking-[0.1em] disabled:opacity-40">Guardar</button>
             </div>
           </div>
