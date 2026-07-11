@@ -345,11 +345,26 @@ export const VisionScreen: React.FC = () => {
       const persons = preds
         .filter((p: any) => p.class === 'person' && p.score >= cfg.minScore)
         .map((p: any) => ({ x: p.bbox[0] / vw, y: p.bbox[1] / vh, w: p.bbox[2] / vw, h: p.bbox[3] / vh }));
-      detectionsRef.current = persons;
       const anchors = persons.map((p: any) => ({ ax: p.x + p.w / 2, ay: p.y + p.h })); // pies
       const now = Date.now();
       const camKey = activeKeyRef.current;
       const camZones = zonesRef.current.filter((z) => z.cameraKey === camKey);
+
+      // Etiqueta cada detección con SU rol según la zona donde están sus
+      // pies: Personal (puesto anfitrión / zona atendida), Cliente (llegada)
+      // o Persona (fuera de zona / restringida). Se dibuja sobre el video.
+      detectionsRef.current = persons.map((p: any, i: number) => {
+        const a = anchors[i];
+        const z = camZones.find((zz) => a.ax >= zz.x && a.ax <= zz.x + zz.w && a.ay >= zz.y && a.ay <= zz.y + zz.h);
+        let role = 'Persona';
+        let color = '#5FA05A';
+        if (z) {
+          if (z.rule === 'guest_arrival') { role = 'Cliente'; color = RULE_META.guest_arrival.color; }
+          else if (z.rule === 'restricted') { role = 'Persona'; color = RULE_META.restricted.color; }
+          else { role = 'Personal'; color = z.rule === 'host_post' ? RULE_META.host_post.color : RULE_META.attended.color; }
+        }
+        return { ...p, role, zoneName: z?.name || null, color };
+      });
 
       const inCount = (z: Zone) => anchors.filter((a) => a.ax >= z.x && a.ax <= z.x + z.w && a.ay >= z.y && a.ay <= z.y + z.h).length;
 
@@ -465,13 +480,25 @@ export const VisionScreen: React.FC = () => {
             ctx.fillText(label, z.x * W + 6, z.y * H - 5);
           });
           detectionsRef.current.forEach((p: any) => {
-            ctx.strokeStyle = '#5FA05A';
+            const color = p.color || '#5FA05A';
+            ctx.strokeStyle = color;
             ctx.lineWidth = 2;
             ctx.strokeRect(p.x * W, p.y * H, p.w * W, p.h * H);
-            ctx.fillStyle = '#5FA05A';
+            // Punto ancla (pies)
+            ctx.fillStyle = color;
             ctx.beginPath();
             ctx.arc((p.x + p.w / 2) * W, (p.y + p.h) * H, 4, 0, Math.PI * 2);
             ctx.fill();
+            // Etiqueta: rol + zona (ej. "Cliente · Entrada", "Personal · Puesto host")
+            const label = p.zoneName ? `${p.role} · ${p.zoneName}` : (p.role || 'Persona');
+            ctx.font = 'bold 11px Inter, sans-serif';
+            const tw = ctx.measureText(label).width;
+            const lx = p.x * W;
+            const ly = Math.max(14, p.y * H); // no salirse por arriba
+            ctx.fillStyle = color;
+            ctx.fillRect(lx, ly - 14, tw + 10, 14);
+            ctx.fillStyle = '#FFF';
+            ctx.fillText(label, lx + 5, ly - 3.5);
           });
           const d = drawingRef.current;
           if (d) {
@@ -624,7 +651,7 @@ export const VisionScreen: React.FC = () => {
               )}
             </div>
             <p className="text-[11px] text-[rgba(42,40,38,0.45)] mt-2 flex items-center gap-1.5">
-              <Eye size={13} /> Con la cámara activa, <b>arrastra sobre el video</b> para crear una zona. El punto verde = pies de la persona (dibuja las zonas sobre el piso).
+              <Eye size={13} /> Con la cámara activa, <b>arrastra sobre el video</b> para crear una zona. Cada persona detectada se etiqueta con su rol y zona: <b style={{ color: '#4A7BC9' }}>Personal</b>, <b style={{ color: '#9A5FA0' }}>Cliente</b> o Persona (fuera de zona). El punto = pies (dibuja las zonas sobre el piso).
             </p>
             {startedAt && <div className="mt-2 text-[11px] text-[rgba(42,40,38,0.5)] flex items-center gap-2"><Clock size={13} /> Monitoreando "{activeCamera?.name}" desde hace {fmtDur(now - startedAt)}</div>}
 
