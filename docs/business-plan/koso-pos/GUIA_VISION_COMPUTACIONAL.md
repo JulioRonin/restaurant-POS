@@ -165,16 +165,99 @@ Casi cualquier DVR/NVR o cámara IP (Hikvision, Dahua, TP-Link, Reolink…)
 expone un stream **RTSP**. El navegador no puede leer RTSP directo, así que
 hay dos puentes:
 
-### Opción A: OBS como puente (0 código, ideal para 1 cámara)
+### Opción A: OBS como puente (0 código, ideal para validar HOY)
 
-1. Instala [OBS Studio](https://obsproject.com) (gratis).
-2. Fuente → **Origen multimedia** → desmarca "archivo local" y pega tu URL
-   RTSP, p. ej.:
-   `rtsp://usuario:contraseña@192.168.1.108:554/cam/realmonitor?channel=1&subtype=0`
-   (la URL exacta viene en el manual de tu DVR; usa el substream para menos carga).
-3. OBS → **Iniciar cámara virtual**.
-4. En el módulo Visión IA, en el selector de cámara elige **"OBS Virtual
-   Camera"**. Listo: tu cámara del techo ya está siendo analizada.
+**No necesitas ningún proxy ni servidor** si tu PC está en la MISMA red local
+que el DVR: OBS *es* el puente (RTSP → cámara virtual → módulo Visión IA).
+
+#### Paso a paso con un DVR/NVR **Hikvision** (el caso de tu cliente)
+
+**1. Consigue los datos del DVR (5 min):**
+   - **IP del DVR**: en el monitor del DVR → Menú → Configuración → Red
+     (ej. `192.168.1.64`), o con la herramienta gratuita
+     [SADP](https://www.hikvision.com/es-la/support/tools/hitools/) que
+     encuentra todos los equipos Hikvision de la red.
+   - **Usuario y contraseña** del DVR (el `admin` que usa tu cliente para
+     entrar; muchas veces está en una etiqueta o lo tiene el instalador).
+   - **RTSP habilitado**: casi siempre viene activo (puerto **554**). Se
+     verifica en Menú → Red → Más ajustes → puerto RTSP.
+
+**2. Arma la URL RTSP de Hikvision.** El formato moderno es:
+
+   ```
+   rtsp://USUARIO:CONTRASEÑA@IP:554/Streaming/Channels/CCss
+   ```
+
+   donde `CC` = número de cámara y `ss` = stream (`01` principal HD,
+   `02` substream ligero — **usa el 02 para análisis**, carga mucho menos):
+
+   | Cámara del DVR | URL |
+   |---|---|
+   | Cámara 1 (substream) | `rtsp://admin:MiPass123@192.168.1.64:554/Streaming/Channels/102` |
+   | Cámara 2 (substream) | `rtsp://admin:MiPass123@192.168.1.64:554/Streaming/Channels/202` |
+   | Cámara 5 (principal) | `rtsp://admin:MiPass123@192.168.1.64:554/Streaming/Channels/501` |
+
+   > Equipos Hikvision viejos usan `rtsp://user:pass@ip:554/h264/ch1/main/av_stream`.
+   > Si la contraseña tiene `@` o `#`, codifícala (`@` → `%40`).
+
+**3. Valida la URL con VLC antes que nada** (te ahorra pelearte con OBS):
+   VLC → Medio → *Abrir ubicación de red* → pega la URL → si ves el video,
+   la URL es correcta. Si no: revisa IP/credenciales/puerto 554.
+
+**4. Métela a OBS:**
+   - Instala [OBS Studio](https://obsproject.com) (gratis).
+   - Fuentes → **+** → **Origen multimedia** → desmarca "Archivo local" →
+     en *Entrada* pega la URL RTSP. En *Opciones de entrada* agrega
+     `rtsp_transport=tcp` si se ve entrecortado.
+   - Clic en **Iniciar cámara virtual** (panel de controles, derecha).
+
+**5. Conéctala al módulo:** Visión IA → **+ Cámara** → nombre "Recepción
+   (DVR ch.1)" → dispositivo **"OBS Virtual Camera"** → Iniciar → dibuja
+   tus zonas. Ya estás analizando la cámara del techo del cliente. 🎉
+
+#### Varias cámaras del DVR con un solo OBS
+
+Crea en OBS **una escena por cámara** (Escena "Recepción" con el canal 102,
+Escena "Barra" con el 202…). La cámara virtual emite la escena activa: al
+cambiar de escena en OBS cambias qué cámara analiza el módulo — igual que
+cambiar de cámara en la barra del módulo. (Todas a la vez y 24/7 = Fase 2.)
+
+#### ¿Y si NO estoy en el local del cliente? (acceso remoto)
+
+Aquí sí necesitas un túnel — **nunca expongas el puerto 554 a internet**:
+
+- **Recomendado: [Tailscale](https://tailscale.com)** (gratis, 5 min): se
+  instala en una PC del local y en la tuya → crea una VPN privada y usas la
+  URL RTSP con la IP de Tailscale (`rtsp://admin:pass@100.x.y.z:554/...`)
+  como si estuvieras en el local.
+- Alternativa: port-forwarding en el router del cliente — **no lo hagas**,
+  los DVR expuestos son el blanco #1 de botnets.
+- Para la validación de esta semana lo más práctico: ve al local con tu
+  laptop, conéctate al WiFi del negocio y sigue los pasos 1–5.
+
+### ¿Puedo validar con mi cámara Blink de casa? (respuesta honesta: no directo)
+
+Las cámaras **Blink (Amazon) NO exponen RTSP ni stream local** — van
+directo a la nube de Amazon y solo se ven desde su app. Además los modelos
+de batería no transmiten continuo (graban clips al detectar movimiento y el
+"Live View" se corta a los pocos minutos). **No es buena fuente para esta
+validación.** Tienes 2 caminos:
+
+- **Mejor opción — tu teléfono como cámara IP (5 min):** instala en un
+  celular viejo la app **IP Webcam** (Android, gratis) → *Iniciar servidor*
+  → te da una URL `http://192.168.x.x:8080/video`. Pégala en OBS (Origen
+  multimedia) → cámara virtual → módulo. Con **DroidCam** (Android/iPhone)
+  es aún más directo: su cliente de PC crea su propia cámara virtual que el
+  módulo ve sin OBS. Montas el teléfono apuntando a tu puerta y validas el
+  modo Recepción hoy mismo en tu casa.
+- **Hack con la Blink (funciona, no elegante):** espeja la app del teléfono
+  a tu PC (Android: [scrcpy](https://github.com/Genymobile/scrcpy) o Phone
+  Link de Windows; iPhone: espejo en Mac) con el Live View de Blink abierto
+  → en OBS usa **Captura de ventana** sobre el espejo → cámara virtual.
+  Sirve para un demo corto; para pruebas largas usa el teléfono como IP cam.
+
+> Moraleja para tu cliente: cámaras con **RTSP** (Hikvision, Dahua, TP-Link
+> Tapo, Reolink…) = integrables. Cámaras cloud cerradas (Blink, Ring) = no.
 
 ### Opción B: go2rtc / MediaMTX (varias cámaras, sin OBS)
 
