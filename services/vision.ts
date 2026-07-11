@@ -18,7 +18,9 @@ export type VisionEventType =
   | 'zone_recovered'     // zona atendida volvió a cubrirse
   | 'guest_waiting'      // cliente esperando en recepción sin atención (alerta en vivo)
   | 'guest_attended'     // cliente atendido (con tiempo de recepción)
-  | 'guest_unattended';  // cliente se fue sin ser atendido (abandono / cliente perdido)
+  | 'guest_unattended'   // cliente se fue sin ser atendido (abandono / cliente perdido)
+  | 'dish_waiting'       // platillo lleva demasiado en el pase sin ser recogido
+  | 'dish_picked';       // platillo (que ya había alertado) fue recogido
 
 export interface VisionEvent {
   id: string;

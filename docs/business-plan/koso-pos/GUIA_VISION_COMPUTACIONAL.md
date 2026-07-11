@@ -140,6 +140,60 @@ para que corran a recibirlo *antes* de perderlo, no después.
 
 ---
 
+## Pase de comida: platillos olvidados 🍽️
+
+**El problema:** los platillos salen de cocina al pase/barra y esperan a que
+un mesero los recoja. Si nadie pasa por ellos, llegan fríos a la mesa (o se
+desperdician).
+
+### Cómo funciona
+
+Dibuja una zona con la regla **"Pase de comida"** sobre la barra donde se
+dejan los platillos. El sistema detecta objetos de comida (platos hondos,
+tazas, vasos, etc.) dentro de la zona y les da **seguimiento individual por
+posición** (los platillos no se mueven, así que cada uno conserva su
+cronómetro real):
+
+- Cada platillo muestra su **cronómetro en vivo** sobre el video (`🍽 2m 15s`).
+- Si supera el límite configurado (default 3 min) → **alerta**: *"Platillo
+  lleva 4m en el pase sin que lo recojan — se está enfriando"* (sonido +
+  WhatsApp + captura).
+- Cuando lo recogen, se registra el evento con cuánto esperó (métrica para
+  medir la disciplina de recolección por turno).
+- La oclusión momentánea (el brazo de un mesero tapando el plato) no
+  reinicia el cronómetro (gracia anti-flicker de ~6s).
+
+**Consejo de encuadre:** cámara mirando el pase desde arriba/en ángulo, con
+los platillos bien visibles y separados. El modelo detecta mejor platos
+hondos (bowls), tazas y vasos que platos extendidos muy llanos — haz una
+prueba con tu vajilla real y ajusta la "confianza mínima" si hace falta.
+
+### Heatmap de actividad 🔥 (toggle)
+
+Botón **"Heatmap"** sobre el video: pinta un mapa de calor de **dónde se
+concentra el movimiento de personas** (azul = poco, rojo = mucho, con
+decaimiento en el tiempo). Úsalo para ver patrones: dónde se paran los
+meseros, qué pasillos se congestionan, si el host abandona su puesto.
+
+### ⚠️ Temperatura real de los platillos: hablemos claro
+
+Una cámara normal (RGB) **no puede medir temperatura** — el "heatmap" de
+arriba es de *actividad/movimiento*, no de calor físico. Para detectar que
+un platillo caliente se enfrió hay dos rutas:
+
+1. **Proxy por tiempo (lo que ya hace el módulo):** un platillo caliente que
+   lleva 4+ minutos en el pase YA se enfrió — la alerta por tiempo es, en la
+   práctica, tu "alarma de platillo frío" sin hardware extra. Es lo que
+   recomendamos operar.
+2. **Cámara térmica (hardware, Fase 2+):** una cámara termográfica real
+   (Hikvision serie térmica ~$8–15 mil MXN, o módulos FLIR Lepton ~$4 mil
+   MXN con Raspberry Pi) sí mide grados por pixel; se integra por RTSP igual
+   que las demás y podríamos alertar "el platillo bajó de 45°C". Tiene
+   sentido solo si el cliente lo pide con presupuesto — el proxy por tiempo
+   resuelve el 95% del valor con 0 hardware.
+
+---
+
 ## Multi-cámara: cada zona en su cámara
 
 El módulo maneja **varias cámaras**, cada una con **sus propias zonas e

@@ -31,7 +31,7 @@ import {
   Camera, Play, Square, Trash2, Eye, AlertTriangle, Clock, Bell,
   ShieldAlert, UserCheck, Settings2, X, RefreshCw, MessageCircle,
   ScanEye, CheckCircle2, ExternalLink, Plus, DoorOpen, Users, UserX,
-  Pencil, TrendingUp, Timer,
+  Pencil, TrendingUp, Timer, UtensilsCrossed, Flame,
 } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -43,7 +43,24 @@ import {
 import { SrKicker, SrChip, SrLabel } from '../components/ui/servirest';
 
 // ── Tipos ────────────────────────────────────────────────────────────────
-type ZoneRule = 'attended' | 'restricted' | 'host_post' | 'guest_arrival';
+type ZoneRule = 'attended' | 'restricted' | 'host_post' | 'guest_arrival' | 'food_pass';
+
+/**
+ * Seguimiento de un platillo en el pase de comida. Los platillos no se
+ * mueven, así que un tracking por posición (centroide) es suficiente y
+ * robusto: cada detección se asocia a su track más cercano y el track
+ * conserva firstSeen → cronómetro real por platillo.
+ */
+interface DishTrack {
+  cx: number; cy: number;
+  firstSeen: number;
+  lastSeen: number;
+  alerted: boolean;
+  box: { x: number; y: number; w: number; h: number } | null;
+}
+
+// Clases de COCO-SSD que tomamos como "platillo/bebida" en el pase.
+const FOOD_CLASSES = new Set(['bowl', 'cup', 'wine glass', 'sandwich', 'pizza', 'cake', 'donut', 'hot dog', 'bottle']);
 
 interface CameraProfile { key: string; name: string; deviceId: string; }
 
@@ -104,6 +121,7 @@ interface VisionConfig {
   waitAlertSec: number;       // segundos esperando sin atención → alerta en vivo
   exitGraceSec: number;       // seg. sin ver a la persona para confirmar salida (anti-flicker)
   greetMinSec: number;        // seg. de interacción para contar "atendido"
+  heatmapOn: boolean;         // overlay de mapa de calor de actividad
 }
 
 const DEFAULT_CONFIG: VisionConfig = {
@@ -111,6 +129,7 @@ const DEFAULT_CONFIG: VisionConfig = {
   intervalMs: 700, minScore: 0.5,
   arrivalMinDwellSec: 3, waitAlertSec: 12,
   exitGraceSec: 5, greetMinSec: 2,
+  heatmapOn: false,
 };
 
 const RULE_META: Record<ZoneRule, { label: string; short: string; color: string; icon: React.ElementType }> = {
@@ -118,7 +137,12 @@ const RULE_META: Record<ZoneRule, { label: string; short: string; color: string;
   restricted:    { label: 'Zona restringida', short: 'Restringida',  color: '#C94A6B', icon: ShieldAlert },
   host_post:     { label: 'Puesto anfitrión', short: 'Anfitrión',    color: '#4A7BC9', icon: Users },
   guest_arrival: { label: 'Llegada clientes', short: 'Entrada',      color: '#9A5FA0', icon: DoorOpen },
+  food_pass:     { label: 'Pase de comida',   short: 'Pase',         color: '#D97706', icon: UtensilsCrossed },
 };
+
+// Resolución del grid del heatmap de actividad (se estira sobre el video).
+const HEAT_W = 64;
+const HEAT_H = 36;
 
 const fmtDur = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -160,6 +184,11 @@ export const VisionScreen: React.FC = () => {
   const detectionsRef = useRef<any[]>([]);
   const runtimeRef = useRef<Map<string, ZoneRuntime>>(new Map());
   const receptionRef = useRef<Map<string, ReceptionRuntime>>(new Map());
+  const dishTracksRef = useRef<Map<string, DishTrack[]>>(new Map());
+  const dishDetectionsRef = useRef<any[]>([]);
+  const heatRef = useRef<Float32Array>(new Float32Array(HEAT_W * HEAT_H));
+  const heatCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const heatmapOnRef = useRef(false);
   const loopRef = useRef<number | null>(null);
   const rafRef = useRef<number>(0);
   const zonesRef = useRef<Zone[]>([]);
@@ -193,6 +222,7 @@ export const VisionScreen: React.FC = () => {
   zonesRef.current = zones;
   configRef.current = config;
   activeKeyRef.current = activeKey;
+  heatmapOnRef.current = config.heatmapOn;
 
   const activeCamera = cameras.find((c) => c.key === activeKey) || null;
   const activeZones = zones.filter((z) => z.cameraKey === activeKey);
@@ -319,7 +349,7 @@ export const VisionScreen: React.FC = () => {
 
   // ── Alerta ────────────────────────────────────────────────────────────
   const fireAlert = (zoneLabel: string, type: VisionEventType, message: string, durationSec?: number, urgent = false) => {
-    const silent = type === 'zone_recovered' || type === 'guest_attended';
+    const silent = type === 'zone_recovered' || type === 'guest_attended' || type === 'dish_picked';
     if (!silent) beepAlarm(urgent);
     notify(`Visión IA — ${activeCameraRef()?.name || 'Cámara'}`, message);
     const snap = silent ? null : takeSnapshot();
@@ -383,12 +413,30 @@ export const VisionScreen: React.FC = () => {
 
       const inCount = (z: Zone) => anchors.filter((a) => a.ax >= z.x && a.ax <= z.x + z.w && a.ay >= z.y && a.ay <= z.y + z.h).length;
 
+      // Heatmap de actividad: acumula presencia de personas en un grid de
+      // baja resolución con decaimiento — muestra dónde se concentra el
+      // movimiento del turno.
+      {
+        const heat = heatRef.current;
+        for (let i = 0; i < heat.length; i++) heat[i] *= 0.985;
+        anchors.forEach((a) => {
+          const gx = Math.min(HEAT_W - 1, Math.max(0, Math.floor(a.ax * HEAT_W)));
+          const gy = Math.min(HEAT_H - 1, Math.max(0, Math.floor(a.ay * HEAT_H)));
+          const idx = gy * HEAT_W + gx;
+          heat[idx] = Math.min(30, heat[idx] + 1);
+          if (gx > 0) heat[idx - 1] = Math.min(30, heat[idx - 1] + 0.35);
+          if (gx < HEAT_W - 1) heat[idx + 1] = Math.min(30, heat[idx + 1] + 0.35);
+          if (gy > 0) heat[idx - HEAT_W] = Math.min(30, heat[idx - HEAT_W] + 0.35);
+          if (gy < HEAT_H - 1) heat[idx + HEAT_W] = Math.min(30, heat[idx + HEAT_W] + 0.35);
+        });
+      }
+
       // Reglas por zona (atendida / restringida / cobertura del puesto).
       // ANTI-FLICKER: la zona solo se considera "vacía" tras exitGraceSec
       // segundos sin ver a nadie — una detección perdida por 1-2 frames ya
       // no genera vacancias/recuperaciones falsas.
       const graceMs = cfg.exitGraceSec * 1000;
-      camZones.forEach((z) => {
+      camZones.filter((z) => z.rule !== 'food_pass').forEach((z) => {
         const inside = inCount(z);
         let rt = runtimeRef.current.get(z.id);
         if (!rt) {
@@ -523,6 +571,84 @@ export const VisionScreen: React.FC = () => {
           }
         }
       }
+
+      // ── Motor de PASE DE COMIDA: cronómetro por platillo ───────────────
+      // Detecta objetos de comida (bowl/plato/taza…) dentro de la zona y les
+      // da seguimiento por posición (no se mueven). Si un platillo supera el
+      // límite sin que lo recojan → alerta "se está enfriando". Cuando el
+      // platillo alertado desaparece → evento silencioso de recogido.
+      const passZones = camZones.filter((z) => z.rule === 'food_pass');
+      if (passZones.length > 0) {
+        // Umbral más permisivo para objetos: los platillos son más difíciles
+        // de detectar que las personas.
+        const dishScore = Math.max(0.3, cfg.minScore - 0.15);
+        const dishes = preds
+          .filter((p: any) => FOOD_CLASSES.has(p.class) && p.score >= dishScore)
+          .map((p: any) => ({ x: p.bbox[0] / vw, y: p.bbox[1] / vh, w: p.bbox[2] / vw, h: p.bbox[3] / vh }));
+        const drawList: any[] = [];
+        const dishGraceMs = Math.max(graceMs, 6000); // oclusión por brazos de meseros
+
+        passZones.forEach((z) => {
+          const inZ = dishes.filter((d: any) => {
+            const cx = d.x + d.w / 2, cy = d.y + d.h / 2; // centro del objeto (no pies)
+            return cx >= z.x && cx <= z.x + z.w && cy >= z.y && cy <= z.y + z.h;
+          });
+          let tracks = dishTracksRef.current.get(z.id) || [];
+
+          // Asocia cada detección a su track más cercano (o crea uno nuevo).
+          inZ.forEach((d: any) => {
+            const cx = d.x + d.w / 2, cy = d.y + d.h / 2;
+            let best: DishTrack | null = null;
+            let bestDist = Infinity;
+            tracks.forEach((t) => {
+              const dist = Math.hypot(t.cx - cx, t.cy - cy);
+              if (dist < bestDist) { bestDist = dist; best = t; }
+            });
+            const radius = Math.max(0.03, d.w * 0.7);
+            if (best && bestDist < radius) {
+              best.cx = best.cx * 0.7 + cx * 0.3; // suaviza jitter
+              best.cy = best.cy * 0.7 + cy * 0.3;
+              best.lastSeen = now;
+              best.box = d;
+            } else {
+              tracks.push({ cx, cy, firstSeen: now, lastSeen: now, alerted: false, box: d });
+            }
+          });
+
+          // Expira tracks no vistos (platillo recogido).
+          const kept: DishTrack[] = [];
+          tracks.forEach((t) => {
+            if (now - t.lastSeen > dishGraceMs) {
+              if (t.alerted) {
+                const waited = Math.round((t.lastSeen - t.firstSeen) / 1000);
+                fireAlert(z.name, 'dish_picked', `✅ Platillo recogido del pase "${z.name}" después de ${fmtDur(waited * 1000)}.`, waited);
+              }
+            } else {
+              kept.push(t);
+            }
+          });
+          tracks = kept;
+
+          // Alerta por platillo que supera el límite.
+          tracks.forEach((t) => {
+            const age = now - t.firstSeen;
+            if (!t.alerted && age > z.maxVacantMin * 60000) {
+              t.alerted = true;
+              fireAlert(z.name, 'dish_waiting', `🍽️ Platillo lleva ${fmtDur(age)} en el pase "${z.name}" sin que lo recojan — se está enfriando.`, Math.round(age / 1000), true);
+            }
+            if (t.box) drawList.push({ ...t.box, ageMs: age, alerted: t.alerted });
+          });
+
+          dishTracksRef.current.set(z.id, tracks);
+          // Runtime mínimo para que la etiqueta de la zona muestre el conteo.
+          const rt = runtimeRef.current.get(z.id);
+          if (rt) { rt.persons = tracks.length; rt.lastTick = now; }
+          else runtimeRef.current.set(z.id, { occupied: tracks.length > 0, since: now, alerted: false, lastIntrusionAlert: 0, occupiedMs: 0, vacantMs: 0, episodes: 0, lastTick: now, persons: tracks.length, lastSeen: now });
+        });
+        dishDetectionsRef.current = drawList;
+      } else {
+        dishDetectionsRef.current = [];
+      }
     } catch (e) {
       console.warn('[Vision] detect error:', e);
     } finally {
@@ -544,6 +670,40 @@ export const VisionScreen: React.FC = () => {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.clearRect(0, 0, W, H);
+
+          // Capa 0: heatmap de actividad (si está activado)
+          if (heatmapOnRef.current) {
+            if (!heatCanvasRef.current) {
+              heatCanvasRef.current = document.createElement('canvas');
+              heatCanvasRef.current.width = HEAT_W;
+              heatCanvasRef.current.height = HEAT_H;
+            }
+            const hctx = heatCanvasRef.current.getContext('2d');
+            if (hctx) {
+              const img = hctx.createImageData(HEAT_W, HEAT_H);
+              const heat = heatRef.current;
+              for (let i = 0; i < heat.length; i++) {
+                const t = Math.min(1, heat[i] / 12); // normaliza intensidad
+                if (t <= 0.02) continue;
+                // azul → amarillo → rojo
+                let r: number, g: number, b: number;
+                if (t < 0.5) {
+                  const k = t / 0.5;
+                  r = 59 + (250 - 59) * k; g = 130 + (204 - 130) * k; b = 246 + (21 - 246) * k;
+                } else {
+                  const k = (t - 0.5) / 0.5;
+                  r = 250 + (239 - 250) * k; g = 204 + (68 - 204) * k; b = 21 + (68 - 21) * k;
+                }
+                const o = i * 4;
+                img.data[o] = r; img.data[o + 1] = g; img.data[o + 2] = b;
+                img.data[o + 3] = Math.round(Math.min(0.55, t * 0.65) * 255);
+              }
+              hctx.putImageData(img, 0, 0);
+              ctx.imageSmoothingEnabled = true;
+              ctx.drawImage(heatCanvasRef.current, 0, 0, W, H);
+            }
+          }
+
           zonesRef.current.filter((z) => z.cameraKey === activeKeyRef.current).forEach((z) => {
             const color = RULE_META[z.rule].color;
             const rt = runtimeRef.current.get(z.id);
@@ -554,7 +714,7 @@ export const VisionScreen: React.FC = () => {
             ctx.fillRect(z.x * W, z.y * H, z.w * W, z.h * H);
             ctx.strokeRect(z.x * W, z.y * H, z.w * W, z.h * H);
             ctx.font = 'bold 12px Inter, sans-serif';
-            const label = `${z.name} · ${rt?.persons ?? 0}👤`;
+            const label = `${z.name} · ${rt?.persons ?? 0}${z.rule === 'food_pass' ? '🍽' : '👤'}`;
             const tw = ctx.measureText(label).width;
             ctx.fillStyle = alertActive ? '#E53E3E' : color;
             ctx.fillRect(z.x * W, z.y * H - 18, tw + 12, 18);
@@ -581,6 +741,22 @@ export const VisionScreen: React.FC = () => {
             ctx.fillRect(lx, ly - 14, tw + 10, 14);
             ctx.fillStyle = '#FFF';
             ctx.fillText(label, lx + 5, ly - 3.5);
+          });
+
+          // Platillos en el pase — caja ámbar con su cronómetro (roja si ya alertó)
+          dishDetectionsRef.current.forEach((d: any) => {
+            const color = d.alerted ? '#E53E3E' : '#D97706';
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(d.x * W, d.y * H, d.w * W, d.h * H);
+            const label = `🍽 ${fmtDur(d.ageMs)}`;
+            ctx.font = 'bold 11px Inter, sans-serif';
+            const tw = ctx.measureText(label).width;
+            const ly = Math.min(H - 4, (d.y + d.h) * H + 14);
+            ctx.fillStyle = color;
+            ctx.fillRect(d.x * W, ly - 12, tw + 10, 14);
+            ctx.fillStyle = '#FFF';
+            ctx.fillText(label, d.x * W + 5, ly - 1);
           });
           const d = drawingRef.current;
           if (d) {
@@ -731,6 +907,17 @@ export const VisionScreen: React.FC = () => {
                   <span className="px-2.5 py-1 rounded-full bg-green-600/80 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> {activeCamera?.name}</span>
                 </div>
               )}
+              {running && (
+                <button
+                  onClick={() => setConfig((c) => ({ ...c, heatmapOn: !c.heatmapOn }))}
+                  title="Mapa de calor de actividad"
+                  className={`absolute top-3 left-3 h-8 px-3 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
+                    config.heatmapOn ? 'bg-amber-500 text-white' : 'bg-black/50 text-white/70 hover:text-white'
+                  }`}
+                >
+                  <Flame size={13} /> Heatmap
+                </button>
+              )}
             </div>
             <p className="text-[11px] text-[rgba(42,40,38,0.45)] mt-2 flex items-center gap-1.5">
               <Eye size={13} /> Con la cámara activa, <b>arrastra sobre el video</b> para crear una zona. Cada persona detectada se etiqueta con su rol y zona: <b style={{ color: '#4A7BC9' }}>Personal</b>, <b style={{ color: '#9A5FA0' }}>Cliente</b> o Persona (fuera de zona). El punto = pies (dibuja las zonas sobre el piso).
@@ -813,6 +1000,18 @@ export const VisionScreen: React.FC = () => {
                             {pct !== null && <span className="text-[rgba(42,40,38,0.45)] font-mono ml-auto">{pct}% cubierta</span>}
                           </div>
                         )}
+                        {running && z.rule === 'food_pass' && (() => {
+                          const tracks = dishTracksRef.current.get(z.id) || [];
+                          const oldest = tracks.length ? Math.max(...tracks.map((t) => now - t.firstSeen)) : 0;
+                          const anyAlerted = tracks.some((t) => t.alerted);
+                          return (
+                            <div className="flex items-center gap-3 mt-2 text-[11px]">
+                              {tracks.length === 0
+                                ? <span className="text-[rgba(42,40,38,0.55)] font-bold flex items-center gap-1"><CheckCircle2 size={12} /> Pase limpio</span>
+                                : <span className={`font-bold flex items-center gap-1 ${anyAlerted ? 'text-servirest-danger' : 'text-amber-600'}`}><UtensilsCrossed size={12} /> {tracks.length} platillo(s) · más viejo {fmtDur(oldest)}</span>}
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   })}
@@ -878,15 +1077,19 @@ export const VisionScreen: React.FC = () => {
                   <button key={r} onClick={() => setZoneRule(r)} className={`h-[68px] rounded-2xl border text-left px-3 transition-all ${on ? 'bg-servirest-terracota/5' : 'bg-servirest-surface'}`} style={{ borderColor: on ? m.color : 'rgba(42,40,38,0.12)' }}>
                     <div className="text-[11px] font-black text-servirest-midnight flex items-center gap-1"><Icon size={13} style={{ color: m.color }} /> {m.short}</div>
                     <div className="text-[9px] text-[rgba(42,40,38,0.5)] mt-1 leading-tight">
-                      {r === 'attended' ? 'Alerta si queda vacía' : r === 'restricted' ? 'Alerta si alguien entra' : r === 'host_post' ? 'Dónde debe estar el host' : 'Puerta / llegada de clientes'}
+                      {r === 'attended' ? 'Alerta si queda vacía'
+                        : r === 'restricted' ? 'Alerta si alguien entra'
+                        : r === 'host_post' ? 'Dónde debe estar el host'
+                        : r === 'food_pass' ? 'Platillos esperando mesero'
+                        : 'Puerta / llegada de clientes'}
                     </div>
                   </button>
                 );
               })}
             </div>
-            {(zoneRule === 'attended' || zoneRule === 'host_post') && (
+            {(zoneRule === 'attended' || zoneRule === 'host_post' || zoneRule === 'food_pass') && (
               <div className="mb-4">
-                <SrLabel className="block mb-1.5">Minutos máximos sin personal</SrLabel>
+                <SrLabel className="block mb-1.5">{zoneRule === 'food_pass' ? 'Minutos máximos de un platillo en el pase' : 'Minutos máximos sin personal'}</SrLabel>
                 <input type="number" min={1} max={120} value={zoneMaxVacant} onChange={(e) => setZoneMaxVacant(Number(e.target.value) || 1)} className="w-full h-11 px-4 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[14px] focus:outline-none focus:border-servirest-terracota" />
               </div>
             )}
@@ -980,6 +1183,8 @@ const EVENT_ICON: Record<VisionEventType, { icon: React.ElementType; cls: string
   guest_waiting:    { icon: Bell,         cls: 'bg-servirest-terracota/15 text-servirest-terracota' },
   guest_attended:   { icon: UserCheck,    cls: 'bg-green-600/15 text-green-700' },
   guest_unattended: { icon: UserX,        cls: 'bg-servirest-danger/15 text-servirest-danger' },
+  dish_waiting:     { icon: UtensilsCrossed, cls: 'bg-amber-500/20 text-amber-600' },
+  dish_picked:      { icon: CheckCircle2, cls: 'bg-green-600/15 text-green-700' },
 };
 
 const EventRow: React.FC<{ ev: VisionEvent }> = ({ ev }) => {
