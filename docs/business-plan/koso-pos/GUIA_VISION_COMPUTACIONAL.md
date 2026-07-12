@@ -103,15 +103,50 @@ Y lo más accionable: una **alerta EN VIVO** (sonido + WhatsApp) cuando hay
 alguien esperando en la entrada más de X segundos sin que nadie lo atienda —
 para que corran a recibirlo *antes* de perderlo, no después.
 
+### Cómo funciona el seguimiento (tracking con identidad)
+
+La zona de entrada **no es una jaula** — es una **línea de cruce (tripwire)**:
+
+1. Una persona **recién aparecida en escena** que pisa la zona de entrada
+   queda etiquetada **CLIENTE** (morado) — y a partir de ahí **se le sigue
+   por TODO el encuadre** con su cronómetro de espera visible.
+2. Quien pisa el **puesto anfitrión** queda etiquetado **PERSONAL** (azul)
+   de por vida de su track — por eso la hostess que camina a la puerta a
+   saludar NO se confunde con un cliente (su track ya era "viejo" en escena).
+3. La **atención se evalúa donde sea**: personal cerca del cliente en
+   cualquier punto del encuadre (o puesto cubierto) durante 2s+ = atendido.
+4. Cuando el cliente desaparece de escena varios segundos, su episodio se
+   cierra: atendido = flujo normal; no atendido = **cliente perdido**.
+
 ### Cómo configurarlo (2 minutos)
 
 1. Crea una cámara llamada "Recepción" apuntando a la entrada.
-2. Inicia la cámara y dibuja **dos zonas**:
-   - Sobre el atril/puesto del host → regla **Puesto anfitrión**.
-   - Sobre la puerta/tapete de entrada → regla **Llegada de clientes**.
+2. Inicia la cámara y dibuja **dos zonas** (tocando las 4 esquinas de cada
+   una, en perspectiva sobre el piso):
+   - Piso alrededor del atril/puesto del host → regla **Puesto anfitrión**.
+   - **Franja del piso cruzando la puerta** (el umbral) → regla **Llegada
+     de clientes**.
 3. Listo: aparece el tablero **"Recepción"** con los KPIs en vivo. En ⚙️
    ajustas "segundos para contar una llegada" (default 3s, filtra a los que
    pasan de largo) y "segundos de espera → alerta" (default 12s).
+
+### Dónde dibujar cada zona (guía de colocación) 📐
+
+Las zonas se marcan tocando sus **4 esquinas en perspectiva** — píntalas
+"acostadas" sobre el piso (o sobre la barra), no como rectángulo flotante:
+
+| Zona | Dónde dibujarla | Error común |
+|---|---|---|
+| **Llegada de clientes** | Franja de piso de ~1–1.5 m de profundidad cruzando el umbral de la puerta, de pared a pared | Dibujar todo el lobby → etiqueta de cliente a cualquiera; debe ser solo el cruce |
+| **Puesto anfitrión** | El piso alrededor del atril (donde pisa el host al estar en su puesto) | Incluir el pasillo → nunca se marca "vacío" |
+| **Zona atendida** (barra, caja) | El piso del área de trabajo donde pisa el empleado | Marcar la barra física en vez del piso donde se para la persona |
+| **Zona restringida** | El piso del área prohibida completa | — |
+| **Pase de comida** | La SUPERFICIE de la barra donde se apoyan los platillos (única que no va en el piso) | Marcar el piso — los platillos están sobre la barra |
+
+**Regla de oro:** el sistema ubica a las personas por sus **pies** (punto
+inferior del cuerpo) — por eso toda zona de personas se dibuja en el PISO,
+siguiendo la perspectiva del piso real. Cámara ideal: 2.5–3 m de altura,
+ángulo picado, la entrada y el puesto del host visibles en el mismo encuadre.
 
 ### Qué SÍ y qué NO puede hacer (honestidad técnica)
 
@@ -137,6 +172,103 @@ para que corran a recibirlo *antes* de perderlo, no después.
 > Recomendación de negocio: preséntalo como *"tablero de servicio de
 > recepción"* (mejorar la atención) más que vigilancia — mide zonas, no
 > personas, y ese encuadre te da mejor clima laboral y mejor defensa legal.
+
+---
+
+## Reconocer al personal por NOMBRE (reconocimiento facial, beta) 👤
+
+Además del etiquetado por comportamiento (Cliente al cruzar la entrada,
+Personal al pisar el puesto), puedes registrar a tus empleados por rostro
+para que el sistema los nombre: **"Ana · Hostess"** — y nunca los confunda
+con clientes.
+
+### Cómo activarlo
+
+1. Botón **🙂 (ScanFace)** en el header del módulo → modal "Personal".
+2. Marca el checkbox de **consentimiento por escrito** (obligatorio).
+3. Nombre + puesto → **"Capturar rostro"** con el empleado de frente y cerca
+   de la cámara (2–3 capturas con ángulos ligeramente distintos).
+4. Activa el toggle **"Reconocer personal por rostro"**.
+
+Desde entonces, cada ~2.5s el sistema busca rostros conocidos y renombra el
+track: la etiqueta azul pasa de "Personal" a **"Ana · Hostess"**. Si el
+tripwire había confundido a un empleado con cliente, se corrige solo (y se
+descuenta del conteo de llegadas).
+
+### Límites honestos
+
+- Funciona cuando el rostro es **visible, de frente y razonablemente cerca**
+  (la cámara de recepción es ideal; una cámara lejana de techo con ángulo
+  muy picado no resuelve rostros — ahí el etiquetado por zonas sigue siendo
+  el mecanismo principal).
+- Los **clientes jamás se registran** ni se comparan contra ninguna base —
+  solo se busca a los empleados dados de alta.
+
+### ⚖️ Biometría = datos personales SENSIBLES (LFPDPPP)
+
+- Consentimiento **expreso y por escrito** de cada empleado ANTES de
+  registrarlo (guárdalo firmado en su expediente).
+- Los descriptores faciales se guardan **solo en el equipo local**
+  (localStorage) — nunca se suben a la nube ni salen del restaurante.
+- Actualiza el aviso de privacidad interno mencionando el tratamiento
+  biométrico, su finalidad y cómo revocarlo.
+- Alternativa sin biometría: identificar por **uniforme** (la hostess de
+  color distintivo) — menos precisa pero sin datos sensibles; pídela si tu
+  cliente no quiere firmar consentimientos.
+
+---
+
+## Pase de comida: platillos olvidados 🍽️
+
+**El problema:** los platillos salen de cocina al pase/barra y esperan a que
+un mesero los recoja. Si nadie pasa por ellos, llegan fríos a la mesa (o se
+desperdician).
+
+### Cómo funciona
+
+Dibuja una zona con la regla **"Pase de comida"** sobre la barra donde se
+dejan los platillos. El sistema detecta objetos de comida (platos hondos,
+tazas, vasos, etc.) dentro de la zona y les da **seguimiento individual por
+posición** (los platillos no se mueven, así que cada uno conserva su
+cronómetro real):
+
+- Cada platillo muestra su **cronómetro en vivo** sobre el video (`🍽 2m 15s`).
+- Si supera el límite configurado (default 3 min) → **alerta**: *"Platillo
+  lleva 4m en el pase sin que lo recojan — se está enfriando"* (sonido +
+  WhatsApp + captura).
+- Cuando lo recogen, se registra el evento con cuánto esperó (métrica para
+  medir la disciplina de recolección por turno).
+- La oclusión momentánea (el brazo de un mesero tapando el plato) no
+  reinicia el cronómetro (gracia anti-flicker de ~6s).
+
+**Consejo de encuadre:** cámara mirando el pase desde arriba/en ángulo, con
+los platillos bien visibles y separados. El modelo detecta mejor platos
+hondos (bowls), tazas y vasos que platos extendidos muy llanos — haz una
+prueba con tu vajilla real y ajusta la "confianza mínima" si hace falta.
+
+### Heatmap de actividad 🔥 (toggle)
+
+Botón **"Heatmap"** sobre el video: pinta un mapa de calor de **dónde se
+concentra el movimiento de personas** (azul = poco, rojo = mucho, con
+decaimiento en el tiempo). Úsalo para ver patrones: dónde se paran los
+meseros, qué pasillos se congestionan, si el host abandona su puesto.
+
+### ⚠️ Temperatura real de los platillos: hablemos claro
+
+Una cámara normal (RGB) **no puede medir temperatura** — el "heatmap" de
+arriba es de *actividad/movimiento*, no de calor físico. Para detectar que
+un platillo caliente se enfrió hay dos rutas:
+
+1. **Proxy por tiempo (lo que ya hace el módulo):** un platillo caliente que
+   lleva 4+ minutos en el pase YA se enfrió — la alerta por tiempo es, en la
+   práctica, tu "alarma de platillo frío" sin hardware extra. Es lo que
+   recomendamos operar.
+2. **Cámara térmica (hardware, Fase 2+):** una cámara termográfica real
+   (Hikvision serie térmica ~$8–15 mil MXN, o módulos FLIR Lepton ~$4 mil
+   MXN con Raspberry Pi) sí mide grados por pixel; se integra por RTSP igual
+   que las demás y podríamos alertar "el platillo bajó de 45°C". Tiene
+   sentido solo si el cliente lo pide con presupuesto — el proxy por tiempo
+   resuelve el 95% del valor con 0 hardware.
 
 ---
 

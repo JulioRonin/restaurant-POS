@@ -16,9 +16,11 @@ export default defineConfig(({ mode }) => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              // TensorFlow.js solo lo usa el módulo Visión IA (import
-              // dinámico) — chunk propio para NO engordar la carga inicial.
+              // TensorFlow.js y face-api solo los usa el módulo Visión IA
+              // (imports dinámicos) — chunks propios para NO engordar la
+              // carga inicial.
               if (id.includes('@tensorflow')) return 'tfjs';
+              if (id.includes('@vladmandic')) return 'faceapi';
               return 'vendor';
             }
           }
@@ -35,9 +37,10 @@ export default defineConfig(({ mode }) => {
         workbox: {
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-          // El chunk de TensorFlow (~2MB) se descarga bajo demanda al abrir
-          // Visión IA — no lo pre-cacheamos en cada dispositivo.
-          globIgnores: ['**/tfjs*'],
+          // TensorFlow (~2MB), face-api y sus modelos (~7MB) se descargan
+          // bajo demanda al usar Visión IA — no se pre-cachean en cada
+          // dispositivo.
+          globIgnores: ['**/tfjs*', '**/faceapi*', '**/face-models/**'],
           runtimeCaching: [
             {
               // Cache Google Fonts stylesheets

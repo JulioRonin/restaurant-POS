@@ -30,6 +30,8 @@
     "@supabase/supabase-js": "^2.101.1",
     "@tensorflow-models/coco-ssd": "^2.2.3",
     "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-backend-wasm": "^4.22.0",
+    "@vladmandic/face-api": "^1.7.15",
     "esc-pos-encoder": "^3.0.0",
     "framer-motion": "^12.38.0",
     "html2canvas": "^1.4.1",

@@ -31,8 +31,9 @@ import {
   Camera, Play, Square, Trash2, Eye, AlertTriangle, Clock, Bell,
   ShieldAlert, UserCheck, Settings2, X, RefreshCw, MessageCircle,
   ScanEye, CheckCircle2, ExternalLink, Plus, DoorOpen, Users, UserX,
-  Pencil, TrendingUp, Timer,
+  Pencil, TrendingUp, Timer, UtensilsCrossed, Flame, ScanFace,
 } from 'lucide-react';
+import { captureFaceDescriptor, recognizeStaff, type StaffFace } from '../services/faceid';
 import { useUser } from '../contexts/UserContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { notify, requestNotifyPermission } from '../services/notify';
@@ -43,18 +44,89 @@ import {
 import { SrKicker, SrChip, SrLabel } from '../components/ui/servirest';
 
 // ── Tipos ────────────────────────────────────────────────────────────────
-type ZoneRule = 'attended' | 'restricted' | 'host_post' | 'guest_arrival';
+type ZoneRule = 'attended' | 'restricted' | 'host_post' | 'guest_arrival' | 'food_pass';
+
+/**
+ * Seguimiento de un platillo en el pase de comida. Los platillos no se
+ * mueven, así que un tracking por posición (centroide) es suficiente y
+ * robusto: cada detección se asocia a su track más cercano y el track
+ * conserva firstSeen → cronómetro real por platillo.
+ */
+interface DishTrack {
+  cx: number; cy: number;
+  firstSeen: number;
+  lastSeen: number;
+  alerted: boolean;
+  box: { x: number; y: number; w: number; h: number } | null;
+}
+
+// Clases de COCO-SSD que tomamos como "platillo/bebida" en el pase.
+const FOOD_CLASSES = new Set(['bowl', 'cup', 'wine glass', 'sandwich', 'pizza', 'cake', 'donut', 'hot dog', 'bottle']);
+
+/**
+ * Track de una PERSONA con identidad frame a frame.
+ *
+ * La zona de entrada funciona como TRIPWIRE: un track recién nacido que la
+ * pisa queda etiquetado CLIENTE y se le sigue por TODO el encuadre (no solo
+ * dentro de la zona) hasta que se va — la interacción con el personal cuenta
+ * donde sea que ocurra. Quien pisa el puesto anfitrión queda etiquetado
+ * PERSONAL. El rol es de por vida del track, así la hostess que cruza la
+ * puerta para saludar no se confunde con un cliente (su track es "viejo").
+ */
+interface PersonTrack {
+  id: number;
+  x: number; y: number; w: number; h: number; // caja EMA (suavizada)
+  firstSeen: number;
+  lastSeen: number;
+  role: 'unknown' | 'guest' | 'staff';
+  taggedAt: number;       // cuándo se volvió cliente
+  counted: boolean;       // llegada ya contada
+  greeted: boolean;       // ya fue atendido
+  interactionMs: number;  // atención acumulada
+  waitAlerted: boolean;
+  lastTick: number;
+  staffName?: string;     // nombre reconocido por rostro (ej. "Ana")
+  staffRole?: string;     // puesto del empleado (ej. "Hostess")
+}
 
 interface CameraProfile { key: string; name: string; deviceId: string; }
 
+type Pt = { x: number; y: number };
+
+/**
+ * Zona en PERSPECTIVA: cuadrilátero de 4 puntos normalizados (0–1) que el
+ * usuario marca tocando las esquinas SOBRE EL PISO (o sobre la barra en el
+ * pase de comida). Así la zona "se acuesta" en el suelo como en un entorno
+ * 3D, en vez de flotar como rectángulo sobre la pantalla.
+ */
 interface Zone {
   id: string;
   cameraKey: string;          // a qué cámara pertenece
   name: string;
   rule: ZoneRule;
-  maxVacantMin: number;       // 'attended' / 'host_post'
-  x: number; y: number; w: number; h: number; // rect normalizado 0–1
+  maxVacantMin: number;       // 'attended' / 'host_post' / 'food_pass'
+  points: Pt[];               // 4 esquinas en perspectiva
 }
+
+// Punto dentro de polígono (ray casting) — reemplaza al check de rectángulo.
+const pointInPoly = (px: number, py: number, pts: Pt[]): boolean => {
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const xi = pts[i].x, yi = pts[i].y, xj = pts[j].x, yj = pts[j].y;
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+};
+
+// Migración: zonas viejas guardadas como rect {x,y,w,h} → 4 puntos.
+const migrateZone = (z: any): Zone => {
+  if (Array.isArray(z.points) && z.points.length >= 3) return z as Zone;
+  const { x = 0.1, y = 0.1, w = 0.2, h = 0.2 } = z;
+  return { ...z, points: [{ x, y }, { x: x + w, y }, { x: x + w, y: y + h }, { x, y: y + h }] };
+};
+
+// Punto superior del polígono (para colocar la etiqueta de la zona).
+const polyTop = (pts: Pt[]): Pt => pts.reduce((a, b) => (b.y < a.y ? b : a));
 
 interface ZoneRuntime {
   occupied: boolean;
@@ -104,6 +176,8 @@ interface VisionConfig {
   waitAlertSec: number;       // segundos esperando sin atención → alerta en vivo
   exitGraceSec: number;       // seg. sin ver a la persona para confirmar salida (anti-flicker)
   greetMinSec: number;        // seg. de interacción para contar "atendido"
+  heatmapOn: boolean;         // overlay de mapa de calor de actividad
+  faceIdOn: boolean;          // reconocer al personal por rostro (beta)
 }
 
 const DEFAULT_CONFIG: VisionConfig = {
@@ -111,6 +185,8 @@ const DEFAULT_CONFIG: VisionConfig = {
   intervalMs: 700, minScore: 0.5,
   arrivalMinDwellSec: 3, waitAlertSec: 12,
   exitGraceSec: 5, greetMinSec: 2,
+  heatmapOn: false,
+  faceIdOn: false,
 };
 
 const RULE_META: Record<ZoneRule, { label: string; short: string; color: string; icon: React.ElementType }> = {
@@ -118,7 +194,12 @@ const RULE_META: Record<ZoneRule, { label: string; short: string; color: string;
   restricted:    { label: 'Zona restringida', short: 'Restringida',  color: '#C94A6B', icon: ShieldAlert },
   host_post:     { label: 'Puesto anfitrión', short: 'Anfitrión',    color: '#4A7BC9', icon: Users },
   guest_arrival: { label: 'Llegada clientes', short: 'Entrada',      color: '#9A5FA0', icon: DoorOpen },
+  food_pass:     { label: 'Pase de comida',   short: 'Pase',         color: '#D97706', icon: UtensilsCrossed },
 };
+
+// Resolución del grid del heatmap de actividad (se estira sobre el video).
+const HEAT_W = 64;
+const HEAT_H = 36;
 
 const fmtDur = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -160,6 +241,16 @@ export const VisionScreen: React.FC = () => {
   const detectionsRef = useRef<any[]>([]);
   const runtimeRef = useRef<Map<string, ZoneRuntime>>(new Map());
   const receptionRef = useRef<Map<string, ReceptionRuntime>>(new Map());
+  const dishTracksRef = useRef<Map<string, DishTrack[]>>(new Map());
+  const personTracksRef = useRef<PersonTrack[]>([]);
+  const trackSeqRef = useRef(1);
+  const staffRef = useRef<StaffFace[]>([]);
+  const lastFaceRunRef = useRef(0);
+  const faceBusyRef = useRef(false);
+  const dishDetectionsRef = useRef<any[]>([]);
+  const heatRef = useRef<Float32Array>(new Float32Array(HEAT_W * HEAT_H));
+  const heatCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const heatmapOnRef = useRef(false);
   const loopRef = useRef<number | null>(null);
   const rafRef = useRef<number>(0);
   const zonesRef = useRef<Zone[]>([]);
@@ -183,9 +274,21 @@ export const VisionScreen: React.FC = () => {
   // Alta/edición de cámara
   const [camModal, setCamModal] = useState<CameraProfile | null>(null);
 
-  // Dibujo de zona
-  const drawingRef = useRef<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
-  const [pendingRect, setPendingRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  // Personal registrado (reconocimiento facial beta) — SOLO local.
+  const [staff, setStaff] = useState<StaffFace[]>([]);
+  const [showStaff, setShowStaff] = useState(false);
+  const [newStaffName, setNewStaffName] = useState('');
+  const [newStaffRole, setNewStaffRole] = useState('Hostess');
+  const [draftFaces, setDraftFaces] = useState<number[][]>([]);
+  const [capturing, setCapturing] = useState(false);
+  const [faceMsg, setFaceMsg] = useState<string | null>(null);
+  const [consented, setConsented] = useState(false);
+
+  // Dibujo de zona en perspectiva: el usuario toca las 4 esquinas (sobre el
+  // piso). draftRef acumula los puntos; al 4o se abre el modal de la zona.
+  const draftRef = useRef<Pt[]>([]);
+  const [draftCount, setDraftCount] = useState(0); // para el hint en pantalla
+  const [pendingPoints, setPendingPoints] = useState<Pt[] | null>(null);
   const [zoneName, setZoneName] = useState('');
   const [zoneRule, setZoneRule] = useState<ZoneRule>('attended');
   const [zoneMaxVacant, setZoneMaxVacant] = useState(3);
@@ -193,6 +296,8 @@ export const VisionScreen: React.FC = () => {
   zonesRef.current = zones;
   configRef.current = config;
   activeKeyRef.current = activeKey;
+  heatmapOnRef.current = config.heatmapOn;
+  staffRef.current = staff;
 
   const activeCamera = cameras.find((c) => c.key === activeKey) || null;
   const activeZones = zones.filter((z) => z.cameraKey === activeKey);
@@ -209,9 +314,11 @@ export const VisionScreen: React.FC = () => {
       setCameras(parsedCams);
       setActiveKey((prev) => prev || parsedCams[0]?.key || '');
       const z = localStorage.getItem(`vision_zones_${businessId}`);
-      if (z) setZones(JSON.parse(z));
+      if (z) setZones((JSON.parse(z) as any[]).map(migrateZone));
       const c = localStorage.getItem(`vision_config_${businessId}`);
       if (c) setConfig({ ...DEFAULT_CONFIG, ...JSON.parse(c) });
+      const st = localStorage.getItem(`vision_staff_${businessId}`);
+      if (st) setStaff(JSON.parse(st));
     } catch { /* no-op */ }
     loadVisionEvents(businessId, 50).then(setEvents);
   }, [businessId]);
@@ -219,6 +326,8 @@ export const VisionScreen: React.FC = () => {
   useEffect(() => { if (businessId) localStorage.setItem(`vision_cameras_${businessId}`, JSON.stringify(cameras)); }, [cameras, businessId]);
   useEffect(() => { if (businessId) localStorage.setItem(`vision_zones_${businessId}`, JSON.stringify(zones)); }, [zones, businessId]);
   useEffect(() => { if (businessId) localStorage.setItem(`vision_config_${businessId}`, JSON.stringify(config)); }, [config, businessId]);
+  // Rostros del personal: SOLO en este equipo (datos sensibles, LFPDPPP).
+  useEffect(() => { if (businessId) localStorage.setItem(`vision_staff_${businessId}`, JSON.stringify(staff)); }, [staff, businessId]);
 
   // ── Dispositivos ──────────────────────────────────────────────────────
   const refreshDevices = async () => {
@@ -253,6 +362,8 @@ export const VisionScreen: React.FC = () => {
       setStartedAt(Date.now());
       runtimeRef.current = new Map();
       receptionRef.current = new Map();
+      personTracksRef.current = [];
+      dishTracksRef.current = new Map();
       if (!modelRef.current) {
         setModelState('loading');
         try {
@@ -288,6 +399,8 @@ export const VisionScreen: React.FC = () => {
     setActiveKey(key);
     runtimeRef.current = new Map();
     receptionRef.current = new Map();
+    personTracksRef.current = [];
+    dishTracksRef.current = new Map();
     detectionsRef.current = [];
     if (running) {
       const cam = cameras.find((c) => c.key === key);
@@ -312,14 +425,17 @@ export const VisionScreen: React.FC = () => {
     zonesRef.current.filter((z) => z.cameraKey === activeKeyRef.current).forEach((z) => {
       ctx.strokeStyle = RULE_META[z.rule].color;
       ctx.lineWidth = 2;
-      ctx.strokeRect(z.x * W, z.y * H, z.w * W, z.h * H);
+      ctx.beginPath();
+      z.points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x * W, p.y * H) : ctx.lineTo(p.x * W, p.y * H)));
+      ctx.closePath();
+      ctx.stroke();
     });
     return c.toDataURL('image/jpeg', 0.6);
   };
 
   // ── Alerta ────────────────────────────────────────────────────────────
   const fireAlert = (zoneLabel: string, type: VisionEventType, message: string, durationSec?: number, urgent = false) => {
-    const silent = type === 'zone_recovered' || type === 'guest_attended';
+    const silent = type === 'zone_recovered' || type === 'guest_attended' || type === 'dish_picked';
     if (!silent) beepAlarm(urgent);
     notify(`Visión IA — ${activeCameraRef()?.name || 'Cámara'}`, message);
     const snap = silent ? null : takeSnapshot();
@@ -365,30 +481,205 @@ export const VisionScreen: React.FC = () => {
       const camKey = activeKeyRef.current;
       const camZones = zonesRef.current.filter((z) => z.cameraKey === camKey);
 
-      // Etiqueta cada detección con SU rol según la zona donde están sus
-      // pies: Personal (puesto anfitrión / zona atendida), Cliente (llegada)
-      // o Persona (fuera de zona / restringida). Se dibuja sobre el video.
-      detectionsRef.current = persons.map((p: any, i: number) => {
-        const a = anchors[i];
-        const z = camZones.find((zz) => a.ax >= zz.x && a.ax <= zz.x + zz.w && a.ay >= zz.y && a.ay <= zz.y + zz.h);
-        let role = 'Persona';
-        let color = '#5FA05A';
-        if (z) {
-          if (z.rule === 'guest_arrival') { role = 'Cliente'; color = RULE_META.guest_arrival.color; }
-          else if (z.rule === 'restricted') { role = 'Persona'; color = RULE_META.restricted.color; }
-          else { role = 'Personal'; color = z.rule === 'host_post' ? RULE_META.host_post.color : RULE_META.attended.color; }
+      const graceMs = cfg.exitGraceSec * 1000;
+      const feetInZone = (b: { x: number; y: number; w: number; h: number }, z: Zone) =>
+        pointInPoly(b.x + b.w / 2, b.y + b.h, z.points);
+      const inCount = (z: Zone) => anchors.filter((a) => pointInPoly(a.ax, a.ay, z.points)).length;
+
+      // ── TRACKING de personas con identidad frame a frame ──────────────
+      // La zona de entrada es un TRIPWIRE: un track RECIÉN nacido que la
+      // pisa queda etiquetado CLIENTE y se le sigue por TODO el encuadre.
+      // Quien pisa el puesto anfitrión queda etiquetado PERSONAL de por
+      // vida del track (la hostess que cruza la puerta no se confunde).
+      const gz = camZones.find((z) => z.rule === 'guest_arrival');
+      const hz = camZones.find((z) => z.rule === 'host_post');
+      const tracks = personTracksRef.current;
+
+      // 1) Asocia detecciones a tracks (greedy por cercanía de centros).
+      const matched = new Set<number>();
+      persons.forEach((d: any) => {
+        let best: PersonTrack | null = null;
+        let bestDist = Infinity;
+        tracks.forEach((t) => {
+          if (matched.has(t.id)) return;
+          const dist = Math.hypot((t.x + t.w / 2) - (d.x + d.w / 2), (t.y + t.h / 2) - (d.y + d.h / 2));
+          if (dist < bestDist) { bestDist = dist; best = t; }
+        });
+        const bt = best as PersonTrack | null;
+        const radius = Math.max(0.09, Math.max(bt?.w ?? 0, d.w) * 1.1);
+        if (bt && bestDist < radius) {
+          matched.add(bt.id);
+          bt.x = bt.x * 0.55 + d.x * 0.45;
+          bt.y = bt.y * 0.55 + d.y * 0.45;
+          bt.w = bt.w * 0.55 + d.w * 0.45;
+          bt.h = bt.h * 0.55 + d.h * 0.45;
+          bt.lastSeen = now;
+        } else {
+          tracks.push({
+            id: trackSeqRef.current++, ...d, firstSeen: now, lastSeen: now,
+            role: 'unknown', taggedAt: 0, counted: false, greeted: false,
+            interactionMs: 0, waitAlerted: false, lastTick: now,
+          });
         }
-        return { ...p, role, zoneName: z?.name || null, color };
       });
 
-      const inCount = (z: Zone) => anchors.filter((a) => a.ax >= z.x && a.ax <= z.x + z.w && a.ay >= z.y && a.ay <= z.y + z.h).length;
+      // 2) Asignación de roles (de por vida del track).
+      tracks.forEach((t) => {
+        if (t.role !== 'unknown' || now - t.lastSeen > 1200) return;
+        if (hz && feetInZone(t, hz)) { t.role = 'staff'; return; }
+        // Cliente: track JOVEN (acaba de aparecer en escena = entró por la
+        // puerta) pisando la zona de entrada. El personal que deambula hace
+        // rato no se re-etiqueta.
+        if (gz && now - t.firstSeen < 6000 && feetInZone(t, gz)) {
+          t.role = 'guest';
+          t.taggedAt = now;
+        }
+      });
+
+      // 3) KPIs y lógica por CLIENTE (lo seguimos por todo el encuadre).
+      const rcKey = camKey;
+      let rc = receptionRef.current.get(rcKey);
+      if (!rc) {
+        rc = {
+          arrivals: 0, attended: 0, unattended: 0, sumGreetSec: 0, maxWaitSec: 0,
+          episodeActive: false, episodeStart: 0, guestLastSeen: 0,
+          counted: false, greeted: false, interactionMs: 0, waitAlerted: false, lastTick: now,
+        };
+        receptionRef.current.set(rcKey, rc);
+      }
+      // 2.5) Reconocimiento facial del PERSONAL (beta, cada ~2.5s si está
+      // activado). Etiqueta el track con el nombre y puesto del empleado
+      // ("Ana · Hostess") y lo fuerza a rol PERSONAL — si el tripwire lo
+      // había confundido con cliente, se corrige el conteo.
+      if (cfg.faceIdOn && staffRef.current.length > 0 && now - lastFaceRunRef.current > 2500 && !faceBusyRef.current) {
+        faceBusyRef.current = true;
+        lastFaceRunRef.current = now;
+        try {
+          const faces = await recognizeStaff(video, staffRef.current);
+          faces.forEach((f) => {
+            const fx = f.x + f.w / 2, fy = f.y + f.h / 2;
+            // El rostro debe caer en la mitad superior de la caja del track.
+            const t = personTracksRef.current.find((tt) =>
+              now - tt.lastSeen <= 1500 && fx >= tt.x && fx <= tt.x + tt.w && fy >= tt.y && fy <= tt.y + tt.h * 0.6
+            );
+            if (t) {
+              if (t.role === 'guest' && t.counted && !t.greeted) rc!.arrivals = Math.max(0, rc!.arrivals - 1);
+              t.role = 'staff';
+              t.staffName = f.name;
+              t.staffRole = f.role;
+            }
+          });
+        } finally {
+          faceBusyRef.current = false;
+        }
+      }
+
+      const hostRt = hz ? runtimeRef.current.get(hz.id) : undefined;
+      const hostPresent = hz ? ((hostRt?.persons ?? 0) > 0 || (!!hostRt?.lastSeen && now - hostRt.lastSeen <= graceMs)) : false;
+      const aspect = vw / vh;
+      const near = (a: PersonTrack, b: PersonTrack) => {
+        const dx = ((a.x + a.w / 2) - (b.x + b.w / 2)) * aspect;
+        const dy = (a.y + a.h) - (b.y + b.h);
+        const bodyW = Math.max(a.w, b.w) * aspect;
+        return Math.hypot(dx, dy) < 1.6 * Math.max(0.04, bodyW);
+      };
+
+      if (gz) {
+        tracks.forEach((t) => {
+          if (t.role !== 'guest') return;
+          const tickDelta = now - t.lastTick;
+          t.lastTick = now;
+          const dwell = now - t.taggedAt;
+
+          if (!t.counted && dwell >= cfg.arrivalMinDwellSec * 1000) {
+            t.counted = true;
+            rc!.arrivals += 1;
+          }
+
+          // Atención: PERSONAL (o alguien que no es cliente) cerca del
+          // cliente — en cualquier parte del encuadre — o el puesto cubierto.
+          const visible = now - t.lastSeen <= 1500;
+          const interactingNow = visible && tracks.some((o) =>
+            o.id !== t.id && o.role !== 'guest' && now - o.lastSeen <= graceMs && near(o, t)
+          );
+          if (visible && (interactingNow || hostPresent)) t.interactionMs += tickDelta;
+
+          if (t.counted && !t.greeted && t.interactionMs >= cfg.greetMinSec * 1000) {
+            t.greeted = true;
+            const greetSec = Math.round(dwell / 1000);
+            rc!.attended += 1;
+            rc!.sumGreetSec += greetSec;
+            fireAlert(gz.name, 'guest_attended', `✅ Cliente atendido (respuesta ${greetSec}s).`, greetSec);
+          }
+
+          if (t.counted && !t.greeted && !t.waitAlerted && !hostPresent && !interactingNow && dwell >= cfg.waitAlertSec * 1000) {
+            t.waitAlerted = true;
+            rc!.maxWaitSec = Math.max(rc!.maxWaitSec, Math.round(dwell / 1000));
+            fireAlert(gz.name, 'guest_waiting', `🔔 ¡Cliente esperando ${fmtDur(dwell)} sin atención! Nadie lo ha recibido.`, Math.round(dwell / 1000), true);
+          }
+        });
+      }
+
+      // 4) Expira tracks perdidos; al perder a un CLIENTE se cierra su
+      //    episodio: atendido = flujo normal; no atendido = cliente perdido.
+      personTracksRef.current = tracks.filter((t) => {
+        const grace = t.role === 'guest' ? graceMs * 1.6 : graceMs;
+        if (now - t.lastSeen <= grace) return true;
+        if (t.role === 'guest' && t.counted && !t.greeted && gz) {
+          const stayedSec = Math.max(1, Math.round((t.lastSeen - t.taggedAt) / 1000));
+          rc!.unattended += 1;
+          rc!.maxWaitSec = Math.max(rc!.maxWaitSec, stayedSec);
+          fireAlert(gz.name, 'guest_unattended', `❌ Cliente se fue SIN ser atendido tras esperar ${fmtDur(stayedSec * 1000)} (posible cliente perdido).`, stayedSec, true);
+        }
+        return false;
+      });
+
+      // 5) Etiquetas para el overlay a partir de los TRACKS (con cronómetro
+      //    de espera del cliente).
+      detectionsRef.current = personTracksRef.current
+        .filter((t) => now - t.lastSeen <= 1500)
+        .map((t) => {
+          let role: string;
+          let color: string;
+          let zoneName: string | null = null;
+          if (t.role === 'guest') {
+            role = t.greeted ? `Cliente ✓ atendido` : `Cliente · ${fmtDur(now - t.taggedAt)}`;
+            color = RULE_META.guest_arrival.color;
+          } else if (t.role === 'staff') {
+            role = t.staffName ? `${t.staffName} · ${t.staffRole || 'Personal'}` : 'Personal';
+            color = RULE_META.host_post.color;
+          } else {
+            const z = camZones.find((zz) => zz.rule !== 'food_pass' && feetInZone(t, zz));
+            if (z && z.rule === 'restricted') { role = 'Persona'; color = RULE_META.restricted.color; zoneName = z.name; }
+            else if (z && (z.rule === 'attended' || z.rule === 'host_post')) { role = 'Personal'; color = RULE_META.attended.color; zoneName = z.name; }
+            else { role = 'Persona'; color = '#5FA05A'; }
+          }
+          return { x: t.x, y: t.y, w: t.w, h: t.h, role, zoneName, color };
+        });
+
+      // Heatmap de actividad: acumula presencia de personas en un grid de
+      // baja resolución con decaimiento — muestra dónde se concentra el
+      // movimiento del turno.
+      {
+        const heat = heatRef.current;
+        for (let i = 0; i < heat.length; i++) heat[i] *= 0.985;
+        anchors.forEach((a) => {
+          const gx = Math.min(HEAT_W - 1, Math.max(0, Math.floor(a.ax * HEAT_W)));
+          const gy = Math.min(HEAT_H - 1, Math.max(0, Math.floor(a.ay * HEAT_H)));
+          const idx = gy * HEAT_W + gx;
+          heat[idx] = Math.min(30, heat[idx] + 1);
+          if (gx > 0) heat[idx - 1] = Math.min(30, heat[idx - 1] + 0.35);
+          if (gx < HEAT_W - 1) heat[idx + 1] = Math.min(30, heat[idx + 1] + 0.35);
+          if (gy > 0) heat[idx - HEAT_W] = Math.min(30, heat[idx - HEAT_W] + 0.35);
+          if (gy < HEAT_H - 1) heat[idx + HEAT_W] = Math.min(30, heat[idx + HEAT_W] + 0.35);
+        });
+      }
 
       // Reglas por zona (atendida / restringida / cobertura del puesto).
       // ANTI-FLICKER: la zona solo se considera "vacía" tras exitGraceSec
       // segundos sin ver a nadie — una detección perdida por 1-2 frames ya
       // no genera vacancias/recuperaciones falsas.
-      const graceMs = cfg.exitGraceSec * 1000;
-      camZones.forEach((z) => {
+      camZones.filter((z) => z.rule !== 'food_pass').forEach((z) => {
         const inside = inCount(z);
         let rt = runtimeRef.current.get(z.id);
         if (!rt) {
@@ -425,103 +716,81 @@ export const VisionScreen: React.FC = () => {
         }
       });
 
-      // ── Motor de RECEPCIÓN: episodios llegada → atención → salida ─────
-      // La atención se mide por INTERACCIÓN, no por coincidencia de frames:
-      //   · otra persona (mesero/host) CERCA del cliente, o
-      //   · el puesto anfitrión ocupado mientras el cliente está presente,
-      // acumulada durante greetMinSec. La salida se confirma tras
-      // exitGraceSec sin ver al cliente (anti-flicker).
-      const hz = camZones.find((z) => z.rule === 'host_post');
-      const gz = camZones.find((z) => z.rule === 'guest_arrival');
-      if (hz && gz) {
-        const inZone = (p: any, z: Zone) => {
-          const ax = p.x + p.w / 2, ay = p.y + p.h;
-          return ax >= z.x && ax <= z.x + z.w && ay >= z.y && ay <= z.y + z.h;
-        };
-        const guests = persons.filter((p: any) => inZone(p, gz));
-        const hostRt = runtimeRef.current.get(hz.id);
-        // Host "presente" con la misma gracia anti-flicker.
-        const hostPresent = (hostRt?.persons ?? 0) > 0 || (!!hostRt?.lastSeen && now - hostRt.lastSeen <= graceMs);
+      // ── Motor de PASE DE COMIDA: cronómetro por platillo ───────────────
+      // Detecta objetos de comida (bowl/plato/taza…) dentro de la zona y les
+      // da seguimiento por posición (no se mueven). Si un platillo supera el
+      // límite sin que lo recojan → alerta "se está enfriando". Cuando el
+      // platillo alertado desaparece → evento silencioso de recogido.
+      const passZones = camZones.filter((z) => z.rule === 'food_pass');
+      if (passZones.length > 0) {
+        // Umbral más permisivo para objetos: los platillos son más difíciles
+        // de detectar que las personas.
+        const dishScore = Math.max(0.3, cfg.minScore - 0.15);
+        const dishes = preds
+          .filter((p: any) => FOOD_CLASSES.has(p.class) && p.score >= dishScore)
+          .map((p: any) => ({ x: p.bbox[0] / vw, y: p.bbox[1] / vh, w: p.bbox[2] / vw, h: p.bbox[3] / vh }));
+        const drawList: any[] = [];
+        const dishGraceMs = Math.max(graceMs, 6000); // oclusión por brazos de meseros
 
-        // Interacción por proximidad: alguien (que no es el cliente) a menos
-        // de ~1.6 anchos de cuerpo de distancia (en espacio corregido por
-        // aspecto — los pies de ambos cerca en el piso).
-        const aspect = vw / vh;
-        const near = (a: any, b: any) => {
-          const dx = ((a.x + a.w / 2) - (b.x + b.w / 2)) * aspect;
-          const dy = (a.y + a.h) - (b.y + b.h);
-          const bodyW = Math.max(a.w, b.w) * aspect;
-          return Math.hypot(dx, dy) < 1.6 * Math.max(0.04, bodyW);
-        };
-        const interactionNow = guests.some((g: any) =>
-          persons.some((o: any) => o !== g && near(o, g))
-        );
+        passZones.forEach((z) => {
+          const inZ = dishes.filter((d: any) =>
+            pointInPoly(d.x + d.w / 2, d.y + d.h / 2, z.points) // centro del objeto (no pies)
+          );
+          let tracks = dishTracksRef.current.get(z.id) || [];
 
-        let rc = receptionRef.current.get(camKey);
-        if (!rc) {
-          rc = {
-            arrivals: 0, attended: 0, unattended: 0, sumGreetSec: 0, maxWaitSec: 0,
-            episodeActive: false, episodeStart: 0, guestLastSeen: 0,
-            counted: false, greeted: false, interactionMs: 0, waitAlerted: false, lastTick: now,
-          };
-          receptionRef.current.set(camKey, rc);
-        }
-
-        if (guests.length > 0) rc.guestLastSeen = now;
-
-        // Apertura de episodio: aparece un cliente y no hay episodio activo.
-        if (guests.length > 0 && !rc.episodeActive) {
-          rc.episodeActive = true;
-          rc.episodeStart = now;
-          rc.counted = false; rc.greeted = false;
-          rc.interactionMs = 0; rc.waitAlerted = false;
-          rc.lastTick = now;
-        }
-
-        if (rc.episodeActive) {
-          const tickDelta = now - rc.lastTick;
-          rc.lastTick = now;
-          const dwell = now - rc.episodeStart;
-
-          // Llegada real (filtra a quien solo pasa frente a la puerta).
-          if (!rc.counted && dwell >= cfg.arrivalMinDwellSec * 1000) {
-            rc.counted = true;
-            rc.arrivals += 1;
-          }
-
-          // Acumula atención mientras el cliente sigue presente.
-          if (guests.length > 0 && (interactionNow || hostPresent)) {
-            rc.interactionMs += tickDelta;
-          }
-
-          // Atendido: interacción sostenida (no un cruce de 1 frame).
-          if (rc.counted && !rc.greeted && rc.interactionMs >= cfg.greetMinSec * 1000) {
-            rc.greeted = true;
-            const greetSec = Math.round(dwell / 1000);
-            rc.attended += 1;
-            rc.sumGreetSec += greetSec;
-            fireAlert(gz.name, 'guest_attended', `✅ Cliente atendido en recepción (respuesta ${greetSec}s).`, greetSec);
-          }
-
-          // Alerta EN VIVO: espera sin atención y sin nadie interactuando.
-          if (rc.counted && !rc.greeted && !rc.waitAlerted && !hostPresent && !interactionNow && dwell >= cfg.waitAlertSec * 1000) {
-            rc.waitAlerted = true;
-            rc.maxWaitSec = Math.max(rc.maxWaitSec, Math.round(dwell / 1000));
-            fireAlert(gz.name, 'guest_waiting', `🔔 ¡Cliente esperando en recepción sin atención (${fmtDur(dwell)})! Nadie en "${hz.name}".`, Math.round(dwell / 1000), true);
-          }
-
-          // Cierre de episodio: el cliente lleva > grace sin ser visto.
-          if (guests.length === 0 && now - rc.guestLastSeen > graceMs) {
-            const stayedSec = Math.max(1, Math.round((rc.guestLastSeen - rc.episodeStart) / 1000));
-            if (rc.counted && !rc.greeted) {
-              rc.unattended += 1;
-              rc.maxWaitSec = Math.max(rc.maxWaitSec, stayedSec);
-              fireAlert(gz.name, 'guest_unattended', `❌ Cliente se fue SIN ser atendido tras esperar ${fmtDur(stayedSec * 1000)} (posible cliente perdido).`, stayedSec, true);
+          // Asocia cada detección a su track más cercano (o crea uno nuevo).
+          inZ.forEach((d: any) => {
+            const cx = d.x + d.w / 2, cy = d.y + d.h / 2;
+            let best: DishTrack | null = null;
+            let bestDist = Infinity;
+            tracks.forEach((t) => {
+              const dist = Math.hypot(t.cx - cx, t.cy - cy);
+              if (dist < bestDist) { bestDist = dist; best = t; }
+            });
+            const radius = Math.max(0.03, d.w * 0.7);
+            if (best && bestDist < radius) {
+              best.cx = best.cx * 0.7 + cx * 0.3; // suaviza jitter
+              best.cy = best.cy * 0.7 + cy * 0.3;
+              best.lastSeen = now;
+              best.box = d;
+            } else {
+              tracks.push({ cx, cy, firstSeen: now, lastSeen: now, alerted: false, box: d });
             }
-            // Atendido que se retira = flujo normal, no genera alerta.
-            rc.episodeActive = false;
-          }
-        }
+          });
+
+          // Expira tracks no vistos (platillo recogido).
+          const kept: DishTrack[] = [];
+          tracks.forEach((t) => {
+            if (now - t.lastSeen > dishGraceMs) {
+              if (t.alerted) {
+                const waited = Math.round((t.lastSeen - t.firstSeen) / 1000);
+                fireAlert(z.name, 'dish_picked', `✅ Platillo recogido del pase "${z.name}" después de ${fmtDur(waited * 1000)}.`, waited);
+              }
+            } else {
+              kept.push(t);
+            }
+          });
+          tracks = kept;
+
+          // Alerta por platillo que supera el límite.
+          tracks.forEach((t) => {
+            const age = now - t.firstSeen;
+            if (!t.alerted && age > z.maxVacantMin * 60000) {
+              t.alerted = true;
+              fireAlert(z.name, 'dish_waiting', `🍽️ Platillo lleva ${fmtDur(age)} en el pase "${z.name}" sin que lo recojan — se está enfriando.`, Math.round(age / 1000), true);
+            }
+            if (t.box) drawList.push({ ...t.box, ageMs: age, alerted: t.alerted });
+          });
+
+          dishTracksRef.current.set(z.id, tracks);
+          // Runtime mínimo para que la etiqueta de la zona muestre el conteo.
+          const rt = runtimeRef.current.get(z.id);
+          if (rt) { rt.persons = tracks.length; rt.lastTick = now; }
+          else runtimeRef.current.set(z.id, { occupied: tracks.length > 0, since: now, alerted: false, lastIntrusionAlert: 0, occupiedMs: 0, vacantMs: 0, episodes: 0, lastTick: now, persons: tracks.length, lastSeen: now });
+        });
+        dishDetectionsRef.current = drawList;
+      } else {
+        dishDetectionsRef.current = [];
       }
     } catch (e) {
       console.warn('[Vision] detect error:', e);
@@ -544,22 +813,63 @@ export const VisionScreen: React.FC = () => {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.clearRect(0, 0, W, H);
+
+          // Capa 0: heatmap de actividad (si está activado)
+          if (heatmapOnRef.current) {
+            if (!heatCanvasRef.current) {
+              heatCanvasRef.current = document.createElement('canvas');
+              heatCanvasRef.current.width = HEAT_W;
+              heatCanvasRef.current.height = HEAT_H;
+            }
+            const hctx = heatCanvasRef.current.getContext('2d');
+            if (hctx) {
+              const img = hctx.createImageData(HEAT_W, HEAT_H);
+              const heat = heatRef.current;
+              for (let i = 0; i < heat.length; i++) {
+                const t = Math.min(1, heat[i] / 12); // normaliza intensidad
+                if (t <= 0.02) continue;
+                // azul → amarillo → rojo
+                let r: number, g: number, b: number;
+                if (t < 0.5) {
+                  const k = t / 0.5;
+                  r = 59 + (250 - 59) * k; g = 130 + (204 - 130) * k; b = 246 + (21 - 246) * k;
+                } else {
+                  const k = (t - 0.5) / 0.5;
+                  r = 250 + (239 - 250) * k; g = 204 + (68 - 204) * k; b = 21 + (68 - 21) * k;
+                }
+                const o = i * 4;
+                img.data[o] = r; img.data[o + 1] = g; img.data[o + 2] = b;
+                img.data[o + 3] = Math.round(Math.min(0.55, t * 0.65) * 255);
+              }
+              hctx.putImageData(img, 0, 0);
+              ctx.imageSmoothingEnabled = true;
+              ctx.drawImage(heatCanvasRef.current, 0, 0, W, H);
+            }
+          }
+
           zonesRef.current.filter((z) => z.cameraKey === activeKeyRef.current).forEach((z) => {
             const color = RULE_META[z.rule].color;
             const rt = runtimeRef.current.get(z.id);
             const alertActive = rt && ((z.rule === 'attended' || z.rule === 'host_post') && rt.alerted) || (z.rule === 'restricted' && rt?.occupied);
+            // Polígono en perspectiva (las 4 esquinas que marcó el usuario)
+            ctx.beginPath();
+            z.points.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x * W, p.y * H) : ctx.lineTo(p.x * W, p.y * H)));
+            ctx.closePath();
             ctx.fillStyle = color + (alertActive ? '44' : '1A');
             ctx.strokeStyle = alertActive ? '#E53E3E' : color;
             ctx.lineWidth = alertActive ? 3 : 2;
-            ctx.fillRect(z.x * W, z.y * H, z.w * W, z.h * H);
-            ctx.strokeRect(z.x * W, z.y * H, z.w * W, z.h * H);
+            ctx.fill();
+            ctx.stroke();
             ctx.font = 'bold 12px Inter, sans-serif';
-            const label = `${z.name} · ${rt?.persons ?? 0}👤`;
+            const top = polyTop(z.points);
+            const label = `${z.name} · ${rt?.persons ?? 0}${z.rule === 'food_pass' ? '🍽' : '👤'}`;
             const tw = ctx.measureText(label).width;
+            const lx = Math.min(top.x * W, W - tw - 12);
+            const ly = Math.max(18, top.y * H);
             ctx.fillStyle = alertActive ? '#E53E3E' : color;
-            ctx.fillRect(z.x * W, z.y * H - 18, tw + 12, 18);
+            ctx.fillRect(lx, ly - 18, tw + 12, 18);
             ctx.fillStyle = '#FFF';
-            ctx.fillText(label, z.x * W + 6, z.y * H - 5);
+            ctx.fillText(label, lx + 6, ly - 5);
           });
           detectionsRef.current.forEach((p: any) => {
             const color = p.color || '#5FA05A';
@@ -582,12 +892,41 @@ export const VisionScreen: React.FC = () => {
             ctx.fillStyle = '#FFF';
             ctx.fillText(label, lx + 5, ly - 3.5);
           });
-          const d = drawingRef.current;
-          if (d) {
+
+          // Platillos en el pase — caja ámbar con su cronómetro (roja si ya alertó)
+          dishDetectionsRef.current.forEach((d: any) => {
+            const color = d.alerted ? '#E53E3E' : '#D97706';
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(d.x * W, d.y * H, d.w * W, d.h * H);
+            const label = `🍽 ${fmtDur(d.ageMs)}`;
+            ctx.font = 'bold 11px Inter, sans-serif';
+            const tw = ctx.measureText(label).width;
+            const ly = Math.min(H - 4, (d.y + d.h) * H + 14);
+            ctx.fillStyle = color;
+            ctx.fillRect(d.x * W, ly - 12, tw + 10, 14);
+            ctx.fillStyle = '#FFF';
+            ctx.fillText(label, d.x * W + 5, ly - 1);
+          });
+          // Preview de la zona en dibujo: esquinas ya marcadas + líneas
+          const draft = draftRef.current;
+          if (draft.length > 0) {
             ctx.strokeStyle = '#C4633F';
-            ctx.setLineDash([6, 4]); ctx.lineWidth = 2;
-            ctx.strokeRect(Math.min(d.x0, d.x1) * W, Math.min(d.y0, d.y1) * H, Math.abs(d.x1 - d.x0) * W, Math.abs(d.y1 - d.y0) * H);
+            ctx.setLineDash([6, 4]);
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            draft.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x * W, p.y * H) : ctx.lineTo(p.x * W, p.y * H)));
+            ctx.stroke();
             ctx.setLineDash([]);
+            draft.forEach((p, i) => {
+              ctx.fillStyle = '#C4633F';
+              ctx.beginPath();
+              ctx.arc(p.x * W, p.y * H, 6, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#FFF';
+              ctx.font = 'bold 9px Inter, sans-serif';
+              ctx.fillText(String(i + 1), p.x * W - 2.5, p.y * H + 3);
+            });
           }
         }
       }
@@ -605,38 +944,69 @@ export const VisionScreen: React.FC = () => {
       y: Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height)),
     };
   };
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (!running || !activeKey) return;
+  // Cada toque marca una esquina EN PERSPECTIVA (sobre el piso). A la 4a
+  // esquina se abre el modal para nombrar la zona.
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (!running || !activeKey || pendingPoints) return;
     const p = norm(e);
-    drawingRef.current = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    draftRef.current = [...draftRef.current, p];
+    setDraftCount(draftRef.current.length);
+    if (draftRef.current.length >= 4) {
+      setPendingPoints(draftRef.current);
+      draftRef.current = [];
+      setDraftCount(0);
+      setZoneName(''); setZoneRule('attended'); setZoneMaxVacant(3);
+    }
   };
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!drawingRef.current) return;
-    const p = norm(e);
-    drawingRef.current.x1 = p.x; drawingRef.current.y1 = p.y;
-  };
-  const onPointerUp = () => {
-    const d = drawingRef.current;
-    drawingRef.current = null;
-    if (!d) return;
-    const w = Math.abs(d.x1 - d.x0), h = Math.abs(d.y1 - d.y0);
-    if (w < 0.03 || h < 0.03) return;
-    setPendingRect({ x: Math.min(d.x0, d.x1), y: Math.min(d.y0, d.y1), w, h });
-    setZoneName(''); setZoneRule('attended'); setZoneMaxVacant(3);
-  };
+  const cancelDraft = () => { draftRef.current = []; setDraftCount(0); };
 
   const savePendingZone = () => {
-    if (!pendingRect || !zoneName.trim() || !activeKey) return;
+    if (!pendingPoints || !zoneName.trim() || !activeKey) return;
     setZones((prev) => [...prev, {
       id: crypto.randomUUID(), cameraKey: activeKey, name: zoneName.trim(),
-      rule: zoneRule, maxVacantMin: Math.max(1, zoneMaxVacant), ...pendingRect,
+      rule: zoneRule, maxVacantMin: Math.max(1, zoneMaxVacant), points: pendingPoints,
     }]);
-    setPendingRect(null);
+    setPendingPoints(null);
   };
   const removeZone = (id: string) => {
     setZones((prev) => prev.filter((z) => z.id !== id));
     runtimeRef.current.delete(id);
+  };
+
+  // ── Personal (reconocimiento facial beta) ────────────────────────────
+  const captureFace = async () => {
+    if (!streamRef.current || !videoRef.current) {
+      setFaceMsg('Inicia la cámara primero — el empleado debe pararse de frente y cerca.');
+      return;
+    }
+    setCapturing(true);
+    setFaceMsg(null);
+    const d = await captureFaceDescriptor(videoRef.current);
+    if (d) {
+      setDraftFaces((p) => [...p, d]);
+      setFaceMsg(`Captura ${draftFaces.length + 1} lista ✓ — cambia un poco el ángulo y captura otra.`);
+    } else {
+      setFaceMsg('No vimos un rostro claro. Acércate a la cámara, de frente y con buena luz.');
+    }
+    setCapturing(false);
+  };
+
+  const saveStaffMember = () => {
+    if (!newStaffName.trim() || draftFaces.length === 0) return;
+    setStaff((prev) => [...prev, {
+      id: crypto.randomUUID(),
+      name: newStaffName.trim(),
+      role: newStaffRole.trim() || 'Personal',
+      descriptors: draftFaces,
+    }]);
+    setNewStaffName('');
+    setNewStaffRole('Hostess');
+    setDraftFaces([]);
+    setFaceMsg(null);
+  };
+
+  const removeStaffMember = (id: string) => {
+    setStaff((prev) => prev.filter((s) => s.id !== id));
   };
 
   // ── Cámaras (perfiles) ────────────────────────────────────────────────
@@ -673,6 +1043,10 @@ export const VisionScreen: React.FC = () => {
             </h1>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => setShowStaff(true)} title="Personal (reconocimiento facial)" className="relative w-11 h-11 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] flex items-center justify-center text-[rgba(42,40,38,0.6)] hover:text-servirest-terracota">
+              <ScanFace size={18} />
+              {config.faceIdOn && staff.length > 0 && <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-servirest-hueso" />}
+            </button>
             <button onClick={() => setShowConfig(true)} className="w-11 h-11 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] flex items-center justify-center text-[rgba(42,40,38,0.6)] hover:text-servirest-terracota"><Settings2 size={18} /></button>
             {!running ? (
               <button onClick={start} disabled={!activeCamera} className="h-11 px-6 rounded-full bg-servirest-terracota text-servirest-hueso font-black uppercase tracking-[0.12em] text-[11px] flex items-center gap-2 hover:scale-105 transition-transform disabled:opacity-40"><Play size={15} /> Iniciar</button>
@@ -712,7 +1086,14 @@ export const VisionScreen: React.FC = () => {
           <div>
             <div className="relative rounded-3xl overflow-hidden bg-servirest-midnight aspect-video shadow-lg">
               <video ref={videoRef} className="absolute inset-0 w-full h-full object-contain" muted playsInline />
-              <canvas ref={overlayRef} className="absolute inset-0 w-full h-full touch-none" style={{ cursor: running ? 'crosshair' : 'default' }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} />
+              <canvas ref={overlayRef} className="absolute inset-0 w-full h-full touch-none" style={{ cursor: running ? 'crosshair' : 'default' }} onPointerUp={onPointerUp} />
+              {/* Hint del dibujo en perspectiva */}
+              {running && draftCount > 0 && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-black/70 text-white text-[11px] font-bold">
+                  Esquina {draftCount}/4 marcada — toca la siguiente esquina de la zona
+                  <button onClick={cancelDraft} className="ml-1 px-2 py-0.5 rounded-full bg-white/20 text-[10px] uppercase font-black">Cancelar</button>
+                </div>
+              )}
               {!running && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-servirest-hueso/60 px-6 text-center">
                   <Camera size={44} className="mb-3" />
@@ -731,9 +1112,20 @@ export const VisionScreen: React.FC = () => {
                   <span className="px-2.5 py-1 rounded-full bg-green-600/80 text-white text-[10px] font-black uppercase tracking-wider flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> {activeCamera?.name}</span>
                 </div>
               )}
+              {running && (
+                <button
+                  onClick={() => setConfig((c) => ({ ...c, heatmapOn: !c.heatmapOn }))}
+                  title="Mapa de calor de actividad"
+                  className={`absolute top-3 left-3 h-8 px-3 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
+                    config.heatmapOn ? 'bg-amber-500 text-white' : 'bg-black/50 text-white/70 hover:text-white'
+                  }`}
+                >
+                  <Flame size={13} /> Heatmap
+                </button>
+              )}
             </div>
             <p className="text-[11px] text-[rgba(42,40,38,0.45)] mt-2 flex items-center gap-1.5">
-              <Eye size={13} /> Con la cámara activa, <b>arrastra sobre el video</b> para crear una zona. Cada persona detectada se etiqueta con su rol y zona: <b style={{ color: '#4A7BC9' }}>Personal</b>, <b style={{ color: '#9A5FA0' }}>Cliente</b> o Persona (fuera de zona). El punto = pies (dibuja las zonas sobre el piso).
+              <Eye size={13} /> Con la cámara activa, <b>toca las 4 esquinas</b> de la zona SOBRE EL PISO (en perspectiva, como si pintaras el suelo). Quien cruza la entrada queda etiquetado <b style={{ color: '#9A5FA0' }}>Cliente</b> y se le sigue por todo el encuadre con su cronómetro; quien pisa el puesto anfitrión queda como <b style={{ color: '#4A7BC9' }}>Personal</b>.
             </p>
             {startedAt && <div className="mt-2 text-[11px] text-[rgba(42,40,38,0.5)] flex items-center gap-2"><Clock size={13} /> Monitoreando "{activeCamera?.name}" desde hace {fmtDur(now - startedAt)}</div>}
 
@@ -759,19 +1151,24 @@ export const VisionScreen: React.FC = () => {
                     <span className="text-[11px] font-mono text-servirest-mostaza">{Math.round((reception.attended / reception.arrivals) * 100)}% atención</span>
                   </div>
                 )}
-                {/* Episodio en curso — telemetría en vivo para calibrar */}
-                {reception?.episodeActive && (
-                  <div className={`mt-3 px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-2 ${
-                    reception.greeted ? 'bg-green-500/15 text-green-400' : 'bg-servirest-mostaza/15 text-servirest-mostaza'
-                  }`}>
-                    {reception.greeted
-                      ? <><CheckCircle2 size={13} /> Cliente en recepción — YA atendido ({fmtDur(now - reception.episodeStart)} en el lugar)</>
-                      : <><Timer size={13} /> Cliente esperando {fmtDur(now - reception.episodeStart)} · interacción {(reception.interactionMs / 1000).toFixed(1)}s / {config.greetMinSec}s</>}
-                  </div>
-                )}
+                {/* Clientes en seguimiento — telemetría en vivo para calibrar */}
+                {(() => {
+                  const gs = personTracksRef.current.filter((t) => t.role === 'guest');
+                  if (gs.length === 0) return null;
+                  const oldest = gs.reduce((a, b) => (a.taggedAt < b.taggedAt ? a : b));
+                  return (
+                    <div className={`mt-3 px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-2 ${
+                      oldest.greeted ? 'bg-green-500/15 text-green-400' : 'bg-servirest-mostaza/15 text-servirest-mostaza'
+                    }`}>
+                      {oldest.greeted
+                        ? <><CheckCircle2 size={13} /> {gs.length} cliente(s) en seguimiento — atendido ({fmtDur(now - oldest.taggedAt)} en el lugar)</>
+                        : <><Timer size={13} /> {gs.length} cliente(s) · esperando {fmtDur(now - oldest.taggedAt)} · interacción {(oldest.interactionMs / 1000).toFixed(1)}s / {config.greetMinSec}s</>}
+                    </div>
+                  );
+                })()}
                 <p className="text-[10px] text-servirest-hueso/45 mt-3 leading-relaxed">
-                  Mide clientes que llegan a "{guestZone?.name}". "Atendido" = alguien del personal se acercó al cliente (o cubrió "{hostZone?.name}") por {config.greetMinSec}s+.
-                  Alerta en vivo si esperan {config.waitAlertSec}s+ sin atención; la salida se confirma tras {config.exitGraceSec}s sin verlo (anti-parpadeo).
+                  "{guestZone?.name}" es la línea de entrada: quien la cruza queda etiquetado Cliente y se le sigue por TODO el encuadre.
+                  "Atendido" = personal cerca de él (donde sea) o "{hostZone?.name}" cubierto, por {config.greetMinSec}s+. Alerta si espera {config.waitAlertSec}s+; su salida se confirma tras {Math.round(config.exitGraceSec * 1.6)}s sin verlo.
                 </p>
               </div>
             )}
@@ -785,7 +1182,7 @@ export const VisionScreen: React.FC = () => {
               {!activeCamera ? (
                 <p className="text-[12px] text-[rgba(42,40,38,0.5)]">Agrega una cámara arriba para empezar.</p>
               ) : activeZones.length === 0 ? (
-                <p className="text-[12px] text-[rgba(42,40,38,0.5)]">Sin zonas. Inicia la cámara y arrastra sobre el video. Para medir recepción crea un <b>Puesto anfitrión</b> + una <b>Llegada de clientes</b>.</p>
+                <p className="text-[12px] text-[rgba(42,40,38,0.5)]">Sin zonas. Inicia la cámara y toca las 4 esquinas de la zona sobre el video. Para medir recepción crea un <b>Puesto anfitrión</b> + una <b>Llegada de clientes</b> (franja del piso cruzando la puerta).</p>
               ) : (
                 <div className="space-y-2.5">
                   {activeZones.map((z) => {
@@ -813,6 +1210,18 @@ export const VisionScreen: React.FC = () => {
                             {pct !== null && <span className="text-[rgba(42,40,38,0.45)] font-mono ml-auto">{pct}% cubierta</span>}
                           </div>
                         )}
+                        {running && z.rule === 'food_pass' && (() => {
+                          const tracks = dishTracksRef.current.get(z.id) || [];
+                          const oldest = tracks.length ? Math.max(...tracks.map((t) => now - t.firstSeen)) : 0;
+                          const anyAlerted = tracks.some((t) => t.alerted);
+                          return (
+                            <div className="flex items-center gap-3 mt-2 text-[11px]">
+                              {tracks.length === 0
+                                ? <span className="text-[rgba(42,40,38,0.55)] font-bold flex items-center gap-1"><CheckCircle2 size={12} /> Pase limpio</span>
+                                : <span className={`font-bold flex items-center gap-1 ${anyAlerted ? 'text-servirest-danger' : 'text-amber-600'}`}><UtensilsCrossed size={12} /> {tracks.length} platillo(s) · más viejo {fmtDur(oldest)}</span>}
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   })}
@@ -863,8 +1272,8 @@ export const VisionScreen: React.FC = () => {
       )}
 
       {/* Modal: zona nueva */}
-      {pendingRect && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-5" onClick={() => setPendingRect(null)}>
+      {pendingPoints && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-5" onClick={() => setPendingPoints(null)}>
           <div className="w-full max-w-sm bg-servirest-hueso rounded-3xl p-6 shadow-2xl max-h-[88dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="font-serif italic text-servirest-midnight text-xl mb-1">Nueva inspección</div>
             <p className="text-[11px] text-[rgba(42,40,38,0.5)] mb-4">en {activeCamera?.name}</p>
@@ -878,24 +1287,110 @@ export const VisionScreen: React.FC = () => {
                   <button key={r} onClick={() => setZoneRule(r)} className={`h-[68px] rounded-2xl border text-left px-3 transition-all ${on ? 'bg-servirest-terracota/5' : 'bg-servirest-surface'}`} style={{ borderColor: on ? m.color : 'rgba(42,40,38,0.12)' }}>
                     <div className="text-[11px] font-black text-servirest-midnight flex items-center gap-1"><Icon size={13} style={{ color: m.color }} /> {m.short}</div>
                     <div className="text-[9px] text-[rgba(42,40,38,0.5)] mt-1 leading-tight">
-                      {r === 'attended' ? 'Alerta si queda vacía' : r === 'restricted' ? 'Alerta si alguien entra' : r === 'host_post' ? 'Dónde debe estar el host' : 'Puerta / llegada de clientes'}
+                      {r === 'attended' ? 'Alerta si queda vacía'
+                        : r === 'restricted' ? 'Alerta si alguien entra'
+                        : r === 'host_post' ? 'Dónde debe estar el host'
+                        : r === 'food_pass' ? 'Platillos esperando mesero'
+                        : 'Puerta / llegada de clientes'}
                     </div>
                   </button>
                 );
               })}
             </div>
-            {(zoneRule === 'attended' || zoneRule === 'host_post') && (
+            {(zoneRule === 'attended' || zoneRule === 'host_post' || zoneRule === 'food_pass') && (
               <div className="mb-4">
-                <SrLabel className="block mb-1.5">Minutos máximos sin personal</SrLabel>
+                <SrLabel className="block mb-1.5">{zoneRule === 'food_pass' ? 'Minutos máximos de un platillo en el pase' : 'Minutos máximos sin personal'}</SrLabel>
                 <input type="number" min={1} max={120} value={zoneMaxVacant} onChange={(e) => setZoneMaxVacant(Number(e.target.value) || 1)} className="w-full h-11 px-4 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[14px] focus:outline-none focus:border-servirest-terracota" />
               </div>
             )}
+            {/* Mini-guía de dónde dibujar esta zona */}
+            <p className="text-[10px] text-[rgba(42,40,38,0.55)] bg-servirest-surface border border-[rgba(42,40,38,0.08)] rounded-xl px-3 py-2 mb-3 leading-relaxed">
+              📍 {zoneRule === 'guest_arrival'
+                ? 'Dibuja una FRANJA DEL PISO cruzando la puerta (el umbral). Es una línea de entrada: quien la pisa al llegar queda etiquetado Cliente y se le sigue por todo el encuadre — no necesita quedarse dentro.'
+                : zoneRule === 'host_post'
+                ? 'Marca el piso alrededor del atril/puesto del host. Sirve para dos cosas: medir cobertura del puesto y etiquetar como Personal a quien lo pisa.'
+                : zoneRule === 'food_pass'
+                ? 'Marca la SUPERFICIE de la barra donde se dejan los platillos (no el piso). Las 4 esquinas de la tabla, en perspectiva.'
+                : zoneRule === 'restricted'
+                ? 'Marca el piso del área prohibida (almacén, caja fuera de horario). Alerta apenas alguien la pise.'
+                : 'Marca el piso del área de trabajo que no debe quedar sola (barra, caja, estación).'}
+            </p>
             {receptionActive && (zoneRule === 'host_post' || zoneRule === 'guest_arrival') && (
               <p className="text-[10px] text-servirest-terracota mb-3">Ya tienes recepción configurada en esta cámara — esto la reemplazará.</p>
             )}
             <div className="flex gap-2">
-              <button onClick={() => setPendingRect(null)} className="flex-1 h-11 rounded-full border border-[rgba(42,40,38,0.15)] text-[rgba(42,40,38,0.6)] text-[11px] font-black uppercase tracking-[0.1em]">Cancelar</button>
+              <button onClick={() => setPendingPoints(null)} className="flex-1 h-11 rounded-full border border-[rgba(42,40,38,0.15)] text-[rgba(42,40,38,0.6)] text-[11px] font-black uppercase tracking-[0.1em]">Cancelar</button>
               <button onClick={savePendingZone} disabled={!zoneName.trim()} className="flex-1 h-11 rounded-full bg-servirest-terracota text-servirest-hueso text-[11px] font-black uppercase tracking-[0.1em] disabled:opacity-40">Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: personal (reconocimiento facial beta) */}
+      {showStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-5" onClick={() => setShowStaff(false)}>
+          <div className="w-full max-w-md bg-servirest-hueso rounded-3xl p-6 shadow-2xl max-h-[88dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <div className="font-serif italic text-servirest-midnight text-xl flex items-center gap-2"><ScanFace size={20} className="text-servirest-terracota" /> Personal</div>
+              <button onClick={() => setShowStaff(false)} className="w-9 h-9 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.1)] flex items-center justify-center text-[rgba(42,40,38,0.5)]"><X size={16} /></button>
+            </div>
+            <p className="text-[11px] text-[rgba(42,40,38,0.55)] mb-3">Registra a tus empleados para que el sistema los reconozca por nombre ("Ana · Hostess") y los diferencie de los clientes.</p>
+
+            {/* Aviso legal de biometría */}
+            <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2.5 mb-4">
+              <p className="text-[10px] text-amber-800 leading-relaxed">
+                ⚠️ Los rasgos faciales son <b>datos personales sensibles</b> (LFPDPPP). Registra solo a EMPLEADOS con su
+                <b> consentimiento expreso por escrito</b>. Los rostros se guardan únicamente en este equipo — nunca se suben a la nube. Nunca registres clientes.
+              </p>
+            </div>
+
+            {/* Toggle de la función */}
+            <div className="flex items-center justify-between rounded-2xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] px-4 py-3 mb-4">
+              <div className="text-[12px] font-black text-servirest-midnight">Reconocer personal por rostro</div>
+              <button onClick={() => setConfig((c) => ({ ...c, faceIdOn: !c.faceIdOn }))} className={`w-11 h-6 rounded-full transition-colors relative ${config.faceIdOn ? 'bg-green-600' : 'bg-[rgba(42,40,38,0.2)]'}`}>
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${config.faceIdOn ? 'left-[22px]' : 'left-0.5'}`} />
+              </button>
+            </div>
+
+            {/* Lista de personal registrado */}
+            {staff.length > 0 && (
+              <div className="space-y-2 mb-4">
+                {staff.map((s) => (
+                  <div key={s.id} className="flex items-center gap-3 rounded-2xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] p-3">
+                    <div className="w-10 h-10 rounded-full bg-servirest-midnight text-servirest-mostaza flex items-center justify-center font-serif italic text-lg flex-shrink-0">{s.name[0]?.toUpperCase()}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-servirest-midnight text-[13px] truncate">{s.name}</div>
+                      <div className="text-[10px] text-[rgba(42,40,38,0.5)]">{s.role} · {s.descriptors.length} captura(s)</div>
+                    </div>
+                    <button onClick={() => removeStaffMember(s.id)} className="text-[rgba(42,40,38,0.35)] hover:text-servirest-danger"><Trash2 size={15} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Alta de empleado */}
+            <div className="rounded-2xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] p-4">
+              <div className="text-[11px] font-black uppercase tracking-[0.12em] text-servirest-terracota mb-3">Registrar empleado</div>
+              <label className="flex items-start gap-2 mb-3 cursor-pointer">
+                <input type="checkbox" checked={consented} onChange={(e) => setConsented(e.target.checked)} className="mt-0.5" />
+                <span className="text-[10px] text-[rgba(42,40,38,0.6)] leading-relaxed">Confirmo que este empleado dio su consentimiento expreso por escrito para el registro de sus rasgos faciales.</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <input value={newStaffName} onChange={(e) => setNewStaffName(e.target.value)} placeholder="Nombre (ej. Ana)" disabled={!consented} className="h-11 px-4 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.12)] text-[13px] focus:outline-none focus:border-servirest-terracota disabled:opacity-40" />
+                <input value={newStaffRole} onChange={(e) => setNewStaffRole(e.target.value)} placeholder="Puesto (ej. Hostess)" disabled={!consented} className="h-11 px-4 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.12)] text-[13px] focus:outline-none focus:border-servirest-terracota disabled:opacity-40" />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={captureFace} disabled={!consented || capturing || draftFaces.length >= 3} className="flex-1 h-11 rounded-full bg-servirest-midnight text-servirest-hueso text-[11px] font-black uppercase tracking-[0.1em] flex items-center justify-center gap-2 disabled:opacity-40">
+                  {capturing ? <RefreshCw size={14} className="animate-spin" /> : <Camera size={14} />} Capturar rostro ({draftFaces.length}/3)
+                </button>
+                <button onClick={saveStaffMember} disabled={!consented || !newStaffName.trim() || draftFaces.length === 0} className="flex-1 h-11 rounded-full bg-servirest-terracota text-servirest-hueso text-[11px] font-black uppercase tracking-[0.1em] disabled:opacity-40">
+                  Guardar
+                </button>
+              </div>
+              {faceMsg && <p className="text-[10px] text-[rgba(42,40,38,0.6)] mt-2">{faceMsg}</p>}
+              <p className="text-[10px] text-[rgba(42,40,38,0.45)] mt-2 leading-relaxed">
+                El empleado debe pararse <b>de frente y cerca de la cámara</b> con buena luz. Captura 2–3 ángulos. La primera captura descarga el modelo (~7 MB, una sola vez).
+              </p>
             </div>
           </div>
         </div>
@@ -980,6 +1475,8 @@ const EVENT_ICON: Record<VisionEventType, { icon: React.ElementType; cls: string
   guest_waiting:    { icon: Bell,         cls: 'bg-servirest-terracota/15 text-servirest-terracota' },
   guest_attended:   { icon: UserCheck,    cls: 'bg-green-600/15 text-green-700' },
   guest_unattended: { icon: UserX,        cls: 'bg-servirest-danger/15 text-servirest-danger' },
+  dish_waiting:     { icon: UtensilsCrossed, cls: 'bg-amber-500/20 text-amber-600' },
+  dish_picked:      { icon: CheckCircle2, cls: 'bg-green-600/15 text-green-700' },
 };
 
 const EventRow: React.FC<{ ev: VisionEvent }> = ({ ev }) => {
