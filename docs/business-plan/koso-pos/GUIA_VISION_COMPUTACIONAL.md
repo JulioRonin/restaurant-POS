@@ -175,6 +175,49 @@ siguiendo la perspectiva del piso real. Cámara ideal: 2.5–3 m de altura,
 
 ---
 
+## Reconocer al personal por NOMBRE (reconocimiento facial, beta) 👤
+
+Además del etiquetado por comportamiento (Cliente al cruzar la entrada,
+Personal al pisar el puesto), puedes registrar a tus empleados por rostro
+para que el sistema los nombre: **"Ana · Hostess"** — y nunca los confunda
+con clientes.
+
+### Cómo activarlo
+
+1. Botón **🙂 (ScanFace)** en el header del módulo → modal "Personal".
+2. Marca el checkbox de **consentimiento por escrito** (obligatorio).
+3. Nombre + puesto → **"Capturar rostro"** con el empleado de frente y cerca
+   de la cámara (2–3 capturas con ángulos ligeramente distintos).
+4. Activa el toggle **"Reconocer personal por rostro"**.
+
+Desde entonces, cada ~2.5s el sistema busca rostros conocidos y renombra el
+track: la etiqueta azul pasa de "Personal" a **"Ana · Hostess"**. Si el
+tripwire había confundido a un empleado con cliente, se corrige solo (y se
+descuenta del conteo de llegadas).
+
+### Límites honestos
+
+- Funciona cuando el rostro es **visible, de frente y razonablemente cerca**
+  (la cámara de recepción es ideal; una cámara lejana de techo con ángulo
+  muy picado no resuelve rostros — ahí el etiquetado por zonas sigue siendo
+  el mecanismo principal).
+- Los **clientes jamás se registran** ni se comparan contra ninguna base —
+  solo se busca a los empleados dados de alta.
+
+### ⚖️ Biometría = datos personales SENSIBLES (LFPDPPP)
+
+- Consentimiento **expreso y por escrito** de cada empleado ANTES de
+  registrarlo (guárdalo firmado en su expediente).
+- Los descriptores faciales se guardan **solo en el equipo local**
+  (localStorage) — nunca se suben a la nube ni salen del restaurante.
+- Actualiza el aviso de privacidad interno mencionando el tratamiento
+  biométrico, su finalidad y cómo revocarlo.
+- Alternativa sin biometría: identificar por **uniforme** (la hostess de
+  color distintivo) — menos precisa pero sin datos sensibles; pídela si tu
+  cliente no quiere firmar consentimientos.
+
+---
+
 ## Pase de comida: platillos olvidados 🍽️
 
 **El problema:** los platillos salen de cocina al pase/barra y esperan a que

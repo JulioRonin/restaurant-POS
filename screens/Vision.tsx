@@ -31,8 +31,9 @@ import {
   Camera, Play, Square, Trash2, Eye, AlertTriangle, Clock, Bell,
   ShieldAlert, UserCheck, Settings2, X, RefreshCw, MessageCircle,
   ScanEye, CheckCircle2, ExternalLink, Plus, DoorOpen, Users, UserX,
-  Pencil, TrendingUp, Timer, UtensilsCrossed, Flame,
+  Pencil, TrendingUp, Timer, UtensilsCrossed, Flame, ScanFace,
 } from 'lucide-react';
+import { captureFaceDescriptor, recognizeStaff, type StaffFace } from '../services/faceid';
 import { useUser } from '../contexts/UserContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { notify, requestNotifyPermission } from '../services/notify';
@@ -84,6 +85,8 @@ interface PersonTrack {
   interactionMs: number;  // atención acumulada
   waitAlerted: boolean;
   lastTick: number;
+  staffName?: string;     // nombre reconocido por rostro (ej. "Ana")
+  staffRole?: string;     // puesto del empleado (ej. "Hostess")
 }
 
 interface CameraProfile { key: string; name: string; deviceId: string; }
@@ -174,6 +177,7 @@ interface VisionConfig {
   exitGraceSec: number;       // seg. sin ver a la persona para confirmar salida (anti-flicker)
   greetMinSec: number;        // seg. de interacción para contar "atendido"
   heatmapOn: boolean;         // overlay de mapa de calor de actividad
+  faceIdOn: boolean;          // reconocer al personal por rostro (beta)
 }
 
 const DEFAULT_CONFIG: VisionConfig = {
@@ -182,6 +186,7 @@ const DEFAULT_CONFIG: VisionConfig = {
   arrivalMinDwellSec: 3, waitAlertSec: 12,
   exitGraceSec: 5, greetMinSec: 2,
   heatmapOn: false,
+  faceIdOn: false,
 };
 
 const RULE_META: Record<ZoneRule, { label: string; short: string; color: string; icon: React.ElementType }> = {
@@ -239,6 +244,9 @@ export const VisionScreen: React.FC = () => {
   const dishTracksRef = useRef<Map<string, DishTrack[]>>(new Map());
   const personTracksRef = useRef<PersonTrack[]>([]);
   const trackSeqRef = useRef(1);
+  const staffRef = useRef<StaffFace[]>([]);
+  const lastFaceRunRef = useRef(0);
+  const faceBusyRef = useRef(false);
   const dishDetectionsRef = useRef<any[]>([]);
   const heatRef = useRef<Float32Array>(new Float32Array(HEAT_W * HEAT_H));
   const heatCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -266,6 +274,16 @@ export const VisionScreen: React.FC = () => {
   // Alta/edición de cámara
   const [camModal, setCamModal] = useState<CameraProfile | null>(null);
 
+  // Personal registrado (reconocimiento facial beta) — SOLO local.
+  const [staff, setStaff] = useState<StaffFace[]>([]);
+  const [showStaff, setShowStaff] = useState(false);
+  const [newStaffName, setNewStaffName] = useState('');
+  const [newStaffRole, setNewStaffRole] = useState('Hostess');
+  const [draftFaces, setDraftFaces] = useState<number[][]>([]);
+  const [capturing, setCapturing] = useState(false);
+  const [faceMsg, setFaceMsg] = useState<string | null>(null);
+  const [consented, setConsented] = useState(false);
+
   // Dibujo de zona en perspectiva: el usuario toca las 4 esquinas (sobre el
   // piso). draftRef acumula los puntos; al 4o se abre el modal de la zona.
   const draftRef = useRef<Pt[]>([]);
@@ -279,6 +297,7 @@ export const VisionScreen: React.FC = () => {
   configRef.current = config;
   activeKeyRef.current = activeKey;
   heatmapOnRef.current = config.heatmapOn;
+  staffRef.current = staff;
 
   const activeCamera = cameras.find((c) => c.key === activeKey) || null;
   const activeZones = zones.filter((z) => z.cameraKey === activeKey);
@@ -298,6 +317,8 @@ export const VisionScreen: React.FC = () => {
       if (z) setZones((JSON.parse(z) as any[]).map(migrateZone));
       const c = localStorage.getItem(`vision_config_${businessId}`);
       if (c) setConfig({ ...DEFAULT_CONFIG, ...JSON.parse(c) });
+      const st = localStorage.getItem(`vision_staff_${businessId}`);
+      if (st) setStaff(JSON.parse(st));
     } catch { /* no-op */ }
     loadVisionEvents(businessId, 50).then(setEvents);
   }, [businessId]);
@@ -305,6 +326,8 @@ export const VisionScreen: React.FC = () => {
   useEffect(() => { if (businessId) localStorage.setItem(`vision_cameras_${businessId}`, JSON.stringify(cameras)); }, [cameras, businessId]);
   useEffect(() => { if (businessId) localStorage.setItem(`vision_zones_${businessId}`, JSON.stringify(zones)); }, [zones, businessId]);
   useEffect(() => { if (businessId) localStorage.setItem(`vision_config_${businessId}`, JSON.stringify(config)); }, [config, businessId]);
+  // Rostros del personal: SOLO en este equipo (datos sensibles, LFPDPPP).
+  useEffect(() => { if (businessId) localStorage.setItem(`vision_staff_${businessId}`, JSON.stringify(staff)); }, [staff, businessId]);
 
   // ── Dispositivos ──────────────────────────────────────────────────────
   const refreshDevices = async () => {
@@ -524,6 +547,33 @@ export const VisionScreen: React.FC = () => {
         };
         receptionRef.current.set(rcKey, rc);
       }
+      // 2.5) Reconocimiento facial del PERSONAL (beta, cada ~2.5s si está
+      // activado). Etiqueta el track con el nombre y puesto del empleado
+      // ("Ana · Hostess") y lo fuerza a rol PERSONAL — si el tripwire lo
+      // había confundido con cliente, se corrige el conteo.
+      if (cfg.faceIdOn && staffRef.current.length > 0 && now - lastFaceRunRef.current > 2500 && !faceBusyRef.current) {
+        faceBusyRef.current = true;
+        lastFaceRunRef.current = now;
+        try {
+          const faces = await recognizeStaff(video, staffRef.current);
+          faces.forEach((f) => {
+            const fx = f.x + f.w / 2, fy = f.y + f.h / 2;
+            // El rostro debe caer en la mitad superior de la caja del track.
+            const t = personTracksRef.current.find((tt) =>
+              now - tt.lastSeen <= 1500 && fx >= tt.x && fx <= tt.x + tt.w && fy >= tt.y && fy <= tt.y + tt.h * 0.6
+            );
+            if (t) {
+              if (t.role === 'guest' && t.counted && !t.greeted) rc!.arrivals = Math.max(0, rc!.arrivals - 1);
+              t.role = 'staff';
+              t.staffName = f.name;
+              t.staffRole = f.role;
+            }
+          });
+        } finally {
+          faceBusyRef.current = false;
+        }
+      }
+
       const hostRt = hz ? runtimeRef.current.get(hz.id) : undefined;
       const hostPresent = hz ? ((hostRt?.persons ?? 0) > 0 || (!!hostRt?.lastSeen && now - hostRt.lastSeen <= graceMs)) : false;
       const aspect = vw / vh;
@@ -596,7 +646,7 @@ export const VisionScreen: React.FC = () => {
             role = t.greeted ? `Cliente ✓ atendido` : `Cliente · ${fmtDur(now - t.taggedAt)}`;
             color = RULE_META.guest_arrival.color;
           } else if (t.role === 'staff') {
-            role = 'Personal';
+            role = t.staffName ? `${t.staffName} · ${t.staffRole || 'Personal'}` : 'Personal';
             color = RULE_META.host_post.color;
           } else {
             const z = camZones.find((zz) => zz.rule !== 'food_pass' && feetInZone(t, zz));
@@ -923,6 +973,42 @@ export const VisionScreen: React.FC = () => {
     runtimeRef.current.delete(id);
   };
 
+  // ── Personal (reconocimiento facial beta) ────────────────────────────
+  const captureFace = async () => {
+    if (!streamRef.current || !videoRef.current) {
+      setFaceMsg('Inicia la cámara primero — el empleado debe pararse de frente y cerca.');
+      return;
+    }
+    setCapturing(true);
+    setFaceMsg(null);
+    const d = await captureFaceDescriptor(videoRef.current);
+    if (d) {
+      setDraftFaces((p) => [...p, d]);
+      setFaceMsg(`Captura ${draftFaces.length + 1} lista ✓ — cambia un poco el ángulo y captura otra.`);
+    } else {
+      setFaceMsg('No vimos un rostro claro. Acércate a la cámara, de frente y con buena luz.');
+    }
+    setCapturing(false);
+  };
+
+  const saveStaffMember = () => {
+    if (!newStaffName.trim() || draftFaces.length === 0) return;
+    setStaff((prev) => [...prev, {
+      id: crypto.randomUUID(),
+      name: newStaffName.trim(),
+      role: newStaffRole.trim() || 'Personal',
+      descriptors: draftFaces,
+    }]);
+    setNewStaffName('');
+    setNewStaffRole('Hostess');
+    setDraftFaces([]);
+    setFaceMsg(null);
+  };
+
+  const removeStaffMember = (id: string) => {
+    setStaff((prev) => prev.filter((s) => s.id !== id));
+  };
+
   // ── Cámaras (perfiles) ────────────────────────────────────────────────
   const saveCamera = (cam: CameraProfile) => {
     setCameras((prev) => {
@@ -957,6 +1043,10 @@ export const VisionScreen: React.FC = () => {
             </h1>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <button onClick={() => setShowStaff(true)} title="Personal (reconocimiento facial)" className="relative w-11 h-11 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] flex items-center justify-center text-[rgba(42,40,38,0.6)] hover:text-servirest-terracota">
+              <ScanFace size={18} />
+              {config.faceIdOn && staff.length > 0 && <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-servirest-hueso" />}
+            </button>
             <button onClick={() => setShowConfig(true)} className="w-11 h-11 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] flex items-center justify-center text-[rgba(42,40,38,0.6)] hover:text-servirest-terracota"><Settings2 size={18} /></button>
             {!running ? (
               <button onClick={start} disabled={!activeCamera} className="h-11 px-6 rounded-full bg-servirest-terracota text-servirest-hueso font-black uppercase tracking-[0.12em] text-[11px] flex items-center gap-2 hover:scale-105 transition-transform disabled:opacity-40"><Play size={15} /> Iniciar</button>
@@ -1231,6 +1321,76 @@ export const VisionScreen: React.FC = () => {
             <div className="flex gap-2">
               <button onClick={() => setPendingPoints(null)} className="flex-1 h-11 rounded-full border border-[rgba(42,40,38,0.15)] text-[rgba(42,40,38,0.6)] text-[11px] font-black uppercase tracking-[0.1em]">Cancelar</button>
               <button onClick={savePendingZone} disabled={!zoneName.trim()} className="flex-1 h-11 rounded-full bg-servirest-terracota text-servirest-hueso text-[11px] font-black uppercase tracking-[0.1em] disabled:opacity-40">Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: personal (reconocimiento facial beta) */}
+      {showStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-5" onClick={() => setShowStaff(false)}>
+          <div className="w-full max-w-md bg-servirest-hueso rounded-3xl p-6 shadow-2xl max-h-[88dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-1">
+              <div className="font-serif italic text-servirest-midnight text-xl flex items-center gap-2"><ScanFace size={20} className="text-servirest-terracota" /> Personal</div>
+              <button onClick={() => setShowStaff(false)} className="w-9 h-9 rounded-full bg-servirest-surface border border-[rgba(42,40,38,0.1)] flex items-center justify-center text-[rgba(42,40,38,0.5)]"><X size={16} /></button>
+            </div>
+            <p className="text-[11px] text-[rgba(42,40,38,0.55)] mb-3">Registra a tus empleados para que el sistema los reconozca por nombre ("Ana · Hostess") y los diferencie de los clientes.</p>
+
+            {/* Aviso legal de biometría */}
+            <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 px-3 py-2.5 mb-4">
+              <p className="text-[10px] text-amber-800 leading-relaxed">
+                ⚠️ Los rasgos faciales son <b>datos personales sensibles</b> (LFPDPPP). Registra solo a EMPLEADOS con su
+                <b> consentimiento expreso por escrito</b>. Los rostros se guardan únicamente en este equipo — nunca se suben a la nube. Nunca registres clientes.
+              </p>
+            </div>
+
+            {/* Toggle de la función */}
+            <div className="flex items-center justify-between rounded-2xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] px-4 py-3 mb-4">
+              <div className="text-[12px] font-black text-servirest-midnight">Reconocer personal por rostro</div>
+              <button onClick={() => setConfig((c) => ({ ...c, faceIdOn: !c.faceIdOn }))} className={`w-11 h-6 rounded-full transition-colors relative ${config.faceIdOn ? 'bg-green-600' : 'bg-[rgba(42,40,38,0.2)]'}`}>
+                <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${config.faceIdOn ? 'left-[22px]' : 'left-0.5'}`} />
+              </button>
+            </div>
+
+            {/* Lista de personal registrado */}
+            {staff.length > 0 && (
+              <div className="space-y-2 mb-4">
+                {staff.map((s) => (
+                  <div key={s.id} className="flex items-center gap-3 rounded-2xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] p-3">
+                    <div className="w-10 h-10 rounded-full bg-servirest-midnight text-servirest-mostaza flex items-center justify-center font-serif italic text-lg flex-shrink-0">{s.name[0]?.toUpperCase()}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-servirest-midnight text-[13px] truncate">{s.name}</div>
+                      <div className="text-[10px] text-[rgba(42,40,38,0.5)]">{s.role} · {s.descriptors.length} captura(s)</div>
+                    </div>
+                    <button onClick={() => removeStaffMember(s.id)} className="text-[rgba(42,40,38,0.35)] hover:text-servirest-danger"><Trash2 size={15} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Alta de empleado */}
+            <div className="rounded-2xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] p-4">
+              <div className="text-[11px] font-black uppercase tracking-[0.12em] text-servirest-terracota mb-3">Registrar empleado</div>
+              <label className="flex items-start gap-2 mb-3 cursor-pointer">
+                <input type="checkbox" checked={consented} onChange={(e) => setConsented(e.target.checked)} className="mt-0.5" />
+                <span className="text-[10px] text-[rgba(42,40,38,0.6)] leading-relaxed">Confirmo que este empleado dio su consentimiento expreso por escrito para el registro de sus rasgos faciales.</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <input value={newStaffName} onChange={(e) => setNewStaffName(e.target.value)} placeholder="Nombre (ej. Ana)" disabled={!consented} className="h-11 px-4 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.12)] text-[13px] focus:outline-none focus:border-servirest-terracota disabled:opacity-40" />
+                <input value={newStaffRole} onChange={(e) => setNewStaffRole(e.target.value)} placeholder="Puesto (ej. Hostess)" disabled={!consented} className="h-11 px-4 rounded-full bg-servirest-hueso border border-[rgba(42,40,38,0.12)] text-[13px] focus:outline-none focus:border-servirest-terracota disabled:opacity-40" />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={captureFace} disabled={!consented || capturing || draftFaces.length >= 3} className="flex-1 h-11 rounded-full bg-servirest-midnight text-servirest-hueso text-[11px] font-black uppercase tracking-[0.1em] flex items-center justify-center gap-2 disabled:opacity-40">
+                  {capturing ? <RefreshCw size={14} className="animate-spin" /> : <Camera size={14} />} Capturar rostro ({draftFaces.length}/3)
+                </button>
+                <button onClick={saveStaffMember} disabled={!consented || !newStaffName.trim() || draftFaces.length === 0} className="flex-1 h-11 rounded-full bg-servirest-terracota text-servirest-hueso text-[11px] font-black uppercase tracking-[0.1em] disabled:opacity-40">
+                  Guardar
+                </button>
+              </div>
+              {faceMsg && <p className="text-[10px] text-[rgba(42,40,38,0.6)] mt-2">{faceMsg}</p>}
+              <p className="text-[10px] text-[rgba(42,40,38,0.45)] mt-2 leading-relaxed">
+                El empleado debe pararse <b>de frente y cerca de la cámara</b> con buena luz. Captura 2–3 ángulos. La primera captura descarga el modelo (~7 MB, una sola vez).
+              </p>
             </div>
           </div>
         </div>
