@@ -83,11 +83,17 @@ interface PersonTrack {
   counted: boolean;       // llegada ya contada
   greeted: boolean;       // ya fue atendido
   interactionMs: number;  // atención acumulada
+  hostZoneMs: number;     // permanencia acumulada en el puesto anfitrión
   waitAlerted: boolean;
   lastTick: number;
   staffName?: string;     // nombre reconocido por rostro (ej. "Ana")
   staffRole?: string;     // puesto del empleado (ej. "Hostess")
 }
+
+// Un track se etiqueta PERSONAL solo si PERMANECE en el puesto anfitrión
+// este tiempo acumulado — cruzarlo caminando no etiqueta (evita que un
+// cliente que pasa sobre la zona del host quede marcado como empleado).
+const STAFF_TAG_MS = 2500;
 
 interface CameraProfile { key: string; name: string; deviceId: string; }
 
@@ -184,7 +190,7 @@ const DEFAULT_CONFIG: VisionConfig = {
   whatsPhone: '', whatsKey: '', whatsEnabled: false,
   intervalMs: 700, minScore: 0.5,
   arrivalMinDwellSec: 3, waitAlertSec: 12,
-  exitGraceSec: 5, greetMinSec: 2,
+  exitGraceSec: 5, greetMinSec: 3,
   heatmapOn: false,
   faceIdOn: false,
 };
@@ -518,15 +524,28 @@ export const VisionScreen: React.FC = () => {
           tracks.push({
             id: trackSeqRef.current++, ...d, firstSeen: now, lastSeen: now,
             role: 'unknown', taggedAt: 0, counted: false, greeted: false,
-            interactionMs: 0, waitAlerted: false, lastTick: now,
+            interactionMs: 0, hostZoneMs: 0, waitAlerted: false, lastTick: now,
           });
         }
+      });
+
+      // 1.5) Delta de tiempo por track (una vez por pasada, tope 2s para
+      // no acumular saltos grandes tras una pausa).
+      const tickDeltas = new Map<number, number>();
+      tracks.forEach((t) => {
+        tickDeltas.set(t.id, Math.min(now - t.lastTick, 2000));
+        t.lastTick = now;
       });
 
       // 2) Asignación de roles (de por vida del track).
       tracks.forEach((t) => {
         if (t.role !== 'unknown' || now - t.lastSeen > 1200) return;
-        if (hz && feetInZone(t, hz)) { t.role = 'staff'; return; }
+        // PERSONAL: requiere PERMANECER parado en el puesto anfitrión
+        // (~2.5s acumulados) — cruzarlo caminando NO etiqueta.
+        if (hz && feetInZone(t, hz)) {
+          t.hostZoneMs += tickDeltas.get(t.id) || 0;
+          if (t.hostZoneMs >= STAFF_TAG_MS) { t.role = 'staff'; return; }
+        }
         // Cliente: track JOVEN (acaba de aparecer en escena = entró por la
         // puerta) pisando la zona de entrada. El personal que deambula hace
         // rato no se re-etiqueta.
@@ -574,8 +593,6 @@ export const VisionScreen: React.FC = () => {
         }
       }
 
-      const hostRt = hz ? runtimeRef.current.get(hz.id) : undefined;
-      const hostPresent = hz ? ((hostRt?.persons ?? 0) > 0 || (!!hostRt?.lastSeen && now - hostRt.lastSeen <= graceMs)) : false;
       const aspect = vw / vh;
       const near = (a: PersonTrack, b: PersonTrack) => {
         const dx = ((a.x + a.w / 2) - (b.x + b.w / 2)) * aspect;
@@ -587,8 +604,7 @@ export const VisionScreen: React.FC = () => {
       if (gz) {
         tracks.forEach((t) => {
           if (t.role !== 'guest') return;
-          const tickDelta = now - t.lastTick;
-          t.lastTick = now;
+          const tickDelta = tickDeltas.get(t.id) || 0;
           const dwell = now - t.taggedAt;
 
           if (!t.counted && dwell >= cfg.arrivalMinDwellSec * 1000) {
@@ -596,13 +612,16 @@ export const VisionScreen: React.FC = () => {
             rc!.arrivals += 1;
           }
 
-          // Atención: PERSONAL (o alguien que no es cliente) cerca del
-          // cliente — en cualquier parte del encuadre — o el puesto cubierto.
+          // Atención = un PERSONAL IDENTIFICADO (permaneció en el puesto
+          // anfitrión o reconocido por rostro) se ACERCA físicamente al
+          // cliente — donde sea del encuadre. Que alguien esté parado en su
+          // puesto lejos del cliente NO cuenta como atención (flujo real:
+          // la hostess debe ir a recibirlo).
           const visible = now - t.lastSeen <= 1500;
           const interactingNow = visible && tracks.some((o) =>
-            o.id !== t.id && o.role !== 'guest' && now - o.lastSeen <= graceMs && near(o, t)
+            o.id !== t.id && o.role === 'staff' && now - o.lastSeen <= graceMs && near(o, t)
           );
-          if (visible && (interactingNow || hostPresent)) t.interactionMs += tickDelta;
+          if (interactingNow) t.interactionMs += tickDelta;
 
           if (t.counted && !t.greeted && t.interactionMs >= cfg.greetMinSec * 1000) {
             t.greeted = true;
@@ -612,7 +631,7 @@ export const VisionScreen: React.FC = () => {
             fireAlert(gz.name, 'guest_attended', `✅ Cliente atendido (respuesta ${greetSec}s).`, greetSec);
           }
 
-          if (t.counted && !t.greeted && !t.waitAlerted && !hostPresent && !interactingNow && dwell >= cfg.waitAlertSec * 1000) {
+          if (t.counted && !t.greeted && !t.waitAlerted && !interactingNow && dwell >= cfg.waitAlertSec * 1000) {
             t.waitAlerted = true;
             rc!.maxWaitSec = Math.max(rc!.maxWaitSec, Math.round(dwell / 1000));
             fireAlert(gz.name, 'guest_waiting', `🔔 ¡Cliente esperando ${fmtDur(dwell)} sin atención! Nadie lo ha recibido.`, Math.round(dwell / 1000), true);
@@ -1151,24 +1170,36 @@ export const VisionScreen: React.FC = () => {
                     <span className="text-[11px] font-mono text-servirest-mostaza">{Math.round((reception.attended / reception.arrivals) * 100)}% atención</span>
                   </div>
                 )}
-                {/* Clientes en seguimiento — telemetría en vivo para calibrar */}
+                {/* Telemetría en vivo: personal identificado + clientes en seguimiento */}
                 {(() => {
+                  const visibleTracks = personTracksRef.current.filter((t) => now - t.lastSeen <= 2000);
+                  const staffCount = visibleTracks.filter((t) => t.role === 'staff').length;
                   const gs = personTracksRef.current.filter((t) => t.role === 'guest');
-                  if (gs.length === 0) return null;
-                  const oldest = gs.reduce((a, b) => (a.taggedAt < b.taggedAt ? a : b));
+                  const oldest = gs.length ? gs.reduce((a, b) => (a.taggedAt < b.taggedAt ? a : b)) : null;
                   return (
-                    <div className={`mt-3 px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-2 ${
-                      oldest.greeted ? 'bg-green-500/15 text-green-400' : 'bg-servirest-mostaza/15 text-servirest-mostaza'
-                    }`}>
-                      {oldest.greeted
-                        ? <><CheckCircle2 size={13} /> {gs.length} cliente(s) en seguimiento — atendido ({fmtDur(now - oldest.taggedAt)} en el lugar)</>
-                        : <><Timer size={13} /> {gs.length} cliente(s) · esperando {fmtDur(now - oldest.taggedAt)} · interacción {(oldest.interactionMs / 1000).toFixed(1)}s / {config.greetMinSec}s</>}
-                    </div>
+                    <>
+                      {running && (
+                        <div className={`mt-3 px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-2 ${staffCount > 0 ? 'bg-blue-500/15 text-blue-300' : 'bg-servirest-hueso/10 text-servirest-hueso/50'}`}>
+                          <Users size={13} /> Personal identificado en escena: {staffCount}
+                          {staffCount === 0 && <span className="font-normal">— la hostess debe pararse en "{hostZone?.name}" ~3s (o registrarse por rostro) para poder "atender"</span>}
+                        </div>
+                      )}
+                      {oldest && (
+                        <div className={`mt-2 px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-2 ${
+                          oldest.greeted ? 'bg-green-500/15 text-green-400' : 'bg-servirest-mostaza/15 text-servirest-mostaza'
+                        }`}>
+                          {oldest.greeted
+                            ? <><CheckCircle2 size={13} /> {gs.length} cliente(s) en seguimiento — atendido ({fmtDur(now - oldest.taggedAt)} en el lugar)</>
+                            : <><Timer size={13} /> {gs.length} cliente(s) · esperando {fmtDur(now - oldest.taggedAt)} · interacción {(oldest.interactionMs / 1000).toFixed(1)}s / {config.greetMinSec}s</>}
+                        </div>
+                      )}
+                    </>
                   );
                 })()}
                 <p className="text-[10px] text-servirest-hueso/45 mt-3 leading-relaxed">
-                  "{guestZone?.name}" es la línea de entrada: quien la cruza queda etiquetado Cliente y se le sigue por TODO el encuadre.
-                  "Atendido" = personal cerca de él (donde sea) o "{hostZone?.name}" cubierto, por {config.greetMinSec}s+. Alerta si espera {config.waitAlertSec}s+; su salida se confirma tras {Math.round(config.exitGraceSec * 1.6)}s sin verlo.
+                  Flujo: quien cruza "{guestZone?.name}" = Cliente (se le sigue por todo el encuadre). "Atendido" = un PERSONAL identificado
+                  (permaneció ~3s en "{hostZone?.name}" o reconocido por rostro) se ACERCA al cliente por {config.greetMinSec}s+. Que el personal esté
+                  en su puesto sin acercarse NO cuenta. Alerta si espera {config.waitAlertSec}s+; salida confirmada tras {Math.round(config.exitGraceSec * 1.6)}s sin verlo.
                 </p>
               </div>
             )}
@@ -1308,7 +1339,7 @@ export const VisionScreen: React.FC = () => {
               📍 {zoneRule === 'guest_arrival'
                 ? 'Dibuja una FRANJA DEL PISO cruzando la puerta (el umbral). Es una línea de entrada: quien la pisa al llegar queda etiquetado Cliente y se le sigue por todo el encuadre — no necesita quedarse dentro.'
                 : zoneRule === 'host_post'
-                ? 'Marca el piso alrededor del atril/puesto del host. Sirve para dos cosas: medir cobertura del puesto y etiquetar como Personal a quien lo pisa.'
+                ? 'Marca un parche PEQUEÑO de piso solo donde SE PARA el host (junto al atril) — NO cubras el pasillo por donde caminan los clientes. Quien permanece ahí ~3s queda etiquetado Personal; cruzarla caminando no etiqueta.'
                 : zoneRule === 'food_pass'
                 ? 'Marca la SUPERFICIE de la barra donde se dejan los platillos (no el piso). Las 4 esquinas de la tabla, en perspectiva.'
                 : zoneRule === 'restricted'
@@ -1438,8 +1469,10 @@ export const VisionScreen: React.FC = () => {
               </div>
             </div>
             <p className="text-[10px] text-[rgba(42,40,38,0.45)] mb-4 leading-relaxed">
-              "Confirmar salida" evita falsos abandonos cuando la detección parpadea (sube a 8–10s si ves salidas fantasma).
-              "Atendido" = alguien del personal estuvo CERCA del cliente (o en el puesto anfitrión) durante esos segundos.
+              <b>Contar llegada</b>: el cliente debe permanecer esos seg. tras cruzar la entrada (filtra a quien solo pasa). ·
+              <b> Espera → alerta</b>: aviso en vivo si nadie lo ha atendido en ese tiempo. ·
+              <b> Confirmar salida</b>: seg. sin verlo para darlo por ido — evita falsos abandonos por parpadeo (sube a 8–10s si ves salidas fantasma). ·
+              <b> Interacción = atendido</b>: seg. que un PERSONAL identificado debe estar CERCA del cliente (estar parado en su puesto lejos de él NO cuenta).
             </p>
 
             <div className="grid grid-cols-2 gap-3">
