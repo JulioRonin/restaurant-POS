@@ -70,7 +70,11 @@ export const DriverScreen: React.FC = () => {
 
   useEffect(() => {
     fetchDeliveries();
-    const iv = setInterval(fetchDeliveries, 15000);
+    // 30s y solo con la pestaña visible (control de egress: esta pantalla
+    // suele quedarse abierta todo el turno en la compu del admin).
+    const iv = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchDeliveries();
+    }, 30000);
     return () => clearInterval(iv);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId]);

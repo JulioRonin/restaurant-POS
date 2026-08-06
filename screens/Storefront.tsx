@@ -1526,7 +1526,11 @@ const FloatingOrderBubble: React.FC<{ businessId: string; onOpen: (o: ActiveOrde
       }
     };
     poll();
-    const iv = setInterval(poll, 15000);
+    // 30s y solo con la pestaña visible: la burbuja vive toda la sesión del
+    // cliente, y muchos dejan la pestaña abierta en segundo plano.
+    const iv = setInterval(() => {
+      if (document.visibilityState === 'visible') poll();
+    }, 30000);
     return () => { alive = false; clearInterval(iv); };
   }, [current?.id, businessId]);
 
@@ -1606,7 +1610,12 @@ const SuccessView: React.FC<any> = ({ orderNum, orderId, mode, businessId, custo
       setStatus(next);
     };
     poll();
-    const iv = setInterval(poll, 12000);
+    // Con la pestaña oculta no tiene caso preguntar el estatus: al volver,
+    // el propio visibilitychange del navegador re-renderiza y el siguiente
+    // tick actualiza. (Control de egress.)
+    const iv = setInterval(() => {
+      if (document.visibilityState === 'visible') poll();
+    }, 15000);
     return () => { alive = false; clearInterval(iv); };
   }, [orderId, mode, orderNum]);
 

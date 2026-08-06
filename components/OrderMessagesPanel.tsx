@@ -53,23 +53,38 @@ export const OrderMessagesPanel: React.FC<{
   const hydratedRef = useRef(false);
   const endRef = useRef<HTMLDivElement>(null);
 
+  // Marca del mensaje más reciente ya cargado — para pedir solo lo nuevo.
+  const sinceRef = useRef<string | null>(null);
+
   const load = async () => {
-    const all = await getBusinessMessages(businessId);
+    const incoming = await getBusinessMessages(businessId, sinceRef.current);
+    if (incoming.length === 0) return;
+
+    // Avanza la marca al mensaje más nuevo recibido.
+    const newest = incoming[incoming.length - 1]?.createdAt;
+    if (newest && (!sinceRef.current || newest > sinceRef.current)) sinceRef.current = newest;
+
     // Aviso sonoro si llegaron mensajes NUEVOS del cliente (no en la 1a carga).
-    const fresh = all.filter((m) => !knownIdsRef.current.has(m.id));
+    const fresh = incoming.filter((m) => !knownIdsRef.current.has(m.id));
     if (hydratedRef.current && fresh.some((m) => m.sender === 'customer')) {
       beep();
       try { navigator.vibrate?.([80, 40, 80]); } catch { /* no-op */ }
     }
-    all.forEach((m) => knownIdsRef.current.add(m.id));
+    incoming.forEach((m) => knownIdsRef.current.add(m.id));
     hydratedRef.current = true;
-    setMessages(all);
+    // Acumula (ya no reemplaza: el server solo manda el delta).
+    setMessages((prev) => [...prev, ...fresh]);
   };
 
   useEffect(() => {
     if (!businessId) return;
+    hydratedRef.current = false;
     load();
-    const iv = setInterval(load, 10000);
+    // 20s en vez de 10s, y solo con la pestaña visible: en Cocina esta
+    // pantalla vive abierta todo el turno.
+    const iv = setInterval(() => {
+      if (document.visibilityState === 'visible') load();
+    }, 20000);
     return () => clearInterval(iv);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [businessId]);

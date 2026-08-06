@@ -93,12 +93,24 @@ export function startNetworkMonitoring() {
     emitStatus({ isOnline: false });
   });
 
-  // Periodic sync (every 60 seconds when online) to ensure kitchen/pos stay in sync
+  // Periodic sync (every 60 seconds when online) to ensure kitchen/pos stay in sync.
+  // Solo cuando la pestaña está VISIBLE: una terminal olvidada abierta toda
+  // la noche sincronizaba 1,440 veces sin que nadie estuviera viendo la
+  // pantalla — puro egress tirado a la basura.
   syncIntervalId = window.setInterval(() => {
+    if (document.visibilityState !== 'visible') return;
     if (navigator.onLine && !currentStatus.isSyncing) {
       triggerSync(undefined, true); // true = is background sync
     }
   }, 60_000);
+
+  // Al volver a la pestaña, sincroniza de inmediato para no esperar el
+  // siguiente tick (así la pausa no se siente en la operación real).
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && navigator.onLine && !currentStatus.isSyncing) {
+      triggerSync(undefined, true);
+    }
+  });
 
   // Initial status
   emitStatus({ isOnline: navigator.onLine });
@@ -479,14 +491,60 @@ export async function repairAndRecoverMenuData(targetBusinessId: string): Promis
 
 // ─── PULL: Fetch latest data from Supabase ───────────────────
 
+/**
+ * WATERMARK POR TABLA — control de egress.
+ *
+ * Antes este pull hacía `select('*')` de las 9 tablas COMPLETAS cada 60s,
+ * sin filtro de fecha: cada minuto se re-descargaba todo el historial del
+ * negocio (todas las órdenes desde siempre + el menú con sus fotos). Con
+ * varias terminales abiertas todo el día eso son cientos de GB de egress
+ * al mes en Supabase.
+ *
+ * Ahora guardamos, por negocio y tabla, el `updated_at` más reciente que ya
+ * bajamos, y solo pedimos lo que cambió después de esa marca. El primer
+ * pull de un dispositivo sí trae datos (acotados por ventana, ver
+ * FULL_PULL_WINDOW_DAYS), los siguientes bajan casi cero.
+ */
+const watermarkKey = (bizId: string, table: string) => `sync_wm_${bizId}_${table}`;
+
+const getWatermark = (bizId: string, table: string): string | null => {
+  try { return localStorage.getItem(watermarkKey(bizId, table)); } catch { return null; }
+};
+
+const setWatermark = (bizId: string, table: string, iso: string) => {
+  try { localStorage.setItem(watermarkKey(bizId, table), iso); } catch { /* storage lleno */ }
+};
+
+/** Borra las marcas: fuerza un pull completo (útil tras limpiar IndexedDB). */
+export function resetSyncWatermarks(businessId?: string) {
+  try {
+    const prefix = businessId ? `sync_wm_${businessId}_` : 'sync_wm_';
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith(prefix))
+      .forEach((k) => localStorage.removeItem(k));
+    console.log('[SyncService] Watermarks reiniciados — el próximo sync será completo.');
+  } catch { /* no-op */ }
+}
+
+// En el PRIMER pull de un dispositivo (sin watermark) no bajamos el
+// historial completo desde el inicio de los tiempos: las tablas
+// transaccionales se acotan a esta ventana. El histórico viejo sigue en
+// Supabase y se consulta bajo demanda desde los reportes.
+const FULL_PULL_WINDOW_DAYS = 7;
+const WINDOWED_TABLES = new Set(['orders', 'order_items', 'expenses', 'supplier_orders']);
+
 async function pullServerChanges(businessId?: string): Promise<number> {
   let globalModifiedCount = 0;
   for (const [localStore, supabaseTable] of Object.entries(TABLE_MAP)) {
     try {
+      const orderBy = (supabaseTable === 'expenses' || supabaseTable === 'supplier_orders')
+        ? 'created_at'
+        : 'updated_at';
+
       let query = supabaseClient
         .from(supabaseTable)
         .select('*');
-      
+
       // CRITICAL: Filter by businessId if provided to ensure cross-tenant isolation
       if (businessId) {
         query = query.eq('business_id', businessId);
@@ -494,9 +552,29 @@ async function pullServerChanges(businessId?: string): Promise<number> {
         console.warn(`[SyncService] No businessId provided for PULL on ${supabaseTable}. This might leak data if RLS is not tight.`);
       }
 
-      const orderBy = (supabaseTable === 'expenses' || supabaseTable === 'supplier_orders') 
-        ? 'created_at' 
-        : 'updated_at';
+      // ── Filtro incremental (el que evita el egress masivo) ──────────
+      let wm = businessId ? getWatermark(businessId, supabaseTable) : null;
+
+      // RED DE SEGURIDAD: si hay marca pero el store local está VACÍO
+      // (el operador limpió el navegador, o cambió de equipo), la marca
+      // mentiría y el dispositivo se quedaría sin datos. En ese caso la
+      // descartamos y hacemos pull completo una vez.
+      if (wm && localStore !== 'settings' && localStore !== 'business_settings') {
+        try {
+          const local = await import('./db').then((db) => db.getAll(localStore as any));
+          if (!local || local.length === 0) {
+            console.warn(`[SyncService] ${localStore} vacío localmente — ignorando watermark y re-sincronizando.`);
+            wm = null;
+          }
+        } catch { /* si falla la lectura local, seguimos con la marca */ }
+      }
+
+      if (wm) {
+        query = query.gt(orderBy, wm);
+      } else if (WINDOWED_TABLES.has(supabaseTable)) {
+        const since = new Date(Date.now() - FULL_PULL_WINDOW_DAYS * 86400000).toISOString();
+        query = query.gte(orderBy, since);
+      }
 
       const { data, error } = await query.order(orderBy, { ascending: false });
 
@@ -506,6 +584,18 @@ async function pullServerChanges(businessId?: string): Promise<number> {
       }
 
       if (!data || data.length === 0) continue;
+
+      // Avanza la marca al timestamp más reciente que realmente bajamos
+      // (usamos el reloj DEL SERVIDOR, no el del cliente, para no perder
+      // registros por desfase de horas entre dispositivos).
+      if (businessId) {
+        let maxTs = wm || '';
+        for (const r of data) {
+          const ts = (r as any)[orderBy] || (r as any).updated_at || (r as any).created_at;
+          if (ts && ts > maxTs) maxTs = ts;
+        }
+        if (maxTs) setWatermark(businessId, supabaseTable, maxTs);
+      }
 
       for (const serverRecord of data) {
         let localRecord: any;

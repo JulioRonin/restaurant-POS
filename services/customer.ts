@@ -333,13 +333,21 @@ export async function sendOrderMessage(
 }
 
 /** Todos los mensajes de un negocio (para Cocina / Repartidor). */
-export async function getBusinessMessages(businessId: string): Promise<(OrderMessage & { businessId?: string })[]> {
+export async function getBusinessMessages(
+  businessId: string,
+  since?: string | null
+): Promise<(OrderMessage & { businessId?: string })[]> {
   const sb = getSupabase();
   if (!sb || !businessId) return [];
-  const { data, error } = await sb
+  // `since` = created_at del mensaje más nuevo que ya tenemos en pantalla.
+  // Sin él, este query se re-descargaba completo (hasta 300 mensajes) cada
+  // 10 segundos en la pantalla de Cocina — un goteo constante de egress.
+  let q = sb
     .from('order_messages')
     .select('*')
-    .eq('business_id', businessId)
+    .eq('business_id', businessId);
+  if (since) q = q.gt('created_at', since);
+  const { data, error } = await q
     .order('created_at', { ascending: true })
     .limit(300);
   if (error) { console.warn('[customer] getBusinessMessages:', error.message); return []; }
