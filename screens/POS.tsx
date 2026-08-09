@@ -241,9 +241,13 @@ export const POSScreen: React.FC = () => {
   };
 
   const subtotal = cart.reduce((s, it) => s + lineTotal(it), 0);
-  // Los precios del menú ya incluyen IVA (precio final al cliente) — no se
-  // suma un 16% extra encima, se duplicaría el cobro.
-  const total = subtotal;
+  // Toggle en Ajustes → General → IVA. Si los precios del menú YA incluyen
+  // el 16% (default), no se suma nada extra al cobrar — solo se muestra
+  // como referencia. Si el dueño marca que sus precios son SIN IVA, aquí sí
+  // se agrega el 16% al subtotal.
+  const pricesIncludeTax = settings.pricesIncludeTax ?? true;
+  const tax = pricesIncludeTax ? subtotal - subtotal / 1.16 : subtotal * 0.16;
+  const total = pricesIncludeTax ? subtotal : subtotal + tax;
   const cartItemCount = cart.reduce((s, it) => s + it.quantity, 0);
 
   const handleSendOrder = async () => {
@@ -613,11 +617,15 @@ export const POSScreen: React.FC = () => {
             })}
           </div>
 
-          {/* Totals — precios ya incluyen IVA, no se suma aparte */}
+          {/* Totals — el IVA se suma o no según Ajustes → General → IVA */}
           <div className="space-y-2 mb-4">
             <div className="flex justify-between text-[12px]">
-              <span className="text-[rgba(42,40,38,0.6)] font-medium">Subtotal (IVA incluido)</span>
+              <span className="text-[rgba(42,40,38,0.6)] font-medium">{pricesIncludeTax ? 'Subtotal (IVA incluido)' : 'Subtotal'}</span>
               <SrMono className="text-servirest-carbon font-bold">${subtotal.toFixed(2)}</SrMono>
+            </div>
+            <div className="flex justify-between text-[12px]">
+              <span className="text-[rgba(42,40,38,0.6)] font-medium">{pricesIncludeTax ? 'IVA (ya incluido)' : 'IVA (16 %)'}</span>
+              <SrMono className="text-servirest-carbon font-bold">${tax.toFixed(2)}</SrMono>
             </div>
           </div>
 

@@ -15,7 +15,18 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
   const fontSize = is58mm ? 'text-[8px]' : 'text-sm';
   const padding = is58mm ? 'p-0' : 'p-4';
   
-  const subtotal = (order.total - (order.tip || 0));
+  // El total del pedido ya refleja el modo activo al momento de cobrar
+  // (Ajustes → General → IVA). Aquí solo se arma el desglose informativo:
+  // la base sin IVA siempre es chargedAmount / 1.16 (con impuesto agregado
+  // o ya incluido, la relación base→total-con-IVA es la misma fórmula).
+  const pricesIncludeTax = settings.pricesIncludeTax ?? true;
+  const chargedAmount = order.total - (order.tip || 0);
+  const baseAmount = chargedAmount / 1.16;
+  const ivaAmount = chargedAmount - baseAmount;
+  // Con precios ya incluidos, el renglón "SUBTOTAL" muestra lo cobrado tal
+  // cual (el IVA solo se anota como referencia); con precios sin IVA,
+  // muestra la base y el IVA se ve como un cargo aparte.
+  const subtotal = pricesIncludeTax ? chargedAmount : baseAmount;
 
   return (
     <div className={`bg-white text-black ${padding} font-mono ${fontSize} leading-tight ${widthClass} mx-auto print:mx-auto print:w-[48mm]`}>
@@ -87,6 +98,10 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
           <span>SUBTOTAL:</span>
           <span>${subtotal.toFixed(2)}</span>
         </div>
+        <div className="flex justify-between text-[10px] opacity-70">
+          <span>IVA (16%){pricesIncludeTax ? ' INCLUIDO' : ''}:</span>
+          <span>${ivaAmount.toFixed(2)}</span>
+        </div>
         {order.tip && (
           <div className="flex justify-between">
             <span>PROPINA:</span>
@@ -97,7 +112,9 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
           <span>TOTAL:</span>
           <span>${order.total.toFixed(2)}</span>
         </div>
-        <p className="text-[8px] text-center mt-1 opacity-60">PRECIOS INCLUYEN IVA</p>
+        {pricesIncludeTax && (
+          <p className="text-[8px] text-center mt-1 opacity-60">PRECIOS INCLUYEN IVA</p>
+        )}
 
         {order.receivedAmount !== undefined && order.receivedAmount > 0 && (
           <>
