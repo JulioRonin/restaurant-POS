@@ -241,8 +241,9 @@ export const POSScreen: React.FC = () => {
   };
 
   const subtotal = cart.reduce((s, it) => s + lineTotal(it), 0);
-  const tax = subtotal * 0.16;
-  const total = subtotal + tax;
+  // Los precios del menú ya incluyen IVA (precio final al cliente) — no se
+  // suma un 16% extra encima, se duplicaría el cobro.
+  const total = subtotal;
   const cartItemCount = cart.reduce((s, it) => s + it.quantity, 0);
 
   const handleSendOrder = async () => {
@@ -612,15 +613,11 @@ export const POSScreen: React.FC = () => {
             })}
           </div>
 
-          {/* Totals */}
+          {/* Totals — precios ya incluyen IVA, no se suma aparte */}
           <div className="space-y-2 mb-4">
             <div className="flex justify-between text-[12px]">
-              <span className="text-[rgba(42,40,38,0.6)] font-medium">Subtotal</span>
+              <span className="text-[rgba(42,40,38,0.6)] font-medium">Subtotal (IVA incluido)</span>
               <SrMono className="text-servirest-carbon font-bold">${subtotal.toFixed(2)}</SrMono>
-            </div>
-            <div className="flex justify-between text-[12px]">
-              <span className="text-[rgba(42,40,38,0.6)] font-medium">IVA (16 %)</span>
-              <SrMono className="text-servirest-carbon font-bold">${tax.toFixed(2)}</SrMono>
             </div>
           </div>
 

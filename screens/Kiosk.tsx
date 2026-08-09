@@ -100,7 +100,10 @@ export const KioskScreen: React.FC = () => {
   const cartCount = cart.reduce((n, l) => n + l.quantity, 0);
   const subtotal = cart.reduce((n, l) => n + lineTotal(l), 0);
   const deliveryFee = settings.digitalMode === 'delivery' ? (settings.digitalDeliveryFee ?? 0) : 0;
-  const iva = subtotal * 0.16;
+  // Los precios del menú ya incluyen IVA — esto NO se suma al total, es solo
+  // el desglose informativo del ticket. Se EXTRAE del precio final
+  // (subtotal / 1.16 = base sin IVA), no se calcula como si fuera extra.
+  const iva = subtotal - subtotal / 1.16;
   const total = subtotal + deliveryFee;
   const meetsMinimum = subtotal >= (settings.digitalMinOrder ?? 0);
 
