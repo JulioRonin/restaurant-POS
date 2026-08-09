@@ -13,6 +13,7 @@ import { motion } from 'framer-motion';
 import {
   TrendingUp, TrendingDown, FileText, ArrowUpRight, ArrowDownRight,
   Utensils, Receipt, Wallet, Banknote, Ban, Layers, Sparkles,
+  Calendar, Table2, ShoppingBag, Store, Truck, Bike, Car, Smartphone,
 } from 'lucide-react';
 import {
   SrCard, SrButton, SrSeg, SrLabel, SrKicker, SrMono, SrPanel,
@@ -302,6 +303,29 @@ export const DashboardScreen: React.FC = () => {
     };
   }, [activeOrders]);
 
+  // Desglose de ventas por canal (En mesa, Para llevar, Rappi, Uber Eats…)
+  // — mismo filtro que "Ventas netas" (solo completadas/pagadas).
+  const CHANNEL_META: Record<string, { label: string; icon: any }> = {
+    DINE_IN:    { label: 'En mesa',     icon: Table2 },
+    TO_GO:      { label: 'Para llevar', icon: ShoppingBag },
+    PICKUP:     { label: 'Recoger',     icon: Store },
+    RAPPI:      { label: 'Rappi',       icon: Truck },
+    UBER_EATS:  { label: 'Uber Eats',   icon: Bike },
+    DIDI:       { label: 'DiDi',        icon: Car },
+    DRIVE_THRU: { label: 'Drive-thru',  icon: Smartphone },
+  };
+  const channelBreakdown = useMemo(() => {
+    const map: Record<string, { total: number; count: number }> = {};
+    activeOrders.forEach((o) => {
+      if (o.status !== 'COMPLETED' && o.status !== 'PAID') return;
+      const key = (o as any).source || 'DINE_IN';
+      if (!map[key]) map[key] = { total: 0, count: 0 };
+      map[key].total += o.total || 0;
+      map[key].count += 1;
+    });
+    return Object.entries(map).sort((a, b) => b[1].total - a[1].total);
+  }, [activeOrders]);
+
   const totalExpenses = activeExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
   const netCashFlow = sales - totalExpenses;
   const grossMarginPct = sales > 0 ? ((sales - totalExpenses) / sales) * 100 : 0;
@@ -399,6 +423,28 @@ export const DashboardScreen: React.FC = () => {
               value={(RANGE_OPTS as readonly string[]).includes(timeRange as any) ? (timeRange as any) : 'Semana'}
               onChange={(v) => setTimeRange(v as TimeRange)}
             />
+            {/* Elegir un día exacto del calendario — "Semana/Mes/Año" son
+                ventanas relativas (rodantes), esto fija un día específico. */}
+            <div
+              className={`flex items-center gap-2 pl-4 pr-3 py-2.5 rounded-sr-md border transition-colors ${
+                timeRange === 'Día específico'
+                  ? 'bg-servirest-terracota/10 border-servirest-terracota'
+                  : 'bg-servirest-surface border-[rgba(42,40,38,0.12)] hover:border-servirest-terracota/50'
+              }`}
+            >
+              <Calendar size={14} className={timeRange === 'Día específico' ? 'text-servirest-terracota' : 'text-[rgba(42,40,38,0.5)]'} />
+              <input
+                type="date"
+                value={selectedDate}
+                max={new Date().toISOString().split('T')[0]}
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  setSelectedDate(e.target.value);
+                  setTimeRange('Día específico');
+                }}
+                className="bg-transparent text-servirest-carbon text-[11px] font-black uppercase tracking-[0.08em] outline-none cursor-pointer"
+              />
+            </div>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
@@ -475,6 +521,50 @@ export const DashboardScreen: React.FC = () => {
             deltaTone={netCashFlow >= 0 ? 'success' : 'danger'}
           />
         </div>
+
+        {/* ─── SECTION 0 — Canales ─────────────────────────────────────── */}
+        <SectionDivider
+          kicker="Canales"
+          title="Ventas por canal"
+          meta={`${channelBreakdown.length} canal(es) activo(s) en el periodo`}
+        />
+        {channelBreakdown.length === 0 ? (
+          <SrCard variant="solaris" className="p-7 mb-3">
+            <SrEmptyState
+              icon={<Layers size={24} />}
+              title="Sin ventas completadas en este periodo"
+              description="En cuanto cierres una cuenta (en mesa, para llevar, Rappi, Uber Eats…) verás aquí cuánto trae cada canal."
+            />
+          </SrCard>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-3">
+            {channelBreakdown.map(([key, data]) => {
+              const meta = CHANNEL_META[key] || { label: key, icon: Layers };
+              const Icon = meta.icon;
+              const pct = sales > 0 ? (data.total / sales) * 100 : 0;
+              return (
+                <SrCard key={key} variant="solaris" className="p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-servirest-terracota/10 text-servirest-terracota flex items-center justify-center flex-shrink-0">
+                      <Icon size={15} />
+                    </div>
+                    <SrLabel className="text-[10px] truncate">{meta.label}</SrLabel>
+                  </div>
+                  <SrMono className="block text-[22px] font-black text-servirest-midnight leading-none">
+                    ${data.total.toLocaleString('es-MX', { maximumFractionDigits: 0 })}
+                  </SrMono>
+                  <div className="flex items-center justify-between mt-2 text-[10px] text-[rgba(42,40,38,0.5)] font-bold">
+                    <span>{data.count} orden{data.count === 1 ? '' : 'es'}</span>
+                    <span>{pct.toFixed(0)}% del total</span>
+                  </div>
+                  <div className="h-1 bg-[rgba(42,40,38,0.06)] rounded-full overflow-hidden mt-2">
+                    <div className="h-full bg-servirest-terracota rounded-full" style={{ width: `${Math.min(100, pct)}%` }} />
+                  </div>
+                </SrCard>
+              );
+            })}
+          </div>
+        )}
 
         {/* ─── SECTION 1 — Tesorería ────────────────────────────────────── */}
         <SectionDivider
