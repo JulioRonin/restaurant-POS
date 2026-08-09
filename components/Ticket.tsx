@@ -16,17 +16,18 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
   const padding = is58mm ? 'p-0' : 'p-4';
   
   // El total del pedido ya refleja el modo activo al momento de cobrar
-  // (Ajustes → General → IVA). Aquí solo se arma el desglose informativo:
-  // la base sin IVA siempre es chargedAmount / 1.16 (con impuesto agregado
-  // o ya incluido, la relación base→total-con-IVA es la misma fórmula).
-  const pricesIncludeTax = settings.pricesIncludeTax ?? true;
+  // (Ajustes → General → IVA, "Cobrar 16% de IVA aparte"). Aquí solo se
+  // arma el desglose informativo: la base sin IVA siempre es
+  // chargedAmount / 1.16 (con impuesto agregado o ya incluido, la relación
+  // base→total-con-IVA es la misma fórmula).
+  const chargeExtraTax = settings.chargeExtraTax ?? false;
   const chargedAmount = order.total - (order.tip || 0);
   const baseAmount = chargedAmount / 1.16;
   const ivaAmount = chargedAmount - baseAmount;
-  // Con precios ya incluidos, el renglón "SUBTOTAL" muestra lo cobrado tal
-  // cual (el IVA solo se anota como referencia); con precios sin IVA,
-  // muestra la base y el IVA se ve como un cargo aparte.
-  const subtotal = pricesIncludeTax ? chargedAmount : baseAmount;
+  // Con precios ya incluidos (default), el renglón "SUBTOTAL" muestra lo
+  // cobrado tal cual (el IVA solo se anota como referencia); cobrando el
+  // IVA aparte, muestra la base y el IVA se ve como un cargo aparte.
+  const subtotal = chargeExtraTax ? baseAmount : chargedAmount;
 
   return (
     <div className={`bg-white text-black ${padding} font-mono ${fontSize} leading-tight ${widthClass} mx-auto print:mx-auto print:w-[48mm]`}>
@@ -99,7 +100,7 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
           <span>${subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-[10px] opacity-70">
-          <span>IVA (16%){pricesIncludeTax ? ' INCLUIDO' : ''}:</span>
+          <span>IVA (16%){chargeExtraTax ? '' : ' INCLUIDO'}:</span>
           <span>${ivaAmount.toFixed(2)}</span>
         </div>
         {order.tip && (
@@ -112,7 +113,7 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
           <span>TOTAL:</span>
           <span>${order.total.toFixed(2)}</span>
         </div>
-        {pricesIncludeTax && (
+        {!chargeExtraTax && (
           <p className="text-[8px] text-center mt-1 opacity-60">PRECIOS INCLUYEN IVA</p>
         )}
 

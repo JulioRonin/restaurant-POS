@@ -241,13 +241,13 @@ export const POSScreen: React.FC = () => {
   };
 
   const subtotal = cart.reduce((s, it) => s + lineTotal(it), 0);
-  // Toggle en Ajustes → General → IVA. Si los precios del menú YA incluyen
-  // el 16% (default), no se suma nada extra al cobrar — solo se muestra
-  // como referencia. Si el dueño marca que sus precios son SIN IVA, aquí sí
-  // se agrega el 16% al subtotal.
-  const pricesIncludeTax = settings.pricesIncludeTax ?? true;
-  const tax = pricesIncludeTax ? subtotal - subtotal / 1.16 : subtotal * 0.16;
-  const total = pricesIncludeTax ? subtotal : subtotal + tax;
+  // Toggle en Ajustes → General → IVA ("Cobrar 16% de IVA aparte").
+  // Apagado (default): los precios del menú YA incluyen el 16%, no se suma
+  // nada extra al cobrar — solo se muestra como referencia. Encendido: se
+  // agrega el 16% al subtotal.
+  const chargeExtraTax = settings.chargeExtraTax ?? false;
+  const tax = chargeExtraTax ? subtotal * 0.16 : subtotal - subtotal / 1.16;
+  const total = chargeExtraTax ? subtotal + tax : subtotal;
   const cartItemCount = cart.reduce((s, it) => s + it.quantity, 0);
 
   const handleSendOrder = async () => {
@@ -620,11 +620,11 @@ export const POSScreen: React.FC = () => {
           {/* Totals — el IVA se suma o no según Ajustes → General → IVA */}
           <div className="space-y-2 mb-4">
             <div className="flex justify-between text-[12px]">
-              <span className="text-[rgba(42,40,38,0.6)] font-medium">{pricesIncludeTax ? 'Subtotal (IVA incluido)' : 'Subtotal'}</span>
+              <span className="text-[rgba(42,40,38,0.6)] font-medium">{chargeExtraTax ? 'Subtotal' : 'Subtotal (IVA incluido)'}</span>
               <SrMono className="text-servirest-carbon font-bold">${subtotal.toFixed(2)}</SrMono>
             </div>
             <div className="flex justify-between text-[12px]">
-              <span className="text-[rgba(42,40,38,0.6)] font-medium">{pricesIncludeTax ? 'IVA (ya incluido)' : 'IVA (16 %)'}</span>
+              <span className="text-[rgba(42,40,38,0.6)] font-medium">{chargeExtraTax ? 'IVA (16 %)' : 'IVA (ya incluido)'}</span>
               <SrMono className="text-servirest-carbon font-bold">${tax.toFixed(2)}</SrMono>
             </div>
           </div>

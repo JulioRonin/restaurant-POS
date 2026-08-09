@@ -80,14 +80,16 @@ export interface BusinessSettings {
   };
 
   /* ─── IVA ────────────────────────────────────────────────────────────
-   * pricesIncludeTax = true  → los precios del menú YA incluyen el 16% de
-   *   IVA (precio final al cliente). POS/Kiosko/Storefront NO suman nada
-   *   extra al cobrar; el ticket solo muestra el IVA como desglose
+   * chargeExtraTax = false (default) → los precios del menú YA incluyen el
+   *   16% de IVA (precio final al cliente). POS/Kiosko/Storefront NO suman
+   *   nada extra al cobrar; el ticket solo muestra el IVA como desglose
    *   informativo (extraído del precio, no agregado).
-   * pricesIncludeTax = false → los precios del menú son SIN IVA. Se suma
-   *   16% al subtotal al cobrar (comportamiento clásico "más IVA").
+   * chargeExtraTax = true  → los precios del menú son SIN IVA. Se suma 16%
+   *   al subtotal al cobrar (comportamiento clásico "más IVA").
+   * El switch en Ajustes se lee tal cual: "Cobrar 16% de IVA aparte" — ON
+   * suma, OFF no suma nada (el caso de la mayoría de nuestros clientes).
    */
-  pricesIncludeTax?: boolean;
+  chargeExtraTax?: boolean;
 }
 
 interface SettingsContextType {
@@ -135,7 +137,7 @@ const DEFAULT_SETTINGS: BusinessSettings = {
   digitalDeliveryRadiusKm: 2,
   kioskPin: '0000',
   kioskPayMethods: { bluetooth: true, stripe_qr: false, cash: true, oxxo: false },
-  pricesIncludeTax: true,
+  chargeExtraTax: false,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);

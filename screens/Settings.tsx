@@ -845,19 +845,19 @@ const GeneralTab: React.FC<{
     <SrCard variant="solaris" className="p-8">
       <SectionHeading kicker="Impuestos" title="IVA" />
       <p className="text-[13px] text-[rgba(42,40,38,0.6)] font-medium mb-5 leading-relaxed max-w-2xl">
-        Define si el 16% de IVA ya viene contado dentro de los precios que cargas en el Menú, o si debe sumarse aparte al cobrar.
+        La mayoría de los negocios ya cargan sus precios de menú con el IVA incluido — deja esto apagado. Solo actívalo si tus precios son SIN IVA y quieres que se sume aparte al cobrar.
       </p>
       <SrCard className="p-5">
         <Toggle
-          label="Mis precios ya incluyen el IVA"
-          value={localSettings.pricesIncludeTax ?? true}
-          onChange={(v) => setLocalSettings((p) => ({ ...p, pricesIncludeTax: v }))}
+          label="Cobrar 16% de IVA aparte"
+          value={localSettings.chargeExtraTax ?? false}
+          onChange={(v) => setLocalSettings((p) => ({ ...p, chargeExtraTax: v }))}
         />
       </SrCard>
       <p className="text-[11px] text-[rgba(42,40,38,0.45)] mt-3 leading-relaxed">
-        {(localSettings.pricesIncludeTax ?? true)
-          ? 'Activado: el POS, Kiosko y Storefront cobran el precio del menú tal cual, sin sumar nada extra. El ticket muestra el IVA solo como referencia (ya incluido en ese precio).'
-          : 'Desactivado: al cobrar se suma un 16% adicional sobre el subtotal del menú.'}
+        {(localSettings.chargeExtraTax ?? false)
+          ? 'Activado: al cobrar se suma un 16% adicional sobre el subtotal del menú.'
+          : 'Apagado (recomendado si tus precios ya incluyen IVA): el POS, Kiosko y Storefront cobran el precio del menú tal cual, sin sumar nada extra. El ticket muestra el IVA solo como referencia.'}
       </p>
     </SrCard>
 

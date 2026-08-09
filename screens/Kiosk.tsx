@@ -100,12 +100,12 @@ export const KioskScreen: React.FC = () => {
   const cartCount = cart.reduce((n, l) => n + l.quantity, 0);
   const subtotal = cart.reduce((n, l) => n + lineTotal(l), 0);
   const deliveryFee = settings.digitalMode === 'delivery' ? (settings.digitalDeliveryFee ?? 0) : 0;
-  // Toggle en Ajustes → General → IVA. Con precios YA incluidos (default) el
-  // IVA se EXTRAE del precio (no se suma) y es solo referencia. Si el dueño
-  // marca que sus precios son SIN IVA, aquí se SUMA el 16% al total.
-  const pricesIncludeTax = settings.pricesIncludeTax ?? true;
-  const iva = pricesIncludeTax ? subtotal - subtotal / 1.16 : subtotal * 0.16;
-  const total = pricesIncludeTax ? subtotal + deliveryFee : subtotal + iva + deliveryFee;
+  // Toggle en Ajustes → General → IVA ("Cobrar 16% de IVA aparte"). Apagado
+  // (default): el IVA se EXTRAE del precio (no se suma), es solo referencia.
+  // Encendido: se SUMA el 16% al total.
+  const chargeExtraTax = settings.chargeExtraTax ?? false;
+  const iva = chargeExtraTax ? subtotal * 0.16 : subtotal - subtotal / 1.16;
+  const total = chargeExtraTax ? subtotal + iva + deliveryFee : subtotal + deliveryFee;
   const meetsMinimum = subtotal >= (settings.digitalMinOrder ?? 0);
 
   // ── Handlers ──────────────────────────────────────────────────────
@@ -510,7 +510,7 @@ export const KioskScreen: React.FC = () => {
                     <SrMono>${subtotal.toFixed(2)}</SrMono>
                   </div>
                   <div className="flex justify-between text-[11px] text-[rgba(42,40,38,0.45)]">
-                    <span>{pricesIncludeTax ? 'IVA incluido (16%)' : 'IVA (16%)'}</span>
+                    <span>{chargeExtraTax ? 'IVA (16%)' : 'IVA incluido (16%)'}</span>
                     <SrMono>${iva.toFixed(2)}</SrMono>
                   </div>
                   {deliveryFee > 0 && (
@@ -696,7 +696,7 @@ export const KioskScreen: React.FC = () => {
                     <SrMono>${subtotal.toFixed(2)}</SrMono>
                   </div>
                   <div className="flex justify-between text-[11px] text-[rgba(42,40,38,0.4)]">
-                    <span>{pricesIncludeTax ? 'IVA (16% incluido)' : 'IVA (16%)'}</span>
+                    <span>{chargeExtraTax ? 'IVA (16%)' : 'IVA (16% incluido)'}</span>
                     <SrMono>${iva.toFixed(2)}</SrMono>
                   </div>
                   {deliveryFee > 0 && (
