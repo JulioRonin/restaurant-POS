@@ -181,7 +181,8 @@ export const DashboardScreen: React.FC = () => {
   const { settings } = useSettings();
   const { inventory } = useInventory();
 
-  const [timeRange, setTimeRange] = useState<TimeRange>('Semana');
+  // Al abrir el Dashboard siempre se ve el día de hoy — no un acumulado.
+  const [timeRange, setTimeRange] = useState<TimeRange>('Día');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const d = new Date();
@@ -208,9 +209,15 @@ export const DashboardScreen: React.FC = () => {
     const dateStr = getLocalDatePart(d, 'date');
     const monthStr = getLocalDatePart(d, 'month');
     const ms = (n: number) => n * 24 * 60 * 60 * 1000;
-    if (timeRange === 'Día específico') return dateStr === selectedDate;
+    // 'Día' y 'Día específico' son el MISMO criterio: coincidencia exacta
+    // con el día de calendario en `selectedDate` (medianoche a medianoche),
+    // no una ventana rodante de 24h. Antes "Día" usaba
+    // Math.abs(Date.now() - d.getTime()) <= 1 día, que mezclaba parte de
+    // ayer con parte de hoy y daba un total DISTINTO al elegir la misma
+    // fecha con el selector de calendario — quedaban descuadrados entre sí
+    // (y el Flujo neto con ellos, porque usa los mismos filtros).
+    if (timeRange === 'Día' || timeRange === 'Día específico') return dateStr === selectedDate;
     if (timeRange === 'Mes específico') return monthStr === selectedDate;
-    if (timeRange === 'Día')    return Math.abs(Date.now() - d.getTime()) <= ms(1);
     if (timeRange === 'Semana') return Math.abs(Date.now() - d.getTime()) <= ms(7);
     if (timeRange === 'Mes')    return Math.abs(Date.now() - d.getTime()) <= ms(30);
     if (timeRange === 'Año')    return Math.abs(Date.now() - d.getTime()) <= ms(365);
@@ -396,7 +403,7 @@ export const DashboardScreen: React.FC = () => {
 
   const periodLabel =
     timeRange === 'Rango' ? `${dateRange.start} a ${dateRange.end}`
-    : timeRange === 'Día específico' ? selectedDate
+    : (timeRange === 'Día' || timeRange === 'Día específico') ? selectedDate
     : timeRange === 'Mes específico' ? selectedDate.substring(0, 7)
     : timeRange;
 
@@ -421,18 +428,27 @@ export const DashboardScreen: React.FC = () => {
             <SrSeg
               options={RANGE_OPTS}
               value={(RANGE_OPTS as readonly string[]).includes(timeRange as any) ? (timeRange as any) : 'Semana'}
-              onChange={(v) => setTimeRange(v as TimeRange)}
+              onChange={(v) => {
+                // Tocar "Día" siempre vuelve a HOY — si venías de elegir otra
+                // fecha con el calendario, no se queda pegado en esa fecha.
+                if (v === 'Día') {
+                  const d = new Date();
+                  setSelectedDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+                }
+                setTimeRange(v as TimeRange);
+              }}
             />
-            {/* Elegir un día exacto del calendario — "Semana/Mes/Año" son
-                ventanas relativas (rodantes), esto fija un día específico. */}
+            {/* Elegir un día exacto del calendario. "Día" y este selector son
+                el MISMO modo (coincidencia de día calendario) — el calendario
+                solo cambia CUÁL día ves, no el tipo de filtro. */}
             <div
               className={`flex items-center gap-2 pl-4 pr-3 py-2.5 rounded-sr-md border transition-colors ${
-                timeRange === 'Día específico'
+                timeRange === 'Día'
                   ? 'bg-servirest-terracota/10 border-servirest-terracota'
                   : 'bg-servirest-surface border-[rgba(42,40,38,0.12)] hover:border-servirest-terracota/50'
               }`}
             >
-              <Calendar size={14} className={timeRange === 'Día específico' ? 'text-servirest-terracota' : 'text-[rgba(42,40,38,0.5)]'} />
+              <Calendar size={14} className={timeRange === 'Día' ? 'text-servirest-terracota' : 'text-[rgba(42,40,38,0.5)]'} />
               <input
                 type="date"
                 value={selectedDate}
@@ -440,7 +456,7 @@ export const DashboardScreen: React.FC = () => {
                 onChange={(e) => {
                   if (!e.target.value) return;
                   setSelectedDate(e.target.value);
-                  setTimeRange('Día específico');
+                  setTimeRange('Día');
                 }}
                 className="bg-transparent text-servirest-carbon text-[11px] font-black uppercase tracking-[0.08em] outline-none cursor-pointer"
               />
