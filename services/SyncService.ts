@@ -247,7 +247,21 @@ async function pushLocalChanges(): Promise<void> {
           
           // Cleanup incompatible fields for multi-tenant tables
           if (op.table === 'orders') {
+            // La hora REAL de la orden viaja como created_at.
+            // Antes se perdía: `timestamp` está en la lista negra de
+            // transformForSupabase, así que el INSERT llegaba sin fecha y
+            // Postgres aplicaba `created_at default now()` — es decir, la
+            // hora en que se VACIÓ LA COLA DE SYNC, no la hora de la venta.
+            // Si la cola traía atraso (sin internet, pestaña cerrada, backlog),
+            // órdenes de días anteriores entraban a Supabase fechadas HOY, y
+            // al volver a bajarlas se sumaban todas a las ventas de hoy.
+            const rawTs = payload.timestamp || payload.created_at;
+            if (rawTs) {
+              const t = new Date(rawTs);
+              if (!isNaN(t.getTime())) payload.created_at = t.toISOString();
+            }
             delete payload.items;
+            delete payload.paidAt; // Solo local: la columna no existe en Supabase
             delete payload.table; // Object reference cleanup
             delete payload.waiter; // Object reference cleanup
             delete payload.changeAmount;

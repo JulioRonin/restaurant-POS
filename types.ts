@@ -75,6 +75,9 @@ export interface Order {
   receivedAmount?: number;
   changeAmount?: number;
   paidSplits?: number;
+  /** Hora del cobro (ISO). Solo local — no existe como columna en Supabase.
+   *  `timestamp` sigue siendo la hora en que se levantó la orden. */
+  paidAt?: string;
   isKitchenReady?: boolean;
   isBarReady?: boolean;
   businessId?: string;

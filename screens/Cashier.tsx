@@ -33,6 +33,19 @@ import {
   DollarSign
 } from 'lucide-react';
 
+/** Fecha de HOY en el calendario local (no UTC), como YYYY-MM-DD. */
+const localToday = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+/** Día local (YYYY-MM-DD) de una fecha guardada como ISO. */
+const localDayOf = (value: any) => {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 export const CashierScreen: React.FC = () => {
     const { orders, updateOrderStatus } = useOrders();
     const { expenses, addExpense, deleteExpense } = useExpenses();
@@ -51,8 +64,13 @@ export const CashierScreen: React.FC = () => {
     const [newExpenseDesc, setNewExpenseDesc] = useState('');
     const [newExpenseAmount, setNewExpenseAmount] = useState('');
     const [newExpenseCategory, setNewExpenseCategory] = useState<ExpenseCategory>('Insumos');
-    const [newExpenseDate, setNewExpenseDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
-    const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+    // OJO: toISOString() da la fecha en UTC. En México (UTC-6) eso significa
+    // que a partir de las 6 de la tarde "hoy" se convertía en MAÑANA: el
+    // Historial abría en un día vacío y los gastos registrados por la noche
+    // quedaban fechados al día siguiente (por eso no aparecían en el corte).
+    // localToday() usa el calendario local, que es el que ve el operador.
+    const [newExpenseDate, setNewExpenseDate] = useState<string>(localToday);
+    const [selectedDate, setSelectedDate] = useState<string>(localToday);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [cashReceived, setCashReceived] = useState<string>('');
     const [isProcessingTerminal, setIsProcessingTerminal] = useState(false);
@@ -104,8 +122,13 @@ export const CashierScreen: React.FC = () => {
             receivedAmount: actualCash, // Store what was actually given
             changeAmount: paymentMethod === PaymentMethod.CASH ? actualCash - splitAmount : 0, 
             paidSplits: currentPaidSplits,
-            timestamp: new Date()
-        };
+            // NO se toca `timestamp`: es la hora REAL en que se levantó la
+            // orden. Antes se sobrescribía con new Date() en cada cobro (y en
+            // cada pago parcial), así que una cuenta abierta ayer y cobrada hoy
+            // se movía a las ventas de hoy, y el ticket imprimía la hora del
+            // cobro en vez de la del pedido. La hora del cobro se guarda aparte.
+            paidAt: new Date().toISOString()
+        } as Order;
 
         updateOrderStatus(selectedOrder.id, updatedOrder.status, updatedOrder);
         
@@ -135,6 +158,29 @@ export const CashierScreen: React.FC = () => {
         const localD = new Date(d); localD.setMinutes(localD.getMinutes() - localD.getTimezoneOffset());
         return localD.toISOString().split('T')[0] === selectedDate;
     }), [orders, selectedDate]);
+
+    // Gastos del día seleccionado (mismo criterio de día local que las ventas,
+    // para que el corte cuadre). El filtro por categoría es opcional.
+    const expensesForDate = useMemo(
+        () => expenses.filter(e => localDayOf(e.date) === selectedDate),
+        [expenses, selectedDate]
+    );
+    const visibleExpenses = useMemo(
+        () => expensesForDate.filter(e => expenseCategoryFilter === 'All' || e.category === expenseCategoryFilter),
+        [expensesForDate, expenseCategoryFilter]
+    );
+    const expensesTotal = useMemo(
+        () => expensesForDate.reduce((s, e) => s + Number(e.amount || 0), 0),
+        [expensesForDate]
+    );
+    // Desglose por categoría para el scoreboard, de mayor a menor.
+    const expensesByCategory = useMemo(() => {
+        const map: Record<string, number> = {};
+        expensesForDate.forEach(e => {
+            map[e.category] = (map[e.category] || 0) + Number(e.amount || 0);
+        });
+        return Object.entries(map).sort((a, b) => b[1] - a[1]);
+    }, [expensesForDate]);
 
     const salesMetrics = useMemo(() => {
         const _sales = filteredByDateOrders.filter(o => o.status === 'COMPLETED');
@@ -315,12 +361,55 @@ export const CashierScreen: React.FC = () => {
                                         + Add Expense
                                     </button>
                                 </div>
+                                {/* Filtro por día + categoría */}
+                                <div className="bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl p-5 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-[9px] font-black uppercase text-servirest-terracota/40 tracking-widest italic">Ver gastos del día</p>
+                                        <button
+                                            onClick={() => setSelectedDate(localToday())}
+                                            className="text-[8px] font-black uppercase tracking-widest text-servirest-terracota/60 hover:text-servirest-terracota transition-colors"
+                                        >
+                                            Hoy
+                                        </button>
+                                    </div>
+                                    <input
+                                        type="date"
+                                        value={selectedDate}
+                                        onChange={e => setSelectedDate(e.target.value)}
+                                        className="w-full bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-xl py-2 px-4 text-[#1a1c14] text-xs font-bold outline-none focus:border-servirest-terracota/40"
+                                    />
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {(['All','Insumos','Renta','Servicios','Nómina','Mantenimiento','Otros'] as const).map(c => (
+                                            <button
+                                                key={c}
+                                                onClick={() => setExpenseCategoryFilter(c as any)}
+                                                className={`px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border transition-all ${
+                                                    expenseCategoryFilter === c
+                                                        ? 'bg-servirest-terracota text-servirest-hueso border-servirest-terracota'
+                                                        : 'bg-transparent text-[#2A2826]/40 border-[rgba(42,40,38,0.12)] hover:text-[#2A2826]/70'
+                                                }`}
+                                            >
+                                                {c === 'All' ? 'Todas' : c}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="flex items-baseline justify-between pt-1 border-t border-[rgba(42,40,38,0.08)]">
+                                        <span className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest">Total del día</span>
+                                        <span className="text-lg font-black italic text-red-400">${expensesTotal.toFixed(2)}</span>
+                                    </div>
+                                </div>
+
                                 {/* Expense list */}
-                                {expenses.map(exp => (
+                                {visibleExpenses.length === 0 && (
+                                    <div className="p-6 text-center border border-dashed border-[rgba(42,40,38,0.15)] rounded-2xl">
+                                        <p className="text-[10px] font-black uppercase text-[#2A2826]/30 tracking-widest italic">Sin gastos este día</p>
+                                    </div>
+                                )}
+                                {visibleExpenses.map(exp => (
                                     <div key={exp.id} className="flex justify-between items-center p-4 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-xl group">
                                         <div>
                                             <p className="text-xs font-black italic text-[#2A2826]/80 uppercase tracking-tight">{exp.description}</p>
-                                            <p className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest">{exp.category}</p>
+                                            <p className="text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest">{exp.category} · {localDayOf(exp.date)}</p>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <span className="font-black italic text-red-400 text-sm">${exp.amount.toFixed(2)}</span>
@@ -354,7 +443,7 @@ export const CashierScreen: React.FC = () => {
                                                 const totalRevenue = completedOrders.reduce((s, o) => s + (o.total || 0), 0);
                                                 const cashSales = completedOrders.filter(o => o.paymentMethod === PaymentMethod.CASH).reduce((s, o) => s + (o.total || 0), 0);
                                                 const cardSales = completedOrders.filter(o => o.paymentMethod === PaymentMethod.CARD).reduce((s, o) => s + (o.total || 0), 0);
-                                                const totalExpensesDay = expenses.filter(e => e.date.startsWith(selectedDate)).reduce((s, e) => s + Number(e.amount || 0), 0);
+                                                const totalExpensesDay = expensesTotal;
                                                 const netRevenue = totalRevenue - totalExpensesDay;
                                                 
                                                 const cutData = {
@@ -434,7 +523,7 @@ export const CashierScreen: React.FC = () => {
                                     { label: 'Ventas brutas', value: salesMetrics.totalRevenue, color: 'text-[#1a1c14]', icon: DollarSign, glow: 'orange' },
                                     { label: 'Efectivo', value: salesMetrics.cashSales, color: 'text-green-400', icon: Wallet, glow: 'green' },
                                     { label: 'Tarjeta', value: salesMetrics.cardSales, color: 'text-blue-400', icon: CreditCard, glow: 'blue' },
-                                    { label: 'Total', value: salesMetrics.totalRevenue - expenses.filter(e => e.date.startsWith(selectedDate)).reduce((s, e) => s + Number(e.amount || 0), 0), color: 'text-servirest-terracota', icon: TrendingUp, glow: 'orange' }
+                                    { label: 'Neto (ventas - gastos)', value: salesMetrics.totalRevenue - expensesTotal, color: 'text-servirest-terracota', icon: TrendingUp, glow: 'orange' }
                                 ].map((kpi, i) => (
                                     <GlowCard key={i} glowColor={kpi.glow as any} customSize className="w-full !p-8 bg-servirest-surface border-[rgba(42,40,38,0.12)] rounded-[32px]">
                                         <div className="flex items-center gap-4 mb-3 opacity-30">
@@ -635,6 +724,68 @@ export const CashierScreen: React.FC = () => {
                                 </GlowCard>
                             </div>
 
+                        </div>
+                    ) : activeTab === 'expenses' ? (
+                        <div className="h-full flex flex-col p-10 gap-8 overflow-y-auto custom-scrollbar">
+                            <div>
+                                <h2 className="text-5xl font-black italic tracking-tighter uppercase text-[#1a1c14]">Gastos del día</h2>
+                                <p className="text-[12px] font-black uppercase text-servirest-terracota/60 tracking-[0.5em] mt-3 italic">{selectedDate} • {expensesForDate.length} movimiento{expensesForDate.length === 1 ? '' : 's'}</p>
+                            </div>
+
+                            {/* Scoreboard: total, ventas del día y peso sobre la venta */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
+                                {[
+                                    { label: 'Total gastado', value: expensesTotal, color: 'text-red-400', icon: TrendingDown, glow: 'red' as const },
+                                    { label: 'Ventas del día', value: salesMetrics.totalRevenue, color: 'text-[#1a1c14]', icon: DollarSign, glow: 'orange' as const },
+                                    { label: 'Neto (ventas - gastos)', value: salesMetrics.totalRevenue - expensesTotal, color: 'text-servirest-terracota', icon: TrendingUp, glow: 'green' as const },
+                                ].map((kpi, i) => (
+                                    <GlowCard key={i} glowColor={kpi.glow} customSize className="w-full !p-8 bg-servirest-surface border-[rgba(42,40,38,0.12)] rounded-[32px]">
+                                        <div className="flex items-center gap-4 mb-3 opacity-30">
+                                            <kpi.icon size={16} />
+                                            <p className="text-[9px] font-black uppercase tracking-widest">{kpi.label}</p>
+                                        </div>
+                                        <p className={`text-4xl font-black italic tracking-tighter ${kpi.color}`}>${kpi.value.toFixed(2)}</p>
+                                    </GlowCard>
+                                ))}
+                            </div>
+
+                            {/* Desglose por categoría */}
+                            <div className="flex-1 flex flex-col min-h-0">
+                                <GlowCard customSize glowColor="orange" className="w-full h-full !p-0 bg-servirest-surface border-[rgba(42,40,38,0.12)] rounded-[40px] flex flex-col overflow-hidden">
+                                    <div className="px-10 py-6 border-b border-[rgba(42,40,38,0.12)] flex justify-between items-center shrink-0">
+                                        <p className="text-[10px] font-black uppercase text-[#2A2826]/45 tracking-widest italic font-mono">Desglose por categoría</p>
+                                        <p className="text-[10px] font-black uppercase text-[#2A2826]/45 tracking-widest italic font-mono">
+                                            {expensesTotal > 0 && salesMetrics.totalRevenue > 0
+                                                ? `${((expensesTotal / salesMetrics.totalRevenue) * 100).toFixed(1)}% de la venta`
+                                                : '—'}
+                                        </p>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-10 space-y-4">
+                                        {expensesByCategory.length === 0 && (
+                                            <div className="h-full flex flex-col items-center justify-center text-center gap-3 py-16">
+                                                <TrendingDown size={40} className="text-[#2A2826]/15" />
+                                                <p className="text-[11px] font-black uppercase text-[#2A2826]/30 tracking-widest italic">Sin gastos registrados este día</p>
+                                                <p className="text-[10px] text-[#2A2826]/25 max-w-[320px]">Regístralos en el panel de la izquierda y aparecerán aquí y en el corte de caja.</p>
+                                            </div>
+                                        )}
+                                        {expensesByCategory.map(([cat, amount]) => {
+                                            const pct = expensesTotal > 0 ? (amount / expensesTotal) * 100 : 0;
+                                            return (
+                                                <div key={cat} className="space-y-2">
+                                                    <div className="flex justify-between items-baseline">
+                                                        <span className="text-[11px] font-black uppercase tracking-widest text-[#2A2826]/70 italic">{cat}</span>
+                                                        <span className="text-lg font-black italic text-red-400">${amount.toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full bg-[rgba(42,40,38,0.06)] rounded-full overflow-hidden">
+                                                        <div className="h-full bg-servirest-terracota rounded-full transition-all" style={{ width: `${pct}%` }} />
+                                                    </div>
+                                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#2A2826]/30">{pct.toFixed(1)}% de los gastos</p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </GlowCard>
+                            </div>
                         </div>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center opacity-20 p-6 text-center">

@@ -286,7 +286,7 @@ export const DashboardScreen: React.FC = () => {
     return Object.values(aggr).sort((a, b) => a.name.localeCompare(b.name));
   }, [activeOrders, activeExpenses, timeRange, dateRange]);
 
-  const { sales, items, cancelledSales, avgTicket, salesSparkline } = useMemo(() => {
+  const { sales, items, cancelledSales, avgTicket, salesSparkline, salesCount } = useMemo(() => {
     let _sales = 0, _items = 0, _count = 0, _cSales = 0;
     const dailyMap: Record<string, number> = {};
     activeOrders.forEach((o) => {
@@ -307,6 +307,11 @@ export const DashboardScreen: React.FC = () => {
       sales: _sales, items: _items, cancelledSales: _cSales,
       avgTicket: _count > 0 ? _sales / _count : 0,
       salesSparkline: spark,
+      // Órdenes que REALMENTE suman a "Ventas netas" (cobradas). Antes las
+      // tarjetas mostraban activeOrders.length, que incluye pendientes,
+      // en cocina y canceladas — por eso el conteo no cuadraba con el monto
+      // (p. ej. "15 órdenes" con un ticket promedio calculado sobre 14).
+      salesCount: _count,
     };
   }, [activeOrders]);
 
@@ -490,7 +495,7 @@ export const DashboardScreen: React.FC = () => {
               icon={Receipt}
               label="Ticket promedio"
               value={`$${avgTicket.toFixed(0)}`}
-              delta={`${activeOrders.length} órdenes`}
+              delta={`${salesCount} órdenes cobradas`}
               series={salesSparkline.length > 1 ? salesSparkline : undefined}
               sparkTone="terracota"
             />
@@ -510,7 +515,7 @@ export const DashboardScreen: React.FC = () => {
             icon={Utensils}
             label="Platillos vendidos"
             value={`${items}`}
-            delta={`${activeOrders.length} órdenes`}
+            delta={`${salesCount} órdenes cobradas`}
             series={itemSpark}
             sparkTone="terracota"
           />
@@ -586,7 +591,7 @@ export const DashboardScreen: React.FC = () => {
         <SectionDivider
           kicker="Tesorería"
           title="Movimiento del periodo"
-          meta={`${chartData.length} puntos · ${activeOrders.length} órdenes · ${activeExpenses.length} egresos`}
+          meta={`${chartData.length} puntos · ${salesCount} órdenes cobradas · ${activeExpenses.length} egresos`}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-3">
