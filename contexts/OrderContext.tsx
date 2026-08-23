@@ -314,7 +314,10 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       await deleteRecord('orders', orderId);
       // Also delete items (clean up orphans)
       const allItems = await getAll('order_items');
-      const orphans = (allItems as any[]).filter(i => (i.order_Id === orderId || i.order_id === orderId));
+      // OJO: `order_Id` (con I mayúscula) era un typo — nunca hacía match.
+      // addOrder guarda los renglones con `orderId`, así que los platillos de
+      // órdenes capturadas en este equipo quedaban huérfanos al borrar.
+      const orphans = (allItems as any[]).filter(i => (i.orderId === orderId || i.order_id === orderId));
       for (const item of orphans) {
         await deleteRecord('order_items', item.id);
         await trackChange('order_items', 'DELETE', item.id, {});

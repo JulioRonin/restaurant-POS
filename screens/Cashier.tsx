@@ -30,7 +30,8 @@ import {
   ArrowRight,
   TrendingDown,
   TrendingUp,
-  DollarSign
+  DollarSign,
+  Trash2
 } from 'lucide-react';
 
 /** Fecha de HOY en el calendario local (no UTC), como YYYY-MM-DD. */
@@ -47,7 +48,7 @@ const localDayOf = (value: any) => {
 };
 
 export const CashierScreen: React.FC = () => {
-    const { orders, updateOrderStatus } = useOrders();
+    const { orders, updateOrderStatus, removeOrder } = useOrders();
     const { expenses, addExpense, deleteExpense } = useExpenses();
     const { tables: TABLES } = useTables();
     const { settings } = useSettings();
@@ -580,7 +581,30 @@ export const CashierScreen: React.FC = () => {
                                                             </span>
                                                         </td>
                                                         <td className="px-6 py-5 bg-servirest-surface rounded-r-[24px] border-y border-r border-[rgba(42,40,38,0.12)] text-right font-black italic text-xl">
-                                                            ${order.total.toFixed(2)}
+                                                            <div className="flex items-center justify-end gap-3">
+                                                                <span>${order.total.toFixed(2)}</span>
+                                                                <button
+                                                                    title="Eliminar esta venta"
+                                                                    onClick={() => {
+                                                                        const detalle = (order.items || []).length
+                                                                            ? (order.items || []).map(i => `${i.quantity}x ${i.name}`).join(', ')
+                                                                            : 'sin platillos registrados';
+                                                                        if (window.confirm(
+                                                                            `¿Eliminar esta venta?\n\n` +
+                                                                            `Folio: ${order.dailyNumber ?? order.id.slice(0, 8)}\n` +
+                                                                            `Hora: ${new Date(order.timestamp).toLocaleTimeString('es-MX')}\n` +
+                                                                            `Monto: $${order.total.toFixed(2)}\n` +
+                                                                            `Contenido: ${detalle}\n\n` +
+                                                                            `Se borra de este equipo y de la nube. No se puede deshacer.`
+                                                                        )) {
+                                                                            removeOrder(order.id);
+                                                                        }
+                                                                    }}
+                                                                    className="text-red-500/20 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 shrink-0"
+                                                                >
+                                                                    <Trash2 size={15} />
+                                                                </button>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))}
