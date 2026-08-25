@@ -41,12 +41,19 @@ CREATE TABLE IF NOT EXISTS catering_events (
   status       text DEFAULT 'QUOTED',         -- QUOTED|CONFIRMED|COMPLETED|CANCELLED
   quoted_total numeric(12,2) DEFAULT 0,       -- precio pactado con el cliente
   deposit      numeric(12,2) DEFAULT 0,       -- anticipo recibido
+  expenses     jsonb DEFAULT '[]'::jsonb,     -- gastos del evento
+                                              -- [{id, description, amount}, …]
+                                              -- utilidad = quoted_total - Σ
   notes        text DEFAULT '',
   created_at   timestamptz DEFAULT now(),
   updated_at   timestamptz DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_catering_events_biz ON catering_events(business_id, event_date DESC);
+
+-- Si ya habías corrido una versión anterior de esta migración (sin gastos),
+-- esto agrega la columna sin tocar tus datos. En instalación nueva no hace nada.
+ALTER TABLE catering_events ADD COLUMN IF NOT EXISTS expenses jsonb DEFAULT '[]'::jsonb;
 
 -- 3. RLS ─────────────────────────────────────────────────────────────────
 ALTER TABLE event_packages  ENABLE ROW LEVEL SECURITY;

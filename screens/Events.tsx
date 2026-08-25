@@ -17,7 +17,7 @@ import { motion } from 'framer-motion';
 import { useUser } from '../contexts/UserContext';
 import {
   PartyPopper, CalendarDays, Users, Phone, MapPin, Plus, Pencil, Trash2,
-  Package, CheckCircle2, Clock, Wallet, TrendingUp, FileText, X, Sparkles,
+  Package, CheckCircle2, Clock, Wallet, TrendingUp, TrendingDown, FileText, X, Sparkles,
 } from 'lucide-react';
 import {
   SrCard, SrButton, SrSeg, SrChip, SrLabel, SrKicker, SrMono, SrInput,
@@ -27,7 +27,7 @@ import {
   EventPackage, CateringEvent, CateringEventStatus, EVENT_STATUS_META,
   getCachedPackages, getCachedEvents, refreshEventsData,
   saveEventPackage, deleteEventPackage, saveCateringEvent, deleteCateringEvent,
-  suggestedTotal,
+  suggestedTotal, eventCosts, eventProfit,
 } from '../services/events';
 
 /* ─── Helpers ────────────────────────────────────────────────────────── */
@@ -75,6 +75,7 @@ const emptyEvent = (): CateringEvent => ({
   status: 'QUOTED',
   quotedTotal: 0,
   deposit: 0,
+  expenses: [],
   notes: '',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
@@ -103,6 +104,8 @@ export const EventsScreen: React.FC = () => {
   const [pkgDraft, setPkgDraft] = useState<EventPackage | null>(null);
   const [evtDraft, setEvtDraft] = useState<CateringEvent | null>(null);
   const [includeInput, setIncludeInput] = useState('');
+  const [expDesc, setExpDesc] = useState('');
+  const [expAmount, setExpAmount] = useState('');
 
   useEffect(() => {
     if (!bizId) return;
@@ -123,11 +126,17 @@ export const EventsScreen: React.FC = () => {
     const confirmedUpcoming = events.filter(e => e.status === 'CONFIRMED' && e.eventDate >= today);
     const completed = events.filter(e => e.status === 'COMPLETED');
     const depositsPending = confirmedUpcoming.reduce((s, e) => s + Math.max(0, (e.quotedTotal || 0) - (e.deposit || 0)), 0);
+    const soldTotal = sum(completed);
+    const soldCosts = completed.reduce((s, e) => s + eventCosts(e), 0);
+    const soldProfit = soldTotal - soldCosts;
     return {
       quoted, confirmedUpcoming, completed,
       quotedTotal: sum(quoted),
       scheduledTotal: sum(confirmedUpcoming),
-      soldTotal: sum(completed),
+      soldTotal,
+      soldCosts,
+      soldProfit,
+      soldMarginPct: soldTotal > 0 ? (soldProfit / soldTotal) * 100 : 0,
       depositsReceived: confirmedUpcoming.reduce((s, e) => s + (e.deposit || 0), 0),
       depositsPending,
     };
@@ -219,7 +228,7 @@ export const EventsScreen: React.FC = () => {
           right={
             <div className="flex items-center gap-3 flex-wrap">
               <SrSeg options={TABS} value={tab} onChange={setTab} />
-              <SrButton size="sm" icon={<Plus size={14} />} onClick={() => { setEvtDraft(emptyEvent()); }}>
+              <SrButton size="sm" icon={<Plus size={14} />} onClick={() => { setExpDesc(''); setExpAmount(''); setEvtDraft(emptyEvent()); }}>
                 Nuevo evento
               </SrButton>
             </div>
@@ -249,6 +258,42 @@ export const EventsScreen: React.FC = () => {
                 </SrCard>
               ))}
             </div>
+
+            {/* Utilidad neta de eventos realizados */}
+            {kpis.completed.length > 0 && (
+              <SrCard className="p-8">
+                <div className="flex items-center gap-2.5 mb-6 opacity-60">
+                  <Wallet size={15} className="text-servirest-terracota" />
+                  <SrLabel>Rentabilidad de eventos realizados</SrLabel>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div>
+                    <SrLabel className="block mb-2">Vendido</SrLabel>
+                    <SrMono className="text-[26px] font-black text-servirest-carbon">{money(kpis.soldTotal)}</SrMono>
+                  </div>
+                  <div>
+                    <SrLabel className="block mb-2">Gastos</SrLabel>
+                    <SrMono className="text-[26px] font-black text-servirest-danger">-{money(kpis.soldCosts)}</SrMono>
+                  </div>
+                  <div>
+                    <SrLabel className="block mb-2">Utilidad neta</SrLabel>
+                    <SrMono className={`text-[26px] font-black ${kpis.soldProfit >= 0 ? 'text-servirest-success' : 'text-servirest-danger'}`}>{money(kpis.soldProfit)}</SrMono>
+                  </div>
+                  <div>
+                    <SrLabel className="block mb-2">Margen</SrLabel>
+                    <div className="flex items-center gap-2">
+                      <SrMono className={`text-[26px] font-black ${kpis.soldMarginPct >= 0 ? 'text-servirest-success' : 'text-servirest-danger'}`}>{kpis.soldMarginPct.toFixed(1)}%</SrMono>
+                      {kpis.soldMarginPct >= 0 ? <TrendingUp size={18} className="text-servirest-success" /> : <TrendingDown size={18} className="text-servirest-danger" />}
+                    </div>
+                  </div>
+                </div>
+                {kpis.soldCosts === 0 && (
+                  <p className="text-[10px] font-black uppercase tracking-wider text-servirest-mostaza mt-5">
+                    Aún no registras gastos en tus eventos realizados — edita el evento y captúralos para ver la utilidad real.
+                  </p>
+                )}
+              </SrCard>
+            )}
 
             {/* Por cobrar */}
             {kpis.depositsPending > 0 && (
@@ -410,12 +455,17 @@ export const EventsScreen: React.FC = () => {
                           {e.notes && <p className="text-[11px] text-[rgba(42,40,38,0.5)] italic mt-1.5 line-clamp-1">{e.notes}</p>}
                         </div>
 
-                        <div className="text-right shrink-0 min-w-[120px]">
+                        <div className="text-right shrink-0 min-w-[130px]">
                           <SrMono className="block text-[19px] font-black text-servirest-carbon">{money(e.quotedTotal)}</SrMono>
                           {e.status === 'CONFIRMED' && (
                             balance > 0
-                              ? <span className="text-[9px] font-black uppercase tracking-wider text-servirest-mostaza">Resta {money(balance)}</span>
-                              : <span className="text-[9px] font-black uppercase tracking-wider text-servirest-success">Liquidado</span>
+                              ? <span className="block text-[9px] font-black uppercase tracking-wider text-servirest-mostaza">Resta {money(balance)}</span>
+                              : <span className="block text-[9px] font-black uppercase tracking-wider text-servirest-success">Liquidado</span>
+                          )}
+                          {eventCosts(e) > 0 && (
+                            <span className={`block text-[9px] font-black uppercase tracking-wider ${eventProfit(e) >= 0 ? 'text-servirest-success' : 'text-servirest-danger'}`}>
+                              Utilidad {money(eventProfit(e))} · {e.quotedTotal > 0 ? `${((eventProfit(e) / e.quotedTotal) * 100).toFixed(0)}%` : '—'}
+                            </span>
                           )}
                         </div>
 
@@ -720,6 +770,56 @@ export const EventsScreen: React.FC = () => {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                {/* Gastos del evento → utilidad neta y margen */}
+                <div className="pt-2 border-t border-[rgba(42,40,38,0.08)]">
+                  <SrLabel className="block mb-2">Gastos del evento</SrLabel>
+                  <div className="flex gap-2">
+                    <SrInput value={expDesc} placeholder="Insumos, renta, personal extra…"
+                      onChange={e => setExpDesc(e.target.value)} />
+                    <SrInput type="number" min={0} value={expAmount} placeholder="$"
+                      className="!w-32 shrink-0" onChange={e => setExpAmount(e.target.value)} />
+                    <SrButton variant="outline" size="sm" className="shrink-0" onClick={() => {
+                      const amt = parseFloat(expAmount) || 0;
+                      if (!expDesc.trim() || amt <= 0) return;
+                      setEvtDraft(d => d && {
+                        ...d,
+                        expenses: [...(d.expenses || []), { id: crypto.randomUUID(), description: expDesc.trim(), amount: amt }],
+                      });
+                      setExpDesc(''); setExpAmount('');
+                    }}>Agregar</SrButton>
+                  </div>
+
+                  {(evtDraft.expenses || []).length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {(evtDraft.expenses || []).map(x => (
+                        <div key={x.id} className="flex items-center justify-between gap-3 px-4 py-2.5 rounded-sr-md bg-[rgba(42,40,38,0.03)] border border-[rgba(42,40,38,0.08)]">
+                          <span className="text-[11px] font-black uppercase tracking-wide text-[rgba(42,40,38,0.65)] truncate">{x.description}</span>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <SrMono className="text-[13px] font-black text-servirest-danger">-{money(x.amount)}</SrMono>
+                            <button onClick={() => setEvtDraft(d => d && { ...d, expenses: (d.expenses || []).filter(y => y.id !== x.id) })}
+                              className="text-[rgba(42,40,38,0.3)] hover:text-servirest-danger transition-colors"><X size={13} /></button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {(() => {
+                    const costs = eventCosts(evtDraft);
+                    const profit = eventProfit(evtDraft);
+                    const pct = evtDraft.quotedTotal > 0 ? (profit / evtDraft.quotedTotal) * 100 : 0;
+                    if (costs <= 0) return null;
+                    return (
+                      <div className="mt-3 flex items-center justify-between px-4 py-3 rounded-sr-md bg-servirest-midnight text-servirest-hueso">
+                        <span className="text-[9px] font-black uppercase tracking-[0.2em] opacity-70">Gastos {money(costs)}</span>
+                        <span className={`text-[12px] font-black uppercase tracking-wider ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          Utilidad {money(profit)} · {pct.toFixed(1)}%
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div>

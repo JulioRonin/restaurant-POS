@@ -42,6 +42,13 @@ export interface EventPackage {
 
 export type CateringEventStatus = 'QUOTED' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
 
+/** Gasto asociado a un evento (insumos, renta, personal extra…). */
+export interface EventExpense {
+  id: string;
+  description: string;
+  amount: number;
+}
+
 export interface CateringEvent {
   id: string;
   clientName: string;
@@ -60,6 +67,8 @@ export interface CateringEvent {
   quotedTotal: number;
   /** Anticipo recibido. */
   deposit: number;
+  /** Gastos del evento — para utilidad neta y % de margen. */
+  expenses: EventExpense[];
   notes: string;
   createdAt: string;
   updatedAt: string;
@@ -140,6 +149,7 @@ function evtFromRow(r: any): CateringEvent {
     status: (r.status as CateringEventStatus) || 'QUOTED',
     quotedTotal: Number(r.quoted_total || 0),
     deposit: Number(r.deposit || 0),
+    expenses: Array.isArray(r.expenses) ? r.expenses : [],
     notes: r.notes || '',
     createdAt: r.created_at || new Date().toISOString(),
     updatedAt: r.updated_at || new Date().toISOString(),
@@ -161,6 +171,7 @@ function evtToRow(e: CateringEvent, bizId: string) {
     status: e.status,
     quoted_total: e.quotedTotal,
     deposit: e.deposit,
+    expenses: e.expenses,
     notes: e.notes,
     updated_at: e.updatedAt,
     created_at: e.createdAt,
@@ -310,6 +321,16 @@ export function deleteCateringEvent(bizId: string, id: string) {
 export function suggestedTotal(pkg: EventPackage | undefined, guests: number): number {
   if (!pkg) return 0;
   return pkg.basePrice + pkg.pricePerPerson * Math.max(guests, 0);
+}
+
+/** Total de gastos registrados en un evento. */
+export function eventCosts(evt: CateringEvent): number {
+  return (evt.expenses || []).reduce((s, x) => s + Number(x.amount || 0), 0);
+}
+
+/** Utilidad neta del evento = precio pactado - gastos. */
+export function eventProfit(evt: CateringEvent): number {
+  return (evt.quotedTotal || 0) - eventCosts(evt);
 }
 
 export const EVENT_STATUS_META: Record<CateringEventStatus, { label: string; tone: string }> = {
