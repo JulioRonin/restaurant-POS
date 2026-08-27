@@ -85,6 +85,12 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             ...o,
             items: assembledItems || [], // PREVENT CRASH from undefined items after Supabase Pull
             timestamp: new Date(o.timestamp || o.created_at || o.createdAt || Date.now()),
+            // El nombre del pedido vive dentro de customer_metadata en la nube
+            // (POS y canal digital comparten ese campo).
+            customerName: o.customerName
+              || o.customerMetadata?.customerName
+              || o.customer_metadata?.customerName
+              || undefined,
           };
         }));
       }

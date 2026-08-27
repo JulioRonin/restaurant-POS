@@ -559,7 +559,12 @@ export const CashierScreen: React.FC = () => {
                                                 {filteredByDateOrders.map(order => (
                                                     <tr key={order.id} className="group hover:bg-servirest-surface transition-all">
                                                         <td className="px-6 py-5 bg-servirest-surface rounded-l-[24px] border-y border-l border-[rgba(42,40,38,0.12)] font-mono text-[11px] text-[#2A2826]/60">TX-{order.id.slice(0, 8).toUpperCase()}</td>
-                                                        <td className="px-6 py-5 bg-servirest-surface border-y border-[rgba(42,40,38,0.12)] text-[11px] font-black italic text-[#2A2826]/55">{new Date(order.timestamp).toLocaleTimeString('es-MX')}</td>
+                                                        <td className="px-6 py-5 bg-servirest-surface border-y border-[rgba(42,40,38,0.12)] text-[11px] font-black italic text-[#2A2826]/55">
+                                                            {new Date(order.timestamp).toLocaleTimeString('es-MX')}
+                                                            {order.customerName && (
+                                                                <span className="block text-[10px] font-black uppercase not-italic tracking-wider text-servirest-terracota mt-1">{order.customerName}</span>
+                                                            )}
+                                                        </td>
                                                         <td className="px-6 py-5 bg-servirest-surface border-y border-[rgba(42,40,38,0.12)] text-[10px] font-black uppercase italic tracking-tight max-w-[250px]">
     <div className="flex flex-wrap gap-1">
         {(order.items || []).map((item, idx) => (

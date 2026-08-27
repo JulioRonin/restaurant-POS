@@ -53,6 +53,12 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
           <span>HORA:</span>
           <span>{new Date(order.timestamp).toLocaleTimeString()}</span>
         </div>
+        {order.customerName && (
+          <div className="flex justify-between">
+            <span>CLIENTE:</span>
+            <span className="font-bold uppercase">{order.customerName}</span>
+          </div>
+        )}
         {order.tableId && (
           <div className="flex justify-between">
             <span>MESA:</span>

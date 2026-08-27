@@ -69,6 +69,10 @@ export interface Order {
   paymentStatus?: PaymentStatus;
   paymentMethod?: PaymentMethod;
   source?: OrderSource; // New field
+  /** Nombre de quien hace el pedido — OPCIONAL, sirve igual para mesa que
+   *  para llevar ("Pedido de Marisol"). Viaja dentro de customer_metadata
+   *  en Supabase, no como columna propia. */
+  customerName?: string;
   tip?: number;
   splitType?: 'EQUAL' | 'CUSTOM' | 'NONE';
   invoiceDetails?: InvoiceDetails;

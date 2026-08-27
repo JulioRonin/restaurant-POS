@@ -287,6 +287,18 @@ async function pushLocalChanges(): Promise<void> {
               const t = new Date(rawTs);
               if (!isNaN(t.getTime())) payload.created_at = t.toISOString();
             }
+            // El nombre de quien pidió viaja DENTRO de customer_metadata (que
+            // ya existe para el canal digital), no como columna propia: así no
+            // hace falta migrar `orders` ni arriesgar un 42703 que tumbe el
+            // INSERT completo de la orden.
+            if (payload.customerName) {
+              payload.customerMetadata = {
+                ...(payload.customerMetadata || {}),
+                customerName: payload.customerName,
+              };
+            }
+            delete payload.customerName;
+
             delete payload.items;
             delete payload.paidAt; // Solo local: la columna no existe en Supabase
             delete payload.table; // Object reference cleanup
@@ -793,7 +805,14 @@ function transformFromSupabase(record: any, storeName: string): any {
   
   // Custom mappings for consistency
   if (record.business_id) transformed.businessId = record.business_id;
-  
+
+  // El nombre de quien pidió se guarda dentro de customer_metadata (tanto el
+  // capturado en POS como el del canal digital). Se rehidrata a nivel raíz
+  // para que las pantallas lo lean como order.customerName sin escarbar.
+  if (storeName === 'orders' && transformed.customerMetadata?.customerName) {
+    transformed.customerName = transformed.customerMetadata.customerName;
+  }
+
   return transformed;
 }
 
