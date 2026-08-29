@@ -91,6 +91,10 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               || o.customerMetadata?.customerName
               || o.customer_metadata?.customerName
               || undefined,
+            payments: o.payments
+              || o.customerMetadata?.payments
+              || o.customer_metadata?.payments
+              || undefined,
           };
         }));
       }

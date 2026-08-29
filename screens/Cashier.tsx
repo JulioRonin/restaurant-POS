@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useTables } from '../contexts/TableContext';
-import { Order, PaymentMethod, PaymentStatus, InvoiceDetails, ExpenseCategory, OrderStatus, OrderSource, OrderItem } from '../types';
+import { Order, PaymentMethod, PaymentStatus, InvoiceDetails, ExpenseCategory, OrderStatus, OrderSource, OrderItem, OrderPayment } from '../types';
 import { useSettings } from '../contexts/SettingsContext';
 import { useUser } from '../contexts/UserContext';
 import { Ticket } from '../components/Ticket';
@@ -74,6 +74,11 @@ export const CashierScreen: React.FC = () => {
     const [selectedDate, setSelectedDate] = useState<string>(localToday);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [cashReceived, setCashReceived] = useState<string>('');
+    // Cobro con VARIOS métodos en una sola cuenta (ej. $200 tarjeta + $150
+    // efectivo). Mientras haya pagos parciales registrados, el cobro se cierra
+    // con la suma de todos y paymentMethod = MIXED.
+    const [partialPayments, setPartialPayments] = useState<OrderPayment[]>([]);
+    const [partialAmount, setPartialAmount] = useState<string>('');
     const [isProcessingTerminal, setIsProcessingTerminal] = useState(false);
     const [terminalStep, setTerminalStep] = useState('');
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -96,10 +101,53 @@ export const CashierScreen: React.FC = () => {
 
     const handleProcessPayment = async () => {
         if (!selectedOrder) return;
-        
+
         const splitAmount = total / splitCount;
+
+        // ── Cobro con varios métodos ────────────────────────────────────
+        // Si hay pagos parciales capturados, esos mandan: la cuenta se cierra
+        // con la suma de todos y el método queda como MIXED (o el único método
+        // usado, si resultó ser uno solo).
+        if (isMixedPayment) {
+            if (mixedRemaining > 0.005) {
+                alert(`Faltan $${mixedRemaining.toFixed(2)} por cubrir.`);
+                return;
+            }
+            const usedMethods = Array.from(new Set(partialPayments.map(p => p.method)));
+            const cashPortion = partialPayments
+                .filter(p => p.method === PaymentMethod.CASH)
+                .reduce((s, p) => s + p.amount, 0);
+
+            const mixedOrder: Order = {
+                ...selectedOrder,
+                status: OrderStatus.COMPLETED,
+                paymentStatus: PaymentStatus.PAID,
+                paymentMethod: usedMethods.length === 1 ? usedMethods[0] : PaymentMethod.MIXED,
+                payments: partialPayments,
+                receivedAmount: cashPortion,
+                changeAmount: Math.max(0, mixedPaid - total),
+                paidSplits: splitCount,
+                paidAt: new Date().toISOString(),
+            } as Order;
+
+            updateOrderStatus(selectedOrder.id, mixedOrder.status, mixedOrder);
+
+            if (cashPortion > 0 && settings.isCashDrawerEnabled) {
+                await printerService.openCashDrawer(settings);
+            }
+            await handlePrintTicket(mixedOrder);
+
+            setSuccessMessage('TRANSACTION_COMPLETE');
+            setTimeout(() => { setSuccessMessage(null); setSelectedTableId(null); }, 3000);
+            setIsPaymentModalOpen(false);
+            setCashReceived('');
+            setPartialPayments([]);
+            setPartialAmount('');
+            return;
+        }
+
         const actualCash = parseFloat(cashReceived) || splitAmount;
-        
+
         // Prevent processing if cash received is less than amount due for this split
         if (paymentMethod === PaymentMethod.CASH && actualCash < splitAmount) {
             alert("El monto recibido no puede ser menor al total a pagar.");
@@ -148,11 +196,37 @@ export const CashierScreen: React.FC = () => {
         
         setIsPaymentModalOpen(false);
         setCashReceived('');
+        setPartialPayments([]);
+        setPartialAmount('');
     };
 
+    // Órdenes abiertas agrupadas por mesa, en orden de llegada. Una misma mesa
+    // puede tener varias cuentas simultáneas (típico con una mesa "To Go").
+    const openOrdersByTable = useMemo(() => {
+        const map = new Map<string, Order[]>();
+        orders
+            .filter(o => o.status !== 'COMPLETED' && o.status !== 'CANCELLED')
+            .forEach(o => {
+                if (!o.tableId) return;
+                const list = map.get(o.tableId) || [];
+                list.push(o);
+                map.set(o.tableId, list);
+            });
+        map.forEach(list => list.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()));
+        return map;
+    }, [orders]);
+
+    // `selectedTableId` guarda el id de la ORDEN cuando hay varias cuentas en la
+    // misma mesa (para cobrar exactamente esa), o el id de la mesa cuando solo
+    // hay una. Se resuelven ambos casos.
     const selectedOrder = useMemo(() => orders.find(o => (o.id === selectedTableId || o.tableId === selectedTableId) && o.status !== 'COMPLETED'), [orders, selectedTableId]);
     const subtotal = selectedOrder?.total || 0;
     const total = subtotal + tipAmount;
+
+    // Cobro con varios métodos: cuánto se lleva capturado y cuánto falta.
+    const isMixedPayment = partialPayments.length > 0;
+    const mixedPaid = partialPayments.reduce((s, p) => s + p.amount, 0);
+    const mixedRemaining = Math.max(0, total - mixedPaid);
 
     const filteredByDateOrders = useMemo(() => orders.filter(o => {
         const d = new Date(o.timestamp || Date.now());
@@ -186,9 +260,18 @@ export const CashierScreen: React.FC = () => {
     const salesMetrics = useMemo(() => {
         const _sales = filteredByDateOrders.filter(o => o.status === 'COMPLETED');
         const totalRevenue = _sales.reduce((sum, o) => sum + (o.total || 0), 0);
-        const cashSales = _sales.filter(o => o.paymentMethod === PaymentMethod.CASH).reduce((sum, o) => sum + (o.total || 0), 0);
-        const cardSales = _sales.filter(o => o.paymentMethod === PaymentMethod.CARD).reduce((sum, o) => sum + (o.total || 0), 0);
-        return { totalRevenue, cashSales, cardSales };
+        // Una cuenta cobrada con varios métodos aporta a CADA método la parte
+        // que le tocó. Antes se clasificaba la venta completa por el
+        // paymentMethod único, así que un cobro mixto no caía en ningún lado.
+        const byMethod = (want: PaymentMethod) => _sales.reduce((sum, o) => {
+            if (o.payments && o.payments.length > 0) {
+                return sum + o.payments
+                    .filter(p => p.method === want)
+                    .reduce((s, p) => s + (p.amount || 0), 0);
+            }
+            return o.paymentMethod === want ? sum + (o.total || 0) : sum;
+        }, 0);
+        return { totalRevenue, cashSales: byMethod(PaymentMethod.CASH), cardSales: byMethod(PaymentMethod.CARD) };
     }, [filteredByDateOrders]);
 
     const activeRequests = orders.filter(o => o.status === OrderStatus.BILL_REQUESTED && !dismissedBillRequests.includes(o.id));
@@ -264,14 +347,21 @@ export const CashierScreen: React.FC = () => {
 
                     <div className="flex-1 overflow-y-auto px-8 pb-8 space-y-3 no-scrollbar">
                         {activeTab === 'tables' && TABLES.map(table => {
-                             const order = orders.find(o => o.tableId === table.id && o.status !== 'COMPLETED');
-                             const isRequested = order?.status === OrderStatus.BILL_REQUESTED;
-                             const isSelected = selectedTableId === table.id;
+                             // Una mesa puede tener VARIAS cuentas abiertas a la vez — es lo
+                             // normal cuando se usa una mesa tipo "To Go" como bandeja de
+                             // pedidos para llevar. Antes se hacía orders.find(), que devolvía
+                             // solo la primera y dejaba las demás imposibles de cobrar.
+                             const tableOrders = openOrdersByTable.get(table.id) || [];
+                             const isRequested = tableOrders.some(o => o.status === OrderStatus.BILL_REQUESTED);
+                             const hasMany = tableOrders.length > 1;
+                             const single = tableOrders.length === 1 ? tableOrders[0] : null;
+                             const isSelected = !!single && selectedTableId === single.id;
+                             const tableTotal = tableOrders.reduce((s, o) => s + (o.total || 0), 0);
                              return (
                                 <motion.div
                                     key={table.id}
-                                    onClick={() => order && setSelectedTableId(table.id)}
-                                    className={`p-5 rounded-2xl border transition-all cursor-pointer group relative overflow-hidden ${isSelected ? 'bg-servirest-terracota/10 border-servirest-terracota shadow-solaris-glow' : order ? 'bg-servirest-surface border-[rgba(42,40,38,0.20)] hover:border-[rgba(42,40,38,0.20)]' : 'bg-transparent border-dashed border-[rgba(42,40,38,0.12)] opacity-30 cursor-default'}`}
+                                    onClick={() => single && setSelectedTableId(single.id)}
+                                    className={`p-5 rounded-2xl border transition-all group relative overflow-hidden ${isSelected ? 'bg-servirest-terracota/10 border-servirest-terracota shadow-solaris-glow' : tableOrders.length ? `bg-servirest-surface border-[rgba(42,40,38,0.20)] ${single ? 'cursor-pointer hover:border-[rgba(42,40,38,0.20)]' : ''}` : 'bg-transparent border-dashed border-[rgba(42,40,38,0.12)] opacity-30 cursor-default'}`}
                                 >
                                     {isRequested && (
                                         <div className="absolute top-0 right-0 bg-servirest-terracota text-[#1a1c14] px-3 py-1 text-[8px] font-black tracking-widest uppercase animate-pulse italic">
@@ -281,10 +371,52 @@ export const CashierScreen: React.FC = () => {
                                     <div className="flex justify-between items-end">
                                         <div>
                                             <p className="text-lg font-black italic uppercase tracking-tighter text-[#1a1c14]">{table.name}</p>
-                                            <p className="text-[8px] font-black uppercase text-servirest-terracota/40 tracking-widest mt-0.5">{order ? `Pedido ${order.id.slice(0,6)}` : 'Sin actividad'}</p>
+                                            <p className="text-[8px] font-black uppercase text-servirest-terracota/40 tracking-widest mt-0.5">
+                                                {tableOrders.length === 0
+                                                    ? 'Sin actividad'
+                                                    : hasMany
+                                                        ? `${tableOrders.length} cuentas abiertas`
+                                                        : `Pedido ${single!.id.slice(0, 6)}`}
+                                            </p>
                                         </div>
-                                        {order && <p className="text-lg font-black italic text-servirest-terracota tracking-tighter">${order.total.toFixed(0)}</p>}
+                                        {tableOrders.length > 0 && <p className="text-lg font-black italic text-servirest-terracota tracking-tighter">${tableTotal.toFixed(0)}</p>}
                                     </div>
+
+                                    {/* Cuentas individuales: se listan para poder cobrar
+                                        exactamente la que pide el cliente, sin depender del
+                                        orden de llegada. */}
+                                    {hasMany && (
+                                        <div className="mt-4 pt-4 border-t border-dashed border-[rgba(42,40,38,0.15)] space-y-2">
+                                            {tableOrders.map((o, idx) => {
+                                                const picked = selectedTableId === o.id;
+                                                return (
+                                                    <button
+                                                        key={o.id}
+                                                        onClick={(e) => { e.stopPropagation(); setSelectedTableId(o.id); }}
+                                                        className={`w-full text-left p-3 rounded-xl border transition-all flex items-center gap-3 ${picked ? 'bg-servirest-terracota text-servirest-hueso border-servirest-terracota shadow-solaris-glow' : 'bg-[rgba(42,40,38,0.03)] border-[rgba(42,40,38,0.12)] hover:border-servirest-terracota/50'}`}
+                                                    >
+                                                        <span className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center font-black italic text-[12px] ${picked ? 'bg-servirest-hueso/20 text-servirest-hueso' : 'bg-servirest-terracota/10 text-servirest-terracota'}`}>
+                                                            {idx + 1}
+                                                        </span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className={`text-[11px] font-black uppercase italic tracking-tight truncate ${picked ? 'text-servirest-hueso' : 'text-[#1a1c14]'}`}>
+                                                                {o.customerName || `Pedido ${o.id.slice(0, 6)}`}
+                                                            </p>
+                                                            <p className={`text-[8px] font-black uppercase tracking-widest mt-0.5 ${picked ? 'text-servirest-hueso/70' : 'text-[#2A2826]/40'}`}>
+                                                                {new Date(o.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                                                {o.dailyNumber !== undefined ? ` · #${o.dailyNumber}` : ''}
+                                                                {` · ${(o.items || []).length} plat.`}
+                                                                {o.status === OrderStatus.BILL_REQUESTED ? ' · PIDE CUENTA' : ''}
+                                                            </p>
+                                                        </div>
+                                                        <span className={`font-black italic tracking-tighter shrink-0 ${picked ? 'text-servirest-hueso' : 'text-servirest-terracota'}`}>
+                                                            ${o.total.toFixed(0)}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </motion.div>
                              );
                         })}
@@ -744,7 +876,7 @@ export const CashierScreen: React.FC = () => {
                                     {/* Action Vector */}
                                     <div className="space-y-4 pt-8 md:pt-10 border-t border-[rgba(42,40,38,0.12)]">
                                         <GlowButton
-                                            onClick={() => setIsPaymentModalOpen(true)}
+                                            onClick={() => { setPartialPayments([]); setPartialAmount(''); setIsPaymentModalOpen(true); }}
                                             className="w-full py-8 md:py-12 rounded-[28px] md:rounded-[40px] tracking-[0.2em] md:tracking-[0.4em] text-xl md:text-3xl flex items-center justify-center gap-4 md:gap-8 group !text-[#2A2826]"
                                         >
                                             Execute <ArrowRight size={24} className="md:w-10 md:h-10 group-hover:translate-x-2 transition-transform" />
@@ -842,10 +974,14 @@ export const CashierScreen: React.FC = () => {
                             <div className="flex justify-between items-center px-6 md:px-10 py-5 md:py-7 border-b border-[rgba(42,40,38,0.12)] bg-servirest-surface shrink-0">
                                 <div>
                                     <h2 className="text-xl md:text-3xl font-black italic tracking-tighter uppercase text-[#1a1c14]">Authorize Payout</h2>
-                                    <p className="text-[8px] md:text-[10px] font-black uppercase text-servirest-terracota/60 tracking-[0.4em] mt-1 italic">Table: {selectedOrder?.tableId} • Amount due: ${(total / splitCount).toFixed(2)}</p>
+                                    <p className="text-[8px] md:text-[10px] font-black uppercase text-servirest-terracota/60 tracking-[0.4em] mt-1 italic">
+                                        {selectedOrder?.customerName ? `${selectedOrder.customerName} • ` : ''}
+                                        {selectedOrder?.dailyNumber !== undefined ? `#${selectedOrder.dailyNumber} • ` : ''}
+                                        Total: ${total.toFixed(2)}
+                                    </p>
                                 </div>
                                 <button
-                                    onClick={() => setIsPaymentModalOpen(false)}
+                                    onClick={() => { setIsPaymentModalOpen(false); setPartialPayments([]); setPartialAmount(''); }}
                                     className="w-10 h-10 md:w-12 md:h-12 bg-servirest-surface rounded-full flex items-center justify-center text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
                                 >
                                     <X size={20} />
@@ -913,28 +1049,119 @@ export const CashierScreen: React.FC = () => {
                                             <div className="grid grid-cols-2 xl:grid-cols-1 gap-2">
                                                 <GlowButton
                                                     onClick={() => setPaymentMethod(PaymentMethod.CASH)}
-                                                    variant={paymentMethod === PaymentMethod.CASH ? 'primary' : 'secondary'}
+                                                    variant={paymentMethod === PaymentMethod.CASH && !isMixedPayment ? 'primary' : 'secondary'}
                                                     className="w-full text-[10px] py-4 !text-[#2A2826]"
                                                 >
-                                                    <Wallet size={16} /> <span className="hidden xs:inline">Liquid Asset</span>
+                                                    <Wallet size={16} /> <span className="hidden xs:inline">Efectivo</span>
                                                 </GlowButton>
                                                 <GlowButton
                                                     onClick={() => setPaymentMethod(PaymentMethod.CARD)}
-                                                    variant={paymentMethod === PaymentMethod.CARD ? 'primary' : 'secondary'}
+                                                    variant={paymentMethod === PaymentMethod.CARD && !isMixedPayment ? 'primary' : 'secondary'}
                                                     className="w-full text-[10px] py-4 !text-[#2A2826]"
                                                 >
-                                                    <CreditCard size={16} /> <span className="hidden xs:inline">Spectral Card</span>
+                                                    <CreditCard size={16} /> <span className="hidden xs:inline">Tarjeta</span>
                                                 </GlowButton>
                                             </div>
+                                        </div>
+
+                                        {/* ── Pago con varios métodos ──────────────────────
+                                            Para cuando el cliente paga una parte con tarjeta y
+                                            otra en efectivo. Se van registrando los pagos hasta
+                                            cubrir el total. */}
+                                        <div className="pt-4 border-t border-dashed border-[rgba(42,40,38,0.15)] space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-[8px] md:text-[9px] font-black uppercase text-[#2A2826]/30 tracking-widest italic">Dividir por método</p>
+                                                {isMixedPayment && (
+                                                    <button
+                                                        onClick={() => { setPartialPayments([]); setPartialAmount(''); }}
+                                                        className="text-[8px] font-black uppercase tracking-widest text-red-400 hover:text-red-500 transition-colors"
+                                                    >
+                                                        Limpiar
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="number"
+                                                    min={0}
+                                                    value={partialAmount}
+                                                    onChange={e => setPartialAmount(e.target.value)}
+                                                    placeholder={mixedRemaining > 0 ? mixedRemaining.toFixed(2) : '0.00'}
+                                                    className="flex-1 min-w-0 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-xl py-2.5 px-3 text-[#1a1c14] text-sm font-black italic outline-none focus:border-servirest-terracota/40"
+                                                />
+                                                <button
+                                                    onClick={() => setPartialAmount(mixedRemaining.toFixed(2))}
+                                                    className="shrink-0 px-3 rounded-xl bg-servirest-terracota/10 border border-servirest-terracota/20 text-servirest-terracota text-[8px] font-black uppercase tracking-widest hover:bg-servirest-terracota/20 transition-all"
+                                                >
+                                                    Resto
+                                                </button>
+                                            </div>
+
+                                            <div className="grid grid-cols-3 gap-2">
+                                                {[
+                                                    { m: PaymentMethod.CASH, label: 'Efectivo' },
+                                                    { m: PaymentMethod.CARD, label: 'Tarjeta' },
+                                                    { m: PaymentMethod.TRANSFER, label: 'Transf.' },
+                                                ].map(({ m, label }) => (
+                                                    <button
+                                                        key={m}
+                                                        onClick={() => {
+                                                            const amt = parseFloat(partialAmount) || 0;
+                                                            if (amt <= 0) return;
+                                                            setPartialPayments(prev => [...prev, { id: crypto.randomUUID(), method: m, amount: amt }]);
+                                                            setPartialAmount('');
+                                                        }}
+                                                        className="py-2.5 rounded-xl bg-servirest-surface border border-[rgba(42,40,38,0.12)] text-[#2A2826]/60 hover:text-[#1a1c14] hover:border-servirest-terracota/50 text-[8px] font-black uppercase tracking-widest transition-all"
+                                                    >
+                                                        + {label}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {isMixedPayment && (
+                                                <div className="space-y-1.5">
+                                                    {partialPayments.map(p => (
+                                                        <div key={p.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-[rgba(42,40,38,0.04)] border border-[rgba(42,40,38,0.10)]">
+                                                            <span className="text-[9px] font-black uppercase tracking-widest text-[#2A2826]/60">
+                                                                {p.method === PaymentMethod.CASH ? 'Efectivo' : p.method === PaymentMethod.CARD ? 'Tarjeta' : 'Transferencia'}
+                                                            </span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-black italic text-sm text-[#1a1c14]">${p.amount.toFixed(2)}</span>
+                                                                <button
+                                                                    onClick={() => setPartialPayments(prev => prev.filter(x => x.id !== p.id))}
+                                                                    className="text-[#2A2826]/25 hover:text-red-500 transition-colors"
+                                                                >
+                                                                    <X size={12} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    <div className={`flex items-center justify-between px-3 py-2.5 rounded-lg ${mixedRemaining > 0.005 ? 'bg-servirest-terracota/10 border border-servirest-terracota/20' : 'bg-green-500/10 border border-green-500/25'}`}>
+                                                        <span className="text-[9px] font-black uppercase tracking-widest text-[#2A2826]/55">
+                                                            {mixedRemaining > 0.005 ? 'Falta' : 'Cubierto'}
+                                                        </span>
+                                                        <span className={`font-black italic text-base ${mixedRemaining > 0.005 ? 'text-servirest-terracota' : 'text-green-500'}`}>
+                                                            {mixedRemaining > 0.005
+                                                                ? `$${mixedRemaining.toFixed(2)}`
+                                                                : mixedPaid > total + 0.005
+                                                                    ? `Cambio $${(mixedPaid - total).toFixed(2)}`
+                                                                    : '✓'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
                                     <GlowButton
                                         onClick={handleProcessPayment}
-                                        disabled={paymentMethod === PaymentMethod.CASH && (parseFloat(cashReceived) || 0) < (total / splitCount)}
+                                        disabled={isMixedPayment
+                                            ? mixedRemaining > 0.005
+                                            : paymentMethod === PaymentMethod.CASH && (parseFloat(cashReceived) || 0) < (total / splitCount)}
                                         className="w-full py-5 md:py-7 tracking-[0.2em] md:tracking-[0.3em] text-base md:text-lg mb-8 md:mb-0 !text-[#2A2826]"
                                     >
-                                        <CheckCircle2 size={20} className="md:w-6 md:h-6" /> Confirm Transmission
+                                        <CheckCircle2 size={20} className="md:w-6 md:h-6" /> {isMixedPayment ? 'Cobrar mixto' : 'Confirmar cobro'}
                                     </GlowButton>
                                 </div>
                             </div>

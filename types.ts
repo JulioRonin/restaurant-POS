@@ -79,6 +79,9 @@ export interface Order {
   receivedAmount?: number;
   changeAmount?: number;
   paidSplits?: number;
+  /** Desglose cuando se cobró con varios métodos (paymentMethod = MIXED).
+   *  Viaja dentro de customer_metadata en Supabase, no como columna propia. */
+  payments?: OrderPayment[];
   /** Hora del cobro (ISO). Solo local — no existe como columna en Supabase.
    *  `timestamp` sigue siendo la hora en que se levantó la orden. */
   paidAt?: string;
@@ -100,6 +103,14 @@ export enum PaymentMethod {
   CARD = 'CARD',
   TRANSFER = 'TRANSFER',
   MIXED = 'MIXED'
+}
+
+/** Un pago parcial dentro de una cuenta cobrada con varios métodos.
+ *  Ej. $200 en tarjeta + $150 en efectivo sobre un total de $350. */
+export interface OrderPayment {
+  id: string;
+  method: PaymentMethod;
+  amount: number;
 }
 
 export interface InvoiceDetails {

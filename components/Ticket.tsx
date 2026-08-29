@@ -138,7 +138,18 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
       </div>
 
       {/* Payment Info */}
-      {order.paymentMethod && (
+      {order.payments && order.payments.length > 1 ? (
+          // Cobro con varios métodos: se desglosa cuánto entró por cada uno.
+          <div className="mb-4 border-t border-black border-dotted pt-2">
+             <p className="text-xs uppercase text-center mb-1">PAGO MIXTO</p>
+             {order.payments.map((p, i) => (
+               <div key={i} className="flex justify-between text-[10px]">
+                 <span>{p.method === 'CASH' ? 'EFECTIVO' : p.method === 'CARD' ? 'TARJETA' : 'TRANSFERENCIA'}:</span>
+                 <span>${p.amount.toFixed(2)}</span>
+               </div>
+             ))}
+          </div>
+      ) : order.paymentMethod && (
           <div className="text-center mb-4">
              <p className="text-xs uppercase">PAGO: {order.paymentMethod}</p>
           </div>

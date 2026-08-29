@@ -299,6 +299,16 @@ async function pushLocalChanges(): Promise<void> {
             }
             delete payload.customerName;
 
+            // Mismo caso para el desglose de un cobro con varios métodos
+            // (tarjeta + efectivo en una sola cuenta): va dentro del jsonb.
+            if (payload.payments) {
+              payload.customerMetadata = {
+                ...(payload.customerMetadata || {}),
+                payments: payload.payments,
+              };
+            }
+            delete payload.payments;
+
             delete payload.items;
             delete payload.paidAt; // Solo local: la columna no existe en Supabase
             delete payload.table; // Object reference cleanup
@@ -811,6 +821,9 @@ function transformFromSupabase(record: any, storeName: string): any {
   // para que las pantallas lo lean como order.customerName sin escarbar.
   if (storeName === 'orders' && transformed.customerMetadata?.customerName) {
     transformed.customerName = transformed.customerMetadata.customerName;
+  }
+  if (storeName === 'orders' && Array.isArray(transformed.customerMetadata?.payments)) {
+    transformed.payments = transformed.customerMetadata.payments;
   }
 
   return transformed;
