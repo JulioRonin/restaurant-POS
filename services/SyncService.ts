@@ -1,7 +1,8 @@
 ﻿import { 
   getAll, put, deleteRecord, enqueueSyncOp, 
   getPendingSyncOps, updateSyncOp, clearSyncedOps, 
-  getSyncQueueCount, SyncOperation, updateRecordSyncStatus, getById
+  getSyncQueueCount, SyncOperation, updateRecordSyncStatus, getById,
+  requeueStalledSyncOps
 } from './db';
 
 // ─── Configuration ────────────────────────────────────────────
@@ -207,6 +208,17 @@ export async function triggerSync(businessId?: string, isBackground: boolean = f
 // ─── PUSH: Send pending operations to Supabase ───────────────
 
 async function pushLocalChanges(): Promise<void> {
+  // Rescata operaciones atoradas en 'syncing' (la app se cerró a media subida)
+  // y reintenta las 'failed'. Sin esto, un order_item que falla por llave
+  // foránea nunca se vuelve a intentar y la orden queda con total pero sin
+  // platillos.
+  try {
+    const requeued = await requeueStalledSyncOps();
+    if (requeued > 0) console.log(`[SyncService] Reencoladas ${requeued} operaciones atoradas`);
+  } catch (e) {
+    console.warn('[SyncService] No se pudieron reencolar operaciones atoradas:', e);
+  }
+
   const allPending = await getPendingSyncOps();
   // CRITICAL: Sort by ID (auto-increment) to preserve creation order
   // This ensures 'orders' are INSERTed before 'order_items'
@@ -233,6 +245,21 @@ async function pushLocalChanges(): Promise<void> {
               console.log(`[SyncService] Skipping order_item ${op.record_id} - Parent order ${parentOrderId} not yet synced on server.`);
               continue; // Skip for now, will try next sync cycle after order is confirmed
           }
+
+          // order_items.menu_item_id también es llave foránea (-> menu_items).
+          // Si el platillo aún no llegó a la nube, el INSERT truena con 23503 y
+          // el renglón se perdía. Aquí lo dejamos PENDIENTE (no 'failed') para
+          // que suba en cuanto el platillo exista. Por eso se veían órdenes con
+          // unos renglones sí y otros no: los de platillos ya sincronizados
+          // pasaban, los de platillos nuevos se caían.
+          const menuItemId = (op.payload as any).menuItemId || (op.payload as any).menu_item_id;
+          if (menuItemId) {
+              const localProduct = await getById('products', menuItemId);
+              if (localProduct && !(localProduct as any).synced) {
+                  console.log(`[SyncService] Skipping order_item ${op.record_id} - Platillo ${menuItemId} aún no sincronizado.`);
+                  continue;
+              }
+          }
       }
 
       await updateSyncOp(op.id!, { status: 'syncing' });
@@ -247,7 +274,57 @@ async function pushLocalChanges(): Promise<void> {
           
           // Cleanup incompatible fields for multi-tenant tables
           if (op.table === 'orders') {
+            // La hora REAL de la orden viaja como created_at.
+            // Antes se perdía: `timestamp` está en la lista negra de
+            // transformForSupabase, así que el INSERT llegaba sin fecha y
+            // Postgres aplicaba `created_at default now()` — es decir, la
+            // hora en que se VACIÓ LA COLA DE SYNC, no la hora de la venta.
+            // Si la cola traía atraso (sin internet, pestaña cerrada, backlog),
+            // órdenes de días anteriores entraban a Supabase fechadas HOY, y
+            // al volver a bajarlas se sumaban todas a las ventas de hoy.
+            const rawTs = payload.timestamp || payload.created_at;
+            if (rawTs) {
+              const t = new Date(rawTs);
+              if (!isNaN(t.getTime())) payload.created_at = t.toISOString();
+            }
+            // El nombre de quien pidió viaja DENTRO de customer_metadata (que
+            // ya existe para el canal digital), no como columna propia: así no
+            // hace falta migrar `orders` ni arriesgar un 42703 que tumbe el
+            // INSERT completo de la orden.
+            if (payload.customerName) {
+              payload.customerMetadata = {
+                ...(payload.customerMetadata || {}),
+                customerName: payload.customerName,
+              };
+            }
+            delete payload.customerName;
+
+            // Mismo caso para el desglose de un cobro con varios métodos
+            // (tarjeta + efectivo en una sola cuenta): va dentro del jsonb.
+            if (payload.payments) {
+              payload.customerMetadata = {
+                ...(payload.customerMetadata || {}),
+                payments: payload.payments,
+              };
+            }
+            delete payload.payments;
+
+            // Cobro en divisa (USD): la venta ya está en pesos en `total`,
+            // esto solo deja el rastro de cómo pagó el cliente.
+            if (payload.paidCurrency && payload.paidCurrency !== 'MXN') {
+              payload.customerMetadata = {
+                ...(payload.customerMetadata || {}),
+                paidCurrency: payload.paidCurrency,
+                fxRate: payload.fxRate,
+                receivedForeign: payload.receivedForeign,
+              };
+            }
+            delete payload.paidCurrency;
+            delete payload.fxRate;
+            delete payload.receivedForeign;
+
             delete payload.items;
+            delete payload.paidAt; // Solo local: la columna no existe en Supabase
             delete payload.table; // Object reference cleanup
             delete payload.waiter; // Object reference cleanup
             delete payload.changeAmount;
@@ -387,7 +464,9 @@ async function pushLocalChanges(): Promise<void> {
             `[SyncService] Schema pendiente en ${op.table}. Los datos están guardados localmente. ` +
             `Corre docs/business-plan/koso-pos/MIGRATION_DIGITAL_CHANNEL.sql en Supabase.`
           );
-        } else if (!['expenses', 'business_settings', 'supplier_orders'].includes(op.table)) {
+        } else if (!['expenses', 'business_settings', 'supplier_orders', 'order_items'].includes(op.table)) {
+          // order_items queda fuera a propósito: ahora se reintenta solo, y no
+          // tiene caso interrumpir al cajero a media comanda con un alert.
           alert(`Error guardando ${op.table}: ${result.error.message}`);
         }
         throw result.error;
@@ -750,7 +829,22 @@ function transformFromSupabase(record: any, storeName: string): any {
   
   // Custom mappings for consistency
   if (record.business_id) transformed.businessId = record.business_id;
-  
+
+  // El nombre de quien pidió se guarda dentro de customer_metadata (tanto el
+  // capturado en POS como el del canal digital). Se rehidrata a nivel raíz
+  // para que las pantallas lo lean como order.customerName sin escarbar.
+  if (storeName === 'orders' && transformed.customerMetadata?.customerName) {
+    transformed.customerName = transformed.customerMetadata.customerName;
+  }
+  if (storeName === 'orders' && Array.isArray(transformed.customerMetadata?.payments)) {
+    transformed.payments = transformed.customerMetadata.payments;
+  }
+  if (storeName === 'orders' && transformed.customerMetadata?.paidCurrency) {
+    transformed.paidCurrency = transformed.customerMetadata.paidCurrency;
+    transformed.fxRate = transformed.customerMetadata.fxRate;
+    transformed.receivedForeign = transformed.customerMetadata.receivedForeign;
+  }
+
   return transformed;
 }
 

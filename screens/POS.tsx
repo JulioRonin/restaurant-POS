@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Plus, Printer, ShoppingCart, X, Minus, ChefHat,
   Table as TableIcon, ShoppingBag, Truck, ArrowRight, Trash2,
-  SlidersHorizontal, Check, Wifi, WifiOff,
+  SlidersHorizontal, Check, Wifi, WifiOff, User,
 } from 'lucide-react';
 import {
   SrCard, SrButton, SrChip, SrInput, SrLabel, SrKicker, SrMono,
@@ -151,6 +151,10 @@ export const POSScreen: React.FC = () => {
   const [kitchenOrderToPrint, setKitchenOrderToPrint] = useState<Order | null>(null);
   const [selectedTable, setSelectedTable] = useState<Table | null>(null);
   const [selectedSource, setSelectedSource] = useState<OrderSource>(OrderSource.DINE_IN);
+  // Nombre de quien hace el pedido — OPCIONAL. Sirve igual para mesa que para
+  // llevar: permite llamar al cliente por su nombre y distinguir dos órdenes
+  // parecidas en la barra.
+  const [orderCustomerName, setOrderCustomerName] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showTableModal, setShowTableModal] = useState(false);
   const [variantItem, setVariantItem] = useState<MenuItem | null>(null);
@@ -241,8 +245,13 @@ export const POSScreen: React.FC = () => {
   };
 
   const subtotal = cart.reduce((s, it) => s + lineTotal(it), 0);
-  const tax = subtotal * 0.16;
-  const total = subtotal + tax;
+  // Toggle en Ajustes → General → IVA ("Cobrar 16% de IVA aparte").
+  // Apagado (default): los precios del menú YA incluyen el 16%, no se suma
+  // nada extra al cobrar — solo se muestra como referencia. Encendido: se
+  // agrega el 16% al subtotal.
+  const chargeExtraTax = settings.chargeExtraTax ?? false;
+  const tax = chargeExtraTax ? subtotal * 0.16 : subtotal - subtotal / 1.16;
+  const total = chargeExtraTax ? subtotal + tax : subtotal;
   const cartItemCount = cart.reduce((s, it) => s + it.quantity, 0);
 
   const handleSendOrder = async () => {
@@ -256,6 +265,7 @@ export const POSScreen: React.FC = () => {
       total,
       waiterName: activeEmployee?.name || 'Sistema',
       source: selectedSource,
+      customerName: orderCustomerName.trim() || undefined,
       businessId: authProfile?.businessId,
       locationId: authProfile?.locationId,
     };
@@ -285,6 +295,7 @@ export const POSScreen: React.FC = () => {
         }
       }
       setCart([]);
+      setOrderCustomerName(''); // el nombre es por pedido, no se arrastra al siguiente
       setShowSuccessModal(true);
       setTimeout(() => setShowSuccessModal(false), 2000);
     } catch {
@@ -612,14 +623,42 @@ export const POSScreen: React.FC = () => {
             })}
           </div>
 
-          {/* Totals */}
+          {/* Nombre del pedido (opcional) */}
+          <div className="mb-5">
+            <div className="relative">
+              <User
+                size={14}
+                className={`absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors ${orderCustomerName ? 'text-servirest-terracota' : 'text-[rgba(42,40,38,0.35)]'}`}
+              />
+              <input
+                type="text"
+                value={orderCustomerName}
+                onChange={(e) => setOrderCustomerName(e.target.value)}
+                placeholder="Nombre del pedido (opcional)"
+                maxLength={40}
+                className={`w-full bg-servirest-surface border rounded-sr-md pl-10 pr-9 py-3 text-[12px] font-bold text-servirest-carbon placeholder:text-[rgba(42,40,38,0.35)] placeholder:font-medium outline-none transition-colors ${orderCustomerName ? 'border-servirest-terracota' : 'border-[rgba(42,40,38,0.12)] focus:border-servirest-terracota'}`}
+              />
+              {orderCustomerName && (
+                <button
+                  type="button"
+                  onClick={() => setOrderCustomerName('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[rgba(42,40,38,0.3)] hover:text-servirest-danger transition-colors"
+                  aria-label="Quitar nombre"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Totals — el IVA se suma o no según Ajustes → General → IVA */}
           <div className="space-y-2 mb-4">
             <div className="flex justify-between text-[12px]">
-              <span className="text-[rgba(42,40,38,0.6)] font-medium">Subtotal</span>
+              <span className="text-[rgba(42,40,38,0.6)] font-medium">{chargeExtraTax ? 'Subtotal' : 'Subtotal (IVA incluido)'}</span>
               <SrMono className="text-servirest-carbon font-bold">${subtotal.toFixed(2)}</SrMono>
             </div>
             <div className="flex justify-between text-[12px]">
-              <span className="text-[rgba(42,40,38,0.6)] font-medium">IVA (16 %)</span>
+              <span className="text-[rgba(42,40,38,0.6)] font-medium">{chargeExtraTax ? 'IVA (16 %)' : 'IVA (ya incluido)'}</span>
               <SrMono className="text-servirest-carbon font-bold">${tax.toFixed(2)}</SrMono>
             </div>
           </div>

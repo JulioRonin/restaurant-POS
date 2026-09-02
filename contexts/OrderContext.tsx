@@ -85,6 +85,22 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             ...o,
             items: assembledItems || [], // PREVENT CRASH from undefined items after Supabase Pull
             timestamp: new Date(o.timestamp || o.created_at || o.createdAt || Date.now()),
+            // El nombre del pedido vive dentro de customer_metadata en la nube
+            // (POS y canal digital comparten ese campo).
+            customerName: o.customerName
+              || o.customerMetadata?.customerName
+              || o.customer_metadata?.customerName
+              || undefined,
+            payments: o.payments
+              || o.customerMetadata?.payments
+              || o.customer_metadata?.payments
+              || undefined,
+            paidCurrency: o.paidCurrency
+              || o.customerMetadata?.paidCurrency
+              || o.customer_metadata?.paidCurrency
+              || undefined,
+            fxRate: o.fxRate ?? o.customerMetadata?.fxRate ?? o.customer_metadata?.fxRate,
+            receivedForeign: o.receivedForeign ?? o.customerMetadata?.receivedForeign ?? o.customer_metadata?.receivedForeign,
           };
         }));
       }
@@ -314,7 +330,10 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       await deleteRecord('orders', orderId);
       // Also delete items (clean up orphans)
       const allItems = await getAll('order_items');
-      const orphans = (allItems as any[]).filter(i => (i.order_Id === orderId || i.order_id === orderId));
+      // OJO: `order_Id` (con I mayúscula) era un typo — nunca hacía match.
+      // addOrder guarda los renglones con `orderId`, así que los platillos de
+      // órdenes capturadas en este equipo quedaban huérfanos al borrar.
+      const orphans = (allItems as any[]).filter(i => (i.orderId === orderId || i.order_id === orderId));
       for (const item of orphans) {
         await deleteRecord('order_items', item.id);
         await trackChange('order_items', 'DELETE', item.id, {});
