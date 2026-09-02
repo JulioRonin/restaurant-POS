@@ -155,6 +155,22 @@ export const Ticket: React.FC<TicketProps> = ({ order, settings, isTest = false 
           </div>
       )}
 
+      {/* Cobro en dólares: se deja constancia del tipo de cambio aplicado,
+          que es lo que evita reclamos por el cambio entregado. */}
+      {order.paidCurrency === 'USD' && order.fxRate ? (
+        <div className="mb-4 border-t border-black border-dotted pt-2">
+          <p className="text-xs uppercase text-center mb-1">PAGO EN DOLARES</p>
+          <div className="flex justify-between text-[10px]">
+            <span>RECIBIDO:</span>
+            <span>US${(order.receivedForeign || 0).toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-[10px]">
+            <span>TIPO DE CAMBIO:</span>
+            <span>${order.fxRate.toFixed(4)}</span>
+          </div>
+        </div>
+      ) : null}
+
       {/* Footer */}
       <div className="flex flex-col items-center text-center border-t border-black border-dashed pt-4 mt-4">
         <p className="font-bold">{settings.footerMessage}</p>

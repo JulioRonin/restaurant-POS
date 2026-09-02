@@ -95,6 +95,12 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               || o.customerMetadata?.payments
               || o.customer_metadata?.payments
               || undefined,
+            paidCurrency: o.paidCurrency
+              || o.customerMetadata?.paidCurrency
+              || o.customer_metadata?.paidCurrency
+              || undefined,
+            fxRate: o.fxRate ?? o.customerMetadata?.fxRate ?? o.customer_metadata?.fxRate,
+            receivedForeign: o.receivedForeign ?? o.customerMetadata?.receivedForeign ?? o.customer_metadata?.receivedForeign,
           };
         }));
       }

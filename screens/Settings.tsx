@@ -862,6 +862,56 @@ const GeneralTab: React.FC<{
     </SrCard>
 
     <SrCard variant="solaris" className="p-8">
+      <SectionHeading kicker="Divisas" title="Cobro en dólares" />
+      <p className="text-[13px] text-[rgba(42,40,38,0.6)] font-medium mb-5 leading-relaxed max-w-2xl">
+        Actívalo si recibes clientes que pagan en dólares. En Caja aparecerá un selector MXN / USD con el
+        monto convertido al tipo de cambio FIX de Banco de México, actualizado automáticamente.
+      </p>
+      <SrCard className="p-5">
+        <Toggle
+          label="Aceptar pagos en dólares (USD)"
+          value={localSettings.acceptUsd ?? false}
+          onChange={(v) => setLocalSettings((p) => ({ ...p, acceptUsd: v }))}
+        />
+      </SrCard>
+
+      {(localSettings.acceptUsd ?? false) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+          <div>
+            <SrLabel className="block mb-2">Ajuste sobre el FIX (%)</SrLabel>
+            <SrInput
+              type="number"
+              min={0}
+              max={20}
+              step={0.5}
+              value={localSettings.usdSpreadPct ?? 0}
+              onChange={(e: any) => setLocalSettings((p) => ({ ...p, usdSpreadPct: parseFloat(e.target.value) || 0 }))}
+            />
+            <p className="text-[11px] text-[rgba(42,40,38,0.45)] mt-2 leading-relaxed">
+              Lo que le restas al FIX para cubrir el costo de cambiar los dólares en el banco.
+              Ejemplo: FIX 18.50 con 3% te da 17.95 pesos por dólar. Déjalo en 0 para cobrar al FIX exacto.
+            </p>
+          </div>
+          <div>
+            <SrLabel className="block mb-2">Tipo de cambio fijo (opcional)</SrLabel>
+            <SrInput
+              type="number"
+              min={0}
+              step={0.01}
+              placeholder="0 = usar Banxico"
+              value={localSettings.usdManualRate || ''}
+              onChange={(e: any) => setLocalSettings((p) => ({ ...p, usdManualRate: parseFloat(e.target.value) || 0 }))}
+            />
+            <p className="text-[11px] text-[rgba(42,40,38,0.45)] mt-2 leading-relaxed">
+              Si capturas un valor aquí se usa ese y se ignora a Banxico — para negocios que manejan
+              un tipo de cambio de la casa. Déjalo vacío o en 0 para que se actualice solo.
+            </p>
+          </div>
+        </div>
+      )}
+    </SrCard>
+
+    <SrCard variant="solaris" className="p-8">
       <SectionHeading kicker="Pagos" title="Cuenta de depósito" />
       <p className="text-[13px] text-[rgba(42,40,38,0.6)] font-medium mb-6 leading-relaxed max-w-2xl">
         Aquí depositamos tus ventas digitales. Asegúrate de que coincida con la cuenta de tu razón social.

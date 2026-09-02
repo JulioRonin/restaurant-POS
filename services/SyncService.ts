@@ -309,6 +309,20 @@ async function pushLocalChanges(): Promise<void> {
             }
             delete payload.payments;
 
+            // Cobro en divisa (USD): la venta ya está en pesos en `total`,
+            // esto solo deja el rastro de cómo pagó el cliente.
+            if (payload.paidCurrency && payload.paidCurrency !== 'MXN') {
+              payload.customerMetadata = {
+                ...(payload.customerMetadata || {}),
+                paidCurrency: payload.paidCurrency,
+                fxRate: payload.fxRate,
+                receivedForeign: payload.receivedForeign,
+              };
+            }
+            delete payload.paidCurrency;
+            delete payload.fxRate;
+            delete payload.receivedForeign;
+
             delete payload.items;
             delete payload.paidAt; // Solo local: la columna no existe en Supabase
             delete payload.table; // Object reference cleanup
@@ -824,6 +838,11 @@ function transformFromSupabase(record: any, storeName: string): any {
   }
   if (storeName === 'orders' && Array.isArray(transformed.customerMetadata?.payments)) {
     transformed.payments = transformed.customerMetadata.payments;
+  }
+  if (storeName === 'orders' && transformed.customerMetadata?.paidCurrency) {
+    transformed.paidCurrency = transformed.customerMetadata.paidCurrency;
+    transformed.fxRate = transformed.customerMetadata.fxRate;
+    transformed.receivedForeign = transformed.customerMetadata.receivedForeign;
   }
 
   return transformed;

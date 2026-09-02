@@ -82,6 +82,14 @@ export interface Order {
   /** Desglose cuando se cobró con varios métodos (paymentMethod = MIXED).
    *  Viaja dentro de customer_metadata en Supabase, no como columna propia. */
   payments?: OrderPayment[];
+  /** Cuando el cliente pagó en otra divisa (USD). El total de la orden SIEMPRE
+   *  está en pesos; esto solo deja rastro de cómo entregó el dinero.
+   *  Viaja dentro de customer_metadata en Supabase. */
+  paidCurrency?: 'MXN' | 'USD';
+  /** Tipo de cambio aplicado (pesos por dólar) al cobrar en divisa. */
+  fxRate?: number;
+  /** Monto entregado en la divisa extranjera. */
+  receivedForeign?: number;
   /** Hora del cobro (ISO). Solo local — no existe como columna en Supabase.
    *  `timestamp` sigue siendo la hora en que se levantó la orden. */
   paidAt?: string;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useTables } from '../contexts/TableContext';
@@ -9,6 +9,7 @@ import { Ticket } from '../components/Ticket';
 import { CashCutTicket } from '../components/CashCutTicket';
 import { FinancialReportModal } from '../components/FinancialReportModal';
 import { printerService } from '../services/PrinterService';
+import { fetchFxRate, getCachedFxRate, effectiveRate, mxnToUsd, FxRate } from '../services/fx';
 import { bluetoothTerminalService } from '../services/BluetoothTerminalService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowCard } from '../components/ui/spotlight-card';
@@ -79,6 +80,9 @@ export const CashierScreen: React.FC = () => {
     // con la suma de todos y paymentMethod = MIXED.
     const [partialPayments, setPartialPayments] = useState<OrderPayment[]>([]);
     const [partialAmount, setPartialAmount] = useState<string>('');
+    // Cobro en dólares: moneda activa del modal y tipo de cambio vigente.
+    const [payCurrency, setPayCurrency] = useState<'MXN' | 'USD'>('MXN');
+    const [fx, setFx] = useState<FxRate | null>(() => getCachedFxRate());
     const [isProcessingTerminal, setIsProcessingTerminal] = useState(false);
     const [terminalStep, setTerminalStep] = useState('');
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -146,10 +150,16 @@ export const CashierScreen: React.FC = () => {
             return;
         }
 
-        const actualCash = parseFloat(cashReceived) || splitAmount;
+        // Si el cliente paga en dólares, lo capturado está en USD: se convierte
+        // a pesos para la caja. La VENTA siempre queda registrada en MXN — el
+        // dólar es solo la moneda en que entregó el dinero.
+        const rawReceived = parseFloat(cashReceived) || 0;
+        const actualCash = isUsd
+            ? (rawReceived > 0 ? rawReceived * usdRate : splitAmount)
+            : (rawReceived || splitAmount);
 
         // Prevent processing if cash received is less than amount due for this split
-        if (paymentMethod === PaymentMethod.CASH && actualCash < splitAmount) {
+        if (paymentMethod === PaymentMethod.CASH && actualCash < splitAmount - 0.005) {
             alert("El monto recibido no puede ser menor al total a pagar.");
             return;
         }
@@ -171,6 +181,12 @@ export const CashierScreen: React.FC = () => {
             receivedAmount: actualCash, // Store what was actually given
             changeAmount: paymentMethod === PaymentMethod.CASH ? actualCash - splitAmount : 0, 
             paidSplits: currentPaidSplits,
+            // Rastro del cobro en dólares, para el ticket y las aclaraciones.
+            ...(isUsd ? {
+                paidCurrency: 'USD' as const,
+                fxRate: usdRate,
+                receivedForeign: rawReceived,
+            } : {}),
             // NO se toca `timestamp`: es la hora REAL en que se levantó la
             // orden. Antes se sobrescribía con new Date() en cada cobro (y en
             // cada pago parcial), así que una cuenta abierta ayer y cobrada hoy
@@ -227,6 +243,24 @@ export const CashierScreen: React.FC = () => {
     const isMixedPayment = partialPayments.length > 0;
     const mixedPaid = partialPayments.reduce((s, p) => s + p.amount, 0);
     const mixedRemaining = Math.max(0, total - mixedPaid);
+
+    // ── Cobro en dólares ───────────────────────────────────────────────
+    // La venta SIEMPRE se registra en pesos (los libros del negocio son en
+    // MXN); el dólar es solo la moneda en que el cliente entrega el dinero.
+    const acceptUsd = settings.acceptUsd ?? false;
+    const usdRate = fx
+        ? effectiveRate(fx.rate, { spreadPct: settings.usdSpreadPct, manualRate: settings.usdManualRate })
+        : (settings.usdManualRate && settings.usdManualRate > 0 ? settings.usdManualRate : 0);
+    const isUsd = payCurrency === 'USD' && usdRate > 0;
+    const amountDueMxn = total / splitCount;
+    const amountDueUsd = mxnToUsd(amountDueMxn, usdRate);
+
+    // Al abrir el cobro se refresca el tipo de cambio (el servicio cachea 6 h,
+    // así que esto casi nunca sale a la red).
+    useEffect(() => {
+        if (!isPaymentModalOpen || !acceptUsd) return;
+        fetchFxRate().then(r => { if (r) setFx(r); });
+    }, [isPaymentModalOpen, acceptUsd]);
 
     const filteredByDateOrders = useMemo(() => orders.filter(o => {
         const d = new Date(o.timestamp || Date.now());
@@ -876,7 +910,7 @@ export const CashierScreen: React.FC = () => {
                                     {/* Action Vector */}
                                     <div className="space-y-4 pt-8 md:pt-10 border-t border-[rgba(42,40,38,0.12)]">
                                         <GlowButton
-                                            onClick={() => { setPartialPayments([]); setPartialAmount(''); setIsPaymentModalOpen(true); }}
+                                            onClick={() => { setPartialPayments([]); setPartialAmount(''); setPayCurrency('MXN'); setCashReceived(''); setIsPaymentModalOpen(true); }}
                                             className="w-full py-8 md:py-12 rounded-[28px] md:rounded-[40px] tracking-[0.2em] md:tracking-[0.4em] text-xl md:text-3xl flex items-center justify-center gap-4 md:gap-8 group !text-[#2A2826]"
                                         >
                                             Execute <ArrowRight size={24} className="md:w-10 md:h-10 group-hover:translate-x-2 transition-transform" />
@@ -981,7 +1015,7 @@ export const CashierScreen: React.FC = () => {
                                     </p>
                                 </div>
                                 <button
-                                    onClick={() => { setIsPaymentModalOpen(false); setPartialPayments([]); setPartialAmount(''); }}
+                                    onClick={() => { setIsPaymentModalOpen(false); setPartialPayments([]); setPartialAmount(''); setPayCurrency('MXN'); }}
                                     className="w-10 h-10 md:w-12 md:h-12 bg-servirest-surface rounded-full flex items-center justify-center text-[#2A2826]/30 hover:text-[#1a1c14] hover:bg-white/10 transition-all"
                                 >
                                     <X size={20} />
@@ -992,9 +1026,43 @@ export const CashierScreen: React.FC = () => {
                             <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] flex-1 overflow-y-auto custom-scrollbar">
                                 {/* Left — Cash Input */}
                                 <div className="flex flex-col items-center justify-center p-8 md:p-12 border-b xl:border-b-0 xl:border-r border-[rgba(42,40,38,0.12)]">
-                                    <p className="text-[9px] md:text-[10px] font-black uppercase text-[#2A2826]/30 tracking-[0.5em] mb-6 md:mb-8 italic">Cash Received</p>
+                                    {/* Selector de moneda — la venta se registra en pesos
+                                        siempre; el dólar es solo cómo paga el cliente. */}
+                                    {acceptUsd && (
+                                        <div className="w-full max-w-sm mb-6">
+                                            <div className="flex bg-servirest-surface border border-[rgba(42,40,38,0.12)] p-1 rounded-2xl">
+                                                {(['MXN', 'USD'] as const).map(c => (
+                                                    <button
+                                                        key={c}
+                                                        onClick={() => { setPayCurrency(c); setCashReceived(''); }}
+                                                        disabled={c === 'USD' && usdRate <= 0}
+                                                        className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all disabled:opacity-30 ${payCurrency === c ? 'bg-servirest-terracota text-servirest-hueso shadow-sr-glow' : 'text-[#2A2826]/50 hover:text-[#1a1c14]'}`}
+                                                    >
+                                                        {c === 'MXN' ? 'Pesos' : 'Dólares'}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <p className="text-[9px] font-black uppercase tracking-widest text-center mt-2.5 text-[#2A2826]/40">
+                                                {usdRate > 0 ? (
+                                                    <>
+                                                        TC ${usdRate.toFixed(4)} / USD
+                                                        {settings.usdManualRate && settings.usdManualRate > 0
+                                                            ? ' · fijo de la casa'
+                                                            : fx ? ` · FIX ${fx.date}${(settings.usdSpreadPct || 0) > 0 ? ` −${settings.usdSpreadPct}%` : ''}` : ''}
+                                                        {fx?.stale && <span className="text-servirest-mostaza"> · sin actualizar</span>}
+                                                    </>
+                                                ) : (
+                                                    <span className="text-servirest-mostaza">Sin tipo de cambio — captura uno fijo en Ajustes</span>
+                                                )}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <p className="text-[9px] md:text-[10px] font-black uppercase text-[#2A2826]/30 tracking-[0.5em] mb-6 md:mb-8 italic">
+                                        {isUsd ? 'Dólares recibidos' : 'Efectivo recibido'}
+                                    </p>
                                     <div className="relative w-full flex items-center justify-center">
-                                        <span className="text-3xl md:text-5xl font-black italic text-[#2A2826]/45 mr-2 md:mr-3 leading-none">$</span>
+                                        <span className="text-3xl md:text-5xl font-black italic text-[#2A2826]/45 mr-2 md:mr-3 leading-none">{isUsd ? 'US$' : '$'}</span>
                                         <input
                                             type="number"
                                             autoFocus
@@ -1019,7 +1087,7 @@ export const CashierScreen: React.FC = () => {
                                             </button>
                                         ))}
                                         <button
-                                            onClick={() => setCashReceived((total / splitCount).toFixed(2))}
+                                            onClick={() => setCashReceived((isUsd ? amountDueUsd : amountDueMxn).toFixed(2))}
                                             className="py-3 md:py-4 rounded-xl md:rounded-2xl bg-servirest-terracota/10 border border-servirest-terracota/20 text-servirest-terracota hover:bg-servirest-terracota/20 font-black italic text-[9px] md:text-[10px] uppercase tracking-widest transition-all col-span-2"
                                         >
                                             Exact Amount
@@ -1032,15 +1100,32 @@ export const CashierScreen: React.FC = () => {
                                     <div className="flex-1 space-y-4">
                                         <div className="grid grid-cols-2 xl:grid-cols-1 gap-4">
                                             <div className="bg-servirest-surface rounded-xl md:rounded-2xl p-4 md:p-6 border border-[rgba(42,40,38,0.12)]">
-                                                <p className="text-[8px] md:text-[9px] font-black uppercase text-[#2A2826]/45 tracking-widest mb-1 md:mb-2 italic">To Pay</p>
-                                                <p className="text-2xl md:text-4xl font-black italic text-[#1a1c14] tracking-tighter leading-none">${(total / splitCount).toFixed(2)}</p>
+                                                <p className="text-[8px] md:text-[9px] font-black uppercase text-[#2A2826]/45 tracking-widest mb-1 md:mb-2 italic">A pagar</p>
+                                                <p className="text-2xl md:text-4xl font-black italic text-[#1a1c14] tracking-tighter leading-none">
+                                                    {isUsd ? `US$${amountDueUsd.toFixed(2)}` : `$${amountDueMxn.toFixed(2)}`}
+                                                </p>
+                                                {isUsd && (
+                                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#2A2826]/40 mt-1.5">
+                                                        equivale a ${amountDueMxn.toFixed(2)} MXN
+                                                    </p>
+                                                )}
                                             </div>
 
                                             <div className="bg-servirest-terracota/5 rounded-xl md:rounded-2xl p-4 md:p-6 border border-servirest-terracota/10">
-                                                <p className="text-[8px] md:text-[9px] font-black uppercase text-servirest-terracota/60 tracking-widest mb-1 md:mb-2 italic">Change</p>
+                                                <p className="text-[8px] md:text-[9px] font-black uppercase text-servirest-terracota/60 tracking-widest mb-1 md:mb-2 italic">Cambio</p>
                                                 <p className="text-2xl md:text-4xl font-black italic text-servirest-terracota tracking-tighter leading-none">
-                                                    ${Math.max(0, (parseFloat(cashReceived) || 0) - (total / splitCount)).toFixed(2)}
+                                                    {/* Pagando en dólares el cambio se entrega en PESOS, que es
+                                                        como se hace en la práctica: se convierte lo recibido a
+                                                        pesos y se resta lo que se debe. */}
+                                                    ${isUsd
+                                                        ? Math.max(0, ((parseFloat(cashReceived) || 0) * usdRate) - amountDueMxn).toFixed(2)
+                                                        : Math.max(0, (parseFloat(cashReceived) || 0) - amountDueMxn).toFixed(2)}
                                                 </p>
+                                                {isUsd && (
+                                                    <p className="text-[9px] font-black uppercase tracking-widest text-servirest-terracota/50 mt-1.5">
+                                                        en pesos · recibiste ${((parseFloat(cashReceived) || 0) * usdRate).toFixed(2)} MXN
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
 
@@ -1158,7 +1243,11 @@ export const CashierScreen: React.FC = () => {
                                         onClick={handleProcessPayment}
                                         disabled={isMixedPayment
                                             ? mixedRemaining > 0.005
-                                            : paymentMethod === PaymentMethod.CASH && (parseFloat(cashReceived) || 0) < (total / splitCount)}
+                                            : paymentMethod === PaymentMethod.CASH && (
+                                                isUsd
+                                                    ? ((parseFloat(cashReceived) || 0) * usdRate) < amountDueMxn - 0.005
+                                                    : (parseFloat(cashReceived) || 0) < amountDueMxn
+                                              )}
                                         className="w-full py-5 md:py-7 tracking-[0.2em] md:tracking-[0.3em] text-base md:text-lg mb-8 md:mb-0 !text-[#2A2826]"
                                     >
                                         <CheckCircle2 size={20} className="md:w-6 md:h-6" /> {isMixedPayment ? 'Cobrar mixto' : 'Confirmar cobro'}
