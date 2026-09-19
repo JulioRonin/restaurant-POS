@@ -4,8 +4,8 @@
 | Campo | Valor |
 |---|---|
 | Estado | Borrador para Julio · ejecutar en el dashboard Stripe |
-| Webhook URL | `https://project-er5ks.vercel.app/api/webhook` — ⚠️ **esta URL es de un proyecto viejo, ya NO es de fiar** (ver §0) |
-| Webhook estado actual | ⚠️ Sin webhook activo confirmado — reconectar siguiendo §0 |
+| Webhook URL | Recreado por Julio en su dominio actual de Vercel (2026-09-19) — la `project-er5ks.vercel.app` de abajo quedó obsoleta |
+| Webhook estado actual | ✅ Webhook creado y variables de Vercel dadas de alta (2026-09-19) — falta validar con la prueba de punta a punta de §0.6 |
 | Productos actuales en Stripe | Plan PRO $849.99 · Plan Básico $550 |
 | Productos objetivo (per docs) | Esencial $549 · Profesional $899 · Prestige $2,499 · Enterprise custom · Equipo $5,000 |
 
