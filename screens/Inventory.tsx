@@ -447,10 +447,15 @@ export const InventoryScreen: React.FC = () => {
                 />
               </SrCard>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                {orders.map((order, idx) => (
-                  <motion.div
-                    key={order.id}
+              // Scroll propio y acotado para el historial de pedidos: con muchos
+              // pedidos acumulados, esta lista queda larga — le damos su propia
+              // área de scroll en vez de depender del scroll general de la
+              // página, para garantizar que siempre se pueda ver todo.
+              <div className="max-h-[calc(100vh-360px)] min-h-[300px] overflow-y-auto custom-scrollbar pr-2 -mr-2">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 pb-4">
+                  {orders.map((order, idx) => (
+                    <motion.div
+                      key={order.id}
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, delay: idx * 0.03 }}
@@ -530,7 +535,8 @@ export const InventoryScreen: React.FC = () => {
                       </div>
                     </SrCard>
                   </motion.div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </>

@@ -17,7 +17,8 @@ import {
   CreditCard,
   FileText,
   Settings2,
-  MonitorCheck
+  MonitorCheck,
+  PartyPopper
 } from 'lucide-react';
 
 export const MobileNavbar: React.FC = () => {
@@ -38,6 +39,7 @@ export const MobileNavbar: React.FC = () => {
         { to: '/bar',         icon: Wine,            label: 'Bar',        path: '/bar',         feature: 'bar',         tier: 'profesional' },
         { to: '/remote-order', icon: Smartphone,     label: 'Remoto',     path: '/remote-order', feature: 'remote_order', tier: 'profesional' },
         { to: '/invoice',     icon: FileText,        label: 'Facturas',   path: '/invoice',     feature: 'cfdi',        tier: 'profesional' },
+        { to: '/events',      icon: PartyPopper,     label: 'Eventos',    path: '/events',      feature: 'events_catering', tier: 'profesional' },
         { to: '/staff',       icon: Users,           label: 'Personal',   path: '/staff',       feature: 'staff',       tier: 'esencial' },
         { to: '/inventory',   icon: Boxes,           label: 'Inventario', path: '/inventory',   feature: 'inventory',   tier: 'esencial' },
         { to: '/billing',     icon: CreditCard,      label: 'Membresía',  path: '/billing',     feature: null,          tier: 'esencial' },

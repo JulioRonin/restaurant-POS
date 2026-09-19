@@ -78,6 +78,32 @@ export interface BusinessSettings {
     cash?: boolean;
     oxxo?: boolean;
   };
+
+  /* ─── IVA ────────────────────────────────────────────────────────────
+   * chargeExtraTax = false (default) → los precios del menú YA incluyen el
+   *   16% de IVA (precio final al cliente). POS/Kiosko/Storefront NO suman
+   *   nada extra al cobrar; el ticket solo muestra el IVA como desglose
+   *   informativo (extraído del precio, no agregado).
+   * chargeExtraTax = true  → los precios del menú son SIN IVA. Se suma 16%
+   *   al subtotal al cobrar (comportamiento clásico "más IVA").
+   * El switch en Ajustes se lee tal cual: "Cobrar 16% de IVA aparte" — ON
+   * suma, OFF no suma nada (el caso de la mayoría de nuestros clientes).
+   */
+  chargeExtraTax?: boolean;
+
+  /* ─── Cobro en dólares ───────────────────────────────────────────────
+   * acceptUsd = true → en Caja aparece el selector MXN / USD y se puede
+   *   cobrar en dólares usando el tipo de cambio FIX de Banco de México
+   *   (se consulta en el servidor, ver api/fx.ts).
+   * usdSpreadPct → ajuste que el negocio le resta al FIX para cubrir el
+   *   costo de cambiar los dólares en el banco. Ej. FIX 18.50 con 3% da
+   *   17.95 pesos por dólar. 0 = se cobra al FIX exacto.
+   * usdManualRate → si se captura, IGNORA a Banxico y usa este tipo fijo.
+   *   Sirve para negocios que pactan un tipo de cambio de la casa.
+   */
+  acceptUsd?: boolean;
+  usdSpreadPct?: number;
+  usdManualRate?: number;
 }
 
 interface SettingsContextType {
@@ -125,6 +151,10 @@ const DEFAULT_SETTINGS: BusinessSettings = {
   digitalDeliveryRadiusKm: 2,
   kioskPin: '0000',
   kioskPayMethods: { bluetooth: true, stripe_qr: false, cash: true, oxxo: false },
+  chargeExtraTax: false,
+  acceptUsd: false,
+  usdSpreadPct: 0,
+  usdManualRate: 0,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);

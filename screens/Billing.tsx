@@ -19,6 +19,13 @@ import {
 type TierCardProps = {
   id: BusinessTier;
   current: BusinessTier;
+  /** true solo si el negocio tiene una suscripción realmente pagada (status
+   *  ACTIVE o WARNING). `business_tier` en Supabase nace con DEFAULT
+   *  'esencial' para TODO negocio nuevo, se haya suscrito o no — así que
+   *  comparar solo `id === current` marcaba "Tu plan actual" (deshabilitado)
+   *  en Esencial para gente en demo, vencida o que nunca pagó, y no la
+   *  dejaba darle click a NINGÚN plan. */
+  subscribed: boolean;
   recommended?: boolean;
   bullets: string[];
   description: string;
@@ -28,7 +35,7 @@ type TierCardProps = {
 };
 
 const TierCard: React.FC<TierCardProps> = ({
-  id, current, recommended, bullets, description, highlightTone, onSelect, busy,
+  id, current, subscribed, recommended, bullets, description, highlightTone, onSelect, busy,
 }) => {
   const tone = {
     midnight:  { ring: 'border-[rgba(42,40,38,0.12)]', accent: 'text-servirest-midnight',  bg: 'bg-servirest-surface' },
@@ -36,11 +43,14 @@ const TierCard: React.FC<TierCardProps> = ({
     mostaza:   { ring: 'border-servirest-mostaza/50',  accent: 'text-servirest-mostaza',   bg: 'bg-servirest-surface' },
   }[highlightTone];
 
-  const isCurrent = id === current;
-  const isDowngrade =
+  const isCurrent = id === current && subscribed;
+  // Sin suscripción real no hay "downgrade" posible — cualquier tier es un
+  // alta válida, así que este bloqueo solo aplica a quien ya está pagando.
+  const isDowngrade = subscribed && (
     (current === 'profesional' && id === 'esencial') ||
     (current === 'prestige' && (id === 'esencial' || id === 'profesional')) ||
-    (current === 'enterprise' && id !== 'enterprise');
+    (current === 'enterprise' && id !== 'enterprise')
+  );
 
   const pricing = TIER_PRICING[id];
   const limits = TIER_LIMITS[id];
@@ -145,7 +155,7 @@ const TierCard: React.FC<TierCardProps> = ({
               disabled={busy}
               onClick={onSelect}
             >
-              {busy ? 'Conectando…' : current === 'esencial' && id === 'esencial' ? 'Suscribirme' : `Pasar a ${pricing.label}`}
+              {busy ? 'Conectando…' : id === current ? 'Suscribirme' : `Pasar a ${pricing.label}`}
             </SrButton>
           )}
         </div>
@@ -182,6 +192,13 @@ export const BillingScreen: React.FC = () => {
   const [isPaying, setIsPaying] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
+  // Solo ACTIVE/WARNING significan "de verdad está pagando este tier ahora
+  // mismo" (WARNING = suscripción vigente pero cerca de vencer o en gracia,
+  // sigue siendo una suscripción real). DEMO, DEMO_EXPIRED y EXPIRED no
+  // cuentan como suscrito a nada, aunque `business_tier` en la base siga
+  // trayendo el default 'esencial'.
+  const isSubscribed = status === SubscriptionStatus.ACTIVE || status === SubscriptionStatus.WARNING;
 
   // Stripe price_ids loaded dynamically from Supabase app_config so the user can
   // change prices in the Stripe dashboard without touching code.
@@ -432,6 +449,7 @@ export const BillingScreen: React.FC = () => {
               key={t.id}
               id={t.id}
               current={tier}
+              subscribed={isSubscribed}
               recommended={t.id === 'profesional' && tier === 'esencial'}
               description={t.description}
               bullets={t.bullets}

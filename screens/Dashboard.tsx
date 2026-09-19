@@ -13,6 +13,7 @@ import { motion } from 'framer-motion';
 import {
   TrendingUp, TrendingDown, FileText, ArrowUpRight, ArrowDownRight,
   Utensils, Receipt, Wallet, Banknote, Ban, Layers, Sparkles,
+  Calendar, Table2, ShoppingBag, Store, Truck, Bike, Car, Smartphone,
 } from 'lucide-react';
 import {
   SrCard, SrButton, SrSeg, SrLabel, SrKicker, SrMono, SrPanel,
@@ -180,7 +181,8 @@ export const DashboardScreen: React.FC = () => {
   const { settings } = useSettings();
   const { inventory } = useInventory();
 
-  const [timeRange, setTimeRange] = useState<TimeRange>('Semana');
+  // Al abrir el Dashboard siempre se ve el día de hoy — no un acumulado.
+  const [timeRange, setTimeRange] = useState<TimeRange>('Día');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const d = new Date();
@@ -207,9 +209,15 @@ export const DashboardScreen: React.FC = () => {
     const dateStr = getLocalDatePart(d, 'date');
     const monthStr = getLocalDatePart(d, 'month');
     const ms = (n: number) => n * 24 * 60 * 60 * 1000;
-    if (timeRange === 'Día específico') return dateStr === selectedDate;
+    // 'Día' y 'Día específico' son el MISMO criterio: coincidencia exacta
+    // con el día de calendario en `selectedDate` (medianoche a medianoche),
+    // no una ventana rodante de 24h. Antes "Día" usaba
+    // Math.abs(Date.now() - d.getTime()) <= 1 día, que mezclaba parte de
+    // ayer con parte de hoy y daba un total DISTINTO al elegir la misma
+    // fecha con el selector de calendario — quedaban descuadrados entre sí
+    // (y el Flujo neto con ellos, porque usa los mismos filtros).
+    if (timeRange === 'Día' || timeRange === 'Día específico') return dateStr === selectedDate;
     if (timeRange === 'Mes específico') return monthStr === selectedDate;
-    if (timeRange === 'Día')    return Math.abs(Date.now() - d.getTime()) <= ms(1);
     if (timeRange === 'Semana') return Math.abs(Date.now() - d.getTime()) <= ms(7);
     if (timeRange === 'Mes')    return Math.abs(Date.now() - d.getTime()) <= ms(30);
     if (timeRange === 'Año')    return Math.abs(Date.now() - d.getTime()) <= ms(365);
@@ -278,7 +286,7 @@ export const DashboardScreen: React.FC = () => {
     return Object.values(aggr).sort((a, b) => a.name.localeCompare(b.name));
   }, [activeOrders, activeExpenses, timeRange, dateRange]);
 
-  const { sales, items, cancelledSales, avgTicket, salesSparkline } = useMemo(() => {
+  const { sales, items, cancelledSales, avgTicket, salesSparkline, salesCount } = useMemo(() => {
     let _sales = 0, _items = 0, _count = 0, _cSales = 0;
     const dailyMap: Record<string, number> = {};
     activeOrders.forEach((o) => {
@@ -299,7 +307,35 @@ export const DashboardScreen: React.FC = () => {
       sales: _sales, items: _items, cancelledSales: _cSales,
       avgTicket: _count > 0 ? _sales / _count : 0,
       salesSparkline: spark,
+      // Órdenes que REALMENTE suman a "Ventas netas" (cobradas). Antes las
+      // tarjetas mostraban activeOrders.length, que incluye pendientes,
+      // en cocina y canceladas — por eso el conteo no cuadraba con el monto
+      // (p. ej. "15 órdenes" con un ticket promedio calculado sobre 14).
+      salesCount: _count,
     };
+  }, [activeOrders]);
+
+  // Desglose de ventas por canal (En mesa, Para llevar, Rappi, Uber Eats…)
+  // — mismo filtro que "Ventas netas" (solo completadas/pagadas).
+  const CHANNEL_META: Record<string, { label: string; icon: any }> = {
+    DINE_IN:    { label: 'En mesa',     icon: Table2 },
+    TO_GO:      { label: 'Para llevar', icon: ShoppingBag },
+    PICKUP:     { label: 'Recoger',     icon: Store },
+    RAPPI:      { label: 'Rappi',       icon: Truck },
+    UBER_EATS:  { label: 'Uber Eats',   icon: Bike },
+    DIDI:       { label: 'DiDi',        icon: Car },
+    DRIVE_THRU: { label: 'Drive-thru',  icon: Smartphone },
+  };
+  const channelBreakdown = useMemo(() => {
+    const map: Record<string, { total: number; count: number }> = {};
+    activeOrders.forEach((o) => {
+      if (o.status !== 'COMPLETED' && o.status !== 'PAID') return;
+      const key = (o as any).source || 'DINE_IN';
+      if (!map[key]) map[key] = { total: 0, count: 0 };
+      map[key].total += o.total || 0;
+      map[key].count += 1;
+    });
+    return Object.entries(map).sort((a, b) => b[1].total - a[1].total);
   }, [activeOrders]);
 
   const totalExpenses = activeExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -372,7 +408,7 @@ export const DashboardScreen: React.FC = () => {
 
   const periodLabel =
     timeRange === 'Rango' ? `${dateRange.start} a ${dateRange.end}`
-    : timeRange === 'Día específico' ? selectedDate
+    : (timeRange === 'Día' || timeRange === 'Día específico') ? selectedDate
     : timeRange === 'Mes específico' ? selectedDate.substring(0, 7)
     : timeRange;
 
@@ -397,8 +433,39 @@ export const DashboardScreen: React.FC = () => {
             <SrSeg
               options={RANGE_OPTS}
               value={(RANGE_OPTS as readonly string[]).includes(timeRange as any) ? (timeRange as any) : 'Semana'}
-              onChange={(v) => setTimeRange(v as TimeRange)}
+              onChange={(v) => {
+                // Tocar "Día" siempre vuelve a HOY — si venías de elegir otra
+                // fecha con el calendario, no se queda pegado en esa fecha.
+                if (v === 'Día') {
+                  const d = new Date();
+                  setSelectedDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+                }
+                setTimeRange(v as TimeRange);
+              }}
             />
+            {/* Elegir un día exacto del calendario. "Día" y este selector son
+                el MISMO modo (coincidencia de día calendario) — el calendario
+                solo cambia CUÁL día ves, no el tipo de filtro. */}
+            <div
+              className={`flex items-center gap-2 pl-4 pr-3 py-2.5 rounded-sr-md border transition-colors ${
+                timeRange === 'Día'
+                  ? 'bg-servirest-terracota/10 border-servirest-terracota'
+                  : 'bg-servirest-surface border-[rgba(42,40,38,0.12)] hover:border-servirest-terracota/50'
+              }`}
+            >
+              <Calendar size={14} className={timeRange === 'Día' ? 'text-servirest-terracota' : 'text-[rgba(42,40,38,0.5)]'} />
+              <input
+                type="date"
+                value={selectedDate}
+                max={new Date().toISOString().split('T')[0]}
+                onChange={(e) => {
+                  if (!e.target.value) return;
+                  setSelectedDate(e.target.value);
+                  setTimeRange('Día');
+                }}
+                className="bg-transparent text-servirest-carbon text-[11px] font-black uppercase tracking-[0.08em] outline-none cursor-pointer"
+              />
+            </div>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
@@ -428,7 +495,7 @@ export const DashboardScreen: React.FC = () => {
               icon={Receipt}
               label="Ticket promedio"
               value={`$${avgTicket.toFixed(0)}`}
-              delta={`${activeOrders.length} órdenes`}
+              delta={`${salesCount} órdenes cobradas`}
               series={salesSparkline.length > 1 ? salesSparkline : undefined}
               sparkTone="terracota"
             />
@@ -448,7 +515,7 @@ export const DashboardScreen: React.FC = () => {
             icon={Utensils}
             label="Platillos vendidos"
             value={`${items}`}
-            delta={`${activeOrders.length} órdenes`}
+            delta={`${salesCount} órdenes cobradas`}
             series={itemSpark}
             sparkTone="terracota"
           />
@@ -476,11 +543,55 @@ export const DashboardScreen: React.FC = () => {
           />
         </div>
 
+        {/* ─── SECTION 0 — Canales ─────────────────────────────────────── */}
+        <SectionDivider
+          kicker="Canales"
+          title="Ventas por canal"
+          meta={`${channelBreakdown.length} canal(es) activo(s) en el periodo`}
+        />
+        {channelBreakdown.length === 0 ? (
+          <SrCard variant="solaris" className="p-7 mb-3">
+            <SrEmptyState
+              icon={<Layers size={24} />}
+              title="Sin ventas completadas en este periodo"
+              description="En cuanto cierres una cuenta (en mesa, para llevar, Rappi, Uber Eats…) verás aquí cuánto trae cada canal."
+            />
+          </SrCard>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-3">
+            {channelBreakdown.map(([key, data]) => {
+              const meta = CHANNEL_META[key] || { label: key, icon: Layers };
+              const Icon = meta.icon;
+              const pct = sales > 0 ? (data.total / sales) * 100 : 0;
+              return (
+                <SrCard key={key} variant="solaris" className="p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-servirest-terracota/10 text-servirest-terracota flex items-center justify-center flex-shrink-0">
+                      <Icon size={15} />
+                    </div>
+                    <SrLabel className="text-[10px] truncate">{meta.label}</SrLabel>
+                  </div>
+                  <SrMono className="block text-[22px] font-black text-servirest-midnight leading-none">
+                    ${data.total.toLocaleString('es-MX', { maximumFractionDigits: 0 })}
+                  </SrMono>
+                  <div className="flex items-center justify-between mt-2 text-[10px] text-[rgba(42,40,38,0.5)] font-bold">
+                    <span>{data.count} orden{data.count === 1 ? '' : 'es'}</span>
+                    <span>{pct.toFixed(0)}% del total</span>
+                  </div>
+                  <div className="h-1 bg-[rgba(42,40,38,0.06)] rounded-full overflow-hidden mt-2">
+                    <div className="h-full bg-servirest-terracota rounded-full" style={{ width: `${Math.min(100, pct)}%` }} />
+                  </div>
+                </SrCard>
+              );
+            })}
+          </div>
+        )}
+
         {/* ─── SECTION 1 — Tesorería ────────────────────────────────────── */}
         <SectionDivider
           kicker="Tesorería"
           title="Movimiento del periodo"
-          meta={`${chartData.length} puntos · ${activeOrders.length} órdenes · ${activeExpenses.length} egresos`}
+          meta={`${chartData.length} puntos · ${salesCount} órdenes cobradas · ${activeExpenses.length} egresos`}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-3">

@@ -341,8 +341,12 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   const cartCount = cart.reduce((n, l) => n + l.quantity, 0);
   const subtotal = cart.reduce((n, l) => n + lineTotal(l), 0);
   const deliveryFee = mode === 'delivery' ? (settings.digitalDeliveryFee ?? 0) : 0;
-  const iva = subtotal * 0.16;
-  const total = subtotal + deliveryFee;
+  // Toggle en Ajustes → General → IVA ("Cobrar 16% de IVA aparte"). Apagado
+  // (default): el IVA se EXTRAE del precio (no se suma), es solo referencia.
+  // Encendido: se SUMA el 16% al total.
+  const chargeExtraTax = settings.chargeExtraTax ?? false;
+  const iva = chargeExtraTax ? subtotal * 0.16 : subtotal - subtotal / 1.16;
+  const total = chargeExtraTax ? subtotal + iva + deliveryFee : subtotal + deliveryFee;
   const meetsMinimum = subtotal >= (settings.digitalMinOrder ?? 0);
 
   // ── Cart handlers ────────────────────────────────────────────────
@@ -1411,7 +1415,7 @@ const CheckoutView: React.FC<any> = ({
         {/* Desglose */}
         <div className="p-5 rounded-sr-md bg-servirest-midnight text-servirest-hueso mb-6">
           <div className="flex justify-between text-[13px] opacity-70"><span>Subtotal</span><SrMono>${subtotal.toFixed(2)}</SrMono></div>
-          <div className="flex justify-between text-[11px] opacity-50"><span>IVA (16% incluido)</span><SrMono>${iva.toFixed(2)}</SrMono></div>
+          <div className="flex justify-between text-[11px] opacity-50"><span>{(settings.chargeExtraTax ?? false) ? 'IVA (16%)' : 'IVA (16% incluido)'}</span><SrMono>${iva.toFixed(2)}</SrMono></div>
           {deliveryFee > 0 && <div className="flex justify-between text-[13px] opacity-70"><span>Envío</span><SrMono>${deliveryFee.toFixed(2)}</SrMono></div>}
           <div className="border-t border-servirest-hueso/20 mt-3 pt-3 flex justify-between items-baseline">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70">Total</span>

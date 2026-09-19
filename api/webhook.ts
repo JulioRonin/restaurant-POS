@@ -54,19 +54,36 @@ const getRawBody = async (req: VercelRequest): Promise<Buffer> => {
 async function resolveBusinessId(stripeObject: any): Promise<string | null> {
   if (stripeObject?.client_reference_id) return stripeObject.client_reference_id;
   if (stripeObject?.metadata?.businessId) return stripeObject.metadata.businessId;
-  // For invoice.* events, customer metadata is the safest fallback.
+
   const customerId = stripeObject?.customer;
-  if (customerId) {
-    try {
-      const customer = await stripe.customers.retrieve(customerId);
-      if (!('deleted' in customer) || !customer.deleted) {
-        const meta = (customer as Stripe.Customer).metadata;
-        if (meta?.businessId) return meta.businessId;
-      }
-    } catch (e) {
-      console.warn('Could not retrieve Stripe customer for business id resolution');
+  if (!customerId) return null;
+
+  // Fallback 1: si el customer llegó a tener metadata.businessId (poco común,
+  // Stripe no lo copia solo).
+  try {
+    const customer = await stripe.customers.retrieve(customerId);
+    if (!('deleted' in customer) || !customer.deleted) {
+      const meta = (customer as Stripe.Customer).metadata;
+      if (meta?.businessId) return meta.businessId;
     }
+  } catch (e) {
+    console.warn('Could not retrieve Stripe customer for business id resolution');
   }
+
+  // Fallback 2: businesses.stripe_customer_id, poblado la primera vez que
+  // ese customer completó un checkout (ver applySuccessfulPayment). Cubre
+  // cualquier evento que llegue sin metadata propio ni en la Subscription.
+  try {
+    const { data } = await supabase
+      .from('businesses')
+      .select('id')
+      .eq('stripe_customer_id', customerId)
+      .maybeSingle();
+    if (data?.id) return data.id;
+  } catch (e) {
+    console.warn('Could not resolve business by stripe_customer_id');
+  }
+
   return null;
 }
 
@@ -80,6 +97,8 @@ async function applySuccessfulPayment(
   source: 'checkout' | 'invoice',
   stripeRef: string,
   paymentType: 'SUBSCRIPTION' | 'EQUIPMENT' = 'SUBSCRIPTION',
+  stripeCustomerId?: string | null,
+  stripeSubscriptionId?: string | null,
 ) {
   const { data: businessInfo } = await supabase
     .from('businesses')
@@ -94,13 +113,20 @@ async function applySuccessfulPayment(
   const baseDate = currentExpiry > now ? new Date(currentExpiry) : new Date(now);
   baseDate.setDate(baseDate.getDate() + 30);
 
+  const updates: Record<string, any> = {
+    subscription_expiry: baseDate.toISOString(),
+    saas_status: 'ACTIVE',
+    is_active: true,
+  };
+  // Se guarda una sola vez, en el primer checkout exitoso — es lo que permite
+  // resolveBusinessId() encontrar al negocio si algún evento futuro llega sin
+  // metadata (ver fallback 2 arriba).
+  if (stripeCustomerId) updates.stripe_customer_id = stripeCustomerId;
+  if (stripeSubscriptionId) updates.stripe_subscription_id = stripeSubscriptionId;
+
   await supabase
     .from('businesses')
-    .update({
-      subscription_expiry: baseDate.toISOString(),
-      saas_status: 'ACTIVE',
-      is_active: true,
-    })
+    .update(updates)
     .eq('id', businessId);
 
   await supabase.from('subscription_payments').insert({
@@ -192,7 +218,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const amount = session.amount_total ? session.amount_total / 100 : 0;
         const paymentType =
           (session.metadata?.paymentType as 'SUBSCRIPTION' | 'EQUIPMENT') || 'SUBSCRIPTION';
-        await applySuccessfulPayment(businessId, amount, 'checkout', session.id, paymentType);
+        await applySuccessfulPayment(
+          businessId, amount, 'checkout', session.id, paymentType,
+          typeof session.customer === 'string' ? session.customer : session.customer?.id,
+          typeof session.subscription === 'string' ? session.subscription : session.subscription?.id,
+        );
         break;
       }
 
