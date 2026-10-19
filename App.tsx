@@ -39,6 +39,7 @@ import { DriverScreen } from './screens/Driver';
 import { VisionScreen } from './screens/Vision';
 import { KioskScreen } from './screens/Kiosk';
 import { StorefrontRoute } from './screens/Storefront';
+import { EventsScreen } from './screens/Events';
 import { canAccess, getDefaultRoute } from './services/rbac';
 import { Activity } from 'lucide-react';
 
@@ -182,6 +183,7 @@ const AppContent: React.FC = () => {
             <Route path="/driver" element={<DriverScreen />} />
             <Route path="/vision" element={<VisionScreen />} />
             <Route path="/kiosk" element={<KioskScreen />} />
+            <Route path="/events" element={<EventsScreen />} />
             <Route path="/onboarding" element={<OnboardingScreen />} />
             <Route path="*" element={<Navigate to="/super-admin" replace />} />
           </Routes>
@@ -223,6 +225,7 @@ const AppContent: React.FC = () => {
               <Route path="/digital-channel" element={<RoleGuard path="/digital-channel"><DigitalChannelScreen /></RoleGuard>} />
               <Route path="/driver" element={<RoleGuard path="/driver"><DriverScreen /></RoleGuard>} />
               <Route path="/vision" element={<RoleGuard path="/vision"><VisionScreen /></RoleGuard>} />
+              <Route path="/events" element={<RoleGuard path="/events"><EventsScreen /></RoleGuard>} />
               <Route path="/kiosk" element={<KioskScreen />} />
               
               <Route path="/onboarding" element={<OnboardingScreen />} />

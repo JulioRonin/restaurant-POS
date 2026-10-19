@@ -34,6 +34,7 @@ import {
   Globe2,
   Tv,
   Bike,
+  PartyPopper,
   ScanEye
 } from 'lucide-react';
 
@@ -220,6 +221,7 @@ export const Sidebar: React.FC<{ onLock?: () => void }> = ({ onLock }) => {
         {showModule('/driver',          'online_ordering', 'prestige') && <NavItem to="/driver"          icon={Bike}    label="Repartidor"    isExpanded={isExpanded} />}
         {showModule('/vision',          'vision_ai',       'prestige') && <NavItem to="/vision"          icon={ScanEye} label="Visión IA"     isExpanded={isExpanded} />}
         {showModule('/kiosk',           'kiosk_mode',       'prestige') && <NavItem to="/kiosk"           icon={Tv}      label="Vista Kiosko"  isExpanded={isExpanded} />}
+        {showModule('/events',          'events_catering',  'profesional') && <NavItem to="/events"        icon={PartyPopper} label="Eventos"    isExpanded={isExpanded} />}
 
         {/* ─── Administración (todos los tiers) ──────────────────────── */}
         <div className={`h-px my-4 ${isExpanded ? 'w-full' : 'w-8 mx-auto'}`} style={{ background: 'rgba(250,248,244,0.10)' }} />

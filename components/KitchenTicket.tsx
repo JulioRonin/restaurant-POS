@@ -23,6 +23,12 @@ export const KitchenTicket: React.FC<KitchenTicketProps> = ({ order, settings })
           </div>
         )}
         <h1 className="text-3xl font-black">{order.tableId}</h1>
+        {/* Nombre del pedido: grande y recuadrado, es lo que se grita al entregar. */}
+        {order.customerName && (
+          <div className="border-2 border-black px-3 py-1 mt-1 mb-1 w-full text-center">
+            <span className="text-2xl font-black uppercase leading-none">{order.customerName}</span>
+          </div>
+        )}
         <p className="text-sm font-bold uppercase">ORDEN: #{order.dailyNumber !== undefined ? String(order.dailyNumber).padStart(6, '0') : order.id.slice(-6).toUpperCase()}</p>
         <div className="flex justify-center gap-2 items-center w-full mt-1 px-1 font-bold text-[11px]">
           <span>{new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>

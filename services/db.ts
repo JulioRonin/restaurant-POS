@@ -367,6 +367,52 @@ export async function getPendingSyncOps(): Promise<SyncOperation[]> {
   return db.getAllFromIndex('sync_queue', 'by-status', 'pending');
 }
 
+/** Tope de reintentos para una operación que falla de forma persistente. */
+const MAX_SYNC_RETRIES = 8;
+
+/**
+ * Devuelve a la cola las operaciones que quedaron atoradas.
+ *
+ * getPendingSyncOps() solo lee status='pending', así que cualquier otro
+ * estado era una vía muerta:
+ *  - 'syncing': la app se cerró a media subida y la operación quedó marcada
+ *    para siempre; nadie la vuelve a tomar.
+ *  - 'failed' : el catch la marcaba así y el log decía "will retry later",
+ *    pero NADIE la reintentaba. Un order_item que falla por llave foránea
+ *    (su platillo todavía no existe en la nube) se perdía PARA SIEMPRE.
+ *    Ese es el origen de las órdenes con total pero sin platillos.
+ *
+ * Se reintenta hasta MAX_SYNC_RETRIES para no ciclar sobre un registro
+ * genuinamente inválido (p. ej. un platillo borrado del menú).
+ */
+export async function requeueStalledSyncOps(): Promise<number> {
+  const db = await getDB();
+  let requeued = 0;
+
+  for (const status of ['syncing', 'failed'] as const) {
+    let ops: SyncOperation[] = [];
+    try {
+      ops = await db.getAllFromIndex('sync_queue', 'by-status', status);
+    } catch {
+      continue;
+    }
+
+    for (const op of ops) {
+      if (op.id === undefined) continue;
+      const retries = op.retries || 0;
+      if (status === 'failed' && retries >= MAX_SYNC_RETRIES) continue;
+      await db.put('sync_queue', {
+        ...op,
+        status: 'pending',
+        retries: status === 'failed' ? retries + 1 : retries,
+      });
+      requeued++;
+    }
+  }
+
+  return requeued;
+}
+
 export async function updateSyncOp(id: number, updates: Partial<SyncOperation>): Promise<void> {
   const db = await getDB();
   const existing = await db.get('sync_queue', id);
