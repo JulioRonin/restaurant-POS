@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { CATEGORIES } from '../constants';
 import { useExpenses } from '../contexts/ExpenseContext';
 import { useOrders } from '../contexts/OrderContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { useInventory } from '../contexts/InventoryContext';
+import { useUser } from '../contexts/UserContext';
+import { fetchHistory, localWindowStart } from '../services/history';
 import { FinancialReportModal } from '../components/FinancialReportModal';
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar,
@@ -176,10 +178,11 @@ const SectionDivider: React.FC<{ kicker: string; title: string; meta?: string }>
 /* DashboardScreen — editorial composition with hero KPI                        */
 /* -------------------------------------------------------------------------- */
 export const DashboardScreen: React.FC = () => {
-  const { expenses } = useExpenses();
-  const { orders } = useOrders();
+  const { expenses: localExpenses } = useExpenses();
+  const { orders: localOrders } = useOrders();
   const { settings } = useSettings();
   const { inventory } = useInventory();
+  const { authProfile } = useUser();
 
   // Al abrir el Dashboard siempre se ve el día de hoy — no un acumulado.
   const [timeRange, setTimeRange] = useState<TimeRange>('Día');
@@ -204,6 +207,63 @@ export const DashboardScreen: React.FC = () => {
       return part === 'date' ? `${yyyy}-${mm}-${dd}` : `${yyyy}-${mm}`;
     } catch { return ''; }
   };
+
+  // ── Historial fuera de la ventana local ──────────────────────────────
+  // El sync solo mantiene en el equipo los últimos días (para no disparar el
+  // egress de Supabase). Si el periodo elegido empieza antes de esa ventana,
+  // se consulta a la nube SOLO ese tramo y se mezcla con lo local.
+  const periodBounds = useMemo((): { start: Date; end: Date } => {
+    const now = new Date();
+    const dayStart = (ymd: string) => { const [y, m, d] = ymd.split('-').map(Number); return new Date(y, m - 1, d); };
+    const addDays = (dt: Date, n: number) => new Date(dt.getTime() + n * 86400000);
+    if (timeRange === 'Día' || timeRange === 'Día específico') {
+      const s = dayStart(selectedDate); return { start: s, end: addDays(s, 1) };
+    }
+    if (timeRange === 'Mes específico') {
+      const [y, m] = selectedDate.split('-').map(Number);
+      return { start: new Date(y, m - 1, 1), end: new Date(y, m, 1) };
+    }
+    if (timeRange === 'Rango') return { start: dayStart(dateRange.start), end: addDays(dayStart(dateRange.end), 1) };
+    const days = timeRange === 'Semana' ? 7 : timeRange === 'Mes' ? 30 : 365;
+    return { start: addDays(now, -days), end: addDays(now, 1) };
+  }, [timeRange, selectedDate, dateRange]);
+
+  const [history, setHistory] = useState<{ orders: any[]; expenses: any[] }>({ orders: [], expenses: [] });
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const bizId = authProfile?.businessId;
+    const boundary = localWindowStart();
+    if (!bizId || periodBounds.start >= boundary) {
+      setHistory({ orders: [], expenses: [] });
+      setHistoryError(null);
+      return;
+    }
+    // Solo el tramo que el equipo NO tiene: [inicio, min(fin, ventana local)].
+    const end = periodBounds.end < boundary ? periodBounds.end : boundary;
+    let cancelled = false;
+    setHistoryLoading(true);
+    setHistoryError(null);
+    fetchHistory(bizId, periodBounds.start, end)
+      .then((r) => { if (!cancelled) setHistory(r); })
+      .catch((e) => { if (!cancelled) { setHistory({ orders: [], expenses: [] }); setHistoryError(e?.message || 'Error'); } })
+      .finally(() => { if (!cancelled) setHistoryLoading(false); });
+    return () => { cancelled = true; };
+  }, [authProfile?.businessId, periodBounds]);
+
+  // Local gana sobre nube cuando la misma orden existe en ambos lados.
+  const orders = useMemo(() => {
+    if (history.orders.length === 0) return localOrders;
+    const ids = new Set(localOrders.map((o) => o.id));
+    return [...localOrders, ...history.orders.filter((o) => !ids.has(o.id))];
+  }, [localOrders, history.orders]);
+
+  const expenses = useMemo(() => {
+    if (history.expenses.length === 0) return localExpenses;
+    const ids = new Set(localExpenses.map((e) => e.id));
+    return [...localExpenses, ...history.expenses.filter((e) => !ids.has(e.id))];
+  }, [localExpenses, history.expenses]);
 
   const inRange = (d: Date) => {
     const dateStr = getLocalDatePart(d, 'date');
@@ -427,6 +487,16 @@ export const DashboardScreen: React.FC = () => {
             <p className="text-[14px] text-[rgba(42,40,38,0.6)] font-medium mt-2 max-w-[480px] leading-relaxed">
               Resumen de operación en tiempo real. Ventas, gastos y margen — listo para que cierres tu día sin Excel.
             </p>
+            {historyLoading && (
+              <p className="text-[11px] font-black uppercase tracking-[0.14em] text-servirest-mostaza mt-3">
+                Cargando historial desde la nube…
+              </p>
+            )}
+            {historyError && !historyLoading && (
+              <p className="text-[11px] font-bold text-servirest-danger mt-3">
+                No se pudo cargar el historial de este periodo ({historyError}). Revisa tu conexión e inténtalo de nuevo.
+              </p>
+            )}
           </motion.div>
 
           <div className="flex items-center gap-3 flex-wrap">
