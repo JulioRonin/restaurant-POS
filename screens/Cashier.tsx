@@ -10,6 +10,7 @@ import { CashCutTicket } from '../components/CashCutTicket';
 import { FinancialReportModal } from '../components/FinancialReportModal';
 import { printerService } from '../services/PrinterService';
 import { fetchFxRate, getCachedFxRate, effectiveRate, mxnToUsd, FxRate } from '../services/fx';
+import { fetchHistory, localWindowStart, invalidateHistoryCache } from '../services/history';
 import { bluetoothTerminalService } from '../services/BluetoothTerminalService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowCard } from '../components/ui/spotlight-card';
@@ -262,18 +263,72 @@ export const CashierScreen: React.FC = () => {
         fetchFxRate().then(r => { if (r) setFx(r); });
     }, [isPaymentModalOpen, acceptUsd]);
 
-    const filteredByDateOrders = useMemo(() => orders.filter(o => {
-        const d = new Date(o.timestamp || Date.now());
-        const localD = new Date(d); localD.setMinutes(localD.getMinutes() - localD.getTimezoneOffset());
-        return localD.toISOString().split('T')[0] === selectedDate;
-    }), [orders, selectedDate]);
+    // ── Historial de días fuera de la ventana local ───────────────────
+    // El sync solo deja en el equipo los últimos días (por el egress de
+    // Supabase). Si el día elegido es más viejo, se trae de la nube SOLO ese
+    // día y se mezcla con lo local; antes se veía vacío aunque hubo ventas.
+    const [historyDay, setHistoryDay] = useState<{ orders: Order[]; expenses: any[] }>({ orders: [], expenses: [] });
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyError, setHistoryError] = useState<string | null>(null);
+    const [historyNonce, setHistoryNonce] = useState(0);
+
+    useEffect(() => {
+        const bizId = authProfile?.businessId;
+        const [y, m, d] = selectedDate.split('-').map(Number);
+        const start = new Date(y, m - 1, d);
+        const boundary = localWindowStart();
+        if (!bizId || start >= boundary) {
+            setHistoryDay({ orders: [], expenses: [] });
+            setHistoryError(null);
+            return;
+        }
+        const end = new Date(y, m - 1, d + 1);
+        let cancelled = false;
+        setHistoryLoading(true);
+        setHistoryError(null);
+        fetchHistory(bizId, start, end < boundary ? end : boundary)
+            .then(r => { if (!cancelled) setHistoryDay(r); })
+            .catch(e => { if (!cancelled) { setHistoryDay({ orders: [], expenses: [] }); setHistoryError(e?.message || 'Error'); } })
+            .finally(() => { if (!cancelled) setHistoryLoading(false); });
+        return () => { cancelled = true; };
+    }, [authProfile?.businessId, selectedDate, historyNonce]);
+
+    const filteredByDateOrders = useMemo(() => {
+        const local = orders.filter(o => {
+            const d = new Date(o.timestamp || Date.now());
+            const localD = new Date(d); localD.setMinutes(localD.getMinutes() - localD.getTimezoneOffset());
+            return localD.toISOString().split('T')[0] === selectedDate;
+        });
+        if (historyDay.orders.length === 0) return local;
+        const ids = new Set(local.map(o => o.id));
+        return [...local, ...historyDay.orders.filter(o => !ids.has(o.id) && localDayOf(o.timestamp) === selectedDate)];
+    }, [orders, selectedDate, historyDay.orders]);
 
     // Gastos del día seleccionado (mismo criterio de día local que las ventas,
     // para que el corte cuadre). El filtro por categoría es opcional.
-    const expensesForDate = useMemo(
-        () => expenses.filter(e => localDayOf(e.date) === selectedDate),
-        [expenses, selectedDate]
-    );
+    const expensesForDate = useMemo(() => {
+        const local = expenses.filter(e => localDayOf(e.date) === selectedDate);
+        if (historyDay.expenses.length === 0) return local;
+        const ids = new Set(local.map(e => e.id));
+        return [...local, ...historyDay.expenses.filter(e => !ids.has(e.id) && localDayOf(e.date) === selectedDate)];
+    }, [expenses, selectedDate, historyDay.expenses]);
+
+    // Borrar algo que solo existe en la nube: removeOrder/deleteExpense ya
+    // encolan el DELETE a Supabase; aquí además se refresca el historial.
+    const removeOrderEverywhere = async (id: string) => {
+        await removeOrder(id);
+        if (historyDay.orders.some(o => o.id === id)) {
+            setHistoryDay(h => ({ ...h, orders: h.orders.filter(o => o.id !== id) }));
+            invalidateHistoryCache();
+        }
+    };
+    const deleteExpenseEverywhere = (id: string) => {
+        deleteExpense(id);
+        if (historyDay.expenses.some(e => e.id === id)) {
+            setHistoryDay(h => ({ ...h, expenses: h.expenses.filter(e => e.id !== id) }));
+            invalidateHistoryCache();
+        }
+    };
     const visibleExpenses = useMemo(
         () => expensesForDate.filter(e => expenseCategoryFilter === 'All' || e.category === expenseCategoryFilter),
         [expensesForDate, expenseCategoryFilter]
@@ -580,7 +635,7 @@ export const CashierScreen: React.FC = () => {
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <span className="font-black italic text-red-400 text-sm">${exp.amount.toFixed(2)}</span>
-                                            <button onClick={() => deleteExpense(exp.id)} className="text-red-500/20 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"><X size={14} /></button>
+                                            <button onClick={() => deleteExpenseEverywhere(exp.id)} className="text-red-500/20 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"><X size={14} /></button>
                                         </div>
                                     </div>
                                 ))}
@@ -674,7 +729,16 @@ export const CashierScreen: React.FC = () => {
                             <div className="flex justify-between items-center">
                                 <div>
                                     <h2 className="text-5xl font-black italic tracking-tighter uppercase text-[#1a1c14]">Ventas del día</h2>
-                                    <p className="text-[12px] font-black uppercase text-servirest-terracota/60 tracking-[0.5em] mt-3 italic">Hoy: {selectedDate} • sincronización al día</p>
+                                    <p className="text-[12px] font-black uppercase text-servirest-terracota/60 tracking-[0.5em] mt-3 italic">{selectedDate}</p>
+                                    {historyLoading && (
+                                        <p className="text-[11px] font-black uppercase tracking-[0.14em] text-servirest-mostaza mt-3">Cargando historial desde la nube…</p>
+                                    )}
+                                    {historyError && !historyLoading && (
+                                        <p className="text-[11px] font-bold text-red-500 mt-3">
+                                            No se pudo cargar el historial de este día ({historyError}).{' '}
+                                            <button onClick={() => { invalidateHistoryCache(); setHistoryNonce(n => n + 1); }} className="underline font-black">Reintentar</button>
+                                        </p>
+                                    )}
                                 </div>
                                 <div className="flex gap-4">
                                     <div className="px-6 py-3 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl flex items-center gap-4">
@@ -768,7 +832,7 @@ export const CashierScreen: React.FC = () => {
                                                                             `Contenido: ${detalle}\n\n` +
                                                                             `Se borra de este equipo y de la nube. No se puede deshacer.`
                                                                         )) {
-                                                                            removeOrder(order.id);
+                                                                            removeOrderEverywhere(order.id);
                                                                         }
                                                                     }}
                                                                     className="text-red-500/20 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100 shrink-0"
@@ -925,6 +989,15 @@ export const CashierScreen: React.FC = () => {
                             <div>
                                 <h2 className="text-5xl font-black italic tracking-tighter uppercase text-[#1a1c14]">Gastos del día</h2>
                                 <p className="text-[12px] font-black uppercase text-servirest-terracota/60 tracking-[0.5em] mt-3 italic">{selectedDate} • {expensesForDate.length} movimiento{expensesForDate.length === 1 ? '' : 's'}</p>
+                                    {historyLoading && (
+                                        <p className="text-[11px] font-black uppercase tracking-[0.14em] text-servirest-mostaza mt-3">Cargando historial desde la nube…</p>
+                                    )}
+                                    {historyError && !historyLoading && (
+                                        <p className="text-[11px] font-bold text-red-500 mt-3">
+                                            No se pudo cargar el historial de este día ({historyError}).{' '}
+                                            <button onClick={() => { invalidateHistoryCache(); setHistoryNonce(n => n + 1); }} className="underline font-black">Reintentar</button>
+                                        </p>
+                                    )}
                             </div>
 
                             {/* Scoreboard: total, ventas del día y peso sobre la venta */}

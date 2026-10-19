@@ -23,6 +23,11 @@ const ID_CHUNK = 150;  // ids por consulta .in() para no exceder el largo de URL
 type HistoryResult = { orders: Order[]; expenses: Expense[] };
 const cache = new Map<string, HistoryResult>();
 
+/** Olvida lo cacheado (p. ej. tras borrar una venta o gasto histórico). */
+export function invalidateHistoryCache() {
+  cache.clear();
+}
+
 /** Inicio de la ventana local: antes de esto, el equipo no tiene datos. */
 export function localWindowStart(): Date {
   return new Date(Date.now() - LOCAL_WINDOW_DAYS * 86400000);
