@@ -5,7 +5,7 @@ import { useOrders } from '../contexts/OrderContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { useInventory } from '../contexts/InventoryContext';
 import { useUser } from '../contexts/UserContext';
-import { fetchHistory, localWindowStart } from '../services/history';
+import { fetchHistory, startOfToday, mergeOrders } from '../services/history';
 import { FinancialReportModal } from '../components/FinancialReportModal';
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar,
@@ -234,13 +234,17 @@ export const DashboardScreen: React.FC = () => {
 
   useEffect(() => {
     const bizId = authProfile?.businessId;
-    const boundary = localWindowStart();
+    // Cualquier día anterior a hoy se consulta en la nube. Antes solo se
+    // hacía para días fuera de la ventana de sync (7 días) y se SUPONÍA que
+    // el equipo tenía completos los recientes; si no los tenía (venta cobrada
+    // en otra tablet, navegador limpiado, otra sesión) salía $0 sin aviso.
+    // Hoy sigue siendo local: es el dato vivo de este equipo.
+    const boundary = startOfToday();
     if (!bizId || periodBounds.start >= boundary) {
       setHistory({ orders: [], expenses: [] });
       setHistoryError(null);
       return;
     }
-    // Solo el tramo que el equipo NO tiene: [inicio, min(fin, ventana local)].
     const end = periodBounds.end < boundary ? periodBounds.end : boundary;
     let cancelled = false;
     setHistoryLoading(true);
@@ -252,12 +256,7 @@ export const DashboardScreen: React.FC = () => {
     return () => { cancelled = true; };
   }, [authProfile?.businessId, periodBounds]);
 
-  // Local gana sobre nube cuando la misma orden existe en ambos lados.
-  const orders = useMemo(() => {
-    if (history.orders.length === 0) return localOrders;
-    const ids = new Set(localOrders.map((o) => o.id));
-    return [...localOrders, ...history.orders.filter((o) => !ids.has(o.id))];
-  }, [localOrders, history.orders]);
+  const orders = useMemo(() => mergeOrders(localOrders, history.orders), [localOrders, history.orders]);
 
   const expenses = useMemo(() => {
     if (history.expenses.length === 0) return localExpenses;

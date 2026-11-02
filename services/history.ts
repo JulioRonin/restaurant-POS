@@ -1,21 +1,18 @@
 /**
- * Historial bajo demanda para reportes (Dashboard).
+ * Historial bajo demanda para reportes (Dashboard y Caja).
  *
- * El sync de fondo solo baja los últimos LOCAL_WINDOW_DAYS días de órdenes y
- * gastos (ver FULL_PULL_WINDOW_DAYS en SyncService — es lo que bajó el egress
- * de Supabase). Todo lo anterior SIGUE en la nube, pero no en el IndexedDB del
- * equipo, así que el Dashboard no lo veía.
+ * El sync de fondo solo baja una ventana reciente de órdenes y gastos (ver
+ * FULL_PULL_WINDOW_DAYS en SyncService — es lo que bajó el egress de
+ * Supabase), y aun dentro de esa ventana el equipo puede no tener todo
+ * (venta cobrada en otra tablet, navegador limpiado, otra sesión).
  *
- * Aquí se consulta a Supabase SOLO el rango que el usuario está viendo y solo
- * cuando cae fuera de la ventana local. Se cachea en memoria por rango para no
- * repetir la consulta al cambiar de pestaña o volver al mismo día.
+ * Por eso cualquier periodo anterior a hoy se consulta en Supabase — solo el
+ * rango que el usuario está viendo — y se mezcla con lo local. Se cachea en
+ * memoria por rango para no repetir la consulta.
  */
 import { getSupabase } from './auth';
 import { getAll } from './db';
 import { Order, Expense } from '../types';
-
-/** Ventana que el sync garantiza tener en local (con margen de seguridad). */
-export const LOCAL_WINDOW_DAYS = 6;
 
 const PAGE = 1000;     // límite por request de PostgREST
 const ID_CHUNK = 150;  // ids por consulta .in() para no exceder el largo de URL
@@ -28,9 +25,35 @@ export function invalidateHistoryCache() {
   cache.clear();
 }
 
-/** Inicio de la ventana local: antes de esto, el equipo no tiene datos. */
-export function localWindowStart(): Date {
-  return new Date(Date.now() - LOCAL_WINDOW_DAYS * 86400000);
+/** Medianoche local de hoy. Todo lo anterior se consulta en la nube. */
+export function startOfToday(): Date {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+const TERMINAL = new Set(['COMPLETED', 'CANCELLED']);
+
+/**
+ * Junta órdenes locales con las de la nube para un periodo pasado.
+ * La nube es la fuente de verdad (el equipo puede no tener la orden, o
+ * tenerla con un estatus viejo, p. ej. COOKING cuando otra tablet ya la
+ * cobró). Excepción: si el equipo ya la cerró y ese cambio aún no sube,
+ * gana la versión local.
+ */
+export function mergeOrders<T extends { id: string; status: any; items?: any[] }>(local: T[], cloud: T[]): T[] {
+  if (cloud.length === 0) return local;
+  const localById = new Map(local.map((o) => [o.id, o]));
+  const merged: T[] = [];
+  const seen = new Set<string>();
+  for (const c of cloud) {
+    const l = localById.get(c.id);
+    seen.add(c.id);
+    if (l && TERMINAL.has(l.status) && !TERMINAL.has(c.status)) { merged.push(l); continue; }
+    // Si la nube no trae renglones pero el equipo sí, se conservan los locales.
+    merged.push(l && (!c.items || c.items.length === 0) && l.items?.length ? { ...c, items: l.items } : c);
+  }
+  for (const l of local) if (!seen.has(l.id)) merged.push(l);
+  return merged;
 }
 
 async function fetchAllPages(build: (from: number, to: number) => any): Promise<any[]> {
@@ -57,7 +80,7 @@ export async function fetchHistory(businessId: string, start: Date, end: Date): 
 
   const orderRows = await fetchAllPages((from, to) =>
     sb.from('orders')
-      .select('id, table_id, status, total, tip, payment_method, payment_status, source, daily_number, waiter_name, customer_metadata, created_at')
+      .select('*')
       .eq('business_id', businessId)
       .gte('created_at', startISO)
       .lt('created_at', endISO)
@@ -73,7 +96,9 @@ export async function fetchHistory(businessId: string, start: Date, end: Date): 
     const { data, error } = await sb.from('order_items')
       .select('order_id, menu_item_id, quantity, price_at_time')
       .in('order_id', chunk);
-    if (error) throw error;
+    // Sin renglones el total del día sigue siendo correcto; solo se pierde
+    // el conteo de platillos. No se tira toda la consulta por esto.
+    if (error) { console.warn('[history] order_items:', error.message); break; }
     itemRows.push(...(data || []));
   }
 
@@ -113,14 +138,20 @@ export async function fetchHistory(businessId: string, start: Date, end: Date): 
     items: itemsByOrder.get(o.id) || [],
   } as Order));
 
-  const expenseRows = await fetchAllPages((from, to) =>
+  let expenseRows: any[] = [];
+  try {
+    expenseRows = await fetchAllPages((from, to) =>
     sb.from('expenses')
       .select('*')
       .eq('business_id', businessId)
       .gte('created_at', startISO)
       .lt('created_at', endISO)
       .range(from, to)
-  );
+    );
+  } catch (e: any) {
+    // Un error en gastos no debe esconder las ventas.
+    console.warn('[history] expenses:', e?.message || e);
+  }
 
   const expenses: Expense[] = expenseRows.map((e) => ({
     id: e.id,
