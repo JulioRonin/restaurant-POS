@@ -2,7 +2,44 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useUser } from './UserContext';
 import { Expense, ExpenseCategory } from '../types';
 import { getAll, put, deleteRecord } from '../services/db';
-import { trackChange } from '../services/SyncService';
+import { trackChange, onSyncComplete } from '../services/SyncService';
+import { getSupabase } from '../services/auth';
+
+/**
+ * Sube DIRECTO a Supabase los gastos que este equipo tiene y la nube no.
+ *
+ * Hasta este fix, ningún gasto llegaba a la nube (la app mandaba la columna
+ * `user`, que no existe; la tabla usa `executor`). Las operaciones de la
+ * cola ya agotaron sus reintentos y no se vuelven a intentar, así que los
+ * gastos capturados quedaron atrapados en el navegador donde se registraron.
+ * Esto los rescata: upsert idempotente por id, una vez por sesión.
+ */
+async function backfillExpensesToCloud(bizId: string, list: Expense[]) {
+    const sb = getSupabase();
+    if (!sb || list.length === 0) return;
+    const flag = `sr_expenses_backfill_${bizId}`;
+    try { if (sessionStorage.getItem(flag)) return; } catch {}
+    const rows = list
+        .filter((e: any) => !e.businessId || e.businessId === bizId || e.business_id === bizId)
+        .map((e: any) => ({
+            id: String(e.id),
+            business_id: bizId,
+            description: e.description || '',
+            amount: Number(e.amount || 0),
+            category: e.category || 'Otros',
+            date: e.date || new Date().toISOString(),
+            executor: e.user || e.executor || null,
+        }));
+    for (let i = 0; i < rows.length; i += 200) {
+        const { error } = await sb.from('expenses').upsert(rows.slice(i, i + 200), { onConflict: 'id' });
+        if (error) {
+            console.warn('[ExpenseContext] No se pudieron subir gastos a la nube:', error.message);
+            return; // se reintenta en la siguiente sesión
+        }
+    }
+    try { sessionStorage.setItem(flag, '1'); } catch {}
+    console.log(`[ExpenseContext] ${rows.length} gastos asegurados en la nube.`);
+}
 
 interface ExpenseContextType {
     expenses: Expense[];
@@ -48,16 +85,31 @@ export const ExpenseProvider: React.FC<{ children: React.ReactNode }> = ({ child
             setExpenses([]);
         }
 
-        // Also load from IndexedDB, strictly filtered by businessId
-        getAll('expenses').then(idbExpenses => {
-            const filtered = (idbExpenses as any[]).filter(e =>
-                !e.businessId || e.businessId === authProfile.businessId ||
-                e.business_id === authProfile.businessId
-            );
-            if (filtered.length > 0) {
-                setExpenses(filtered as Expense[]);
-            }
-        }).catch(console.error);
+        const bizId = authProfile.businessId;
+        const loadFromIdb = () => getAll('expenses').then(idbExpenses => {
+            const filtered = (idbExpenses as any[])
+                .filter(e => !e.businessId || e.businessId === bizId || e.business_id === bizId)
+                // En la nube quien registró el gasto está en `executor`.
+                .map(e => (e.user === undefined && e.executor !== undefined ? { ...e, user: e.executor } : e));
+            if (filtered.length > 0) setExpenses(filtered as Expense[]);
+            return filtered as Expense[];
+        });
+
+        loadFromIdb()
+            .then(list => {
+                // Une lo de localStorage y de IndexedDB antes de subir, para no
+                // dejar fuera nada de lo que el equipo tiene guardado.
+                const fromLs = saved ? (() => { try { return JSON.parse(saved); } catch { return []; } })() : [];
+                const byId = new Map<string, Expense>();
+                [...fromLs, ...list].forEach((e: any) => byId.set(String(e.id), e));
+                return backfillExpensesToCloud(bizId, Array.from(byId.values()));
+            })
+            .catch(console.error);
+
+        // Gastos capturados en OTRO equipo llegan por el sync; antes este
+        // contexto solo leía IndexedDB al montar y no se enteraba.
+        const unsubscribe = onSyncComplete(() => { loadFromIdb().catch(console.error); });
+        return () => { if (typeof unsubscribe === 'function') unsubscribe(); };
     }, [authProfile?.businessId]);
 
     // Persist to both localStorage and IndexedDB

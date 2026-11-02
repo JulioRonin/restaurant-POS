@@ -31,7 +31,6 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
   isOpen, onClose, orders, expenses, periodLabel, categoryLabel, restaurantName,
 }) => {
   const { settings } = useSettings();
-  if (!isOpen) return null;
 
   const totalSales = orders.reduce((sum, o) => sum + o.total, 0);
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -63,6 +62,10 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
     { name: 'Rappi',          amount: rappiTotal,                date: 'Personalizado',                         fill: CHART_PALETTE.rappi,     note: settings.rappiPayoutNotes || 'Al sumar monto' },
   ]).filter((it) => Math.abs(it.amount) > 0), [cashTotal, cardTotal, transferTotal, uberTotal, didiTotal, rappiTotal, totalExpenses, settings]);
 
+  // El return va DESPUÉS de los useMemo: retornar antes cambiaba el número de
+  // hooks entre renders (cerrado vs abierto) y React tumba el componente.
+  if (!isOpen) return null;
+
   const handlePrint = () => window.print();
 
   return createPortal(
@@ -89,6 +92,7 @@ export const FinancialReportModal: React.FC<FinancialReportProps> = ({
             <div>
               <SrKicker className="block mb-0.5">Vista previa de exportación</SrKicker>
               <h2 className="sr-h-brutal text-[20px] m-0">Reporte ejecutivo</h2>
+              <p className="text-[11px] font-black uppercase tracking-[0.12em] text-servirest-terracota mt-1 m-0">Periodo: {periodLabel}</p>
             </div>
           </div>
           <div className="flex gap-2.5">
