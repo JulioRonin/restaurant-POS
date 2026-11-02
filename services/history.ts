@@ -138,19 +138,23 @@ export async function fetchHistory(businessId: string, start: Date, end: Date): 
     items: itemsByOrder.get(o.id) || [],
   } as Order));
 
+  // Gastos por su FECHA (`date`), no por cuándo se insertaron: los gastos
+  // rescatados del navegador se insertan hoy aunque sean de semanas atrás.
+  // Si una base vieja no tiene `date`, se usa created_at.
   let expenseRows: any[] = [];
-  try {
-    expenseRows = await fetchAllPages((from, to) =>
+  const expensesBy = (col: string) => fetchAllPages((from, to) =>
     sb.from('expenses')
       .select('*')
       .eq('business_id', businessId)
-      .gte('created_at', startISO)
-      .lt('created_at', endISO)
+      .gte(col, startISO)
+      .lt(col, endISO)
       .range(from, to)
-    );
-  } catch (e: any) {
-    // Un error en gastos no debe esconder las ventas.
-    console.warn('[history] expenses:', e?.message || e);
+  );
+  try {
+    expenseRows = await expensesBy('date');
+  } catch {
+    try { expenseRows = await expensesBy('created_at'); }
+    catch (e: any) { console.warn('[history] expenses:', e?.message || e); } // no esconde las ventas
   }
 
   const expenses: Expense[] = expenseRows.map((e) => ({
@@ -159,7 +163,7 @@ export async function fetchHistory(businessId: string, start: Date, end: Date): 
     amount: Number(e.amount || 0),
     category: e.category || 'Otros',
     date: e.date || e.expense_date || e.created_at,
-    user: e.user || '',
+    user: e.user || e.executor || '',
   }));
 
   const result = { orders, expenses };

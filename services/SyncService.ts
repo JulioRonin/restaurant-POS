@@ -334,6 +334,16 @@ async function pushLocalChanges(): Promise<void> {
             delete payload.invoiceDetails; // If causing issues, can be kept as JSONB but usually empty
           }
           
+          if (op.table === 'expenses') {
+            // La tabla `expenses` guarda quién registró el gasto en `executor`;
+            // la app lo manda como `user`, una columna que no existe. Supabase
+            // rechazaba el registro completo (42703) y como los errores de
+            // gastos no muestran alerta, NINGÚN gasto llegaba a la nube: solo
+            // vivían en el navegador donde se capturaron.
+            if (payload.user !== undefined && payload.executor === undefined) payload.executor = payload.user;
+            delete payload.user;
+          }
+
           if (op.table === 'order_items') {
             // Remove fields from MenuItem that don't belong in OrderItem table
             delete payload.category;
@@ -829,6 +839,11 @@ function transformFromSupabase(record: any, storeName: string): any {
   
   // Custom mappings for consistency
   if (record.business_id) transformed.businessId = record.business_id;
+
+  // Gastos: en la nube es `executor`, en la app es `user`.
+  if (storeName === 'expenses' && transformed.executor !== undefined && transformed.user === undefined) {
+    transformed.user = transformed.executor;
+  }
 
   // El nombre de quien pidió se guarda dentro de customer_metadata (tanto el
   // capturado en POS como el del canal digital). Se rehidrata a nivel raíz
