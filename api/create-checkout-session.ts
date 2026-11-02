@@ -106,6 +106,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Solo suscripciones/equipment usan priceId de Stripe (ver Billing).
       sessionConfig.line_items = [{ price: priceId, quantity: 1 }];
       sessionConfig.mode = mode || 'subscription';
+
+      // CRÍTICO: sin esto, la Subscription que crea Stripe NO hereda el
+      // metadata.businessId que va en la Session — ese metadata solo vive en
+      // el objeto Session, y Session no es lo que se manda en los eventos de
+      // renovación. Cada factura (Invoice) que Stripe genera para cobrar el
+      // mes siguiente SÍ hereda el metadata de la Subscription que la generó,
+      // así que sin subscription_data.metadata, el webhook nunca puede
+      // resolver a qué negocio pertenece un `invoice.paid` o
+      // `invoice.payment_failed` de renovación — los ignora silenciosamente
+      // ("invoice.paid without businessId — skipped") y la cuenta nunca se
+      // extiende ni se marca en gracia, aunque Stripe sí esté cobrando.
+      if (sessionConfig.mode === 'subscription') {
+        sessionConfig.subscription_data = {
+          metadata: {
+            businessId,
+            businessName: businessName || 'Unknown',
+            paymentType: type,
+          },
+        };
+      }
     } else {
       // Line item inline (digital orders, equipment, top-ups manuales).
       sessionConfig.line_items = [

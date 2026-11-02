@@ -80,7 +80,12 @@ const GlowCard: React.FC<GlowCardProps> = ({
       `}
     >
       <div data-glow-bg />
-      <div className="relative z-10 w-full h-full">
+      {/* flex flex-col: los usos con paneles internos (header shrink-0 +
+          contenido flex-1 overflow-y-auto, p.ej. "Ventas detalladas" en
+          Cashier) dependen de que este wrapper sea un contenedor flex —
+          si no, flex-1/shrink-0 en los hijos no hacen nada y el contenido
+          crece sin límite en vez de hacer scroll interno. */}
+      <div className="relative z-10 w-full h-full flex flex-col min-h-0">
           {children}
       </div>
     </div>

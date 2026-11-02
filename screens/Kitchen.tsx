@@ -110,11 +110,12 @@ const Ticket: React.FC<{ order: Order; onComplete: (id: string) => void; onStart
         {/* Hero row: table label + timer */}
         <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-3 border-b border-[rgba(42,40,38,0.08)]">
           <div className="min-w-0 flex-1">
-            <SrLabel className="block mb-1">Mesa</SrLabel>
+            <SrLabel className="block mb-1">{order.customerName ? 'Pedido de' : 'Mesa'}</SrLabel>
             <div className="font-serif italic font-medium text-[34px] text-servirest-midnight tracking-[-0.02em] leading-none truncate">
-              {tableLabel}
+              {order.customerName || tableLabel}
             </div>
             <div className="font-mono text-[10px] text-[rgba(42,40,38,0.4)] mt-1">
+              {order.customerName && <span className="mr-2">{tableLabel}</span>}
               #{(order.id || '').slice(0, 8).toUpperCase()}
             </div>
           </div>

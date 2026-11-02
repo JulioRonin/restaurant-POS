@@ -1,15 +1,114 @@
 # ServiRest — Configuración Stripe (productos, precios, webhook)
-### Guía de implementación · 2026-06-03
+### Guía de implementación · 2026-06-03 · actualizada 2026-09-19
 
 | Campo | Valor |
 |---|---|
 | Estado | Borrador para Julio · ejecutar en el dashboard Stripe |
-| Webhook URL | `https://project-er5ks.vercel.app/api/webhook` |
-| Webhook estado actual | Activo · 51 eventos suscritos · 0 entregas (sin clientes pagando aún) |
+| Webhook URL | Recreado por Julio en su dominio actual de Vercel (2026-09-19) — la `project-er5ks.vercel.app` de abajo quedó obsoleta |
+| Webhook estado actual | ✅ Webhook creado y variables de Vercel dadas de alta (2026-09-19) — falta validar con la prueba de punta a punta de §0.6 |
 | Productos actuales en Stripe | Plan PRO $849.99 · Plan Básico $550 |
 | Productos objetivo (per docs) | Esencial $549 · Profesional $899 · Prestige $2,499 · Enterprise custom · Equipo $5,000 |
 
 > Este documento sincroniza el plan de tiering (`TIER_STRATEGY_AND_VISUAL_DIFFERENTIATION.md`) y el recalibrado de precios con lo que está vivo en Stripe. Detalla qué crear, qué archivar y qué eventos de webhook deben dispararse para que la mecánica de cobro funcione automáticamente.
+
+---
+
+## 0. Reconexión completa — hazlo en este orden
+
+Esto es lo que hay que revisar hoy, de raíz. El código (`api/webhook.ts`,
+`api/create-checkout-session.ts`) está correcto — se corrigió un bug real (ver
+§0.5) — pero la conexión Stripe ↔ Vercel ↔ Supabase se armó en un proyecto de
+Vercel que ya no es el actual (`project-er5ks.vercel.app`), y por eso el
+webhook que aparecía "activo" en este documento apunta a una URL muerta.
+
+### 0.1 Confirma tu dominio real de Vercel
+
+1. Entra a `vercel.com` → tu proyecto **servirest** (el que se ve en tu
+   captura de Environment Variables).
+2. **Settings → Domains** → copia el dominio de Producción (algo como
+   `servirest.vercel.app` o tu dominio propio si ya conectaste uno).
+3. Tu URL de webhook real es: `https://<ese-dominio>/api/webhook`.
+   No uses `project-er5ks.vercel.app` — probablemente ya no resuelve o
+   pertenece a otro deployment.
+
+### 0.2 Revisa qué webhooks existen HOY en Stripe
+
+1. `dashboard.stripe.com` → arriba a la derecha confirma el modo
+   (**Test** o **Live** — deben coincidir con la llave que tengas en Vercel).
+2. **Desarrolladores → Webhooks**.
+3. Si hay un endpoint apuntando a `project-er5ks.vercel.app` (o a cualquier
+   URL que no sea tu dominio actual): ábrelo → **⋯ → Eliminar destino**. Un
+   webhook a una URL muerta no hace daño, pero no sirve tenerlo y confunde el
+   diagnóstico.
+4. Si no hay ningún webhook, o lo acabas de borrar: sigue a §0.3.
+
+### 0.3 Crea el webhook correcto
+
+1. **Desarrolladores → Webhooks → + Añadir destino** (o "Add endpoint").
+2. **Endpoint URL**: `https://<tu-dominio-real>/api/webhook`.
+3. **Eventos a escuchar** — marca exactamente estos 5 (no hace falta más):
+   - `checkout.session.completed`
+   - `invoice.paid`
+   - `invoice.payment_failed`
+   - `customer.subscription.deleted`
+   - `customer.subscription.trial_will_end`
+4. Guarda. Entra al webhook recién creado → copia el **Signing secret**
+   (`whsec_…`, botón "Reveal" / "Click to reveal").
+
+### 0.4 Variables de entorno en Vercel — verifica cada una
+
+Tu captura mostraba `STRIPE_WEBHOOK_SECRET` y `SUPABASE_SERVICE_ROLE_KEY`
+marcadas **"Needs Attention"** — eso normalmente significa que Vercel detectó
+que están puestas en algunos entornos pero no en todos, o que el valor no se
+ha usado en ningún deploy reciente. Repásalas una por una:
+
+| Variable | Debe existir en | Valor |
+|---|---|---|
+| `STRIPE_SECRET_KEY` | Production (+ Preview si pruebas ahí) | `sk_live_…` en Production, `sk_test_…` en Preview |
+| `STRIPE_WEBHOOK_SECRET` | **El mismo entorno donde corre el webhook que usarán tus clientes reales** → normalmente Production | El `whsec_…` que copiaste en §0.3. **Si tienes un webhook en Test y otro en Live, cada uno tiene su PROPIO whsec_ distinto** — no reutilices el de test en producción |
+| `SUPABASE_URL` o `VITE_SUPABASE_URL` | Production | URL de tu proyecto Supabase (el código acepta cualquiera de los dos nombres) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Production | Supabase → Settings → API → **service_role** (el secreto, NO el `anon` key) |
+
+Después de tocar cualquier variable: **Deployments → ⋯ del último deploy →
+Redeploy**. Las env vars no se aplican solas a deployments ya construidos.
+
+### 0.5 Bug de código que ya corregí en este cambio
+
+Encontré un problema real independiente del Dashboard: cuando `Billing.tsx`
+paga una suscripción con `priceId`, `create-checkout-session.ts` creaba la
+Stripe Subscription **sin copiarle el `metadata.businessId`**. Ese metadata
+solo quedaba en el objeto `Checkout.Session` — y las renovaciones mensuales
+(`invoice.paid`, `invoice.payment_failed`) le llegan al webhook como objetos
+`Invoice`, que heredan el metadata de la **Subscription**, no el de la
+Session que ya no existe para entonces. Resultado: el primer cobro sí
+extendía la cuenta, pero **ninguna renovación después de esa lo hacía** — el
+webhook las recibía sin poder identificar el negocio y las ignoraba en
+silencio (verías `invoice.paid without businessId — skipped` en los logs de
+Vercel).
+
+Ya corregido: ahora `subscription_data.metadata` va con el `businessId` desde
+que se crea la Subscription, y además el webhook guarda
+`stripe_customer_id`/`stripe_subscription_id` en `businesses` desde el primer
+pago exitoso, como respaldo si algún evento llegara igual sin metadata.
+**Esto no se soluciona solo en el Dashboard — necesitaba este cambio de
+código, que ya está desplegado en esta rama.**
+
+### 0.6 Prueba de punta a punta
+
+1. Confirma que Stripe está en **modo Test** y `STRIPE_SECRET_KEY` en Vercel
+   también es de test (`sk_test_…`).
+2. En la app: Ajustes/Billing → paga una suscripción con tarjeta
+   `4242 4242 4242 4242`, cualquier fecha futura, cualquier CVC.
+3. Stripe → Webhooks → tu endpoint → **Entregas de eventos**: debe verse
+   `checkout.session.completed` con status `200`.
+4. Supabase → tabla `businesses` → tu negocio: `subscription_expiry` debe
+   haberse movido, `stripe_customer_id` y `stripe_subscription_id` deben
+   tener valor.
+5. Para probar la renovación sin esperar un mes: Stripe Dashboard → tu
+   Subscription de prueba → **⋯ → Cobrar ahora** (o usa el CLI de Stripe:
+   `stripe trigger invoice.paid`). Debe volver a llegar `200` al webhook y
+   `subscription_expiry` debe extenderse otros 30 días.
+6. Repite todo en modo **Live** solo cuando esto funcione limpio en Test.
 
 ---
 

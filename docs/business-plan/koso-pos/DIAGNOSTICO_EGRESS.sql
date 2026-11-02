@@ -1,82 +1,100 @@
 -- ─────────────────────────────────────────────────────────────────────────
 -- DIAGNÓSTICO DE EGRESS — ¿por qué ServiRest consumió 300 GB?
 -- ─────────────────────────────────────────────────────────────────────────
--- Corre estas consultas en Supabase → SQL Editor (una por una) para ver
--- QUÉ tabla está pesada y si quedan fotos guardadas como base64 dentro de
--- la base de datos (que es lo que multiplicaba el costo de cada sync).
+-- ⚠️ IMPORTANTE: el SQL Editor de Supabase solo muestra el resultado del
+-- ÚLTIMO SELECT cuando corres varias consultas juntas. Por eso abajo está
+-- TODO EN UNA SOLA CONSULTA: seleccionas el bloque de la PARTE 1, le das
+-- Run, y ves todos los números de un jalón.
 --
 -- Contexto: el bug principal ya está corregido en el código (el sync
--- descargaba las 9 tablas COMPLETAS cada 60 segundos). Esto es para
+-- descargaba las 9 tablas COMPLETAS cada 60 segundos). Esto sirve para
 -- confirmar si además hay datos pesados que convenga limpiar.
 -- ─────────────────────────────────────────────────────────────────────────
 
 
--- 1. TAMAÑO REAL DE CADA TABLA ──────────────────────────────────────────
--- Te dice cuánto pesaba cada descarga completa que hacía el sync.
-SELECT
-  relname                                        AS tabla,
-  to_char(n_live_tup, 'FM999,999,999')           AS filas,
-  pg_size_pretty(pg_total_relation_size(relid))  AS peso_total
-FROM pg_stat_user_tables
-ORDER BY pg_total_relation_size(relid) DESC
-LIMIT 20;
+-- ═════════════════════════════════════════════════════════════════════════
+-- PARTE 1 · RESUMEN COMPLETO (selecciona desde aquí hasta el ';' y corre)
+-- ═════════════════════════════════════════════════════════════════════════
+WITH menu AS (
+  SELECT
+    count(*)                                                    AS total,
+    count(*) FILTER (WHERE image LIKE 'data:%')                 AS base64,
+    count(*) FILTER (WHERE image LIKE 'http%')                  AS en_storage,
+    COALESCE(sum(length(image)) FILTER (WHERE image LIKE 'data:%'), 0) AS bytes_base64
+  FROM menu_items
+),
+ord AS (
+  SELECT
+    count(*)                                                       AS total,
+    count(*) FILTER (WHERE created_at > now() - interval '7 days')  AS recientes
+  FROM orders
+),
+items AS (SELECT count(*) AS total FROM order_items)
+SELECT * FROM (
+  SELECT 1 AS n, '📦 Peso total de menu_items'          AS metrica,
+         pg_size_pretty(pg_total_relation_size('menu_items'))  AS valor
+  UNION ALL
+  SELECT 2, '📦 Peso total de orders',
+         pg_size_pretty(pg_total_relation_size('orders'))
+  UNION ALL
+  SELECT 3, '📦 Peso total de order_items',
+         pg_size_pretty(pg_total_relation_size('order_items'))
+  UNION ALL
+  SELECT 4, '🖼️ Platillos con foto BASE64 (el problema)',
+         (SELECT base64::text FROM menu)
+  UNION ALL
+  SELECT 5, '🖼️ Peso de esas fotos base64',
+         (SELECT pg_size_pretty(bytes_base64::bigint) FROM menu)
+  UNION ALL
+  SELECT 6, '✅ Platillos con foto en Storage (correcto)',
+         (SELECT en_storage::text FROM menu)
+  UNION ALL
+  SELECT 7, '📋 Platillos totales',
+         (SELECT total::text FROM menu)
+  UNION ALL
+  SELECT 8, '🧾 Órdenes totales (histórico completo)',
+         (SELECT total::text FROM ord)
+  UNION ALL
+  SELECT 9, '🧾 Órdenes de los últimos 7 días',
+         (SELECT recientes::text FROM ord)
+  UNION ALL
+  SELECT 10, '🧾 Renglones de orden totales',
+         (SELECT total::text FROM items)
+  UNION ALL
+  SELECT 11, '💾 PESO DE CADA SYNC (se bajaba cada 60 seg)',
+         pg_size_pretty(
+           pg_total_relation_size('menu_items')
+           + pg_total_relation_size('orders')
+           + pg_total_relation_size('order_items')
+         )
+) resumen
+ORDER BY n;
 
 
--- 2. ¿QUEDAN FOTOS EN BASE64 DENTRO DE LA BASE? ─────────────────────────
--- Las fotos deben vivir en Storage (URL corta https://...), NO como
--- 'data:image/...' incrustado en la fila. Una sola foto base64 puede pesar
--- 200-500 KB, y el sync las re-descargaba TODAS cada minuto.
-SELECT
-  count(*) FILTER (WHERE image LIKE 'data:%')                AS fotos_base64_pesadas,
-  count(*) FILTER (WHERE image LIKE 'http%')                 AS fotos_en_storage_ok,
-  count(*) FILTER (WHERE image IS NULL OR image = '')        AS sin_foto,
-  pg_size_pretty(COALESCE(sum(length(image)) FILTER (WHERE image LIKE 'data:%'), 0)::bigint)
-                                                             AS peso_de_las_base64
-FROM menu_items;
-
-
--- 3. LAS FILAS MÁS PESADAS DEL MENÚ ─────────────────────────────────────
--- Si el punto 2 arrojó base64, aquí ves cuáles son y cuánto pesan.
-SELECT
-  id,
-  name,
-  pg_size_pretty(length(image)::bigint) AS peso_imagen,
-  left(image, 30)                       AS empieza_con
-FROM menu_items
-WHERE image IS NOT NULL AND image <> ''
-ORDER BY length(image) DESC
-LIMIT 15;
-
-
--- 4. VOLUMEN HISTÓRICO DE ÓRDENES ───────────────────────────────────────
--- El sync viejo re-descargaba TODAS las órdenes desde el inicio de los
--- tiempos, cada minuto. Esto te dice cuánto historial se estaba arrastrando.
-SELECT
-  count(*)                                          AS ordenes_totales,
-  count(*) FILTER (WHERE created_at > now() - interval '7 days')  AS ultimos_7_dias,
-  min(created_at)::date                             AS orden_mas_vieja
-FROM orders;
-
-SELECT count(*) AS renglones_de_orden_totales FROM order_items;
-
-
--- 5. MENSAJES DEL CANAL DIGITAL ─────────────────────────────────────────
--- La pantalla de Cocina los re-descargaba (hasta 300) cada 10 segundos.
-SELECT count(*) AS mensajes_totales FROM order_messages;
-
-
--- ─────────────────────────────────────────────────────────────────────────
--- LIMPIEZA OPCIONAL (solo si el punto 2 mostró base64)
--- ─────────────────────────────────────────────────────────────────────────
--- ⚠️ ESTO BORRA LAS FOTOS BASE64 de la base de datos. Los platillos
--- quedarán SIN FOTO y tendrás que volver a subirlas desde Menú (que ahora
--- ya las manda a Storage correctamente).
+-- ═════════════════════════════════════════════════════════════════════════
+-- PARTE 2 · ¿Cuáles son los platillos más pesados? (corre esto aparte)
+-- ═════════════════════════════════════════════════════════════════════════
+-- Solo tiene sentido si la métrica 4 de arriba dio más de 0.
 --
--- Haz esto solo si el punto 2 muestra un peso considerable. Descomenta:
+-- SELECT name,
+--        pg_size_pretty(length(image)::bigint) AS peso_foto,
+--        left(image, 25)                       AS tipo
+-- FROM menu_items
+-- WHERE image IS NOT NULL AND image <> ''
+-- ORDER BY length(image) DESC
+-- LIMIT 15;
+
+
+-- ═════════════════════════════════════════════════════════════════════════
+-- PARTE 3 · LIMPIEZA (solo si la métrica 4 dio un número alto)
+-- ═════════════════════════════════════════════════════════════════════════
+-- ⚠️ Esto BORRA las fotos base64 de la base. Los platillos quedan sin foto
+-- y hay que volver a subirlas desde el módulo Menú (que ya las manda a
+-- Storage correctamente, no como base64).
 --
 -- UPDATE menu_items SET image = '' WHERE image LIKE 'data:%';
 --
--- Alternativa sin perder nada: no borres, y simplemente vuelve a subir la
--- foto de cada platillo desde el módulo Menú — al guardarla, se reemplaza
--- el base64 por la URL de Storage automáticamente.
+-- Alternativa sin perder nada de golpe: no borres, y ve volviendo a subir
+-- la foto de cada platillo desde Menú — al guardarla se reemplaza sola el
+-- base64 por la URL de Storage.
 -- ─────────────────────────────────────────────────────────────────────────
