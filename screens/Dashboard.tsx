@@ -78,7 +78,7 @@ const HeroKPI: React.FC<HeroProps> = ({ label, value, deltaPct, series, periodLa
           <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 80% 50%, #C4633F 0%, transparent 60%)' }} />
         </div>
         <div className="relative">
-          <SrKicker className="block mb-3">Esta {periodLabel.toLowerCase()}</SrKicker>
+          <SrKicker className="block mb-3">{periodLabel}</SrKicker>
           <div className="flex flex-wrap items-end gap-x-10 gap-y-3">
             <div className="flex-shrink-0">
               <SrLabel className="block mb-2">{label}</SrLabel>
@@ -208,25 +208,35 @@ export const DashboardScreen: React.FC = () => {
     } catch { return ''; }
   };
 
-  // ── Historial fuera de la ventana local ──────────────────────────────
-  // El sync solo mantiene en el equipo los últimos días (para no disparar el
-  // egress de Supabase). Si el periodo elegido empieza antes de esa ventana,
-  // se consulta a la nube SOLO ese tramo y se mezcla con lo local.
+  // ── Periodo exacto que se está viendo ───────────────────────────────
+  // Semana / Mes / Año son periodos de CALENDARIO anclados al día elegido en
+  // el calendario (por default hoy): semana lunes–domingo, mes del 1 al
+  // último día, año completo. Antes eran ventanas rodantes ("últimos 30
+  // días") y el reporte no decía qué fechas cubría: "Mes" parecía octubre
+  // pero en realidad mezclaba finales de octubre con inicios de noviembre.
+  // Para ver octubre completo: elige cualquier día de octubre y toca "Mes".
   const periodBounds = useMemo((): { start: Date; end: Date } => {
-    const now = new Date();
     const dayStart = (ymd: string) => { const [y, m, d] = ymd.split('-').map(Number); return new Date(y, m - 1, d); };
-    const addDays = (dt: Date, n: number) => new Date(dt.getTime() + n * 86400000);
-    if (timeRange === 'Día' || timeRange === 'Día específico') {
-      const s = dayStart(selectedDate); return { start: s, end: addDays(s, 1) };
+    const anchor = dayStart(selectedDate);
+    const y = anchor.getFullYear(), m = anchor.getMonth(), d = anchor.getDate();
+    if (timeRange === 'Día' || timeRange === 'Día específico') return { start: anchor, end: new Date(y, m, d + 1) };
+    if (timeRange === 'Semana') {
+      const offset = (anchor.getDay() + 6) % 7; // lunes = 0
+      return { start: new Date(y, m, d - offset), end: new Date(y, m, d - offset + 7) };
     }
-    if (timeRange === 'Mes específico') {
-      const [y, m] = selectedDate.split('-').map(Number);
-      return { start: new Date(y, m - 1, 1), end: new Date(y, m, 1) };
-    }
-    if (timeRange === 'Rango') return { start: dayStart(dateRange.start), end: addDays(dayStart(dateRange.end), 1) };
-    const days = timeRange === 'Semana' ? 7 : timeRange === 'Mes' ? 30 : 365;
-    return { start: addDays(now, -days), end: addDays(now, 1) };
+    if (timeRange === 'Mes' || timeRange === 'Mes específico') return { start: new Date(y, m, 1), end: new Date(y, m + 1, 1) };
+    if (timeRange === 'Año') return { start: new Date(y, 0, 1), end: new Date(y + 1, 0, 1) };
+    const s0 = dayStart(dateRange.start), e0 = dayStart(dateRange.end);
+    return { start: s0, end: new Date(e0.getFullYear(), e0.getMonth(), e0.getDate() + 1) };
   }, [timeRange, selectedDate, dateRange]);
+
+  /** "1 oct 2026 – 31 oct 2026" (o un solo día). Se muestra en pantalla y en el reporte. */
+  const periodRangeText = useMemo(() => {
+    const fmt = (dt: Date) => dt.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
+    const last = new Date(periodBounds.end.getTime() - 1);
+    const a = fmt(periodBounds.start), b = fmt(last);
+    return a === b ? a : `${a} – ${b}`;
+  }, [periodBounds]);
 
   const [history, setHistory] = useState<{ orders: any[]; expenses: any[] }>({ orders: [], expenses: [] });
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -264,25 +274,8 @@ export const DashboardScreen: React.FC = () => {
     return [...localExpenses, ...history.expenses.filter((e) => !ids.has(e.id))];
   }, [localExpenses, history.expenses]);
 
-  const inRange = (d: Date) => {
-    const dateStr = getLocalDatePart(d, 'date');
-    const monthStr = getLocalDatePart(d, 'month');
-    const ms = (n: number) => n * 24 * 60 * 60 * 1000;
-    // 'Día' y 'Día específico' son el MISMO criterio: coincidencia exacta
-    // con el día de calendario en `selectedDate` (medianoche a medianoche),
-    // no una ventana rodante de 24h. Antes "Día" usaba
-    // Math.abs(Date.now() - d.getTime()) <= 1 día, que mezclaba parte de
-    // ayer con parte de hoy y daba un total DISTINTO al elegir la misma
-    // fecha con el selector de calendario — quedaban descuadrados entre sí
-    // (y el Flujo neto con ellos, porque usa los mismos filtros).
-    if (timeRange === 'Día' || timeRange === 'Día específico') return dateStr === selectedDate;
-    if (timeRange === 'Mes específico') return monthStr === selectedDate;
-    if (timeRange === 'Semana') return Math.abs(Date.now() - d.getTime()) <= ms(7);
-    if (timeRange === 'Mes')    return Math.abs(Date.now() - d.getTime()) <= ms(30);
-    if (timeRange === 'Año')    return Math.abs(Date.now() - d.getTime()) <= ms(365);
-    if (timeRange === 'Rango')  return dateStr >= dateRange.start && dateStr <= dateRange.end;
-    return true;
-  };
+  // Un solo criterio para todo el Dashboard (KPIs, gráficas y reporte).
+  const inRange = (d: Date) => d >= periodBounds.start && d < periodBounds.end;
 
   const activeOrders = useMemo(
     () =>
@@ -465,11 +458,7 @@ export const DashboardScreen: React.FC = () => {
     };
   }, [inventory, activeExpenses]);
 
-  const periodLabel =
-    timeRange === 'Rango' ? `${dateRange.start} a ${dateRange.end}`
-    : (timeRange === 'Día' || timeRange === 'Día específico') ? selectedDate
-    : timeRange === 'Mes específico' ? selectedDate.substring(0, 7)
-    : timeRange;
+  const periodLabel = periodRangeText;
 
   const expMax = Math.max(...categoryInsights.exp.map(([, v]) => v as number), 1);
 
@@ -526,11 +515,14 @@ export const DashboardScreen: React.FC = () => {
               <input
                 type="date"
                 value={selectedDate}
-                max={new Date().toISOString().split('T')[0]}
+                max={(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })()}
                 onChange={(e) => {
                   if (!e.target.value) return;
                   setSelectedDate(e.target.value);
-                  setTimeRange('Día');
+                  // En Semana/Mes/Año el calendario mueve el periodo (elegir
+                  // un día de octubre estando en "Mes" muestra octubre). En
+                  // los demás modos muestra ese día.
+                  if (timeRange !== 'Semana' && timeRange !== 'Mes' && timeRange !== 'Año') setTimeRange('Día');
                 }}
                 className="bg-transparent text-servirest-carbon text-[11px] font-black uppercase tracking-[0.08em] outline-none cursor-pointer"
               />
@@ -546,6 +538,17 @@ export const DashboardScreen: React.FC = () => {
               Exportar reporte
             </SrButton>
           </div>
+        </div>
+
+        {/* Periodo exacto que cubren todos los números de esta pantalla. */}
+        <div className="flex items-center gap-2 mb-6 -mt-2 text-[11px] font-black uppercase tracking-[0.14em] text-[rgba(42,40,38,0.55)]">
+          <Calendar size={13} className="text-servirest-terracota" />
+          <span>Mostrando: <span className="text-servirest-carbon">{periodRangeText}</span></span>
+          {(timeRange === 'Semana' || timeRange === 'Mes' || timeRange === 'Año') && (
+            <span className="normal-case tracking-normal font-medium text-[rgba(42,40,38,0.45)]">
+              · cambia la fecha del calendario para ver otro{timeRange === 'Semana' ? 'a semana' : timeRange === 'Mes' ? ' mes' : ' año'}
+            </span>
+          )}
         </div>
 
         {/* ─── HERO KPI + 3 INLINE KPIS — asymmetric composition ─────────── */}
@@ -922,7 +925,7 @@ export const DashboardScreen: React.FC = () => {
       <FinancialReportModal
         isOpen={isReportOpen}
         onClose={() => setIsReportOpen(false)}
-        orders={activeOrders}
+        orders={activeOrders.filter((o) => o.status === 'COMPLETED' || (o.status as any) === 'PAID')}
         expenses={activeExpenses}
         periodLabel={periodLabel}
         categoryLabel={selectedCategory}
