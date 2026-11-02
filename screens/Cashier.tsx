@@ -10,7 +10,7 @@ import { CashCutTicket } from '../components/CashCutTicket';
 import { FinancialReportModal } from '../components/FinancialReportModal';
 import { printerService } from '../services/PrinterService';
 import { fetchFxRate, getCachedFxRate, effectiveRate, mxnToUsd, FxRate } from '../services/fx';
-import { fetchHistory, localWindowStart, invalidateHistoryCache } from '../services/history';
+import { fetchHistory, startOfToday, invalidateHistoryCache, mergeOrders } from '../services/history';
 import { bluetoothTerminalService } from '../services/BluetoothTerminalService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowCard } from '../components/ui/spotlight-card';
@@ -276,7 +276,9 @@ export const CashierScreen: React.FC = () => {
         const bizId = authProfile?.businessId;
         const [y, m, d] = selectedDate.split('-').map(Number);
         const start = new Date(y, m - 1, d);
-        const boundary = localWindowStart();
+        // Días anteriores a hoy se consultan en la nube (ver Dashboard): el
+        // equipo puede no tenerlos completos aunque sean recientes.
+        const boundary = startOfToday();
         if (!bizId || start >= boundary) {
             setHistoryDay({ orders: [], expenses: [] });
             setHistoryError(null);
@@ -300,8 +302,7 @@ export const CashierScreen: React.FC = () => {
             return localD.toISOString().split('T')[0] === selectedDate;
         });
         if (historyDay.orders.length === 0) return local;
-        const ids = new Set(local.map(o => o.id));
-        return [...local, ...historyDay.orders.filter(o => !ids.has(o.id) && localDayOf(o.timestamp) === selectedDate)];
+        return mergeOrders(local, historyDay.orders.filter(o => localDayOf(o.timestamp) === selectedDate));
     }, [orders, selectedDate, historyDay.orders]);
 
     // Gastos del día seleccionado (mismo criterio de día local que las ventas,
