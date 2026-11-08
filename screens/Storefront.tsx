@@ -37,6 +37,12 @@ import {
 } from '../services/customer';
 import { MenuItem, MenuItemVariant, OrderStatus, OrderSource, PaymentStatus, PaymentMethod } from '../types';
 import { SrKicker, SrMono, SrChip, SrLabel, SrInput } from '../components/ui/servirest';
+import { StampCard } from '../components/StampCard';
+import { getLoyaltyProgram, getMyStampCard, qrPayloadFor, LoyaltyProgram } from '../services/loyalty';
+import QRCode from 'qrcode';
+import {
+  applyBusinessBranding, canPromptInstall, promptInstall, onInstallAvailabilityChange, isIOS, isStandalone,
+} from '../services/installApp';
 
 type CartLine = {
   lineId: string;
@@ -321,6 +327,13 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
   };
 
   const settings = business?.settings || {};
+
+  // La página (y la app al instalarla) toma el nombre y logo de ESTE negocio.
+  useEffect(() => {
+    if (!business) return;
+    applyBusinessBranding(businessId, settings.name || business.name || 'Ordena en línea', settings.logoUrl);
+  }, [business, businessId]);
+
   const availableItems = items.filter((m) => m.onlineAvailable !== false);
   const zonesList = (settings.digitalDeliveryZones || '').split(',').map((z: string) => z.trim().toLowerCase()).filter(Boolean);
 
@@ -929,6 +942,8 @@ const Storefront: React.FC<{ businessId: string }> = ({ businessId }) => {
           )}
         </div>
       </header>
+
+      <InstallAppBanner name={settings.name || business.name} logoUrl={settings.logoUrl} />
 
       <main className="flex-1 overflow-y-auto px-4 sm:px-6 md:px-12 pt-4 pb-6">
         {filtered.length === 0 ? (
@@ -1848,6 +1863,116 @@ const orderStatusLabel = (status: string, isDelivery: boolean): { label: string;
 };
 const isActiveStatus = (s: string) => ['PENDING', 'COOKING', 'READY', 'SERVED'].includes(s);
 
+/* ─── "Instala la app" del negocio ───────────────────────────────────── */
+const INSTALL_DISMISS_KEY = 'sr_install_banner_dismissed';
+
+const InstallAppBanner: React.FC<{ name: string; logoUrl?: string }> = ({ name, logoUrl }) => {
+  const [, force] = useState(0);
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem(INSTALL_DISMISS_KEY) === '1'; } catch { return false; }
+  });
+  const [showIosHelp, setShowIosHelp] = useState(false);
+
+  useEffect(() => onInstallAvailabilityChange(() => force((n) => n + 1)), []);
+
+  if (dismissed || isStandalone()) return null;
+  const ios = isIOS();
+  if (!ios && !canPromptInstall()) return null; // el navegador aún no permite instalar
+
+  const close = () => {
+    setDismissed(true);
+    try { localStorage.setItem(INSTALL_DISMISS_KEY, '1'); } catch {}
+  };
+
+  return (
+    <div className="flex-shrink-0 px-4 sm:px-6 md:px-12 pt-3">
+      <div className="rounded-2xl bg-servirest-midnight text-servirest-hueso p-3 flex items-center gap-3">
+        {logoUrl
+          ? <img src={logoUrl} alt="" className="w-10 h-10 rounded-xl object-cover bg-white flex-shrink-0" />
+          : <div className="w-10 h-10 rounded-xl bg-servirest-terracota flex items-center justify-center font-serif italic flex-shrink-0">{name?.[0] || 'R'}</div>}
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-bold leading-tight truncate">Instala la app de {name}</div>
+          <div className="text-[11px] text-servirest-hueso/60 leading-tight">
+            {showIosHelp ? 'Toca Compartir y luego "Agregar a inicio".' : 'Pide más rápido y lleva tu tarjeta de sellos.'}
+          </div>
+        </div>
+        <button
+          onClick={() => (ios ? setShowIosHelp(true) : promptInstall())}
+          className="px-3.5 h-9 rounded-full bg-servirest-terracota text-servirest-hueso text-[11px] font-black uppercase tracking-[0.1em] flex-shrink-0"
+        >
+          Instalar
+        </button>
+        <button onClick={close} aria-label="Cerrar" className="w-7 h-7 rounded-full text-servirest-hueso/50 hover:text-servirest-hueso flex items-center justify-center flex-shrink-0">
+          <X size={14} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/* ─── Tarjeta de sellos del cliente + su QR para Caja ─────────────────── */
+const StampCardSection: React.FC<{ business: any; businessId: string; userId?: string; code?: string; reloadKey?: any }> = ({
+  business, businessId, userId, code, reloadKey,
+}) => {
+  const [program, setProgram] = useState<LoyaltyProgram | null>(null);
+  const [card, setCard] = useState<{ stamps: number; rewardsAvailable: number } | null>(null);
+  const [qr, setQr] = useState('');
+  const [big, setBig] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    getLoyaltyProgram(businessId).then((p) => { if (alive) setProgram(p); });
+    if (userId) getMyStampCard(businessId, userId).then((c) => { if (alive) setCard(c); });
+    return () => { alive = false; };
+  }, [businessId, userId, reloadKey]);
+
+  useEffect(() => {
+    if (!code) return;
+    QRCode.toDataURL(qrPayloadFor(code), { width: 560, margin: 1, color: { dark: '#1A1E2E', light: '#FFFFFF' } })
+      .then(setQr).catch(() => setQr(''));
+  }, [code]);
+
+  if (!program?.enabled) return null;
+
+  return (
+    <div className="space-y-3">
+      <StampCard
+        businessName={business?.name || 'Tu restaurante'}
+        logoUrl={business?.settings?.logoUrl || business?.logo_url}
+        color={program.cardColor}
+        stampsRequired={program.stampsRequired}
+        stamps={card?.stamps || 0}
+        rewardTitle={program.rewardTitle}
+        rewardsAvailable={card?.rewardsAvailable || 0}
+      />
+      {code && (
+        <button
+          onClick={() => setBig(true)}
+          className="w-full rounded-3xl bg-servirest-surface border border-[rgba(42,40,38,0.08)] p-4 flex items-center gap-4 text-left"
+        >
+          {qr ? <img src={qr} alt="Tu código" className="w-20 h-20 rounded-xl flex-shrink-0" /> : <div className="w-20 h-20 rounded-xl bg-servirest-hueso flex-shrink-0" />}
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-[0.14em] font-black text-[rgba(42,40,38,0.5)]">Tu código de cliente</div>
+            <div className="font-mono font-black text-[22px] tracking-widest text-servirest-midnight">{code}</div>
+            <div className="text-[11px] text-[rgba(42,40,38,0.55)]">Muéstralo en caja para recibir tus sellos · toca para agrandar</div>
+          </div>
+        </button>
+      )}
+      {program.terms && <p className="text-[11px] text-[rgba(42,40,38,0.5)] px-1">{program.terms}</p>}
+
+      {big && qr && (
+        <div className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-6" onClick={() => setBig(false)}>
+          <div className="bg-white rounded-3xl p-6 text-center max-w-sm w-full">
+            <img src={qr} alt="Tu código" className="w-full rounded-xl" />
+            <div className="font-mono font-black text-[28px] tracking-widest text-servirest-midnight mt-3">{code}</div>
+            <div className="text-[12px] text-[rgba(42,40,38,0.55)] mt-1">Muéstrale este código al cajero</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AccountView: React.FC<any> = ({ business, businessId, session, profile, rewards, orders, loading, onBack, onReload, onRedeem, onReopenOrder, onSignOut }) => {
   const [copied, setCopied] = useState(false);
   const [summaryOrder, setSummaryOrder] = useState<any | null>(null); // orden para ver resumen
@@ -1942,6 +2067,15 @@ const AccountView: React.FC<any> = ({ business, businessId, session, profile, re
                   </div>
                 </div>
               </div>
+
+              {/* Tarjeta de sellos de este negocio + QR del cliente */}
+              <StampCardSection
+                business={business}
+                businessId={businessId}
+                userId={session?.user?.id}
+                code={profile?.referralCode}
+                reloadKey={orders}
+              />
 
               {/* Gráfica de preferencias (lo que más pide) */}
               <PreferencesChart orders={orders} />

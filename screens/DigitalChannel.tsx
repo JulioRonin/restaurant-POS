@@ -1,10 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Globe2, ShoppingBag, Utensils, CalendarClock, Truck, Store,
   Search, QrCode, Copy, Check, ExternalLink, MonitorSmartphone,
   Lock, CreditCard, Banknote, Bluetooth, Wallet, Clock, MapPin,
-  ChefHat, Sparkles,
+  ChefHat, Sparkles, Stamp, Download,
 } from 'lucide-react';
 import {
   SrCard, SrButton, SrChip, SrKicker, SrLabel, SrInput, SrMono,
@@ -17,8 +17,11 @@ import { getSupabase } from '../services/auth';
 import { useSettings } from '../contexts/SettingsContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { MenuItem } from '../types';
+import { StampCard } from '../components/StampCard';
+import { LoyaltyProgram, DEFAULT_PROGRAM, getLoyaltyProgram, saveLoyaltyProgram } from '../services/loyalty';
+import QRCode from 'qrcode';
 
-type TabKey = 'catalog' | 'mode' | 'kiosk' | 'link';
+type TabKey = 'catalog' | 'mode' | 'kiosk' | 'link' | 'loyalty';
 
 const MODE_OPTIONS: Array<{
   id: 'delivery' | 'pickup' | 'dine-in' | 'reservation';
@@ -246,6 +249,7 @@ export const DigitalChannelScreen: React.FC = () => {
             { id: 'mode',    label: 'Modo & horarios' },
             { id: 'kiosk',   label: 'Kiosko' },
             { id: 'link',    label: 'URL pública & QR' },
+            { id: 'loyalty', label: 'Tarjeta de sellos' },
           ]}
         />
       </div>
@@ -586,7 +590,165 @@ export const DigitalChannelScreen: React.FC = () => {
               </SrPanel>
             </motion.div>
           )}
+          {tab === 'loyalty' && (
+            <motion.div
+              key="loyalty"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.25 }}
+            >
+              <LoyaltyTab
+                businessId={authProfile?.businessId || ''}
+                businessName={settings.name || 'Tu restaurante'}
+                logoUrl={settings.logoUrl}
+              />
+            </motion.div>
+          )}
         </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
+/* ─── Tarjeta de sellos: configuración + link/QR de la app del cliente ── */
+const CARD_COLORS = ['#1A1E2E', '#C4633F', '#C9A24A', '#22A06B', '#7C3AED', '#0F766E', '#B91C1C', '#2A2826'];
+
+const LoyaltyTab: React.FC<{ businessId: string; businessName: string; logoUrl?: string }> = ({ businessId, businessName, logoUrl }) => {
+  const [program, setProgram] = useState<LoyaltyProgram>(() => DEFAULT_PROGRAM(businessId));
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [qr, setQr] = useState<string>('');
+  const [copiedApp, setCopiedApp] = useState(false);
+
+  // Link real de la app del cliente (el Storefront de este negocio).
+  const appUrl = `${window.location.origin}${window.location.pathname}#/o/${businessId}`;
+
+  useEffect(() => {
+    if (!businessId) return;
+    getLoyaltyProgram(businessId).then((p) => { if (p) setProgram(p); setLoaded(true); });
+    QRCode.toDataURL(appUrl, { width: 640, margin: 2, color: { dark: '#1A1E2E', light: '#FFFFFF' } })
+      .then(setQr).catch(() => setQr(''));
+  }, [businessId, appUrl]);
+
+  const save = async () => {
+    setSaving(true); setMsg(null);
+    const r = await saveLoyaltyProgram(program);
+    setMsg(r.ok ? { ok: true, text: 'Guardado. Tus clientes ya ven la tarjeta en su app.' } : { ok: false, text: r.error || 'No se pudo guardar' });
+    setSaving(false);
+  };
+
+  const downloadQr = () => {
+    if (!qr) return;
+    const a = document.createElement('a');
+    a.href = qr;
+    a.download = `app-${(businessName || 'restaurante').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`;
+    a.click();
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <SrPanel kicker="Lealtad" title="Tarjeta de sellos digital">
+        <p className="text-[13px] text-[rgba(42,40,38,0.6)] leading-relaxed mb-5">
+          Cada cliente tiene un código único que aparece como QR en su app. En <b>Caja → Sellos</b> lo escaneas o lo
+          tecleas y le das sus sellos. Al completar la tarjeta gana el premio y la tarjeta vuelve a empezar.
+        </p>
+
+        <label className="flex items-center justify-between gap-4 p-4 rounded-sr-md border border-[rgba(42,40,38,0.12)] bg-servirest-surface cursor-pointer">
+          <div>
+            <div className="text-[13px] font-bold text-servirest-midnight">Activar tarjeta de sellos</div>
+            <div className="text-[11px] text-[rgba(42,40,38,0.5)]">Visible para tus clientes en la app y en Caja</div>
+          </div>
+          <input type="checkbox" className="w-5 h-5 accent-[#C4633F]" checked={program.enabled}
+            onChange={(e) => setProgram((p) => ({ ...p, enabled: e.target.checked }))} />
+        </label>
+
+        <div className="grid grid-cols-2 gap-4 mt-5">
+          <div>
+            <SrLabel>Sellos para el premio</SrLabel>
+            <SrInput type="number" min={2} max={30} value={program.stampsRequired}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProgram((p) => ({ ...p, stampsRequired: Math.min(30, Math.max(2, parseInt(e.target.value) || 2)) }))} />
+          </div>
+          <div>
+            <SrLabel>Premio</SrLabel>
+            <SrInput value={program.rewardTitle} placeholder="Ej. Un café gratis"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProgram((p) => ({ ...p, rewardTitle: e.target.value }))} />
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <SrLabel>Color de la tarjeta</SrLabel>
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            {CARD_COLORS.map((c) => (
+              <button key={c} onClick={() => setProgram((p) => ({ ...p, cardColor: c }))}
+                className={`w-9 h-9 rounded-full border-2 transition-transform ${program.cardColor === c ? 'border-servirest-terracota scale-110' : 'border-transparent'}`}
+                style={{ background: c }} aria-label={c} />
+            ))}
+            <input type="color" value={program.cardColor} onChange={(e) => setProgram((p) => ({ ...p, cardColor: e.target.value }))}
+              className="w-9 h-9 rounded-full cursor-pointer bg-transparent" title="Otro color" />
+          </div>
+        </div>
+
+        <div className="mt-5">
+          <SrLabel>Condiciones (opcional)</SrLabel>
+          <SrInput value={program.terms} placeholder="Ej. Un sello por compra mayor a $100"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setProgram((p) => ({ ...p, terms: e.target.value }))} />
+        </div>
+
+        {msg && <div className={`mt-4 text-[12px] font-bold ${msg.ok ? 'text-servirest-success' : 'text-servirest-danger'}`}>{msg.text}</div>}
+
+        <div className="mt-5">
+          <SrButton variant="primary" onClick={save} disabled={saving || !loaded || !businessId}>
+            <Stamp size={14} className="mr-2" /> {saving ? 'Guardando…' : 'Guardar tarjeta'}
+          </SrButton>
+        </div>
+      </SrPanel>
+
+      <div className="space-y-6">
+        <SrPanel kicker="Así la ven tus clientes" title="Vista previa">
+          <StampCard
+            businessName={businessName}
+            logoUrl={logoUrl}
+            color={program.cardColor}
+            stampsRequired={program.stampsRequired}
+            stamps={Math.min(3, program.stampsRequired - 1)}
+            rewardTitle={program.rewardTitle || 'Un producto gratis'}
+          />
+          {!logoUrl && (
+            <p className="text-[11px] text-[rgba(42,40,38,0.5)] mt-3">Sube tu logo en Ajustes para que aparezca en la tarjeta y en el ícono de la app.</p>
+          )}
+        </SrPanel>
+
+        <SrPanel kicker="Para que tus clientes la descarguen" title="App de tu restaurante">
+          <p className="text-[12px] text-[rgba(42,40,38,0.6)] leading-relaxed mb-4">
+            Imprime este QR en la mesa, el mostrador o el ticket. Al abrirlo, el cliente puede instalar la app con el
+            nombre y logo de tu restaurante, crear su cuenta y ver su tarjeta de sellos.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-5">
+            {qr ? (
+              <img src={qr} alt="QR de la app" className="w-40 h-40 rounded-sr-md border border-[rgba(42,40,38,0.1)] bg-white" />
+            ) : (
+              <div className="w-40 h-40 rounded-sr-md border border-dashed border-[rgba(42,40,38,0.2)] flex items-center justify-center">
+                <QrCode size={48} className="text-[rgba(42,40,38,0.2)]" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0 w-full">
+              <div className="p-3 rounded-sr-md bg-servirest-midnight text-servirest-hueso font-mono text-[11px] break-all">{appUrl}</div>
+              <div className="flex flex-wrap gap-2 mt-3">
+                <SrButton variant="outline" onClick={downloadQr} disabled={!qr}>
+                  <Download size={14} className="mr-2" /> Descargar QR
+                </SrButton>
+                <SrButton variant="ghost" onClick={async () => {
+                  try { await navigator.clipboard.writeText(appUrl); setCopiedApp(true); setTimeout(() => setCopiedApp(false), 2000); } catch {}
+                }}>
+                  {copiedApp ? <Check size={14} className="mr-2" /> : <Copy size={14} className="mr-2" />}
+                  {copiedApp ? 'Copiado' : 'Copiar link'}
+                </SrButton>
+              </div>
+            </div>
+          </div>
+        </SrPanel>
       </div>
     </div>
   );
