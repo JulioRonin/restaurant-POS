@@ -15,6 +15,7 @@ import { bluetoothTerminalService } from '../services/BluetoothTerminalService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlowCard } from '../components/ui/spotlight-card';
 import { GlowButton } from '../components/ui/glow-button';
+import { StampStation } from '../components/StampStation';
 import { 
   CreditCard, 
   Wallet, 
@@ -33,7 +34,8 @@ import {
   TrendingDown,
   TrendingUp,
   DollarSign,
-  Trash2
+  Trash2,
+  Stamp
 } from 'lucide-react';
 
 /** Fecha de HOY en el calendario local (no UTC), como YYYY-MM-DD. */
@@ -56,7 +58,7 @@ export const CashierScreen: React.FC = () => {
     const { settings } = useSettings();
     const { authProfile } = useUser();
 
-    const [activeTab, setActiveTab] = useState<'tables' | 'expenses' | 'history' | 'delivery'>('tables');
+    const [activeTab, setActiveTab] = useState<'tables' | 'expenses' | 'history' | 'delivery' | 'stamps'>('tables');
     const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH);
     const [tipAmount, setTipAmount] = useState<number>(0);
@@ -425,7 +427,8 @@ export const CashierScreen: React.FC = () => {
                                 { id: 'tables', icon: Wallet, label: 'Mesas' },
                                 { id: 'delivery', icon: Truck, label: 'Delivery' },
                                 { id: 'expenses', icon: TrendingDown, label: 'Gastos' },
-                                { id: 'history', icon: History, label: 'Historial' }
+                                { id: 'history', icon: History, label: 'Historial' },
+                                { id: 'stamps', icon: Stamp, label: 'Sellos' }
                              ].map(tab => (
                                 <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-sr-md transition-all ${activeTab === tab.id ? 'bg-servirest-terracota text-servirest-hueso shadow-sr-glow' : 'text-[rgba(42,40,38,0.5)] hover:text-servirest-carbon'}`}>
                                     <tab.icon size={14} />
@@ -644,6 +647,15 @@ export const CashierScreen: React.FC = () => {
                         )}
 
 
+                        {activeTab === 'stamps' && (
+                            <div className="p-5 bg-servirest-surface border border-[rgba(42,40,38,0.12)] rounded-2xl space-y-3 text-[12px] text-[#2A2826]/70 leading-relaxed">
+                                <p className="text-[9px] font-black uppercase text-servirest-terracota/60 tracking-widest italic">Cómo funciona</p>
+                                <p>1. El cliente abre la app del restaurante y en <b>Mi cuenta</b> muestra su QR.</p>
+                                <p>2. Escanéalo con la cámara, con el lector o teclea su código.</p>
+                                <p>3. Dale sus sellos. Al completar la tarjeta gana el premio y la tarjeta vuelve a empezar.</p>
+                            </div>
+                        )}
+
                         {activeTab === 'history' && (
                             <div className="space-y-6">
                                 {/* Control Hub for Logs */}
@@ -724,7 +736,14 @@ export const CashierScreen: React.FC = () => {
 
                 {/* Main Content Area */}
                 <div className="flex-1 flex flex-col bg-[#F0F0E8] no-print relative">
-                    {activeTab === 'history' ? (
+                    {activeTab === 'stamps' ? (
+                        <StampStation
+                            businessId={authProfile?.businessId || ''}
+                            businessName={settings.name || 'Tu restaurante'}
+                            logoUrl={settings.logoUrl}
+                            staffName={authProfile?.name}
+                        />
+                    ) : activeTab === 'history' ? (
                         <div className="h-full flex flex-col p-10 gap-10 overflow-hidden">
                             {/* Logs Panoramic View */}
                             <div className="flex justify-between items-center">
